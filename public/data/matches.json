@@ -1,0 +1,55 @@
+{
+  "lastUpdated": "2025-12-19T00:00:00.000Z",
+  "matches": [
+    {
+      "id": "grp-a-01",
+      "stage": "Group",
+      "kickoffUtc": "2026-06-11T19:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": { "code": "USA", "name": "USA" },
+      "awayTeam": { "code": "MEX", "name": "Mexico" }
+    },
+    {
+      "id": "grp-a-02",
+      "stage": "Group",
+      "kickoffUtc": "2026-06-11T22:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": { "code": "CAN", "name": "Canada" },
+      "awayTeam": { "code": "CRC", "name": "Costa Rica" }
+    },
+    {
+      "id": "grp-b-01",
+      "stage": "Group",
+      "kickoffUtc": "2026-06-12T19:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": { "code": "BRA", "name": "Brazil" },
+      "awayTeam": { "code": "ESP", "name": "Spain" }
+    },
+    {
+      "id": "r16-01",
+      "stage": "R16",
+      "kickoffUtc": "2026-06-27T16:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": { "code": "W-A", "name": "Winner Group A" },
+      "awayTeam": { "code": "R-B", "name": "Runner-up Group B" }
+    },
+    {
+      "id": "qf-01",
+      "stage": "QF",
+      "kickoffUtc": "2026-07-03T20:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": { "code": "TBD", "name": "TBD" },
+      "awayTeam": { "code": "TBD", "name": "TBD" }
+    },
+    {
+      "id": "fin-01",
+      "stage": "Final",
+      "kickoffUtc": "2026-07-19T19:00:00.000Z",
+      "status": "FINISHED",
+      "homeTeam": { "code": "ARG", "name": "Argentina" },
+      "awayTeam": { "code": "FRA", "name": "France" },
+      "score": { "home": 3, "away": 2 }
+    }
+  ]
+}
+
