@@ -10,7 +10,7 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/bracket` bracket predictions (group qualifiers + knockout winners)
 - `/leaderboard` category points (exact, outcome, knockout extras, bracket)
 
-Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-predictions.json`).
+Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-predictions.json`, `best-third-qualifiers.json`).
 
 ## Dev
 
@@ -24,6 +24,9 @@ Match data is sourced from `https://api.football-data.org/v4/competitions/WC/mat
 
 - Local update: set `FOOTBALL_DATA_TOKEN` and run `npm run update-matches`
 - GitHub Actions: `.github/workflows/update-matches.yml` (daily + manual) writes `public/data/matches.json`
+- Best third-place qualifiers: update `public/data/best-third-qualifiers.json` if it differs from computed standings
+- Leaderboard refreshes when `matches.json` updates (daily sync / deploy)
+- Best third-place qualifiers updates should be deployed to refresh the bracket scoring
 
 Notes:
 - Do not commit API tokens to this repo.

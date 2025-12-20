@@ -68,6 +68,7 @@ function createEmptyPrediction(userId: string, groupIds: string[]): BracketPredi
     id: `bracket-${userId}`,
     userId,
     groups,
+    bestThirds: [],
     knockout: {},
     createdAt: now,
     updatedAt: now
@@ -90,6 +91,7 @@ function ensureGroupEntries(prediction: BracketPrediction, groupIds: string[]): 
 export default function BracketPage() {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [prediction, setPrediction] = useState<BracketPrediction | null>(null)
+  const [view, setView] = useState<'group' | 'knockout' | null>(null)
 
   useEffect(() => {
     let canceled = false
@@ -127,9 +129,26 @@ export default function BracketPage() {
     return Object.keys(groupTeams).sort()
   }, [groupTeams])
 
+  const allGroupTeams = useMemo(() => {
+    const teamMap = new Map<string, Team>()
+    for (const teams of Object.values(groupTeams)) {
+      for (const team of teams) {
+        teamMap.set(team.code, team)
+      }
+    }
+    return [...teamMap.values()].sort((a, b) => a.code.localeCompare(b.code))
+  }, [groupTeams])
+
   const knockoutMatches = useMemo(() => {
     if (state.status !== 'ready') return {}
     return buildKnockoutMatches(state.matches)
+  }, [state])
+
+  const groupStageComplete = useMemo(() => {
+    if (state.status !== 'ready') return false
+    const groupMatches = state.matches.filter((match) => match.stage === 'Group')
+    if (groupMatches.length === 0) return false
+    return groupMatches.every((match) => match.status === 'FINISHED')
   }, [state])
 
   useEffect(() => {
@@ -147,6 +166,12 @@ export default function BracketPage() {
     if (!prediction) return
     saveLocalBracketPrediction(CURRENT_USER_ID, prediction)
   }, [prediction])
+
+  useEffect(() => {
+    if (view !== null) return
+    if (state.status !== 'ready') return
+    setView(groupStageComplete ? 'knockout' : 'group')
+  }, [groupStageComplete, state, view])
 
   function handleGroupChange(groupId: string, field: 'first' | 'second', value: string) {
     setPrediction((current) => {
@@ -193,6 +218,30 @@ export default function BracketPage() {
     })
   }
 
+  function handleBestThirdChange(index: number, value: string) {
+    setPrediction((current) => {
+      if (!current) return current
+      const nextValue = value || ''
+      const nextBestThirds = [...(current.bestThirds ?? [])]
+      while (nextBestThirds.length < 8) {
+        nextBestThirds.push('')
+      }
+      if (nextValue) {
+        for (let i = 0; i < nextBestThirds.length; i += 1) {
+          if (i !== index && nextBestThirds[i] === nextValue) {
+            nextBestThirds[i] = ''
+          }
+        }
+      }
+      nextBestThirds[index] = nextValue
+      return {
+        ...current,
+        bestThirds: nextBestThirds,
+        updatedAt: new Date().toISOString()
+      }
+    })
+  }
+
   const missingGroups = useMemo(() => {
     if (!prediction) return 0
     return groupIds.filter((groupId) => {
@@ -200,6 +249,12 @@ export default function BracketPage() {
       return !group?.first || !group?.second
     }).length
   }, [groupIds, prediction])
+
+  const missingThirds = useMemo(() => {
+    if (!prediction) return 8
+    const filled = (prediction.bestThirds ?? []).filter((code) => Boolean(code)).length
+    return Math.max(0, 8 - filled)
+  }, [prediction])
 
   const missingKnockout = useMemo(() => {
     if (!prediction) return 0
@@ -218,6 +273,7 @@ export default function BracketPage() {
   if (state.status === 'loading') return <div className="muted">Loading...</div>
   if (state.status === 'error') return <div className="error">{state.message}</div>
   if (!prediction) return null
+  const activeView = view ?? 'group'
 
   return (
     <div className="stack">
@@ -226,11 +282,11 @@ export default function BracketPage() {
           <div className="sectionKicker">Bracket Challenge</div>
           <h1 className="h1">Bracket Predictions</h1>
           <div className="muted small">
-            {missingGroups === 0 && missingKnockout === 0
+            {missingGroups === 0 && missingThirds === 0 && missingKnockout === 0
               ? 'All bracket picks are in.'
-              : `${missingGroups} group${missingGroups === 1 ? '' : 's'} and ${missingKnockout} knockout pick${
-                  missingKnockout === 1 ? '' : 's'
-                } missing.`}
+              : `${missingGroups} group${missingGroups === 1 ? '' : 's'}, ${missingThirds} third-place pick${
+                  missingThirds === 1 ? '' : 's'
+                }, and ${missingKnockout} knockout pick${missingKnockout === 1 ? '' : 's'} missing.`}
           </div>
         </div>
         <div className="lastUpdated">
@@ -239,114 +295,179 @@ export default function BracketPage() {
         </div>
       </div>
 
-      <section className="card">
-        <div className="sectionTitle">Group qualifiers</div>
-        {groupIds.length === 0 ? (
-          <div className="muted">
-            Group data is not available yet. Run the daily sync once group assignments are known.
-          </div>
-        ) : (
-          <div className="bracketGroupGrid">
-            {groupIds.map((groupId) => {
-              const teams = groupTeams[groupId] ?? []
-              const group = prediction.groups[groupId] ?? {}
-              const firstValue = group.first ?? ''
-              const secondValue = group.second ?? ''
-              const secondOptions = teams.filter((team) => team.code !== firstValue)
+      <div className="bracketToggle" role="tablist" aria-label="Bracket prediction view">
+        <button
+          className={activeView === 'group' ? 'bracketToggleButton active' : 'bracketToggleButton'}
+          type="button"
+          role="tab"
+          aria-selected={activeView === 'group'}
+          onClick={() => setView('group')}
+        >
+          Group stage
+        </button>
+        <button
+          className={
+            activeView === 'knockout' ? 'bracketToggleButton active' : 'bracketToggleButton'
+          }
+          type="button"
+          role="tab"
+          aria-selected={activeView === 'knockout'}
+          onClick={() => setView('knockout')}
+        >
+          Knockout
+        </button>
+      </div>
 
-              return (
-                <div key={groupId} className="bracketGroupCard">
-                  <div className="bracketGroupHeader">Group {groupId}</div>
-                  <label className="pickLabel">
-                    1st place
-                    <select
-                      className="pickSelect"
-                      value={firstValue}
-                      onChange={(event) =>
-                        handleGroupChange(groupId, 'first', event.target.value)
-                      }
-                    >
-                      <option value="">Select team</option>
-                      {teams.map((team) => (
-                        <option key={team.code} value={team.code}>
-                          {team.code} - {team.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="pickLabel">
-                    2nd place
-                    <select
-                      className="pickSelect"
-                      value={secondValue}
-                      onChange={(event) =>
-                        handleGroupChange(groupId, 'second', event.target.value)
-                      }
-                    >
-                      <option value="">Select team</option>
-                      {secondOptions.map((team) => (
-                        <option key={team.code} value={team.code}>
-                          {team.code} - {team.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </section>
+      {activeView === 'group' ? (
+        <>
+          <section className="card">
+            <div className="sectionTitle">Group qualifiers</div>
+            {groupIds.length === 0 ? (
+              <div className="muted">
+                Group data is not available yet. Run the daily sync once group assignments are known.
+              </div>
+            ) : (
+              <div className="bracketGroupGrid">
+                {groupIds.map((groupId) => {
+                  const teams = groupTeams[groupId] ?? []
+                  const group = prediction.groups[groupId] ?? {}
+                  const firstValue = group.first ?? ''
+                  const secondValue = group.second ?? ''
+                  const secondOptions = teams.filter((team) => team.code !== firstValue)
 
-      <section className="card">
-        <div className="sectionTitle">Knockout winners</div>
-        {knockoutStageOrder.map((stage) => {
-          const matches = knockoutMatches[stage]
-          if (!matches || matches.length === 0) return null
-          const stagePredictions = prediction.knockout?.[stage] ?? {}
-
-          return (
-            <div key={stage} className="bracketStageBlock">
-              <div className="bracketStageTitle">{stage}</div>
-              <div className="bracketStageList">
-                {matches.map((match) => {
-                  const value = stagePredictions[match.id] ?? ''
                   return (
-                    <div key={match.id} className="bracketMatchRow">
-                      <div className="bracketMatchInfo">
-                        <div className="matchTeams">
-                          <div className="team">
-                            <span className="teamCode">{match.homeTeam.code}</span>
-                            <span className="teamName">{match.homeTeam.name}</span>
-                          </div>
-                          <div className="vs">vs</div>
-                          <div className="team">
-                            <span className="teamCode">{match.awayTeam.code}</span>
-                            <span className="teamName">{match.awayTeam.name}</span>
-                          </div>
-                        </div>
-                        <div className="muted small">{formatKickoff(match.kickoffUtc)}</div>
-                      </div>
+                    <div key={groupId} className="bracketGroupCard">
+                      <div className="bracketGroupHeader">Group {groupId}</div>
                       <label className="pickLabel">
-                        Winner
+                        1st place
                         <select
                           className="pickSelect"
-                          value={value}
-                          onChange={(event) => handleKnockoutChange(match, event.target.value)}
+                          value={firstValue}
+                          onChange={(event) =>
+                            handleGroupChange(groupId, 'first', event.target.value)
+                          }
                         >
-                          <option value="">Select winner</option>
-                          <option value="HOME">Home ({match.homeTeam.code})</option>
-                          <option value="AWAY">Away ({match.awayTeam.code})</option>
+                          <option value="">Select team</option>
+                          {teams.map((team) => (
+                            <option key={team.code} value={team.code}>
+                              {team.code} - {team.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="pickLabel">
+                        2nd place
+                        <select
+                          className="pickSelect"
+                          value={secondValue}
+                          onChange={(event) =>
+                            handleGroupChange(groupId, 'second', event.target.value)
+                          }
+                        >
+                          <option value="">Select team</option>
+                          {secondOptions.map((team) => (
+                            <option key={team.code} value={team.code}>
+                              {team.code} - {team.name}
+                            </option>
+                          ))}
                         </select>
                       </label>
                     </div>
                   )
                 })}
               </div>
-            </div>
-          )
-        })}
-      </section>
+            )}
+          </section>
+
+          <section className="card">
+            <div className="sectionTitle">Best third-place qualifiers (pick 8)</div>
+            {allGroupTeams.length === 0 ? (
+              <div className="muted">
+                Group data is not available yet. Run the daily sync once group assignments are known.
+              </div>
+            ) : (
+              <div className="bracketThirdGrid">
+                {Array.from({ length: 8 }).map((_, index) => {
+                  const selected = prediction.bestThirds?.[index] ?? ''
+                  const taken = new Set(
+                    (prediction.bestThirds ?? []).filter((code) => code && code !== selected)
+                  )
+                  const options = allGroupTeams.filter((team) => !taken.has(team.code))
+                  return (
+                    <label key={`third-${index}`} className="pickLabel">
+                      Slot {index + 1}
+                      <select
+                        className="pickSelect"
+                        value={selected}
+                        onChange={(event) => handleBestThirdChange(index, event.target.value)}
+                      >
+                        <option value="">Select team</option>
+                        {options.map((team) => (
+                          <option key={team.code} value={team.code}>
+                            {team.code} - {team.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        </>
+      ) : null}
+
+      {activeView === 'knockout' ? (
+        <section className="card">
+          <div className="sectionTitle">Knockout winners</div>
+          {knockoutStageOrder.map((stage) => {
+            const matches = knockoutMatches[stage]
+            if (!matches || matches.length === 0) return null
+            const stagePredictions = prediction.knockout?.[stage] ?? {}
+
+            return (
+              <div key={stage} className="bracketStageBlock">
+                <div className="bracketStageTitle">{stage}</div>
+                <div className="bracketStageList">
+                  {matches.map((match) => {
+                    const value = stagePredictions[match.id] ?? ''
+                    return (
+                      <div key={match.id} className="bracketMatchRow">
+                        <div className="bracketMatchInfo">
+                          <div className="matchTeams">
+                            <div className="team">
+                              <span className="teamCode">{match.homeTeam.code}</span>
+                              <span className="teamName">{match.homeTeam.name}</span>
+                            </div>
+                            <div className="vs">vs</div>
+                            <div className="team">
+                              <span className="teamCode">{match.awayTeam.code}</span>
+                              <span className="teamName">{match.awayTeam.name}</span>
+                            </div>
+                          </div>
+                          <div className="muted small">{formatKickoff(match.kickoffUtc)}</div>
+                        </div>
+                        <label className="pickLabel">
+                          Winner
+                          <select
+                            className="pickSelect"
+                            value={value}
+                            onChange={(event) => handleKnockoutChange(match, event.target.value)}
+                          >
+                            <option value="">Select winner</option>
+                            <option value="HOME">Home ({match.homeTeam.code})</option>
+                            <option value="AWAY">Away ({match.awayTeam.code})</option>
+                          </select>
+                        </label>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </section>
+      ) : null}
     </div>
   )
 }

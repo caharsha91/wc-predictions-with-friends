@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
-import { fetchBracketPredictions, fetchMatches, fetchMembers, fetchPicks, fetchScoring } from '../../lib/data'
+import {
+  fetchBestThirdQualifiers,
+  fetchBracketPredictions,
+  fetchMatches,
+  fetchMembers,
+  fetchPicks,
+  fetchScoring
+} from '../../lib/data'
 import { loadLocalBracketPrediction, mergeBracketPredictions } from '../../lib/bracket'
 import { loadLocalPicks, mergePicks } from '../../lib/picks'
 import { buildLeaderboard } from '../../lib/scoring'
@@ -21,6 +28,7 @@ type LoadState =
       picks: Pick[]
       bracketPredictions: BracketPrediction[]
       scoring: ScoringConfig
+      bestThirdQualifiers: string[]
       lastUpdated: string
     }
 
@@ -42,12 +50,20 @@ export default function LeaderboardPage() {
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [matchesFile, membersFile, picksFile, scoringFile, bracketFile] = await Promise.all([
+        const [
+          matchesFile,
+          membersFile,
+          picksFile,
+          scoringFile,
+          bracketFile,
+          bestThirdFile
+        ] = await Promise.all([
           fetchMatches(),
           fetchMembers(),
           fetchPicks(),
           fetchScoring(),
-          fetchBracketPredictions()
+          fetchBracketPredictions(),
+          fetchBestThirdQualifiers()
         ])
         if (canceled) return
 
@@ -66,6 +82,7 @@ export default function LeaderboardPage() {
           picks: merged,
           bracketPredictions: mergedBrackets,
           scoring: scoringFile,
+          bestThirdQualifiers: bestThirdFile.qualifiers,
           lastUpdated: matchesFile.lastUpdated
         })
       } catch (error) {
@@ -86,7 +103,8 @@ export default function LeaderboardPage() {
       state.matches,
       state.picks,
       state.bracketPredictions,
-      state.scoring
+      state.scoring,
+      state.bestThirdQualifiers
     )
   }, [state])
 

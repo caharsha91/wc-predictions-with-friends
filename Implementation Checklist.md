@@ -66,13 +66,19 @@
 
 - [x] Add bracket prediction model:
   - [x] Predict top 2 for each group
+  - [x] Predict 8 best third-place qualifiers
   - [x] Predict knockout winners through final
 - [x] Extend `public/data/scoring.json` with bracket prediction scoring:
   - [x] Group qualifier points
+  - [x] Best third-place qualifier points
   - [x] Knockout round points (R32, R16, QF, SF, Third, Final)
 - [x] Evaluate bracket prediction scoring on matchday update
 - [x] Add bracket prediction points to leaderboard breakdown
 - [x] Build new page for bracket prediction
+- [x] Add bracket view toggle (group vs knockout) with knockout default after group stage
+- [x] Add official best third-place qualifier list in `public/data/best-third-qualifiers.json`
+- [x] Refresh leaderboard on `matches.json` deploys
+- [x] Refresh bracket scoring on best third-place qualifier deploys
 - [x] Define Firebase data structure for bracket predictions
 
 ---

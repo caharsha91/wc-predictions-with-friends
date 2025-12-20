@@ -1,17 +1,139 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&family=Sora:wght@500;600;700&display=swap');
 
 :root {
   color-scheme: dark;
+  --font-body: 'Source Sans 3', system-ui, -apple-system, sans-serif;
+  --font-display: 'Sora', system-ui, sans-serif;
   --bg: #0b1116;
+  --bg-image:
+    radial-gradient(900px 520px at 50% -10%, rgba(125, 211, 252, 0.24), transparent 60%),
+    radial-gradient(800px 420px at 20% 10%, rgba(79, 209, 197, 0.2), transparent 55%),
+    linear-gradient(120deg, rgba(17, 24, 39, 0.6), rgba(11, 17, 22, 0.6));
   --panel: rgba(12, 18, 28, 0.82);
   --card: rgba(14, 21, 33, 0.92);
+  --surface-muted: rgba(9, 14, 22, 0.7);
   --border: rgba(125, 211, 252, 0.18);
+  --border-soft: rgba(125, 211, 252, 0.12);
+  --border-strong: rgba(125, 211, 252, 0.3);
+  --border-accent: rgba(79, 209, 197, 0.4);
+  --border-danger: rgba(248, 113, 113, 0.5);
   --text: #f3f7fb;
   --muted: #a6b1be;
   --accent: #4fd1c5;
-  --accentSoft: rgba(79, 209, 197, 0.18);
+  --accent-soft: rgba(79, 209, 197, 0.18);
   --glow: rgba(125, 211, 252, 0.3);
   --danger: #f87171;
+  --header-bg: rgba(10, 15, 22, 0.88);
+  --header-shadow: 0 18px 30px rgba(5, 8, 14, 0.45);
+  --ticker-bg: linear-gradient(
+    90deg,
+    rgba(79, 209, 197, 0.18),
+    rgba(12, 18, 28, 0.2) 60%
+  );
+  --ticker-border: rgba(125, 211, 252, 0.12);
+  --card-shadow: 0 26px 40px rgba(5, 8, 14, 0.45);
+  --row-border: rgba(125, 211, 252, 0.16);
+  --row-inset: inset 0 0 0 1px rgba(125, 211, 252, 0.06);
+  --row-hover-border: rgba(79, 209, 197, 0.4);
+  --row-hover-shadow: 0 16px 28px rgba(5, 8, 14, 0.35);
+  --team-border: rgba(125, 211, 252, 0.4);
+  --pill-border: rgba(79, 209, 197, 0.4);
+  --pill-bg: linear-gradient(
+    120deg,
+    rgba(79, 209, 197, 0.08),
+    rgba(125, 211, 252, 0.18),
+    rgba(79, 209, 197, 0.08)
+  );
+  --hero-border: rgba(125, 211, 252, 0.4);
+  --hero-bg: linear-gradient(
+    140deg,
+    rgba(125, 211, 252, 0.12),
+    rgba(14, 21, 33, 0.95) 55%,
+    rgba(79, 209, 197, 0.12)
+  );
+  --tag-border: rgba(79, 209, 197, 0.4);
+  --tag-bg: rgba(79, 209, 197, 0.08);
+  --group-ticker-bg: rgba(125, 211, 252, 0.12);
+  --group-ticker-border: rgba(125, 211, 252, 0.35);
+  --button-border: rgba(79, 209, 197, 0.6);
+  --button-bg: rgba(79, 209, 197, 0.14);
+  --button-shadow: 0 0 0 1px rgba(79, 209, 197, 0.1), 0 10px 20px rgba(5, 8, 14, 0.35);
+  --input-bg: rgba(9, 14, 22, 0.9);
+  --toggle-bg: rgba(9, 14, 22, 0.7);
+  --toggle-border: rgba(79, 209, 197, 0.5);
+  --toggle-track-bg: rgba(79, 209, 197, 0.2);
+  --toggle-track-border: rgba(79, 209, 197, 0.5);
+  --toggle-thumb: #4fd1c5;
+}
+
+:root[data-theme='pitch'] {
+  --font-body: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-display: 'Bebas Neue', system-ui, sans-serif;
+  --bg: #07150f;
+  --bg-image:
+    radial-gradient(860px 520px at 50% -10%, rgba(251, 220, 114, 0.18), transparent 60%),
+    radial-gradient(600px 360px at 90% 20%, rgba(166, 255, 112, 0.18), transparent 55%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(14, 64, 35, 0.35) 0 24px,
+      rgba(9, 46, 25, 0.35) 24px 48px
+    ),
+    linear-gradient(140deg, #0a1b13, #06120d);
+  --panel: rgba(10, 30, 18, 0.85);
+  --card: rgba(12, 32, 20, 0.92);
+  --surface-muted: rgba(8, 24, 15, 0.75);
+  --border: rgba(199, 255, 93, 0.18);
+  --border-soft: rgba(199, 255, 93, 0.12);
+  --border-strong: rgba(199, 255, 93, 0.35);
+  --border-accent: rgba(251, 220, 114, 0.45);
+  --border-danger: rgba(255, 132, 108, 0.6);
+  --text: #f5f9f1;
+  --muted: #b4c2b3;
+  --accent: #fbdc72;
+  --accent-soft: rgba(251, 220, 114, 0.18);
+  --glow: rgba(181, 255, 140, 0.4);
+  --danger: #ff8b7a;
+  --header-bg: rgba(8, 18, 12, 0.9);
+  --header-shadow: 0 18px 30px rgba(2, 8, 5, 0.45);
+  --ticker-bg: linear-gradient(
+    90deg,
+    rgba(251, 220, 114, 0.22),
+    rgba(10, 30, 18, 0.45) 60%
+  );
+  --ticker-border: rgba(199, 255, 93, 0.18);
+  --card-shadow: 0 26px 40px rgba(2, 8, 5, 0.45);
+  --row-border: rgba(199, 255, 93, 0.16);
+  --row-inset: inset 0 0 0 1px rgba(199, 255, 93, 0.08);
+  --row-hover-border: rgba(251, 220, 114, 0.45);
+  --row-hover-shadow: 0 16px 28px rgba(2, 8, 5, 0.35);
+  --team-border: rgba(199, 255, 93, 0.5);
+  --pill-border: rgba(251, 220, 114, 0.5);
+  --pill-bg: linear-gradient(
+    120deg,
+    rgba(251, 220, 114, 0.16),
+    rgba(199, 255, 93, 0.12),
+    rgba(251, 220, 114, 0.16)
+  );
+  --hero-border: rgba(199, 255, 93, 0.45);
+  --hero-bg: linear-gradient(
+    140deg,
+    rgba(199, 255, 93, 0.14),
+    rgba(12, 32, 20, 0.95) 55%,
+    rgba(251, 220, 114, 0.16)
+  );
+  --tag-border: rgba(251, 220, 114, 0.5);
+  --tag-bg: rgba(251, 220, 114, 0.12);
+  --group-ticker-bg: rgba(199, 255, 93, 0.12);
+  --group-ticker-border: rgba(199, 255, 93, 0.35);
+  --button-border: rgba(251, 220, 114, 0.6);
+  --button-bg: rgba(251, 220, 114, 0.14);
+  --button-shadow: 0 0 0 1px rgba(251, 220, 114, 0.1), 0 10px 18px rgba(2, 8, 5, 0.35);
+  --input-bg: rgba(7, 18, 12, 0.9);
+  --toggle-bg: rgba(7, 18, 12, 0.75);
+  --toggle-border: rgba(199, 255, 93, 0.5);
+  --toggle-track-bg: rgba(251, 220, 114, 0.2);
+  --toggle-track-border: rgba(251, 220, 114, 0.5);
+  --toggle-thumb: #fbdc72;
 }
 
 *,
@@ -27,13 +149,11 @@ body {
 
 body {
   margin: 0;
-  font-family: 'Source Sans 3', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   color: var(--text);
   background-color: var(--bg);
-  background-image:
-    radial-gradient(900px 520px at 50% -10%, rgba(125, 211, 252, 0.24), transparent 60%),
-    radial-gradient(800px 420px at 20% 10%, rgba(79, 209, 197, 0.2), transparent 55%),
-    linear-gradient(120deg, rgba(17, 24, 39, 0.6), rgba(11, 17, 22, 0.6));
+  background-image: var(--bg-image);
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
 .appShell {
@@ -46,10 +166,10 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(10, 15, 22, 0.88);
+  background: var(--header-bg);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
-  box-shadow: 0 18px 30px rgba(5, 8, 14, 0.45);
+  box-shadow: var(--header-shadow);
 }
 
 .headerTicker {
@@ -61,8 +181,8 @@ body {
   letter-spacing: 1.6px;
   text-transform: uppercase;
   color: var(--muted);
-  background: linear-gradient(90deg, rgba(79, 209, 197, 0.18), rgba(12, 18, 28, 0.2) 60%);
-  border-bottom: 1px solid rgba(125, 211, 252, 0.12);
+  background: var(--ticker-bg);
+  border-bottom: 1px solid var(--ticker-border);
 }
 
 .onAirDot {
@@ -70,7 +190,7 @@ body {
   height: 8px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 12px rgba(79, 209, 197, 0.75);
+  box-shadow: 0 0 12px var(--glow);
   animation: pulse 2s ease infinite;
 }
 
@@ -109,7 +229,7 @@ body {
 }
 
 .brand {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 20px;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -143,8 +263,71 @@ body {
 
 .navLinkActive {
   color: var(--text);
-  border-color: rgba(79, 209, 197, 0.4);
-  background: rgba(79, 209, 197, 0.12);
+  border-color: var(--border-accent);
+  background: var(--accent-soft);
+}
+
+.themeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--toggle-border);
+  background: var(--toggle-bg);
+  color: var(--text);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 10px;
+}
+
+.themeToggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.themeToggleText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.themeToggleKicker {
+  font-size: 9px;
+  letter-spacing: 1.4px;
+  color: var(--muted);
+}
+
+.themeToggleName {
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+}
+
+.themeToggleTrack {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid var(--toggle-track-border);
+  background: var(--toggle-track-bg);
+}
+
+.themeToggleThumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--toggle-thumb);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.themeToggle[aria-checked='true'] .themeToggleThumb {
+  transform: translateX(16px);
 }
 
 .userInfo {
@@ -156,7 +339,7 @@ body {
 }
 
 .userName {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -197,7 +380,7 @@ body {
   background: var(--card);
   border-radius: 18px;
   padding: 18px;
-  box-shadow: 0 26px 40px rgba(5, 8, 14, 0.45);
+  box-shadow: var(--card-shadow);
   transform: translateY(8px) scale(0.99);
   opacity: 0;
   animation: fadeUp 0.45s ease forwards;
@@ -211,8 +394,8 @@ body {
 }
 
 .heroCard {
-  border-color: rgba(125, 211, 252, 0.4);
-  background: linear-gradient(140deg, rgba(125, 211, 252, 0.12), rgba(14, 21, 33, 0.95) 55%, rgba(79, 209, 197, 0.12));
+  border-color: var(--hero-border);
+  background: var(--hero-bg);
 }
 
 .heroTag {
@@ -220,13 +403,13 @@ body {
   align-items: center;
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(79, 209, 197, 0.4);
+  border: 1px solid var(--tag-border);
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 1.4px;
   font-size: 12px;
   margin-bottom: 12px;
-  background: rgba(79, 209, 197, 0.08);
+  background: var(--tag-bg);
 }
 
 .heroTitle {
@@ -247,7 +430,7 @@ body {
 
 .h1 {
   margin: 0;
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 26px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
@@ -271,8 +454,8 @@ body {
 
 .button {
   appearance: none;
-  border: 1px solid rgba(79, 209, 197, 0.6);
-  background: rgba(79, 209, 197, 0.14);
+  border: 1px solid var(--button-border);
+  background: var(--button-bg);
   color: var(--text);
   padding: 10px 14px;
   border-radius: 14px;
@@ -284,7 +467,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  box-shadow: 0 0 0 1px rgba(79, 209, 197, 0.1), 0 10px 20px rgba(5, 8, 14, 0.35);
+  box-shadow: var(--button-shadow);
 }
 
 .buttonSecondary {
@@ -320,7 +503,7 @@ body {
 }
 
 .lastUpdatedValue {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   color: var(--text);
 }
 
@@ -334,11 +517,11 @@ body {
   align-items: center;
   gap: 12px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(125, 211, 252, 0.2);
+  border-bottom: 1px solid var(--border-strong);
 }
 
 .groupDate {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 18px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -354,8 +537,8 @@ body {
 .groupTicker {
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(125, 211, 252, 0.12);
-  border: 1px solid rgba(125, 211, 252, 0.35);
+  background: var(--group-ticker-bg);
+  border: 1px solid var(--group-ticker-border);
   color: var(--text);
   font-size: 11px;
   letter-spacing: 1.4px;
@@ -376,9 +559,9 @@ body {
   align-items: center;
   padding: 14px;
   border-radius: 16px;
-  border: 1px solid rgba(125, 211, 252, 0.16);
+  border: 1px solid var(--row-border);
   background: var(--panel);
-  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.06);
+  box-shadow: var(--row-inset);
   opacity: 0;
   transform: translateY(6px) scale(0.99);
   animation: fadeUp 0.4s ease forwards;
@@ -386,12 +569,12 @@ body {
 }
 
 .matchRow:hover {
-  border-color: rgba(79, 209, 197, 0.4);
-  box-shadow: 0 16px 28px rgba(5, 8, 14, 0.35);
+  border-color: var(--row-hover-border);
+  box-shadow: var(--row-hover-shadow);
 }
 
 .matchRowMissing {
-  border-color: rgba(248, 113, 113, 0.5);
+  border-color: var(--border-danger);
 }
 
 .matchTeams {
@@ -408,13 +591,13 @@ body {
 }
 
 .teamCode {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   padding: 4px 8px;
   border-radius: 10px;
-  border: 1px solid rgba(125, 211, 252, 0.4);
+  border: 1px solid var(--team-border);
   color: var(--text);
 }
 
@@ -440,8 +623,8 @@ body {
   font-size: 11px;
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(79, 209, 197, 0.4);
-  background: linear-gradient(120deg, rgba(79, 209, 197, 0.08), rgba(125, 211, 252, 0.18), rgba(79, 209, 197, 0.08));
+  border: 1px solid var(--pill-border);
+  background: var(--pill-bg);
   background-size: 200% 100%;
   color: var(--accent);
   text-transform: uppercase;
@@ -462,7 +645,7 @@ body {
 }
 
 .score {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 18px;
   color: var(--accent);
@@ -489,16 +672,16 @@ body {
   gap: 4px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(125, 211, 252, 0.16);
-  background: rgba(9, 14, 22, 0.7);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-muted);
 }
 
 .resultsPickMissing {
-  border-color: rgba(248, 113, 113, 0.5);
+  border-color: var(--border-danger);
 }
 
 .resultsPickName {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   display: flex;
   gap: 6px;
@@ -548,18 +731,18 @@ body {
   width: 70px;
   padding: 6px 8px;
   border-radius: 10px;
-  border: 1px solid rgba(125, 211, 252, 0.3);
-  background: rgba(9, 14, 22, 0.9);
+  border: 1px solid var(--border-strong);
+  background: var(--input-bg);
   color: var(--text);
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
 }
 
 .pickSelect {
   min-width: 160px;
   padding: 8px 10px;
   border-radius: 12px;
-  border: 1px solid rgba(125, 211, 252, 0.3);
-  background: rgba(9, 14, 22, 0.9);
+  border: 1px solid var(--border-strong);
+  background: var(--input-bg);
   color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.8px;
@@ -575,7 +758,7 @@ body {
   font-size: 10px;
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(248, 113, 113, 0.5);
+  border: 1px solid var(--border-danger);
   color: var(--danger);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -587,11 +770,46 @@ body {
 }
 
 .sectionTitle {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 13px;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text);
+}
+
+.bracketToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  align-self: flex-start;
+}
+
+.bracketToggleButton {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.bracketToggleButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.bracketToggleButton.active {
+  color: var(--text);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--border-accent);
 }
 
 .bracketGroupGrid {
@@ -601,10 +819,17 @@ body {
   gap: 16px;
 }
 
+.bracketThirdGrid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
 .bracketGroupCard {
   border-radius: 14px;
-  border: 1px solid rgba(125, 211, 252, 0.2);
-  background: rgba(9, 14, 22, 0.7);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-muted);
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -612,7 +837,7 @@ body {
 }
 
 .bracketGroupHeader {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 12px;
   letter-spacing: 1.2px;
   text-transform: uppercase;
@@ -627,7 +852,7 @@ body {
 }
 
 .bracketStageTitle {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 12px;
   letter-spacing: 1.2px;
   text-transform: uppercase;
@@ -648,8 +873,8 @@ body {
   flex-wrap: wrap;
   padding: 12px;
   border-radius: 14px;
-  border: 1px solid rgba(125, 211, 252, 0.12);
-  background: rgba(9, 14, 22, 0.7);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-muted);
 }
 
 .bracketMatchInfo {
@@ -670,8 +895,8 @@ body {
   align-items: center;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(125, 211, 252, 0.12);
-  background: rgba(9, 14, 22, 0.7);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-muted);
 }
 
 .leaderboardHeader {
@@ -684,12 +909,12 @@ body {
 }
 
 .leaderboardHighlight {
-  border-color: rgba(79, 209, 197, 0.5);
-  background: rgba(79, 209, 197, 0.12);
+  border-color: var(--border-accent);
+  background: var(--accent-soft);
 }
 
 .leaderboardRank {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
 }
 
 .leaderboardName {
@@ -704,13 +929,13 @@ body {
 }
 
 .leaderboardPoints {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   color: var(--accent);
 }
 
 .leaderboardTotal {
-  font-family: 'Sora', system-ui, sans-serif;
+  font-family: var(--font-display);
   font-size: 16px;
   color: var(--text);
 }

@@ -44,6 +44,7 @@
   },
   "bracket": {
     "groupQualifiers": 2,
+    "thirdPlaceQualifiers": 2,
     "knockout": {
       "R32": 2,
       "R16": 3,

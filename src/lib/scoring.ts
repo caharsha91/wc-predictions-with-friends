@@ -75,6 +75,10 @@ type GroupSummary = {
   standings: GroupStanding[]
 }
 
+type ThirdPlaceEntry = GroupStanding & {
+  groupId: string
+}
+
 function buildGroupStandings(matches: Match[]): Map<string, GroupSummary> {
   const groups = new Map<string, { complete: boolean; teams: Map<string, GroupStanding> }>()
 
@@ -143,10 +147,44 @@ function buildGroupStandings(matches: Match[]): Map<string, GroupSummary> {
   return summaries
 }
 
+function normalizeTeamCodes(codes: string[] | undefined): string[] {
+  if (!codes) return []
+  const normalized = codes
+    .map((code) => String(code ?? '').trim().toUpperCase())
+    .filter((code) => code.length > 0)
+  return [...new Set(normalized)]
+}
+
+function resolveBestThirdQualifiers(
+  groupStandings: Map<string, GroupSummary>,
+  overrides?: string[]
+): string[] | undefined {
+  const overrideCodes = normalizeTeamCodes(overrides)
+  if (overrideCodes.length > 0) return overrideCodes
+
+  const thirdPlaceTeams: ThirdPlaceEntry[] = []
+  for (const [groupId, summary] of groupStandings.entries()) {
+    if (!summary.complete) return undefined
+    const third = summary.standings[2]
+    if (!third) return undefined
+    thirdPlaceTeams.push({ ...third, groupId })
+  }
+
+  thirdPlaceTeams.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points
+    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff
+    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor
+    return a.team.code.localeCompare(b.team.code)
+  })
+
+  return thirdPlaceTeams.slice(0, 8).map((entry) => entry.team.code)
+}
+
 function scoreBracketPrediction(
   prediction: BracketPrediction,
   matches: Match[],
-  scoring: ScoringConfig
+  scoring: ScoringConfig,
+  bestThirdQualifiers?: string[]
 ): number {
   let points = 0
   const groupStandings = buildGroupStandings(matches)
@@ -161,6 +199,16 @@ function scoreBracketPrediction(
     }
     if (predicted.second && actualTopTwo.includes(predicted.second)) {
       points += scoring.bracket.groupQualifiers
+    }
+  }
+
+  const actualBestThirds = resolveBestThirdQualifiers(groupStandings, bestThirdQualifiers)
+  if (actualBestThirds && actualBestThirds.length > 0) {
+    const predictedThirds = normalizeTeamCodes(prediction.bestThirds)
+    const actualSet = new Set(actualBestThirds)
+    const thirdPlacePoints = scoring.bracket.thirdPlaceQualifiers ?? scoring.bracket.groupQualifiers
+    for (const code of predictedThirds) {
+      if (actualSet.has(code)) points += thirdPlacePoints
     }
   }
 
@@ -183,7 +231,8 @@ export function buildLeaderboard(
   matches: Match[],
   picks: Pick[],
   bracketPredictions: BracketPrediction[],
-  scoring: ScoringConfig
+  scoring: ScoringConfig,
+  bestThirdQualifiers?: string[]
 ): LeaderboardEntry[] {
   const matchById = new Map(matches.map((match) => [match.id, match]))
   const entries = new Map<string, LeaderboardEntry>()
@@ -236,7 +285,12 @@ export function buildLeaderboard(
   for (const entry of entries.values()) {
     const prediction = bracketByUser.get(entry.member.id)
     if (!prediction) continue
-    const bracketPoints = scoreBracketPrediction(prediction, matches, scoring)
+    const bracketPoints = scoreBracketPrediction(
+      prediction,
+      matches,
+      scoring,
+      bestThirdQualifiers
+    )
     entry.bracketPoints = bracketPoints
     entry.totalPoints += bracketPoints
   }

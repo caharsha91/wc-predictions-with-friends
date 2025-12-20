@@ -15,5 +15,6 @@ export type KnockoutStage = 'R32' | 'R16' | 'QF' | 'SF' | 'Third' | 'Final'
 
 export type BracketScoring = {
   groupQualifiers: number
+  thirdPlaceQualifiers: number
   knockout: Record<KnockoutStage, number>
 }

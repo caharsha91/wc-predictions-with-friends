@@ -10,6 +10,7 @@ export type BracketPrediction = {
   id: string
   userId: string
   groups: Record<string, GroupPrediction>
+  bestThirds?: string[]
   knockout?: Partial<Record<KnockoutStage, Record<string, MatchWinner>>>
   createdAt: string
   updatedAt: string
