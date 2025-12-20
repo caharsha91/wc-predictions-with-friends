@@ -7,7 +7,7 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/` next matchday picks (highlights missing picks)
 - `/upcoming` all remaining matches with picks
 - `/results` completed matches + your picks
-- `/bracket` bracket predictions (group qualifiers + knockout winners)
+- `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks)
 - `/leaderboard` category points (exact, outcome, knockout extras, bracket)
 
 Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-predictions.json`, `best-third-qualifiers.json`).
@@ -22,7 +22,7 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 
 - Match picks lock 30 minutes before kickoff.
 - Bracket group qualifiers + best third-place picks lock at 11:59 PM PST on the day before the first group match day.
-- Bracket knockout picks lock at 11:59 PM PST on the last group match day.
+- Bracket knockout picks lock at 11:59 PM PST on the day before the first knockout match day.
 - Knockout eventual winner picks are independent of the result selection.
 
 ## Data Updates (Fixtures/Results)

@@ -76,7 +76,8 @@
 - [x] Evaluate bracket prediction scoring on matchday update
 - [x] Add bracket prediction points to leaderboard breakdown
 - [x] Build new page for bracket prediction
-- [x] Lock bracket picks at 11:59 PM PST (group: day before first group match; knockout: last group match day)
+- [x] Auto-advance knockout bracket rounds based on user picks
+- [x] Lock bracket picks at 11:59 PM PST (group: day before first group match; knockout: day before first knockout match)
 - [x] Add bracket view toggle (group vs knockout) with knockout default after group stage
 - [x] Add official best third-place qualifier list in `public/data/best-third-qualifiers.json`
 - [x] Refresh leaderboard on `matches.json` deploys

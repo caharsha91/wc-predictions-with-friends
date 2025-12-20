@@ -13,7 +13,7 @@ import {
   PACIFIC_TIME_ZONE
 } from '../../lib/matches'
 import type { BracketPrediction, GroupPrediction } from '../../types/bracket'
-import type { Match, Team } from '../../types/matches'
+import type { Match, MatchWinner, Team } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 
 type LoadState =
@@ -22,6 +22,12 @@ type LoadState =
   | { status: 'ready'; matches: Match[]; predictions: BracketPrediction[]; lastUpdated: string }
 
 const knockoutStageOrder: KnockoutStage[] = ['R32', 'R16', 'QF', 'SF', 'Third', 'Final']
+const TBD_TEAM: Team = { code: 'TBD', name: 'TBD' }
+
+type DisplayMatch = Match & {
+  displayHomeTeam: Team
+  displayAwayTeam: Team
+}
 
 function formatKickoff(utcIso: string) {
   const date = new Date(utcIso)
@@ -76,6 +82,18 @@ function buildKnockoutMatches(matches: Match[]): Partial<Record<KnockoutStage, M
     )
   }
   return stageMap
+}
+
+function resolvePickWinner(match: DisplayMatch, winner?: MatchWinner): Team | undefined {
+  if (winner === 'HOME') return match.displayHomeTeam
+  if (winner === 'AWAY') return match.displayAwayTeam
+  return undefined
+}
+
+function resolvePickLoser(match: DisplayMatch, winner?: MatchWinner): Team | undefined {
+  if (winner === 'HOME') return match.displayAwayTeam
+  if (winner === 'AWAY') return match.displayHomeTeam
+  return undefined
 }
 
 function createEmptyPrediction(userId: string, groupIds: string[]): BracketPrediction {
@@ -164,6 +182,73 @@ export default function BracketPage() {
     return buildKnockoutMatches(state.matches)
   }, [state])
 
+  const knockoutDisplayMatches = useMemo(() => {
+    if (state.status !== 'ready' || !prediction) return {}
+
+    const stageMap: Partial<Record<KnockoutStage, DisplayMatch[]>> = {}
+    let progressionMatches: DisplayMatch[] | null = null
+    let semifinalMatches: DisplayMatch[] | null = null
+
+    for (const stage of knockoutStageOrder) {
+      const baseMatches = knockoutMatches[stage]
+      if (!baseMatches || baseMatches.length === 0) continue
+
+      if (!progressionMatches) {
+        const initial = baseMatches.map((match) => ({
+          ...match,
+          displayHomeTeam: match.homeTeam,
+          displayAwayTeam: match.awayTeam
+        }))
+        stageMap[stage] = initial
+        progressionMatches = initial
+        if (stage === 'SF') semifinalMatches = initial
+        continue
+      }
+
+      if (stage === 'Third') {
+        const source: DisplayMatch[] = (semifinalMatches ?? progressionMatches) ?? []
+        const losers = source.map((match) => {
+          const stage = match.stage as KnockoutStage
+          return resolvePickLoser(match, prediction.knockout?.[stage]?.[match.id])
+        })
+        const display = baseMatches.map((match, index) => {
+          const home = losers[index * 2] ?? TBD_TEAM
+          const away = losers[index * 2 + 1] ?? TBD_TEAM
+          return { ...match, displayHomeTeam: home, displayAwayTeam: away }
+        })
+        stageMap[stage] = display
+        continue
+      }
+
+      const source: DisplayMatch[] =
+        (stage === 'Final' && semifinalMatches ? semifinalMatches : progressionMatches) ?? []
+      const winners = source.map((match) => {
+        const stage = match.stage as KnockoutStage
+        return resolvePickWinner(match, prediction.knockout?.[stage]?.[match.id])
+      })
+      const display = baseMatches.map((match, index) => {
+        const home = winners[index * 2] ?? TBD_TEAM
+        const away = winners[index * 2 + 1] ?? TBD_TEAM
+        return { ...match, displayHomeTeam: home, displayAwayTeam: away }
+      })
+      stageMap[stage] = display
+      progressionMatches = display
+      if (stage === 'SF') semifinalMatches = display
+    }
+
+    return stageMap
+  }, [knockoutMatches, prediction, state])
+
+  const knockoutMatchDates = useMemo(() => {
+    if (state.status !== 'ready') return []
+    const dates = new Set<string>()
+    for (const match of state.matches) {
+      if (match.stage === 'Group') continue
+      dates.add(getDateKeyInTimeZone(match.kickoffUtc))
+    }
+    return [...dates].sort()
+  }, [state])
+
   const groupStageComplete = useMemo(() => {
     if (state.status !== 'ready') return false
     const groupMatches = state.matches.filter((match) => match.stage === 'Group')
@@ -187,9 +272,9 @@ export default function BracketPage() {
   }, [groupMatchDates])
 
   const knockoutLockTime = useMemo(() => {
-    if (groupMatchDates.length === 0) return null
-    return getLockTimePstForDateKey(groupMatchDates[groupMatchDates.length - 1], 0)
-  }, [groupMatchDates])
+    if (knockoutMatchDates.length === 0) return null
+    return getLockTimePstForDateKey(knockoutMatchDates[0], -1)
+  }, [knockoutMatchDates])
 
   const now = useMemo(() => new Date(), [])
   const groupLocked = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
@@ -496,7 +581,7 @@ export default function BracketPage() {
             ) : null}
           </div>
           {knockoutStageOrder.map((stage) => {
-            const matches = knockoutMatches[stage]
+            const matches = knockoutDisplayMatches[stage]
             if (!matches || matches.length === 0) return null
             const stagePredictions = prediction.knockout?.[stage] ?? {}
 
@@ -511,13 +596,13 @@ export default function BracketPage() {
                         <div className="bracketMatchInfo">
                           <div className="matchTeams">
                             <div className="team">
-                              <span className="teamCode">{match.homeTeam.code}</span>
-                              <span className="teamName">{match.homeTeam.name}</span>
+                              <span className="teamCode">{match.displayHomeTeam.code}</span>
+                              <span className="teamName">{match.displayHomeTeam.name}</span>
                             </div>
                             <div className="vs">vs</div>
                             <div className="team">
-                              <span className="teamCode">{match.awayTeam.code}</span>
-                              <span className="teamName">{match.awayTeam.name}</span>
+                              <span className="teamCode">{match.displayAwayTeam.code}</span>
+                              <span className="teamName">{match.displayAwayTeam.name}</span>
                             </div>
                           </div>
                           <div className="muted small">{formatKickoff(match.kickoffUtc)}</div>
@@ -531,8 +616,8 @@ export default function BracketPage() {
                             onChange={(event) => handleKnockoutChange(match, event.target.value)}
                           >
                             <option value="">Select winner</option>
-                            <option value="HOME">Home ({match.homeTeam.code})</option>
-                            <option value="AWAY">Away ({match.awayTeam.code})</option>
+                            <option value="HOME">Home ({match.displayHomeTeam.code})</option>
+                            <option value="AWAY">Away ({match.displayAwayTeam.code})</option>
                           </select>
                         </label>
                       </div>
