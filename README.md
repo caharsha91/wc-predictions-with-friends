@@ -18,10 +18,16 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 2. Install deps: `npm install`
 3. Run: `npm run dev`
 
-## Data Sync (Fixtures/Results)
+## Data Updates (Fixtures/Results)
 
-- Local update: `FOOTBALL_DATA_TOKEN=... npm run update-matches`
+Match data is sourced from `https://api.football-data.org/v4/competitions/WC/matches`.
+
+- Local update: set `FOOTBALL_DATA_TOKEN` and run `npm run update-matches`
 - GitHub Actions: `.github/workflows/update-matches.yml` (daily + manual) writes `public/data/matches.json`
+
+Notes:
+- Do not commit API tokens to this repo.
+- Check football-data.org for plan limits and rate caps.
 
 ## Deploy (GitHub Pages)
 
