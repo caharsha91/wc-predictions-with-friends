@@ -1,0 +1,52 @@
+{
+  "predictions": [
+    {
+      "id": "bracket-user-1",
+      "userId": "user-1",
+      "groups": {},
+      "knockout": {},
+      "createdAt": "2025-12-20T05:00:00.000Z",
+      "updatedAt": "2025-12-20T05:00:00.000Z"
+    },
+    {
+      "id": "bracket-user-2",
+      "userId": "user-2",
+      "groups": {},
+      "knockout": {},
+      "createdAt": "2025-12-20T05:10:00.000Z",
+      "updatedAt": "2025-12-20T05:10:00.000Z"
+    },
+    {
+      "id": "bracket-user-3",
+      "userId": "user-3",
+      "groups": {},
+      "knockout": {},
+      "createdAt": "2025-12-20T05:12:00.000Z",
+      "updatedAt": "2025-12-20T05:12:00.000Z"
+    },
+    {
+      "id": "bracket-user-4",
+      "userId": "user-4",
+      "groups": {},
+      "knockout": {},
+      "createdAt": "2025-12-20T05:15:00.000Z",
+      "updatedAt": "2025-12-20T05:15:00.000Z"
+    },
+    {
+      "id": "bracket-user-5",
+      "userId": "user-5",
+      "groups": {},
+      "knockout": {},
+      "createdAt": "2025-12-20T05:18:00.000Z",
+      "updatedAt": "2025-12-20T05:18:00.000Z"
+    },
+    {
+      "id": "bracket-user-6",
+      "userId": "user-6",
+      "groups": {},
+      "knockout": {},
+      "createdAt": "2025-12-20T05:21:00.000Z",
+      "updatedAt": "2025-12-20T05:21:00.000Z"
+    }
+  ]
+}

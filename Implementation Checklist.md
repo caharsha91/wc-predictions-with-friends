@@ -1,66 +1,83 @@
-# Implementation Plan (Step 1–4)
+# Implementation Plan (Step 1–5)
 
 ## Step 1 — UI Shell + Mock Data
 **Goal:** A working UI you can navigate, deployed on GitHub Pages, powered by local JSON.
 
-- [ ] Create repo + Vite React + TypeScript app
-- [ ] Add routing/pages:
-  - [ ] `/` (next matchday picks)
-  - [ ] `/upcoming` (all remaining matches)
-  - [ ] `/results` (completed matches)
-  - [ ] `/leaderboard` (placeholder)
-  - [ ] `/admin` (placeholder)
-- [ ] Add `public/data/matches.json` with mock matches + `lastUpdated`
-- [ ] Build results view reading `/data/matches.json`
-  - [ ] Show teams, kickoff time, status, score (if finished)
-- [ ] Set up GitHub Pages deploy workflow and verify site loads
+- [x] Create repo + Vite React + TypeScript app
+- [x] Add routing/pages:
+  - [x] `/` (next matchday picks)
+  - [x] `/upcoming` (all remaining matches)
+  - [x] `/results` (completed matches)
+  - [x] `/leaderboard` (placeholder)
+  - [x] `/admin` (placeholder)
+- [x] Add `public/data/matches.json` with mock matches + `lastUpdated`
+- [x] Build results view reading `/data/matches.json`
+  - [x] Show teams, kickoff time, status, score (if finished)
+- [x] Set up GitHub Pages deploy workflow and verify site loads
 
 ---
 
 ## Step 2 — Full Working App (Mock JSON + Local Storage)
 **Goal:** End-to-end picks + leaderboard using mock JSON and local storage (no Firebase yet).
 
-- [ ] Expand mock data:
-  - [ ] `public/data/matches.json` with results + statuses
-  - [ ] `public/data/members.json` with sample users
-  - [ ] `public/data/picks.json` with sample picks
-  - [ ] `public/data/scoring.json` for group + knockout points
-- [ ] Home: next matchday only
-  - [ ] Highlight missing picks
-- [ ] Upcoming page: all remaining matches in ascending order
-  - [ ] Same pick inputs as home
-- [ ] Results page: completed matches (descending)
-  - [ ] Show results + your picks (including missing picks)
-- [ ] Implement pick entry UI
-  - [ ] Exact score (home/away)
-  - [ ] Match outcome (home win/draw/home loss)
-  - [ ] Knockout extras (eventual winner AET/Pens when draw)
-- [ ] Save picks locally (localStorage) and allow edits
-- [ ] Implement pick locking rule (day before kickoff at 12:00am league time)
-  - [ ] Disable inputs and show “Locked since …”
-- [ ] Implement scoring + leaderboard (client-side, mock data)
-  - [ ] Separate points for exact, outcome, knockout extras
-  - [ ] Stage-specific knockout scoring (R32, R16, QF, SF, Third, Final)
-  - [ ] Render standings from mock members + picks
+- [x] Expand mock data:
+  - [x] `public/data/matches.json` with results + statuses
+  - [x] `public/data/members.json` with sample users
+  - [x] `public/data/picks.json` with sample picks
+  - [x] `public/data/scoring.json` for group + knockout points
+- [x] Home: next matchday only
+  - [x] Highlight missing picks
+- [x] Upcoming page: all remaining matches in ascending order
+  - [x] Same pick inputs as home
+- [x] Results page: completed matches (descending)
+  - [x] Show results + your picks (including missing picks)
+- [x] Implement pick entry UI
+  - [x] Exact score (home/away)
+  - [x] Match outcome (home win/draw/home loss)
+  - [x] Knockout extras (eventual winner AET/Pens when draw)
+- [x] Save picks locally (localStorage) and allow edits
+- [x] Implement pick locking rule (day before kickoff at 12:00am league time)
+  - [x] Disable inputs and show “Locked since …”
+- [x] Implement scoring + leaderboard (client-side, mock data)
+  - [x] Separate points for exact, outcome, knockout extras
+  - [x] Stage-specific knockout scoring (R32, R16, QF, SF, Third, Final)
+  - [x] Render standings from mock members + picks
 
 ---
 
 ## Step 3 — API Integration (Daily Batch Sync → `matches.json`)
 **Goal:** Automate fixtures/results updates once per day without exposing API keys.
 
-- [ ] Create football-data.org API token
-- [ ] Add GitHub repo secret: `FOOTBALL_DATA_TOKEN`
-- [ ] Add Node script (e.g., `scripts/updateMatches.ts`) that:
-  - [ ] Calls football-data.org World Cup endpoint
-  - [ ] Normalizes response into your `public/data/matches.json` schema
-  - [ ] Sets `lastUpdated` timestamp
-- [ ] Add GitHub Action workflow (cron, daily) that:
-  - [ ] Runs the script
-  - [ ] Commits updated `public/data/matches.json`
+- [x] Create football-data.org API token
+- [x] Add GitHub repo secret: `FOOTBALL_DATA_TOKEN`
+- [x] Add Node script `scripts/updateMatches.js` that:
+  - [x] Calls football-data.org World Cup endpoint
+  - [x] Normalizes response into your `public/data/matches.json` schema
+  - [x] Sets `lastUpdated` timestamp
+- [x] Add npm script `update-matches`
+- [x] Add GitHub Action workflow (cron, daily) that:
+  - [x] Runs the script
+  - [x] Commits updated `public/data/matches.json`
 
 ---
 
-## Step 4 — Firebase Auth + Firestore (Free Tier)
+## Step 4 — Bracket Prediction
+**Goal:** Allow users to predict group qualifiers and knockout winners, score them, and show on leaderboard.
+
+- [x] Add bracket prediction model:
+  - [x] Predict top 2 for each group
+  - [x] Predict knockout winners through final
+- [x] Extend `public/data/scoring.json` with bracket prediction scoring:
+  - [x] Group qualifier points
+  - [x] Knockout round points (R32, R16, QF, SF, Third, Final)
+- [x] Evaluate bracket prediction scoring on matchday update
+- [x] Add bracket prediction points to leaderboard breakdown
+- [x] Build new page for bracket prediction
+- [x] Define Firebase data structure for bracket predictions
+
+---
+
+## Step 5 — Firebase Auth + Firestore (Free Tier)
 **Goal:** Replace local mock storage with real auth + database.
 
 - [ ] Create Firebase project (Spark plan)

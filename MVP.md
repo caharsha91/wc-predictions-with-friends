@@ -4,13 +4,15 @@
 - Home: next matchday picks (highlight missing)
 - Upcoming: all remaining matches + picks
 - Results: completed matches + your picks (including missing)
-- Leaderboard: category points (exact, outcome, knockout extras)
+- Bracket: group qualifiers + knockout winners
+- Leaderboard: category points (exact, outcome, knockout extras, bracket)
 
 ## 2. Fixtures & Results (Daily Batch)
 - GitHub Action runs once per day
   - Fetch World Cup fixtures/results from football-data.org
-  - Write and commit `data/matches.json`
+  - Write and commit `public/data/matches.json`
 - Display “Last updated” timestamp in the app
+  - Workflow: `.github/workflows/update-matches.yml`
 
 ## 3. Picks
 - Exact score prediction (home + away)
@@ -24,14 +26,20 @@
 - Configurable scoring in `public/data/scoring.json`
   - Group points: exact score (both/one), result
   - Knockout points per round: R32, R16, QF, SF, Third, Final
-- Leaderboard shows category totals (exact, outcome, knockout extras)
+- Bracket points: group qualifiers + knockout round winners
+- Leaderboard shows category totals (exact, outcome, knockout extras, bracket)
 
-## 5. Authentication & Private League Gate (Future)
+## 5. Bracket Predictions
+- Predict top 2 in each group
+- Predict knockout winners through the final
+- Store mock predictions in `public/data/bracket-predictions.json` and local storage
+
+## 6. Authentication & Private League Gate (Future)
 - Google sign-in (Firebase Auth)
 - Private league access (email allowlist)
 - User profile creation (name + avatar)
 
-## 6. Minimal Admin
+## 7. Minimal Admin
 - Admin-only page to:
   - Manage email allowlist / league members
   - (Optional) Configure league name and scoring toggles

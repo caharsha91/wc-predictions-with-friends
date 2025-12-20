@@ -41,5 +41,16 @@
       "result": 2,
       "knockoutWinner": 4
     }
+  },
+  "bracket": {
+    "groupQualifiers": 2,
+    "knockout": {
+      "R32": 2,
+      "R16": 3,
+      "QF": 4,
+      "SF": 5,
+      "Third": 4,
+      "Final": 6
+    }
   }
 }

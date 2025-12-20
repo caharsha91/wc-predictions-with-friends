@@ -7,15 +7,21 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/` next matchday picks (highlights missing picks)
 - `/upcoming` all remaining matches with picks
 - `/results` completed matches + your picks
-- `/leaderboard` category points (exact, outcome, knockout extras)
+- `/bracket` bracket predictions (group qualifiers + knockout winners)
+- `/leaderboard` category points (exact, outcome, knockout extras, bracket)
 
-Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`).
+Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-predictions.json`).
 
 ## Dev
 
 1. Install Node.js (v20+ recommended)
 2. Install deps: `npm install`
 3. Run: `npm run dev`
+
+## Data Sync (Fixtures/Results)
+
+- Local update: `FOOTBALL_DATA_TOKEN=... npm run update-matches`
+- GitHub Actions: `.github/workflows/update-matches.yml` (daily + manual) writes `public/data/matches.json`
 
 ## Deploy (GitHub Pages)
 

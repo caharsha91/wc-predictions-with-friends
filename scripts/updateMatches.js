@@ -17,6 +17,13 @@ function mapStage(stage) {
   throw new Error(`Unknown stage: ${stage}`)
 }
 
+function mapGroup(group) {
+  const value = String(group ?? '').toUpperCase()
+  const match = value.match(/GROUP_?([A-Z])/)
+  if (match) return match[1]
+  return undefined
+}
+
 function mapStatus(status) {
   const value = String(status ?? '').toUpperCase()
   if (value === 'FINISHED') return 'FINISHED'
@@ -78,6 +85,11 @@ function normalizeMatch(match) {
     status,
     homeTeam: normalizeTeam(match.homeTeam),
     awayTeam: normalizeTeam(match.awayTeam)
+  }
+
+  if (stage === 'Group') {
+    const group = mapGroup(match.group)
+    if (group) normalized.group = group
   }
 
   if (status === 'FINISHED') {

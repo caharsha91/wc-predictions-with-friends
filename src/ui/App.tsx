@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 
 import Layout from './Layout'
 import AdminPage from './pages/AdminPage'
+import BracketPage from './pages/BracketPage'
 import HomePage from './pages/HomePage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import ResultsPage from './pages/ResultsPage'
@@ -15,6 +16,7 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="upcoming" element={<UpcomingMatchesPage />} />
         <Route path="results" element={<ResultsPage />} />
+        <Route path="bracket" element={<BracketPage />} />
         <Route path="leaderboard" element={<LeaderboardPage />} />
         <Route path="admin" element={<AdminPage />} />
         <Route path="*" element={<NotFoundPage />} />

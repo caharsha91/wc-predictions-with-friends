@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-12-20T05:36:04.518Z",
+  "lastUpdated": "2025-12-20T05:46:35.926Z",
   "matches": [
     {
       "id": "537327",
@@ -13,7 +13,8 @@
       "awayTeam": {
         "code": "RSA",
         "name": "South Africa"
-      }
+      },
+      "group": "A"
     },
     {
       "id": "537328",
@@ -27,7 +28,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "A"
     },
     {
       "id": "537333",
@@ -41,7 +43,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "B"
     },
     {
       "id": "537345",
@@ -55,7 +58,8 @@
       "awayTeam": {
         "code": "PAR",
         "name": "Paraguay"
-      }
+      },
+      "group": "D"
     },
     {
       "id": "537346",
@@ -69,7 +73,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "D"
     },
     {
       "id": "537334",
@@ -83,7 +88,8 @@
       "awayTeam": {
         "code": "SUI",
         "name": "Switzerland"
-      }
+      },
+      "group": "B"
     },
     {
       "id": "537339",
@@ -97,7 +103,8 @@
       "awayTeam": {
         "code": "MAR",
         "name": "Morocco"
-      }
+      },
+      "group": "C"
     },
     {
       "id": "537340",
@@ -111,7 +118,8 @@
       "awayTeam": {
         "code": "SCO",
         "name": "Scotland"
-      }
+      },
+      "group": "C"
     },
     {
       "id": "537351",
@@ -125,7 +133,8 @@
       "awayTeam": {
         "code": "CUR",
         "name": "Curaçao"
-      }
+      },
+      "group": "E"
     },
     {
       "id": "537357",
@@ -139,7 +148,8 @@
       "awayTeam": {
         "code": "JPN",
         "name": "Japan"
-      }
+      },
+      "group": "F"
     },
     {
       "id": "537352",
@@ -153,7 +163,8 @@
       "awayTeam": {
         "code": "ECU",
         "name": "Ecuador"
-      }
+      },
+      "group": "E"
     },
     {
       "id": "537358",
@@ -167,7 +178,8 @@
       "awayTeam": {
         "code": "TUN",
         "name": "Tunisia"
-      }
+      },
+      "group": "F"
     },
     {
       "id": "537369",
@@ -181,7 +193,8 @@
       "awayTeam": {
         "code": "CPV",
         "name": "Cape Verde Islands"
-      }
+      },
+      "group": "H"
     },
     {
       "id": "537363",
@@ -195,7 +208,8 @@
       "awayTeam": {
         "code": "EGY",
         "name": "Egypt"
-      }
+      },
+      "group": "G"
     },
     {
       "id": "537370",
@@ -209,7 +223,8 @@
       "awayTeam": {
         "code": "URU",
         "name": "Uruguay"
-      }
+      },
+      "group": "H"
     },
     {
       "id": "537364",
@@ -223,7 +238,8 @@
       "awayTeam": {
         "code": "NZL",
         "name": "New Zealand"
-      }
+      },
+      "group": "G"
     },
     {
       "id": "537391",
@@ -237,7 +253,8 @@
       "awayTeam": {
         "code": "SEN",
         "name": "Senegal"
-      }
+      },
+      "group": "I"
     },
     {
       "id": "537392",
@@ -251,7 +268,8 @@
       "awayTeam": {
         "code": "NOR",
         "name": "Norway"
-      }
+      },
+      "group": "I"
     },
     {
       "id": "537397",
@@ -265,7 +283,8 @@
       "awayTeam": {
         "code": "ALG",
         "name": "Algeria"
-      }
+      },
+      "group": "J"
     },
     {
       "id": "537398",
@@ -279,7 +298,8 @@
       "awayTeam": {
         "code": "JOR",
         "name": "Jordan"
-      }
+      },
+      "group": "J"
     },
     {
       "id": "537403",
@@ -293,7 +313,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "K"
     },
     {
       "id": "537409",
@@ -307,7 +328,8 @@
       "awayTeam": {
         "code": "CRO",
         "name": "Croatia"
-      }
+      },
+      "group": "L"
     },
     {
       "id": "537410",
@@ -321,7 +343,8 @@
       "awayTeam": {
         "code": "PAN",
         "name": "Panama"
-      }
+      },
+      "group": "L"
     },
     {
       "id": "537404",
@@ -335,7 +358,8 @@
       "awayTeam": {
         "code": "COL",
         "name": "Colombia"
-      }
+      },
+      "group": "K"
     },
     {
       "id": "537329",
@@ -349,7 +373,8 @@
       "awayTeam": {
         "code": "RSA",
         "name": "South Africa"
-      }
+      },
+      "group": "A"
     },
     {
       "id": "537335",
@@ -363,7 +388,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "B"
     },
     {
       "id": "537336",
@@ -377,7 +403,8 @@
       "awayTeam": {
         "code": "QAT",
         "name": "Qatar"
-      }
+      },
+      "group": "B"
     },
     {
       "id": "537330",
@@ -391,7 +418,8 @@
       "awayTeam": {
         "code": "KOR",
         "name": "South Korea"
-      }
+      },
+      "group": "A"
     },
     {
       "id": "537347",
@@ -405,7 +433,8 @@
       "awayTeam": {
         "code": "PAR",
         "name": "Paraguay"
-      }
+      },
+      "group": "D"
     },
     {
       "id": "537348",
@@ -419,7 +448,8 @@
       "awayTeam": {
         "code": "AUS",
         "name": "Australia"
-      }
+      },
+      "group": "D"
     },
     {
       "id": "537342",
@@ -433,7 +463,8 @@
       "awayTeam": {
         "code": "MAR",
         "name": "Morocco"
-      }
+      },
+      "group": "C"
     },
     {
       "id": "537341",
@@ -447,7 +478,8 @@
       "awayTeam": {
         "code": "HAI",
         "name": "Haiti"
-      }
+      },
+      "group": "C"
     },
     {
       "id": "537360",
@@ -461,7 +493,8 @@
       "awayTeam": {
         "code": "JPN",
         "name": "Japan"
-      }
+      },
+      "group": "F"
     },
     {
       "id": "537359",
@@ -475,7 +508,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "F"
     },
     {
       "id": "537353",
@@ -489,7 +523,8 @@
       "awayTeam": {
         "code": "CIV",
         "name": "Côte d'Ivoire"
-      }
+      },
+      "group": "E"
     },
     {
       "id": "537354",
@@ -503,7 +538,8 @@
       "awayTeam": {
         "code": "CUR",
         "name": "Curaçao"
-      }
+      },
+      "group": "E"
     },
     {
       "id": "537371",
@@ -517,7 +553,8 @@
       "awayTeam": {
         "code": "KSA",
         "name": "Saudi Arabia"
-      }
+      },
+      "group": "H"
     },
     {
       "id": "537365",
@@ -531,7 +568,8 @@
       "awayTeam": {
         "code": "IRN",
         "name": "Iran"
-      }
+      },
+      "group": "G"
     },
     {
       "id": "537372",
@@ -545,7 +583,8 @@
       "awayTeam": {
         "code": "CPV",
         "name": "Cape Verde Islands"
-      }
+      },
+      "group": "H"
     },
     {
       "id": "537366",
@@ -559,7 +598,8 @@
       "awayTeam": {
         "code": "EGY",
         "name": "Egypt"
-      }
+      },
+      "group": "G"
     },
     {
       "id": "537399",
@@ -573,7 +613,8 @@
       "awayTeam": {
         "code": "AUT",
         "name": "Austria"
-      }
+      },
+      "group": "J"
     },
     {
       "id": "537393",
@@ -587,7 +628,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "I"
     },
     {
       "id": "537394",
@@ -601,7 +643,8 @@
       "awayTeam": {
         "code": "SEN",
         "name": "Senegal"
-      }
+      },
+      "group": "I"
     },
     {
       "id": "537400",
@@ -615,7 +658,8 @@
       "awayTeam": {
         "code": "ALG",
         "name": "Algeria"
-      }
+      },
+      "group": "J"
     },
     {
       "id": "537405",
@@ -629,7 +673,8 @@
       "awayTeam": {
         "code": "UZB",
         "name": "Uzbekistan"
-      }
+      },
+      "group": "K"
     },
     {
       "id": "537411",
@@ -643,7 +688,8 @@
       "awayTeam": {
         "code": "GHA",
         "name": "Ghana"
-      }
+      },
+      "group": "L"
     },
     {
       "id": "537412",
@@ -657,7 +703,8 @@
       "awayTeam": {
         "code": "CRO",
         "name": "Croatia"
-      }
+      },
+      "group": "L"
     },
     {
       "id": "537406",
@@ -671,7 +718,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "K"
     },
     {
       "id": "537337",
@@ -685,7 +733,8 @@
       "awayTeam": {
         "code": "CAN",
         "name": "Canada"
-      }
+      },
+      "group": "B"
     },
     {
       "id": "537338",
@@ -699,7 +748,8 @@
       "awayTeam": {
         "code": "QAT",
         "name": "Qatar"
-      }
+      },
+      "group": "B"
     },
     {
       "id": "537344",
@@ -713,7 +763,8 @@
       "awayTeam": {
         "code": "HAI",
         "name": "Haiti"
-      }
+      },
+      "group": "C"
     },
     {
       "id": "537343",
@@ -727,7 +778,8 @@
       "awayTeam": {
         "code": "BRA",
         "name": "Brazil"
-      }
+      },
+      "group": "C"
     },
     {
       "id": "537331",
@@ -741,7 +793,8 @@
       "awayTeam": {
         "code": "MEX",
         "name": "Mexico"
-      }
+      },
+      "group": "A"
     },
     {
       "id": "537332",
@@ -755,7 +808,8 @@
       "awayTeam": {
         "code": "KOR",
         "name": "South Korea"
-      }
+      },
+      "group": "A"
     },
     {
       "id": "537355",
@@ -769,7 +823,8 @@
       "awayTeam": {
         "code": "GER",
         "name": "Germany"
-      }
+      },
+      "group": "E"
     },
     {
       "id": "537356",
@@ -783,7 +838,8 @@
       "awayTeam": {
         "code": "CIV",
         "name": "Côte d'Ivoire"
-      }
+      },
+      "group": "E"
     },
     {
       "id": "537361",
@@ -797,7 +853,8 @@
       "awayTeam": {
         "code": "NED",
         "name": "Netherlands"
-      }
+      },
+      "group": "F"
     },
     {
       "id": "537362",
@@ -811,7 +868,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "F"
     },
     {
       "id": "537349",
@@ -825,7 +883,8 @@
       "awayTeam": {
         "code": "USA",
         "name": "United States"
-      }
+      },
+      "group": "D"
     },
     {
       "id": "537350",
@@ -839,7 +898,8 @@
       "awayTeam": {
         "code": "AUS",
         "name": "Australia"
-      }
+      },
+      "group": "D"
     },
     {
       "id": "537395",
@@ -853,7 +913,8 @@
       "awayTeam": {
         "code": "FRA",
         "name": "France"
-      }
+      },
+      "group": "I"
     },
     {
       "id": "537396",
@@ -867,7 +928,8 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "group": "I"
     },
     {
       "id": "537373",
@@ -881,7 +943,8 @@
       "awayTeam": {
         "code": "ESP",
         "name": "Spain"
-      }
+      },
+      "group": "H"
     },
     {
       "id": "537374",
@@ -895,7 +958,8 @@
       "awayTeam": {
         "code": "KSA",
         "name": "Saudi Arabia"
-      }
+      },
+      "group": "H"
     },
     {
       "id": "537367",
@@ -909,7 +973,8 @@
       "awayTeam": {
         "code": "BEL",
         "name": "Belgium"
-      }
+      },
+      "group": "G"
     },
     {
       "id": "537368",
@@ -923,7 +988,8 @@
       "awayTeam": {
         "code": "IRN",
         "name": "Iran"
-      }
+      },
+      "group": "G"
     },
     {
       "id": "537413",
@@ -937,7 +1003,8 @@
       "awayTeam": {
         "code": "ENG",
         "name": "England"
-      }
+      },
+      "group": "L"
     },
     {
       "id": "537414",
@@ -951,7 +1018,8 @@
       "awayTeam": {
         "code": "GHA",
         "name": "Ghana"
-      }
+      },
+      "group": "L"
     },
     {
       "id": "537407",
@@ -965,7 +1033,8 @@
       "awayTeam": {
         "code": "POR",
         "name": "Portugal"
-      }
+      },
+      "group": "K"
     },
     {
       "id": "537408",
@@ -979,7 +1048,8 @@
       "awayTeam": {
         "code": "UZB",
         "name": "Uzbekistan"
-      }
+      },
+      "group": "K"
     },
     {
       "id": "537401",
@@ -993,7 +1063,8 @@
       "awayTeam": {
         "code": "ARG",
         "name": "Argentina"
-      }
+      },
+      "group": "J"
     },
     {
       "id": "537402",
@@ -1007,7 +1078,8 @@
       "awayTeam": {
         "code": "AUT",
         "name": "Austria"
-      }
+      },
+      "group": "J"
     },
     {
       "id": "537417",

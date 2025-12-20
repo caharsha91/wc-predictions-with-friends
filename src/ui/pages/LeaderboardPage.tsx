@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
-import { fetchMatches, fetchMembers, fetchPicks, fetchScoring } from '../../lib/data'
+import { fetchBracketPredictions, fetchMatches, fetchMembers, fetchPicks, fetchScoring } from '../../lib/data'
+import { loadLocalBracketPrediction, mergeBracketPredictions } from '../../lib/bracket'
 import { loadLocalPicks, mergePicks } from '../../lib/picks'
 import { buildLeaderboard } from '../../lib/scoring'
+import type { BracketPrediction } from '../../types/bracket'
 import type { Member } from '../../types/members'
 import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
@@ -17,6 +19,7 @@ type LoadState =
       matches: Match[]
       members: Member[]
       picks: Pick[]
+      bracketPredictions: BracketPrediction[]
       scoring: ScoringConfig
       lastUpdated: string
     }
@@ -39,21 +42,29 @@ export default function LeaderboardPage() {
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [matchesFile, membersFile, picksFile, scoringFile] = await Promise.all([
+        const [matchesFile, membersFile, picksFile, scoringFile, bracketFile] = await Promise.all([
           fetchMatches(),
           fetchMembers(),
           fetchPicks(),
-          fetchScoring()
+          fetchScoring(),
+          fetchBracketPredictions()
         ])
         if (canceled) return
 
         const localPicks = loadLocalPicks(CURRENT_USER_ID)
         const merged = mergePicks(picksFile.picks, localPicks, CURRENT_USER_ID)
+        const localBracket = loadLocalBracketPrediction(CURRENT_USER_ID)
+        const mergedBrackets = mergeBracketPredictions(
+          bracketFile.predictions,
+          localBracket,
+          CURRENT_USER_ID
+        )
         setState({
           status: 'ready',
           matches: matchesFile.matches,
           members: membersFile.members,
           picks: merged,
+          bracketPredictions: mergedBrackets,
           scoring: scoringFile,
           lastUpdated: matchesFile.lastUpdated
         })
@@ -70,7 +81,13 @@ export default function LeaderboardPage() {
 
   const leaderboard = useMemo(() => {
     if (state.status !== 'ready') return []
-    return buildLeaderboard(state.members, state.matches, state.picks, state.scoring)
+    return buildLeaderboard(
+      state.members,
+      state.matches,
+      state.picks,
+      state.bracketPredictions,
+      state.scoring
+    )
   }, [state])
 
   return (
@@ -103,6 +120,7 @@ export default function LeaderboardPage() {
                 <div>Exact</div>
                 <div>Outcome</div>
                 <div>Knockout</div>
+                <div>Bracket</div>
                 <div>Total</div>
               </div>
               {leaderboard.map((entry, index) => (
@@ -124,6 +142,7 @@ export default function LeaderboardPage() {
                   <div className="leaderboardPoints">{entry.exactPoints}</div>
                   <div>{entry.resultPoints}</div>
                   <div>{entry.knockoutPoints}</div>
+                  <div>{entry.bracketPoints}</div>
                   <div className="leaderboardTotal">{entry.totalPoints}</div>
                 </div>
               ))}

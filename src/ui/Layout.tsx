@@ -35,6 +35,7 @@ export default function Layout() {
               <NavItem to="/" label="Home" />
               <NavItem to="/upcoming" label="Upcoming" />
               <NavItem to="/results" label="Results" />
+              <NavItem to="/bracket" label="Bracket" />
               <NavItem to="/leaderboard" label="Leaderboard" />
               <NavItem to="/admin" label="Admin" />
             </nav>

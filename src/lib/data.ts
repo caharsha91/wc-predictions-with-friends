@@ -1,6 +1,7 @@
 import type { MatchesFile } from '../types/matches'
 import type { MembersFile } from '../types/members'
 import type { PicksFile } from '../types/picks'
+import type { BracketPredictionsFile } from '../types/bracket'
 import type { ScoringConfig } from '../types/scoring'
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -26,4 +27,8 @@ export function fetchPicks(): Promise<PicksFile> {
 
 export function fetchScoring(): Promise<ScoringConfig> {
   return fetchJson<ScoringConfig>('data/scoring.json')
+}
+
+export function fetchBracketPredictions(): Promise<BracketPredictionsFile> {
+  return fetchJson<BracketPredictionsFile>('data/bracket-predictions.json')
 }

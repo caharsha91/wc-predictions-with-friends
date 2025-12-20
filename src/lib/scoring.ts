@@ -1,6 +1,7 @@
-import type { Match } from '../types/matches'
+import type { Match, Team } from '../types/matches'
 import type { Member } from '../types/members'
 import type { Pick } from '../types/picks'
+import type { BracketPrediction } from '../types/bracket'
 import type { KnockoutStage, ScoringConfig, StageScoring } from '../types/scoring'
 import { getPredictedWinner, isPickComplete } from './picks'
 
@@ -10,6 +11,7 @@ export type LeaderboardEntry = {
   exactPoints: number
   resultPoints: number
   knockoutPoints: number
+  bracketPoints: number
   exactCount: number
   picksCount: number
   earliestSubmission?: string
@@ -60,14 +62,132 @@ function scoreKnockout(match: Match, pick: Pick, config: StageScoring) {
   return 0
 }
 
+type GroupStanding = {
+  team: Team
+  points: number
+  goalsFor: number
+  goalsAgainst: number
+  goalDiff: number
+}
+
+type GroupSummary = {
+  complete: boolean
+  standings: GroupStanding[]
+}
+
+function buildGroupStandings(matches: Match[]): Map<string, GroupSummary> {
+  const groups = new Map<string, { complete: boolean; teams: Map<string, GroupStanding> }>()
+
+  for (const match of matches) {
+    if (match.stage !== 'Group' || !match.group) continue
+    const group = groups.get(match.group) ?? {
+      complete: true,
+      teams: new Map<string, GroupStanding>()
+    }
+
+    const ensureTeam = (team: Team) => {
+      const existing = group.teams.get(team.code)
+      if (existing) return existing
+      const created = {
+        team,
+        points: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalDiff: 0
+      }
+      group.teams.set(team.code, created)
+      return created
+    }
+
+    ensureTeam(match.homeTeam)
+    ensureTeam(match.awayTeam)
+
+    if (match.status !== 'FINISHED' || !match.score) {
+      group.complete = false
+      groups.set(match.group, group)
+      continue
+    }
+
+    const home = ensureTeam(match.homeTeam)
+    const away = ensureTeam(match.awayTeam)
+    home.goalsFor += match.score.home
+    home.goalsAgainst += match.score.away
+    away.goalsFor += match.score.away
+    away.goalsAgainst += match.score.home
+    home.goalDiff = home.goalsFor - home.goalsAgainst
+    away.goalDiff = away.goalsFor - away.goalsAgainst
+
+    if (match.score.home > match.score.away) {
+      home.points += 3
+    } else if (match.score.home < match.score.away) {
+      away.points += 3
+    } else {
+      home.points += 1
+      away.points += 1
+    }
+
+    groups.set(match.group, group)
+  }
+
+  const summaries = new Map<string, GroupSummary>()
+  for (const [groupId, group] of groups.entries()) {
+    const standings = [...group.teams.values()].sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points
+      if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff
+      if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor
+      return a.team.code.localeCompare(b.team.code)
+    })
+    summaries.set(groupId, { complete: group.complete, standings })
+  }
+
+  return summaries
+}
+
+function scoreBracketPrediction(
+  prediction: BracketPrediction,
+  matches: Match[],
+  scoring: ScoringConfig
+): number {
+  let points = 0
+  const groupStandings = buildGroupStandings(matches)
+
+  for (const [groupId, summary] of groupStandings.entries()) {
+    if (!summary.complete) continue
+    const actualTopTwo = summary.standings.slice(0, 2).map((entry) => entry.team.code)
+    const predicted = prediction.groups[groupId]
+    if (!predicted) continue
+    if (predicted.first && actualTopTwo.includes(predicted.first)) {
+      points += scoring.bracket.groupQualifiers
+    }
+    if (predicted.second && actualTopTwo.includes(predicted.second)) {
+      points += scoring.bracket.groupQualifiers
+    }
+  }
+
+  for (const match of matches) {
+    if (match.stage === 'Group') continue
+    if (match.status !== 'FINISHED' || !match.winner) continue
+    const stage = match.stage as KnockoutStage
+    const stagePredictions = prediction.knockout?.[stage]
+    if (!stagePredictions) continue
+    if (stagePredictions[match.id] === match.winner) {
+      points += scoring.bracket.knockout[stage] ?? 0
+    }
+  }
+
+  return points
+}
+
 export function buildLeaderboard(
   members: Member[],
   matches: Match[],
   picks: Pick[],
+  bracketPredictions: BracketPrediction[],
   scoring: ScoringConfig
 ): LeaderboardEntry[] {
   const matchById = new Map(matches.map((match) => [match.id, match]))
   const entries = new Map<string, LeaderboardEntry>()
+  const bracketByUser = new Map(bracketPredictions.map((prediction) => [prediction.userId, prediction]))
 
   for (const member of members) {
     entries.set(member.id, {
@@ -76,6 +196,7 @@ export function buildLeaderboard(
       exactPoints: 0,
       resultPoints: 0,
       knockoutPoints: 0,
+      bracketPoints: 0,
       exactCount: 0,
       picksCount: 0
     })
@@ -110,6 +231,14 @@ export function buildLeaderboard(
         entry.earliestSubmission = pick.createdAt
       }
     }
+  }
+
+  for (const entry of entries.values()) {
+    const prediction = bracketByUser.get(entry.member.id)
+    if (!prediction) continue
+    const bracketPoints = scoreBracketPrediction(prediction, matches, scoring)
+    entry.bracketPoints = bracketPoints
+    entry.totalPoints += bracketPoints
   }
 
   return [...entries.values()].sort((a, b) => {
