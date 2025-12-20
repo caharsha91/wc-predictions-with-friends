@@ -49,6 +49,7 @@ function formatLastUpdated(iso: string) {
 
 export default function ResultsPage() {
   const [state, setState] = useState<LoadState>({ status: 'idle' })
+  const [view, setView] = useState<'group' | 'knockout' | null>(null)
 
   useEffect(() => {
     let canceled = false
@@ -79,8 +80,24 @@ export default function ResultsPage() {
     if (state.status !== 'ready') return []
     return state.data.matches
       .filter((match) => match.status === 'FINISHED')
+      .filter((match) =>
+        view === 'knockout' ? match.stage !== 'Group' : match.stage === 'Group'
+      )
       .sort((a, b) => new Date(b.kickoffUtc).getTime() - new Date(a.kickoffUtc).getTime())
+  }, [state, view])
+
+  const groupStageComplete = useMemo(() => {
+    if (state.status !== 'ready') return false
+    const groupMatches = state.data.matches.filter((match) => match.stage === 'Group')
+    if (groupMatches.length === 0) return false
+    return groupMatches.every((match) => match.status === 'FINISHED')
   }, [state])
+
+  useEffect(() => {
+    if (view !== null) return
+    if (state.status !== 'ready') return
+    setView(groupStageComplete ? 'knockout' : 'group')
+  }, [groupStageComplete, state, view])
 
   const groupedMatches = useMemo(() => {
     if (state.status !== 'ready') return []
@@ -129,6 +146,8 @@ export default function ResultsPage() {
     )
   }
 
+  const activeView = view ?? 'group'
+
   return (
     <div className="stack">
       <div className="row rowSpaceBetween">
@@ -149,6 +168,28 @@ export default function ResultsPage() {
 
       {state.status === 'ready' ? (
         <div className="stack">
+          <div className="bracketToggle" role="tablist" aria-label="Results view">
+            <button
+              className={activeView === 'group' ? 'bracketToggleButton active' : 'bracketToggleButton'}
+              type="button"
+              role="tab"
+              aria-selected={activeView === 'group'}
+              onClick={() => setView('group')}
+            >
+              Group stage
+            </button>
+            <button
+              className={
+                activeView === 'knockout' ? 'bracketToggleButton active' : 'bracketToggleButton'
+              }
+              type="button"
+              role="tab"
+              aria-selected={activeView === 'knockout'}
+              onClick={() => setView('knockout')}
+            >
+              Knockout
+            </button>
+          </div>
           {groupedMatches.length === 0 ? (
             <div className="card muted">No results yet.</div>
           ) : null}
