@@ -45,7 +45,22 @@
 
 ---
 
-## Step 3 — Firebase Auth + Firestore (Free Tier)
+## Step 3 — API Integration (Daily Batch Sync → `matches.json`)
+**Goal:** Automate fixtures/results updates once per day without exposing API keys.
+
+- [ ] Create football-data.org API token
+- [ ] Add GitHub repo secret: `FOOTBALL_DATA_TOKEN`
+- [ ] Add Node script (e.g., `scripts/updateMatches.ts`) that:
+  - [ ] Calls football-data.org World Cup endpoint
+  - [ ] Normalizes response into your `public/data/matches.json` schema
+  - [ ] Sets `lastUpdated` timestamp
+- [ ] Add GitHub Action workflow (cron, daily) that:
+  - [ ] Runs the script
+  - [ ] Commits updated `public/data/matches.json`
+
+---
+
+## Step 4 — Firebase Auth + Firestore (Free Tier)
 **Goal:** Replace local mock storage with real auth + database.
 
 - [ ] Create Firebase project (Spark plan)
@@ -66,22 +81,7 @@
   - [ ] Sign in/out buttons in header
   - [ ] Redirect signed-in users to `/`
 - [ ] Migrate local storage picks/members to Firestore
-
----
-
-## Step 4 — API Integration (Daily Batch Sync → `matches.json`)
-**Goal:** Automate fixtures/results updates once per day without exposing API keys.
-
-- [ ] Create football-data.org API token
-- [ ] Add GitHub repo secret: `FOOTBALL_DATA_TOKEN`
-- [ ] Add Node script (e.g., `scripts/updateMatches.ts`) that:
-  - [ ] Calls football-data.org World Cup endpoint
-  - [ ] Normalizes response into your `public/data/matches.json` schema
-  - [ ] Sets `lastUpdated` timestamp
-- [ ] Add GitHub Action workflow (cron, daily) that:
-  - [ ] Runs the script
-  - [ ] Commits updated `public/data/matches.json`
-- [ ] Verify end-to-end:
+- [ ] Final checks:
   - [ ] Repo updates daily
   - [ ] GitHub Pages serves updated JSON
   - [ ] App reflects new results on next load/refresh
