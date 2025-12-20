@@ -92,8 +92,8 @@ export default function PicksBoard({
       matchId: match.id,
       userId: CURRENT_USER_ID,
       outcome: outcome as PickOutcome | undefined,
-      winner: outcome === 'DRAW' ? existing?.winner : undefined,
-      decidedBy: outcome === 'DRAW' ? existing?.decidedBy : undefined
+      winner: existing?.winner,
+      decidedBy: existing?.decidedBy
     })
     onUpdatePicks(next)
   }
@@ -175,9 +175,11 @@ export default function PicksBoard({
                     <div className="muted small">{formatKickoff(match.kickoffUtc)}</div>
                     <div className="pill">{match.status}</div>
                     {missing ? <div className="pickStatus">Missing pick</div> : null}
-                    {locked ? (
-                      <div className="lockNote">Locked since {formatLockTime(lockTime)}</div>
-                    ) : null}
+                    <div className="lockNote">
+                      {locked
+                        ? `Locked since ${formatLockTime(lockTime)}`
+                        : `Locks at ${formatLockTime(lockTime)}`}
+                    </div>
                   </div>
 
                   <div className="matchActions">
@@ -213,17 +215,17 @@ export default function PicksBoard({
                     </div>
                     <div className="pickForm pickFormStack">
                       <label className="pickLabel">
-                        {match.homeTeam.code} result
+                        Result
                         <select
                           className="pickSelect"
                           value={outcomeValue}
                           onChange={(event) => handleOutcomeChange(match, event.target.value)}
                           disabled={locked}
                         >
-                          <option value="">Pick outcome</option>
-                          <option value="WIN">Home win</option>
+                          <option value="">Pick result</option>
+                          <option value="WIN">{match.homeTeam.code} Win</option>
                           <option value="DRAW">Draw</option>
-                          <option value="LOSS">Home loss</option>
+                          <option value="LOSS">{match.awayTeam.code} Win</option>
                         </select>
                       </label>
                       {match.stage !== 'Group' ? (
@@ -235,7 +237,7 @@ export default function PicksBoard({
                             onChange={(event) =>
                               handleKnockoutExtrasChange(match, event.target.value)
                             }
-                            disabled={locked || pick?.outcome !== 'DRAW'}
+                            disabled={locked}
                           >
                             <option value="">Pick knockout winner</option>
                             <option value="HOME_ET">Home wins AET</option>

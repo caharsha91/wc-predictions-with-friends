@@ -2,7 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
 import { fetchBracketPredictions, fetchMatches } from '../../lib/data'
-import { loadLocalBracketPrediction, saveLocalBracketPrediction } from '../../lib/bracket'
+import {
+  hasBracketData,
+  loadLocalBracketPrediction,
+  saveLocalBracketPrediction
+} from '../../lib/bracket'
+import {
+  getDateKeyInTimeZone,
+  getLockTimePstForDateKey,
+  PACIFIC_TIME_ZONE
+} from '../../lib/matches'
 import type { BracketPrediction, GroupPrediction } from '../../types/bracket'
 import type { Match, Team } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
@@ -21,6 +30,17 @@ function formatKickoff(utcIso: string) {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
+  })
+}
+
+function formatLockTime(lockTime: Date) {
+  return lockTime.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: PACIFIC_TIME_ZONE,
+    timeZoneName: 'short'
   })
 }
 
@@ -151,12 +171,37 @@ export default function BracketPage() {
     return groupMatches.every((match) => match.status === 'FINISHED')
   }, [state])
 
+  const groupMatchDates = useMemo(() => {
+    if (state.status !== 'ready') return []
+    const dates = new Set<string>()
+    for (const match of state.matches) {
+      if (match.stage !== 'Group') continue
+      dates.add(getDateKeyInTimeZone(match.kickoffUtc))
+    }
+    return [...dates].sort()
+  }, [state])
+
+  const groupLockTime = useMemo(() => {
+    if (groupMatchDates.length === 0) return null
+    return getLockTimePstForDateKey(groupMatchDates[0], -1)
+  }, [groupMatchDates])
+
+  const knockoutLockTime = useMemo(() => {
+    if (groupMatchDates.length === 0) return null
+    return getLockTimePstForDateKey(groupMatchDates[groupMatchDates.length - 1], 0)
+  }, [groupMatchDates])
+
+  const now = useMemo(() => new Date(), [])
+  const groupLocked = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
+  const knockoutLocked = knockoutLockTime ? now.getTime() >= knockoutLockTime.getTime() : false
+
   useEffect(() => {
     if (state.status !== 'ready') return
     const local = loadLocalBracketPrediction(CURRENT_USER_ID)
+    const localReady = local ? hasBracketData(local) : false
     const base = state.predictions.find((entry) => entry.userId === CURRENT_USER_ID)
     const initial = ensureGroupEntries(
-      local ?? base ?? createEmptyPrediction(CURRENT_USER_ID, groupIds),
+      (localReady ? local : base) ?? createEmptyPrediction(CURRENT_USER_ID, groupIds),
       groupIds
     )
     setPrediction(initial)
@@ -321,7 +366,16 @@ export default function BracketPage() {
       {activeView === 'group' ? (
         <>
           <section className="card">
-            <div className="sectionTitle">Group qualifiers</div>
+            <div className="row rowSpaceBetween">
+              <div className="sectionTitle">Group qualifiers</div>
+              {groupLockTime ? (
+                <div className="lockNote">
+                  {groupLocked
+                    ? `Locked since ${formatLockTime(groupLockTime)}`
+                    : `Locks at ${formatLockTime(groupLockTime)}`}
+                </div>
+              ) : null}
+            </div>
             {groupIds.length === 0 ? (
               <div className="muted">
                 Group data is not available yet. Run the daily sync once group assignments are known.
@@ -343,6 +397,7 @@ export default function BracketPage() {
                         <select
                           className="pickSelect"
                           value={firstValue}
+                          disabled={groupLocked}
                           onChange={(event) =>
                             handleGroupChange(groupId, 'first', event.target.value)
                           }
@@ -360,6 +415,7 @@ export default function BracketPage() {
                         <select
                           className="pickSelect"
                           value={secondValue}
+                          disabled={groupLocked}
                           onChange={(event) =>
                             handleGroupChange(groupId, 'second', event.target.value)
                           }
@@ -380,7 +436,16 @@ export default function BracketPage() {
           </section>
 
           <section className="card">
-            <div className="sectionTitle">Best third-place qualifiers (pick 8)</div>
+            <div className="row rowSpaceBetween">
+              <div className="sectionTitle">Best third-place qualifiers (pick 8)</div>
+              {groupLockTime ? (
+                <div className="lockNote">
+                  {groupLocked
+                    ? `Locked since ${formatLockTime(groupLockTime)}`
+                    : `Locks at ${formatLockTime(groupLockTime)}`}
+                </div>
+              ) : null}
+            </div>
             {allGroupTeams.length === 0 ? (
               <div className="muted">
                 Group data is not available yet. Run the daily sync once group assignments are known.
@@ -399,6 +464,7 @@ export default function BracketPage() {
                       <select
                         className="pickSelect"
                         value={selected}
+                        disabled={groupLocked}
                         onChange={(event) => handleBestThirdChange(index, event.target.value)}
                       >
                         <option value="">Select team</option>
@@ -419,7 +485,16 @@ export default function BracketPage() {
 
       {activeView === 'knockout' ? (
         <section className="card">
-          <div className="sectionTitle">Knockout winners</div>
+          <div className="row rowSpaceBetween">
+            <div className="sectionTitle">Knockout winners</div>
+            {knockoutLockTime ? (
+              <div className="lockNote">
+                {knockoutLocked
+                  ? `Locked since ${formatLockTime(knockoutLockTime)}`
+                  : `Locks at ${formatLockTime(knockoutLockTime)}`}
+              </div>
+            ) : null}
+          </div>
           {knockoutStageOrder.map((stage) => {
             const matches = knockoutMatches[stage]
             if (!matches || matches.length === 0) return null
@@ -452,6 +527,7 @@ export default function BracketPage() {
                           <select
                             className="pickSelect"
                             value={value}
+                            disabled={knockoutLocked}
                             onChange={(event) => handleKnockoutChange(match, event.target.value)}
                           >
                             <option value="">Select winner</option>

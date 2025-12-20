@@ -114,7 +114,7 @@ export default function ResultsPage() {
           : 'Draw'
       : '—'
     const knockout =
-      match.stage !== 'Group' && pick.outcome === 'DRAW' && pick.winner && pick.decidedBy
+      match.stage !== 'Group' && pick.winner && pick.decidedBy
         ? `${pick.winner === 'HOME' ? 'Home' : 'Away'} ${pick.decidedBy === 'ET' ? 'AET' : 'Pens'}`
         : match.stage !== 'Group'
           ? '—'

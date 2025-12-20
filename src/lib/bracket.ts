@@ -24,12 +24,23 @@ export function saveLocalBracketPrediction(userId: string, prediction: BracketPr
   window.localStorage.setItem(getLocalBracketKey(userId), payload)
 }
 
+export function hasBracketData(prediction: BracketPrediction): boolean {
+  if (prediction.bestThirds?.some((code) => Boolean(code))) return true
+  for (const group of Object.values(prediction.groups ?? {})) {
+    if (group?.first || group?.second) return true
+  }
+  for (const stagePredictions of Object.values(prediction.knockout ?? {})) {
+    if (stagePredictions && Object.keys(stagePredictions).length > 0) return true
+  }
+  return false
+}
+
 export function mergeBracketPredictions(
   base: BracketPrediction[],
   local: BracketPrediction | null,
   userId: string
 ): BracketPrediction[] {
-  if (!local) return base
+  if (!local || !hasBracketData(local)) return base
   const others = base.filter((prediction) => prediction.userId !== userId)
   return [...others, local]
 }

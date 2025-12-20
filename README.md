@@ -18,6 +18,13 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 2. Install deps: `npm install`
 3. Run: `npm run dev`
 
+## Pick Locks (PST)
+
+- Match picks lock 30 minutes before kickoff.
+- Bracket group qualifiers + best third-place picks lock at 11:59 PM PST on the day before the first group match day.
+- Bracket knockout picks lock at 11:59 PM PST on the last group match day.
+- Knockout eventual winner picks are independent of the result selection.
+
 ## Data Updates (Fixtures/Results)
 
 Match data is sourced from `https://api.football-data.org/v4/competitions/WC/matches`.

@@ -69,14 +69,7 @@ export function isPickComplete(match: Match, pick?: Pick): boolean {
   if (match.stage === 'Group') {
     return hasScores && hasOutcome
   }
-  if (!hasScores || !hasOutcome) return false
-  if (pick.outcome === 'DRAW') {
-    return (
-      (pick.winner === 'HOME' || pick.winner === 'AWAY') &&
-      (pick.decidedBy === 'ET' || pick.decidedBy === 'PENS')
-    )
-  }
-  return true
+  return hasScores && hasOutcome
 }
 
 export function getOutcomeFromScores(
@@ -90,10 +83,10 @@ export function getOutcomeFromScores(
 }
 
 export function getPredictedWinner(pick: Pick): PickWinner | undefined {
+  if (pick.winner === 'HOME' || pick.winner === 'AWAY') return pick.winner
   if (pick.outcome === 'WIN') return 'HOME'
   if (pick.outcome === 'LOSS') return 'AWAY'
-  if (pick.outcome === 'DRAW') return pick.winner
-  return pick.winner
+  return undefined
 }
 
 export function mergePicks(basePicks: Pick[], localPicks: Pick[], userId: string): Pick[] {

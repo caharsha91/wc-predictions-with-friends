@@ -33,10 +33,11 @@
   - [x] Show results + your picks (including missing picks)
 - [x] Implement pick entry UI
   - [x] Exact score (home/away)
-  - [x] Match outcome (home win/draw/home loss)
-  - [x] Knockout extras (eventual winner AET/Pens when draw)
+  - [x] Match outcome (home win/draw/away win)
+  - [x] Knockout extras (eventual winner AET/Pens, independent of result)
 - [x] Save picks locally (localStorage) and allow edits
-- [x] Implement pick locking rule (day before kickoff at 12:00am league time)
+- [x] Implement pick locking rule (30 minutes before kickoff)
+  - [x] Lock at kickoff minus 30 minutes (PST display)
   - [x] Disable inputs and show “Locked since …”
 - [x] Implement scoring + leaderboard (client-side, mock data)
   - [x] Separate points for exact, outcome, knockout extras
@@ -75,6 +76,7 @@
 - [x] Evaluate bracket prediction scoring on matchday update
 - [x] Add bracket prediction points to leaderboard breakdown
 - [x] Build new page for bracket prediction
+- [x] Lock bracket picks at 11:59 PM PST (group: day before first group match; knockout: last group match day)
 - [x] Add bracket view toggle (group vs knockout) with knockout default after group stage
 - [x] Add official best third-place qualifier list in `public/data/best-third-qualifiers.json`
 - [x] Refresh leaderboard on `matches.json` deploys
