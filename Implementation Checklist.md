@@ -1,4 +1,4 @@
-# Implementation Plan (Step 1–5)
+# Implementation Plan (Step 1–4)
 
 ## Step 1 — UI Shell + Mock Data
 **Goal:** A working UI you can navigate, deployed on GitHub Pages, powered by local JSON.
@@ -18,8 +18,31 @@
 
 ---
 
-## Step 2 — Firebase Auth + Firestore (Free Tier)
-**Goal:** Users can sign in with Google and you have storage for members and picks.
+## Step 2 — Full Working App (Mock JSON + Local Storage)
+**Goal:** End-to-end picks + leaderboard using mock JSON and local storage (no Firebase yet).
+
+- [ ] Expand mock data:
+  - [ ] `public/data/matches.json` with results + statuses
+  - [ ] `public/data/members.json` with sample users
+  - [ ] `public/data/picks.json` with sample picks
+- [ ] Add “My Picks” view (route + nav)
+  - [ ] Group by date + stage
+  - [ ] Show missing pick indicators
+- [ ] Implement pick entry UI
+  - [ ] Group stage: predicted score inputs
+  - [ ] Knockout: predicted winner (+ ET/Pens toggle if draw after 90)
+- [ ] Save picks locally (localStorage) and allow edits
+- [ ] Implement pick locking rule (day before kickoff at 12:00am league time)
+  - [ ] Disable inputs and show “Locked since …”
+- [ ] Implement scoring + leaderboard (client-side, mock data)
+  - [ ] Compute totals + tie-breakers (exact count, earliest submission)
+  - [ ] Render standings from mock members + picks
+- [ ] Show `matches.json` `lastUpdated` + optional “Refresh” button
+
+---
+
+## Step 3 — Firebase Auth + Firestore (Free Tier)
+**Goal:** Replace local mock storage with real auth + database.
 
 - [ ] Create Firebase project (Spark plan)
 - [ ] Enable Google sign-in provider
@@ -38,43 +61,11 @@
 - [ ] Wire Firebase SDK into the app
   - [ ] Sign in/out buttons on `/`
   - [ ] Redirect signed-in users to `/matches`
+- [ ] Migrate local storage picks/members to Firestore
 
 ---
 
-## Step 3 — Picks + Pick Locking
-**Goal:** Users can submit picks and edits lock the day before kickoff.
-
-- [ ] Implement “private league gate” (MVP: email allowlist)
-  - [ ] If allowed: upsert `members/{uid}`
-  - [ ] If not allowed: show “Not invited”
-- [ ] Implement pick form + Firestore upsert
-  - [ ] Group stage: predicted score
-  - [ ] Knockout: predicted winner (+ ET/Pens toggle if draw after 90)
-- [ ] Implement pick locking rule:
-  - [ ] Lock at 12:00am league time the day before kickoff
-  - [ ] Disable inputs and show “Locked since …”
-- [ ] Build “My Picks” view:
-  - [ ] Upcoming matches + missing pick indicator
-
----
-
-## Step 4 — Scoring + Leaderboard (Client-Side)
-**Goal:** A working leaderboard computed from picks + results.
-
-- [ ] Implement deterministic scoring function:
-  - [ ] Exact score points
-  - [ ] Correct outcome points
-  - [ ] Knockout winner points (+ method handling if used)
-- [ ] Leaderboard page:
-  - [ ] Fetch members + picks from Firestore
-  - [ ] Fetch `/data/matches.json`
-  - [ ] Compute totals + tie-breakers (e.g., exact count, earliest submission)
-  - [ ] Render standings
-- [ ] Show `matches.json` `lastUpdated` and add optional “Refresh” button
-
----
-
-## Step 5 — API Integration (Daily Batch Sync → `matches.json`)
+## Step 4 — API Integration (Daily Batch Sync → `matches.json`)
 **Goal:** Automate fixtures/results updates once per day without exposing API keys.
 
 - [ ] Create football-data.org API token

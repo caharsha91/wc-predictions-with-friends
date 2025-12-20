@@ -16,8 +16,15 @@ export default function Layout() {
   return (
     <div className="appShell">
       <header className="header">
+        <div className="headerTicker">
+          <span className="onAirDot" aria-hidden="true" />
+          <span>On Air: World Cup Desk</span>
+        </div>
         <div className="headerInner">
-          <div className="brand">WC Predictions</div>
+          <div className="brandStack">
+            <div className="brand">WC Predictions</div>
+            <div className="brandSub">Live broadcast edition</div>
+          </div>
           <nav className="nav">
             <NavItem to="/" label="Home" />
             <NavItem to="/matches" label="Matches" />
@@ -32,4 +39,3 @@ export default function Layout() {
     </div>
   )
 }
-

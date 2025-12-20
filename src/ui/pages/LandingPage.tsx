@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom'
 
 export default function LandingPage() {
   return (
-    <div className="card">
-      <h1 className="h1">World Cup Predictions</h1>
-      <p className="muted">
-        UI shell + local mock data. Next steps will add auth, picks, and scoring.
+    <div className="card heroCard">
+      <div className="heroTag">Broadcast Desk</div>
+      <h1 className="h1 heroTitle">World Cup Predictions</h1>
+      <p className="muted heroLead">
+        Your private studio for fixtures, picks, and bragging rights.
       </p>
       <div className="row">
         <Link className="button" to="/matches">
@@ -18,4 +19,3 @@ export default function LandingPage() {
     </div>
   )
 }
-

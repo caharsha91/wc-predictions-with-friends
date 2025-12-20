@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { CSSProperties } from 'react'
 
 import { groupMatchesByDateAndStage } from '../../lib/matches'
 import type { MatchesFile } from '../../types/matches'
@@ -12,6 +13,25 @@ function formatKickoff(utcIso: string) {
   const date = new Date(utcIso)
   return date.toLocaleString(undefined, {
     weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function formatDateHeader(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00`)
+  return date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+function formatLastUpdated(iso: string) {
+  const date = new Date(iso)
+  return date.toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -51,9 +71,15 @@ export default function MatchesPage() {
   return (
     <div className="stack">
       <div className="row rowSpaceBetween">
-        <h1 className="h1">Matches</h1>
+        <div>
+          <div className="sectionKicker">Match Center</div>
+          <h1 className="h1">Matches</h1>
+        </div>
         {state.status === 'ready' ? (
-          <div className="muted small">Last updated: {state.data.lastUpdated}</div>
+          <div className="lastUpdated">
+            <div className="lastUpdatedLabel">Last updated</div>
+            <div className="lastUpdatedValue">{formatLastUpdated(state.data.lastUpdated)}</div>
+          </div>
         ) : null}
       </div>
 
@@ -63,23 +89,25 @@ export default function MatchesPage() {
       {state.status === 'ready' ? (
         <div className="stack">
           {groups.map((group) => (
-            <section key={`${group.dateKey}__${group.stage}`} className="card">
-              <div className="row rowSpaceBetween">
+            <section key={`${group.dateKey}__${group.stage}`} className="card matchGroup">
+              <div className="groupHeader">
                 <div>
-                  <div className="h2">{group.dateKey}</div>
-                  <div className="muted small">{group.stage}</div>
+                  <div className="groupDate">{formatDateHeader(group.dateKey)}</div>
+                  <div className="groupStage">{group.stage}</div>
                 </div>
+                <div className="groupTicker">Live desk</div>
               </div>
 
               <div className="list">
-                {group.matches.map((match) => {
+                {group.matches.map((match, index) => {
                   const showScore =
                     match.status === 'FINISHED' &&
                     typeof match.score?.home === 'number' &&
                     typeof match.score?.away === 'number'
+                  const rowStyle = { '--row-index': index } as CSSProperties
 
                   return (
-                    <div key={match.id} className="matchRow">
+                    <div key={match.id} className="matchRow" style={rowStyle}>
                       <div className="matchTeams">
                         <div className="team">
                           <span className="teamCode">{match.homeTeam.code}</span>
@@ -118,4 +146,3 @@ export default function MatchesPage() {
     </div>
   )
 }
-
