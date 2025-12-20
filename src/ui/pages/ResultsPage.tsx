@@ -93,11 +93,18 @@ export default function ResultsPage() {
     return groupMatches.every((match) => match.status === 'FINISHED')
   }, [state])
 
+  const knockoutHasResults = useMemo(() => {
+    if (state.status !== 'ready') return false
+    return state.data.matches.some(
+      (match) => match.stage !== 'Group' && match.status === 'FINISHED'
+    )
+  }, [state])
+
   useEffect(() => {
     if (view !== null) return
     if (state.status !== 'ready') return
-    setView(groupStageComplete ? 'knockout' : 'group')
-  }, [groupStageComplete, state, view])
+    setView(groupStageComplete && knockoutHasResults ? 'knockout' : 'group')
+  }, [groupStageComplete, knockoutHasResults, state, view])
 
   const groupedMatches = useMemo(() => {
     if (state.status !== 'ready') return []

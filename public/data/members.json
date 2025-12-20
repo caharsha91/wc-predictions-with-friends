@@ -1,6 +1,6 @@
 {
   "members": [
-    { "id": "user-1", "name": "Harsha", "handle": "harsha", "email": "harsha@example.com", "isAdmin": true },
+    { "id": "user-1", "name": "Peter", "handle": "peter", "email": "peter@example.com", "isAdmin": true },
     { "id": "user-2", "name": "Jordan", "handle": "jordan", "email": "jordan@example.com" },
     { "id": "user-3", "name": "Casey", "handle": "casey", "email": "casey@example.com" },
     { "id": "user-4", "name": "Riley", "handle": "riley", "email": "riley@example.com" },

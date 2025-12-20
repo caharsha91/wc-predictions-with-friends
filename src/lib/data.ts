@@ -4,6 +4,7 @@ import type { PicksFile } from '../types/picks'
 import type { BracketPredictionsFile } from '../types/bracket'
 import type { BestThirdQualifiersFile } from '../types/qualifiers'
 import type { ScoringConfig } from '../types/scoring'
+import { getResultsMode } from './resultsMode'
 
 async function fetchJson<T>(path: string): Promise<T> {
   const url = `${import.meta.env.BASE_URL}${path}`
@@ -15,7 +16,9 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 export function fetchMatches(): Promise<MatchesFile> {
-  return fetchJson<MatchesFile>('data/matches.json')
+  const mode = getResultsMode()
+  const path = mode === 'simulated' ? 'data/matches-simulated.json' : 'data/matches.json'
+  return fetchJson<MatchesFile>(path)
 }
 
 export function fetchMembers(): Promise<MembersFile> {
@@ -23,7 +26,9 @@ export function fetchMembers(): Promise<MembersFile> {
 }
 
 export function fetchPicks(): Promise<PicksFile> {
-  return fetchJson<PicksFile>('data/picks.json')
+  const mode = getResultsMode()
+  const path = mode === 'simulated' ? 'data/picks-simulated.json' : 'data/picks.json'
+  return fetchJson<PicksFile>(path)
 }
 
 export function fetchScoring(): Promise<ScoringConfig> {
@@ -31,9 +36,17 @@ export function fetchScoring(): Promise<ScoringConfig> {
 }
 
 export function fetchBracketPredictions(): Promise<BracketPredictionsFile> {
-  return fetchJson<BracketPredictionsFile>('data/bracket-predictions.json')
+  const mode = getResultsMode()
+  const path =
+    mode === 'simulated' ? 'data/bracket-predictions-simulated.json' : 'data/bracket-predictions.json'
+  return fetchJson<BracketPredictionsFile>(path)
 }
 
 export function fetchBestThirdQualifiers(): Promise<BestThirdQualifiersFile> {
-  return fetchJson<BestThirdQualifiersFile>('data/best-third-qualifiers.json')
+  const mode = getResultsMode()
+  const path =
+    mode === 'simulated'
+      ? 'data/best-third-qualifiers-simulated.json'
+      : 'data/best-third-qualifiers.json'
+  return fetchJson<BestThirdQualifiersFile>(path)
 }

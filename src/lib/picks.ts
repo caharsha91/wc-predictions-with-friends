@@ -91,5 +91,9 @@ export function getPredictedWinner(pick: Pick): PickWinner | undefined {
 
 export function mergePicks(basePicks: Pick[], localPicks: Pick[], userId: string): Pick[] {
   const others = basePicks.filter((pick) => pick.userId !== userId)
-  return [...others, ...localPicks]
+  const localByMatch = new Map(localPicks.map((pick) => [pick.matchId, pick]))
+  const baseForUser = basePicks.filter(
+    (pick) => pick.userId === userId && !localByMatch.has(pick.matchId)
+  )
+  return [...others, ...baseForUser, ...localPicks]
 }
