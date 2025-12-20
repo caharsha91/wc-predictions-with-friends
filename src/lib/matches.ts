@@ -2,10 +2,12 @@ import type { Match, MatchStage } from '../types/matches'
 
 const stageSortOrder: Record<MatchStage, number> = {
   Group: 1,
-  R16: 2,
-  QF: 3,
-  SF: 4,
-  Final: 5
+  R32: 2,
+  R16: 3,
+  QF: 4,
+  SF: 5,
+  Third: 6,
+  Final: 7
 }
 
 export type MatchGroup = {
@@ -14,7 +16,7 @@ export type MatchGroup = {
   matches: Match[]
 }
 
-function toDateKeyLocal(utcIso: string): string {
+export function getDateKeyLocal(utcIso: string): string {
   const date = new Date(utcIso)
   const year = String(date.getFullYear())
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -22,11 +24,23 @@ function toDateKeyLocal(utcIso: string): string {
   return `${year}-${month}-${day}`
 }
 
+export function getLockTime(kickoffUtc: string): Date {
+  const kickoffLocal = new Date(kickoffUtc)
+  const lockTime = new Date(kickoffLocal)
+  lockTime.setHours(0, 0, 0, 0)
+  lockTime.setDate(lockTime.getDate() - 1)
+  return lockTime
+}
+
+export function isMatchLocked(kickoffUtc: string, now: Date = new Date()): boolean {
+  return now.getTime() >= getLockTime(kickoffUtc).getTime()
+}
+
 export function groupMatchesByDateAndStage(matches: Match[]): MatchGroup[] {
   const byKey = new Map<string, MatchGroup>()
 
   for (const match of matches) {
-    const dateKey = toDateKeyLocal(match.kickoffUtc)
+    const dateKey = getDateKeyLocal(match.kickoffUtc)
     const mapKey = `${dateKey}__${match.stage}`
     const existing = byKey.get(mapKey)
     if (existing) {
@@ -50,4 +64,3 @@ export function groupMatchesByDateAndStage(matches: Match[]): MatchGroup[] {
 
   return groups
 }
-

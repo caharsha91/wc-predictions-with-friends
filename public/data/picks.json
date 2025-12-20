@@ -1,0 +1,252 @@
+{
+  "picks": [
+    {
+      "id": "pick-user-1-grp-a-02",
+      "matchId": "grp-a-02",
+      "userId": "user-1",
+      "homeScore": 1,
+      "awayScore": 1,
+      "outcome": "DRAW",
+      "createdAt": "2026-06-10T09:00:00.000Z",
+      "updatedAt": "2026-06-10T09:00:00.000Z"
+    },
+    {
+      "id": "pick-user-2-grp-a-02",
+      "matchId": "grp-a-02",
+      "userId": "user-2",
+      "homeScore": 2,
+      "awayScore": 1,
+      "outcome": "WIN",
+      "createdAt": "2026-06-10T08:00:00.000Z",
+      "updatedAt": "2026-06-10T08:00:00.000Z"
+    },
+    {
+      "id": "pick-user-3-grp-a-02",
+      "matchId": "grp-a-02",
+      "userId": "user-3",
+      "homeScore": 0,
+      "awayScore": 0,
+      "outcome": "DRAW",
+      "createdAt": "2026-06-10T10:00:00.000Z",
+      "updatedAt": "2026-06-10T10:00:00.000Z"
+    },
+    {
+      "id": "pick-user-4-grp-a-02",
+      "matchId": "grp-a-02",
+      "userId": "user-4",
+      "homeScore": 2,
+      "awayScore": 2,
+      "outcome": "DRAW",
+      "createdAt": "2026-06-10T11:00:00.000Z",
+      "updatedAt": "2026-06-10T11:00:00.000Z"
+    },
+    {
+      "id": "pick-user-5-grp-a-02",
+      "matchId": "grp-a-02",
+      "userId": "user-5",
+      "homeScore": 1,
+      "awayScore": 0,
+      "outcome": "WIN",
+      "createdAt": "2026-06-10T11:20:00.000Z",
+      "updatedAt": "2026-06-10T11:20:00.000Z"
+    },
+    {
+      "id": "pick-user-6-grp-a-02",
+      "matchId": "grp-a-02",
+      "userId": "user-6",
+      "homeScore": 0,
+      "awayScore": 1,
+      "outcome": "LOSS",
+      "createdAt": "2026-06-10T11:30:00.000Z",
+      "updatedAt": "2026-06-10T11:30:00.000Z"
+    },
+    {
+      "id": "pick-user-1-grp-b-01",
+      "matchId": "grp-b-01",
+      "userId": "user-1",
+      "homeScore": 2,
+      "awayScore": 1,
+      "outcome": "WIN",
+      "createdAt": "2026-06-11T08:00:00.000Z",
+      "updatedAt": "2026-06-11T08:00:00.000Z"
+    },
+    {
+      "id": "pick-user-2-grp-b-01",
+      "matchId": "grp-b-01",
+      "userId": "user-2",
+      "homeScore": 1,
+      "awayScore": 0,
+      "outcome": "WIN",
+      "createdAt": "2026-06-11T08:10:00.000Z",
+      "updatedAt": "2026-06-11T08:10:00.000Z"
+    },
+    {
+      "id": "pick-user-3-grp-b-01",
+      "matchId": "grp-b-01",
+      "userId": "user-3",
+      "homeScore": 1,
+      "awayScore": 2,
+      "outcome": "LOSS",
+      "createdAt": "2026-06-11T09:15:00.000Z",
+      "updatedAt": "2026-06-11T09:15:00.000Z"
+    },
+    {
+      "id": "pick-user-4-grp-b-01",
+      "matchId": "grp-b-01",
+      "userId": "user-4",
+      "homeScore": 3,
+      "awayScore": 1,
+      "outcome": "WIN",
+      "createdAt": "2026-06-11T09:30:00.000Z",
+      "updatedAt": "2026-06-11T09:30:00.000Z"
+    },
+    {
+      "id": "pick-user-5-grp-b-01",
+      "matchId": "grp-b-01",
+      "userId": "user-5",
+      "homeScore": 2,
+      "awayScore": 0,
+      "outcome": "WIN",
+      "createdAt": "2026-06-11T09:45:00.000Z",
+      "updatedAt": "2026-06-11T09:45:00.000Z"
+    },
+    {
+      "id": "pick-user-6-grp-b-01",
+      "matchId": "grp-b-01",
+      "userId": "user-6",
+      "homeScore": 1,
+      "awayScore": 1,
+      "outcome": "DRAW",
+      "createdAt": "2026-06-11T10:00:00.000Z",
+      "updatedAt": "2026-06-11T10:00:00.000Z"
+    },
+    {
+      "id": "pick-user-1-r16-01",
+      "matchId": "r16-01",
+      "userId": "user-1",
+      "homeScore": 1,
+      "awayScore": 1,
+      "outcome": "DRAW",
+      "winner": "HOME",
+      "decidedBy": "PENS",
+      "createdAt": "2026-06-20T12:00:00.000Z",
+      "updatedAt": "2026-06-20T12:00:00.000Z"
+    },
+    {
+      "id": "pick-user-2-r16-01",
+      "matchId": "r16-01",
+      "userId": "user-2",
+      "homeScore": 0,
+      "awayScore": 2,
+      "outcome": "LOSS",
+      "winner": "AWAY",
+      "decidedBy": "REG",
+      "createdAt": "2026-06-20T13:00:00.000Z",
+      "updatedAt": "2026-06-20T13:00:00.000Z"
+    },
+    {
+      "id": "pick-user-3-r16-01",
+      "matchId": "r16-01",
+      "userId": "user-3",
+      "homeScore": 2,
+      "awayScore": 2,
+      "outcome": "DRAW",
+      "winner": "HOME",
+      "decidedBy": "ET",
+      "createdAt": "2026-06-20T14:00:00.000Z",
+      "updatedAt": "2026-06-20T14:00:00.000Z"
+    },
+    {
+      "id": "pick-user-4-r16-01",
+      "matchId": "r16-01",
+      "userId": "user-4",
+      "homeScore": 0,
+      "awayScore": 0,
+      "outcome": "DRAW",
+      "winner": "AWAY",
+      "decidedBy": "PENS",
+      "createdAt": "2026-06-20T14:20:00.000Z",
+      "updatedAt": "2026-06-20T14:20:00.000Z"
+    },
+    {
+      "id": "pick-user-5-r16-01",
+      "matchId": "r16-01",
+      "userId": "user-5",
+      "homeScore": 2,
+      "awayScore": 0,
+      "outcome": "WIN",
+      "createdAt": "2026-06-20T14:40:00.000Z",
+      "updatedAt": "2026-06-20T14:40:00.000Z"
+    },
+    {
+      "id": "pick-user-6-r16-01",
+      "matchId": "r16-01",
+      "userId": "user-6",
+      "homeScore": 0,
+      "awayScore": 1,
+      "outcome": "LOSS",
+      "createdAt": "2026-06-20T14:50:00.000Z",
+      "updatedAt": "2026-06-20T14:50:00.000Z"
+    },
+    {
+      "id": "pick-user-2-fin-01",
+      "matchId": "fin-01",
+      "userId": "user-2",
+      "homeScore": 0,
+      "awayScore": 2,
+      "outcome": "LOSS",
+      "winner": "AWAY",
+      "decidedBy": "REG",
+      "createdAt": "2026-07-10T11:00:00.000Z",
+      "updatedAt": "2026-07-10T11:00:00.000Z"
+    },
+    {
+      "id": "pick-user-3-fin-01",
+      "matchId": "fin-01",
+      "userId": "user-3",
+      "homeScore": 2,
+      "awayScore": 1,
+      "outcome": "WIN",
+      "winner": "HOME",
+      "decidedBy": "REG",
+      "createdAt": "2026-07-10T11:20:00.000Z",
+      "updatedAt": "2026-07-10T11:20:00.000Z"
+    },
+    {
+      "id": "pick-user-4-fin-01",
+      "matchId": "fin-01",
+      "userId": "user-4",
+      "homeScore": 3,
+      "awayScore": 2,
+      "outcome": "WIN",
+      "winner": "HOME",
+      "decidedBy": "REG",
+      "createdAt": "2026-07-10T11:40:00.000Z",
+      "updatedAt": "2026-07-10T11:40:00.000Z"
+    },
+    {
+      "id": "pick-user-5-fin-01",
+      "matchId": "fin-01",
+      "userId": "user-5",
+      "homeScore": 1,
+      "awayScore": 3,
+      "outcome": "LOSS",
+      "winner": "AWAY",
+      "decidedBy": "REG",
+      "createdAt": "2026-07-10T11:50:00.000Z",
+      "updatedAt": "2026-07-10T11:50:00.000Z"
+    },
+    {
+      "id": "pick-user-6-fin-01",
+      "matchId": "fin-01",
+      "userId": "user-6",
+      "homeScore": 2,
+      "awayScore": 0,
+      "outcome": "WIN",
+      "winner": "HOME",
+      "decidedBy": "REG",
+      "createdAt": "2026-07-10T12:10:00.000Z",
+      "updatedAt": "2026-07-10T12:10:00.000Z"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-12-19T00:00:00.000Z",
+  "lastUpdated": "2026-06-12T08:00:00.000Z",
   "matches": [
     {
       "id": "grp-a-01",
@@ -13,25 +13,39 @@
       "id": "grp-a-02",
       "stage": "Group",
       "kickoffUtc": "2026-06-11T22:00:00.000Z",
-      "status": "SCHEDULED",
+      "status": "FINISHED",
       "homeTeam": { "code": "CAN", "name": "Canada" },
-      "awayTeam": { "code": "CRC", "name": "Costa Rica" }
+      "awayTeam": { "code": "CRC", "name": "Costa Rica" },
+      "score": { "home": 1, "away": 1 }
     },
     {
       "id": "grp-b-01",
       "stage": "Group",
       "kickoffUtc": "2026-06-12T19:00:00.000Z",
-      "status": "SCHEDULED",
+      "status": "FINISHED",
       "homeTeam": { "code": "BRA", "name": "Brazil" },
-      "awayTeam": { "code": "ESP", "name": "Spain" }
+      "awayTeam": { "code": "ESP", "name": "Spain" },
+      "score": { "home": 2, "away": 1 }
+    },
+    {
+      "id": "grp-b-02",
+      "stage": "Group",
+      "kickoffUtc": "2026-06-12T22:00:00.000Z",
+      "status": "IN_PLAY",
+      "homeTeam": { "code": "GER", "name": "Germany" },
+      "awayTeam": { "code": "JPN", "name": "Japan" },
+      "score": { "home": 0, "away": 0 }
     },
     {
       "id": "r16-01",
       "stage": "R16",
       "kickoffUtc": "2026-06-27T16:00:00.000Z",
-      "status": "SCHEDULED",
+      "status": "FINISHED",
       "homeTeam": { "code": "W-A", "name": "Winner Group A" },
-      "awayTeam": { "code": "R-B", "name": "Runner-up Group B" }
+      "awayTeam": { "code": "R-B", "name": "Runner-up Group B" },
+      "score": { "home": 1, "away": 1 },
+      "winner": "HOME",
+      "decidedBy": "PENS"
     },
     {
       "id": "qf-01",
@@ -48,8 +62,9 @@
       "status": "FINISHED",
       "homeTeam": { "code": "ARG", "name": "Argentina" },
       "awayTeam": { "code": "FRA", "name": "France" },
-      "score": { "home": 3, "away": 2 }
+      "score": { "home": 3, "away": 2 },
+      "winner": "HOME",
+      "decidedBy": "REG"
     }
   ]
 }
-

@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 export default function LandingPage() {
   return (
     <div className="card heroCard">
-      <div className="heroTag">Broadcast Desk</div>
+      <div className="heroTag">Stadium Lights</div>
       <h1 className="h1 heroTitle">World Cup Predictions</h1>
       <p className="muted heroLead">
-        Your private studio for fixtures, picks, and bragging rights.
+        Your private floodlit hub for fixtures, picks, and bragging rights.
       </p>
       <div className="row">
         <Link className="button" to="/matches">

@@ -1,10 +1,10 @@
 # World Cup Predictions App – MVP
 
-## 1. Authentication & Private League Gate
-- Google sign-in (Firebase Auth)
-- Private league access
-  - MVP: email allowlist (admin-managed)
-- User profile creation (name + avatar)
+## 1. Current App Flow (Mock Data + Local Picks)
+- Home: next matchday picks (highlight missing)
+- Upcoming: all remaining matches + picks
+- Results: completed matches + your picks (including missing)
+- Leaderboard: category points (exact, outcome, knockout extras)
 
 ## 2. Fixtures & Results (Daily Batch)
 - GitHub Action runs once per day
@@ -12,38 +12,24 @@
   - Write and commit `data/matches.json`
 - Display “Last updated” timestamp in the app
 
-## 3. Match Browsing
-- Match list grouped by:
-  - Date
-  - Stage (Group, R16, QF, SF, Final)
-- Match rows show:
-  - Teams
-  - Kickoff time (league timezone)
-  - Status
-  - Final score (when available)
-
-## 4. Picks
-- Create and edit picks
-  - Group stage: predicted score
-  - Knockout stage: predicted winner (+ ET/Pens toggle if draw after 90)
-- “My Picks” view
-  - Upcoming matches
-  - Missing picks indicator
+## 3. Picks
+- Exact score prediction (home + away)
+- Match outcome prediction (home win / draw / home loss)
+- Knockout extras (eventual winner AET/Pens when draw)
 - Pick locking
   - Edits disabled starting 12:00am league time the day before kickoff
   - Show “Locked since …” indicator
 
-## 5. Scoring & Leaderboard (Client-Side)
-- Deterministic scoring function
-  - Exact score points
-  - Correct outcome points
-  - Knockout winner points
-- Leaderboard
-  - Total points per user
-  - Tie-breakers (e.g., number of exact scores, then earliest submission)
-- Recompute totals:
-  - On page load
-  - When `matches.json` changes (or via manual refresh)
+## 4. Scoring & Leaderboard (Client-Side)
+- Configurable scoring in `public/data/scoring.json`
+  - Group points: exact score (both/one), result
+  - Knockout points per round: R32, R16, QF, SF, Third, Final
+- Leaderboard shows category totals (exact, outcome, knockout extras)
+
+## 5. Authentication & Private League Gate (Future)
+- Google sign-in (Firebase Auth)
+- Private league access (email allowlist)
+- User profile creation (name + avatar)
 
 ## 6. Minimal Admin
 - Admin-only page to:

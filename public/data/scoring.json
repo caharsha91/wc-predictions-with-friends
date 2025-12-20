@@ -1,0 +1,45 @@
+{
+  "group": {
+    "exactScoreBoth": 3,
+    "exactScoreOne": 1,
+    "result": 1
+  },
+  "knockout": {
+    "R32": {
+      "exactScoreBoth": 4,
+      "exactScoreOne": 1,
+      "result": 1,
+      "knockoutWinner": 2
+    },
+    "R16": {
+      "exactScoreBoth": 4,
+      "exactScoreOne": 1,
+      "result": 1,
+      "knockoutWinner": 2
+    },
+    "QF": {
+      "exactScoreBoth": 5,
+      "exactScoreOne": 2,
+      "result": 2,
+      "knockoutWinner": 3
+    },
+    "SF": {
+      "exactScoreBoth": 5,
+      "exactScoreOne": 2,
+      "result": 2,
+      "knockoutWinner": 3
+    },
+    "Third": {
+      "exactScoreBoth": 5,
+      "exactScoreOne": 2,
+      "result": 2,
+      "knockoutWinner": 3
+    },
+    "Final": {
+      "exactScoreBoth": 6,
+      "exactScoreOne": 2,
+      "result": 2,
+      "knockoutWinner": 4
+    }
+  }
+}

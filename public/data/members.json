@@ -1,0 +1,10 @@
+{
+  "members": [
+    { "id": "user-1", "name": "Harsha", "handle": "harsha", "email": "harsha@example.com", "isAdmin": true },
+    { "id": "user-2", "name": "Jordan", "handle": "jordan", "email": "jordan@example.com" },
+    { "id": "user-3", "name": "Casey", "handle": "casey", "email": "casey@example.com" },
+    { "id": "user-4", "name": "Riley", "handle": "riley", "email": "riley@example.com" },
+    { "id": "user-5", "name": "Morgan", "handle": "morgan", "email": "morgan@example.com" },
+    { "id": "user-6", "name": "Avery", "handle": "avery", "email": "avery@example.com" }
+  ]
+}

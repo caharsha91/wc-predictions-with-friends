@@ -1,5 +1,7 @@
-export type MatchStage = 'Group' | 'R16' | 'QF' | 'SF' | 'Final'
+export type MatchStage = 'Group' | 'R32' | 'R16' | 'QF' | 'SF' | 'Third' | 'Final'
 export type MatchStatus = 'SCHEDULED' | 'IN_PLAY' | 'FINISHED'
+export type MatchWinner = 'HOME' | 'AWAY'
+export type MatchDecision = 'REG' | 'ET' | 'PENS'
 
 export type Team = {
   code: string
@@ -19,10 +21,11 @@ export type Match = {
   homeTeam: Team
   awayTeam: Team
   score?: MatchScore
+  winner?: MatchWinner
+  decidedBy?: MatchDecision
 }
 
 export type MatchesFile = {
   lastUpdated: string
   matches: Match[]
 }
-

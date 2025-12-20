@@ -5,15 +5,14 @@
 
 - [ ] Create repo + Vite React + TypeScript app
 - [ ] Add routing/pages:
-  - [ ] `/` (landing)
-  - [ ] `/matches` (match list)
+  - [ ] `/` (next matchday picks)
+  - [ ] `/upcoming` (all remaining matches)
+  - [ ] `/results` (completed matches)
   - [ ] `/leaderboard` (placeholder)
   - [ ] `/admin` (placeholder)
 - [ ] Add `public/data/matches.json` with mock matches + `lastUpdated`
-- [ ] Build Matches page reading `/data/matches.json`
-  - [ ] Group by date + stage
+- [ ] Build results view reading `/data/matches.json`
   - [ ] Show teams, kickoff time, status, score (if finished)
-- [ ] Add simple UI stub for “Pick” per match (not wired)
 - [ ] Set up GitHub Pages deploy workflow and verify site loads
 
 ---
@@ -25,19 +24,24 @@
   - [ ] `public/data/matches.json` with results + statuses
   - [ ] `public/data/members.json` with sample users
   - [ ] `public/data/picks.json` with sample picks
-- [ ] Add “My Picks” view (route + nav)
-  - [ ] Group by date + stage
-  - [ ] Show missing pick indicators
+  - [ ] `public/data/scoring.json` for group + knockout points
+- [ ] Home: next matchday only
+  - [ ] Highlight missing picks
+- [ ] Upcoming page: all remaining matches in ascending order
+  - [ ] Same pick inputs as home
+- [ ] Results page: completed matches (descending)
+  - [ ] Show results + your picks (including missing picks)
 - [ ] Implement pick entry UI
-  - [ ] Group stage: predicted score inputs
-  - [ ] Knockout: predicted winner (+ ET/Pens toggle if draw after 90)
+  - [ ] Exact score (home/away)
+  - [ ] Match outcome (home win/draw/home loss)
+  - [ ] Knockout extras (eventual winner AET/Pens when draw)
 - [ ] Save picks locally (localStorage) and allow edits
 - [ ] Implement pick locking rule (day before kickoff at 12:00am league time)
   - [ ] Disable inputs and show “Locked since …”
 - [ ] Implement scoring + leaderboard (client-side, mock data)
-  - [ ] Compute totals + tie-breakers (exact count, earliest submission)
+  - [ ] Separate points for exact, outcome, knockout extras
+  - [ ] Stage-specific knockout scoring (R32, R16, QF, SF, Third, Final)
   - [ ] Render standings from mock members + picks
-- [ ] Show `matches.json` `lastUpdated` + optional “Refresh” button
 
 ---
 
@@ -59,8 +63,8 @@
   - [ ] Users can only write their own picks
   - [ ] Only admin can manage allowlist/members
 - [ ] Wire Firebase SDK into the app
-  - [ ] Sign in/out buttons on `/`
-  - [ ] Redirect signed-in users to `/matches`
+  - [ ] Sign in/out buttons in header
+  - [ ] Redirect signed-in users to `/`
 - [ ] Migrate local storage picks/members to Firestore
 
 ---

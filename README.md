@@ -2,6 +2,15 @@
 
 Simple World Cup predictions app for a private league with my friends: picks, points, and bragging rights.
 
+## App Flow (Current)
+
+- `/` next matchday picks (highlights missing picks)
+- `/upcoming` all remaining matches with picks
+- `/results` completed matches + your picks
+- `/leaderboard` category points (exact, outcome, knockout extras)
+
+Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`).
+
 ## Dev
 
 1. Install Node.js (v20+ recommended)
