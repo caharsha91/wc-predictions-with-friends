@@ -132,6 +132,16 @@ export default function LeaderboardPage() {
     )
   }, [state])
 
+  const leaderEntry = leaderboard[0]
+  const currentEntry = leaderboard.find((entry) => entry.member.id === CURRENT_USER_ID)
+  const totalPoints = leaderboard.reduce((sum, entry) => sum + entry.totalPoints, 0)
+  const averagePoints = leaderboard.length > 0 ? Math.round(totalPoints / leaderboard.length) : 0
+  const currentRank = currentEntry
+    ? leaderboard.findIndex((entry) => entry.member.id === CURRENT_USER_ID) + 1
+    : null
+  const leaderGap =
+    leaderEntry && currentEntry ? Math.max(0, leaderEntry.totalPoints - currentEntry.totalPoints) : null
+
   const dateKeys = useMemo(() => {
     if (state.status !== 'ready') return []
     const groupMatches = state.matches.filter(
@@ -258,15 +268,20 @@ export default function LeaderboardPage() {
     setSecondaryId((current) => current ?? fallbackSecondary)
   }, [leaderboard])
 
+  const podiumEntries = leaderboard.slice(0, 3)
+  const listSource = leaderboard.length > 3 ? leaderboard.slice(3) : leaderboard
+  const listOffset = leaderboard.length > 3 ? 3 : 0
+
   useEffect(() => {
     if (leaderboard.length === 0) return
-    const pageCount = Math.max(1, Math.ceil(leaderboard.length / pageSize))
-    setPage((current) => Math.min(current, pageCount))
+    const listCount = leaderboard.length > 3 ? leaderboard.length - 3 : leaderboard.length
+    const nextPageCount = Math.max(1, Math.ceil(listCount / pageSize))
+    setPage((current) => Math.min(current, nextPageCount))
   }, [leaderboard, pageSize])
 
-  const pageCount = Math.max(1, Math.ceil(leaderboard.length / pageSize))
+  const pageCount = Math.max(1, Math.ceil(listSource.length / pageSize))
   const pageStart = (page - 1) * pageSize
-  const pageEntries = leaderboard.slice(pageStart, pageStart + pageSize)
+  const pageEntries = listSource.slice(pageStart, pageStart + pageSize)
   const hasTournamentStarted =
     state.status === 'ready' && state.matches.some((match) => match.status === 'FINISHED')
 
@@ -299,252 +314,373 @@ export default function LeaderboardPage() {
       {state.status === 'loading' ? <div className="muted">Loading...</div> : null}
       {state.status === 'error' ? <div className="error">{state.message}</div> : null}
 
-      {state.status === 'ready' && hasTournamentStarted ? (
-        <div className="card">
-          <div className="sectionTitle">Gameday history</div>
-          <div className="historyControls">
-            <label className="historyLabel">
-              Compare
-              <select
-                className="historySelect"
-                value={primaryId ?? ''}
-                onChange={(event) => setPrimaryId(event.target.value)}
-              >
-                {state.members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <span className="historyVs">vs</span>
-            <label className="historyLabel">
-              Player
-              <select
-                className="historySelect"
-                value={secondaryId ?? ''}
-                onChange={(event) => setSecondaryId(event.target.value)}
-              >
-                {state.members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {chartSeries ? (
-            <div className="historyChart">
-              <svg viewBox="0 0 640 180" role="img" aria-label="Gameday history chart">
-                <defs>
-                  <linearGradient id="historyPrimary" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-                  </linearGradient>
-                  <linearGradient id="historySecondary" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="var(--glow)" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="var(--glow)" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                {chartSeries.primaryValues.map((value, index) => {
-                  if (index === 0) return null
-                  if (index % chartSeries.labelEvery !== 0) return null
-                  const prev = chartSeries.primaryValues[index - 1]
-                  const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
-                  const x1 = 40 + step * (index - 1)
-                  const x2 = 40 + step * index
-                  const y1 = 150 - (prev / chartSeries.maxValue) * 110
-                  const y2 = 150 - (value / chartSeries.maxValue) * 110
-                  return (
-                    <line
-                      key={`grid-${index}`}
-                      x1={x1}
-                      x2={x1}
-                      y1={20}
-                      y2={150}
-                      stroke="var(--border-soft)"
-                      strokeDasharray="2 6"
-                    />
-                  )
-                })}
-                <polyline
-                  fill="none"
-                  stroke="var(--accent)"
-                  strokeWidth="3"
-                  points={chartSeries.primaryValues
-                    .map((value, index) => {
-                      const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
-                      const x = 40 + step * index
-                      const y = 150 - (value / chartSeries.maxValue) * 110
-                      return `${x},${y}`
-                    })
-                    .join(' ')}
-                />
-                <polyline
-                  fill="none"
-                  stroke="var(--glow)"
-                  strokeWidth="2"
-                  points={chartSeries.secondaryValues
-                    .map((value, index) => {
-                      const step = 560 / Math.max(1, chartSeries.secondaryValues.length - 1)
-                      const x = 40 + step * index
-                      const y = 150 - (value / chartSeries.maxValue) * 110
-                      return `${x},${y}`
-                    })
-                    .join(' ')}
-                />
-                {chartSeries.primaryValues.map((value, index) => {
-                  const isAnchor =
-                    index % chartSeries.labelEvery === 0 || index === chartSeries.primaryValues.length - 1
-                  if (!isAnchor) return null
-                  const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
-                  const x = 40 + step * index
-                  const y = 150 - (value / chartSeries.maxValue) * 110
-                  return <circle key={`p-${index}`} cx={x} cy={y} r="3.5" fill="var(--accent)" />
-                })}
-                {chartSeries.secondaryValues.map((value, index) => {
-                  const isAnchor =
-                    index % chartSeries.labelEvery === 0 || index === chartSeries.secondaryValues.length - 1
-                  if (!isAnchor) return null
-                  const step = 560 / Math.max(1, chartSeries.secondaryValues.length - 1)
-                  const x = 40 + step * index
-                  const y = 150 - (value / chartSeries.maxValue) * 110
-                  return <circle key={`s-${index}`} cx={x} cy={y} r="3" fill="var(--glow)" />
-                })}
-                {chartSeries.primaryValues.map((value, index) => {
-                  const isAnchor =
-                    index % chartSeries.labelEvery === 0 || index === chartSeries.primaryValues.length - 1
-                  if (!isAnchor) return null
-                  const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
-                  const x = 40 + step * index
-                  const y = 150 - (value / chartSeries.maxValue) * 110
-                  return (
-                    <text
-                      key={`p-label-${index}`}
-                      x={x}
-                      y={y - 10}
-                      textAnchor="middle"
-                      fill="var(--accent)"
-                      fontSize="10"
-                    >
-                      {value}
-                    </text>
-                  )
-                })}
-                {chartSeries.secondaryValues.map((value, index) => {
-                  const isAnchor =
-                    index % chartSeries.labelEvery === 0 || index === chartSeries.secondaryValues.length - 1
-                  if (!isAnchor) return null
-                  const step = 560 / Math.max(1, chartSeries.secondaryValues.length - 1)
-                  const x = 40 + step * index
-                  const y = 150 - (value / chartSeries.maxValue) * 110
-                  return (
-                    <text
-                      key={`s-label-${index}`}
-                      x={x}
-                      y={y + 14}
-                      textAnchor="middle"
-                      fill="var(--text)"
-                      opacity="0.85"
-                      fontSize="10"
-                    >
-                      {value}
-                    </text>
-                  )
-                })}
-                {history.map((entry, index) => {
-                  const isAnchor =
-                    index % chartSeries.labelEvery === 0 || index === history.length - 1
-                  if (!isAnchor) return null
-                  const label = formatLabel(entry.label)
-                  if (!label) return null
-                  const step = 560 / Math.max(1, history.length - 1)
-                  const x = 40 + step * index
-                  return (
-                    <text
-                      key={`label-${entry.key}`}
-                      x={x}
-                      y={170}
-                      textAnchor="middle"
-                      fill="var(--muted)"
-                      fontSize="10"
-                    >
-                      {label}
-                    </text>
-                  )
-                })}
-              </svg>
-            </div>
-          ) : (
-            <div className="muted">No finished matches yet.</div>
-          )}
-        </div>
-      ) : null}
-
       {state.status === 'ready' ? (
-        <div className="card">
-          {leaderboard.length === 0 ? (
-            <div className="muted">No finished matches to score yet.</div>
-          ) : (
-            <div className="leaderboardTable">
-                  <div className="leaderboardRow leaderboardHeaderRow">
-                <div>#</div>
-                <div>Player</div>
-                <div>Exact</div>
-                <div>Outcome</div>
-                <div>Knockout</div>
-                <div>Bracket</div>
-                <div>Total</div>
-              </div>
-              {pageEntries.map((entry, index) => (
-                <div
-                  key={entry.member.id}
-                  className={
-                    entry.member.id === CURRENT_USER_ID
-                      ? 'leaderboardRow leaderboardHighlight'
-                      : 'leaderboardRow'
-                  }
-                >
-                  <div className="leaderboardRank">{pageStart + index + 1}</div>
-                  <div className="leaderboardName">
-                    {entry.member.name}
-                    {entry.member.handle ? (
-                      <span className="leaderboardHandle">@{entry.member.handle}</span>
-                    ) : null}
-                  </div>
-                  <div className="leaderboardPoints">{entry.exactPoints}</div>
-                  <div>{entry.resultPoints}</div>
-                  <div>{entry.knockoutPoints}</div>
-                  <div>{entry.bracketPoints}</div>
-                  <div className="leaderboardTotal">{entry.totalPoints}</div>
+        leaderboard.length === 0 ? (
+          <div className="card muted">No finished matches to score yet.</div>
+        ) : (
+          <>
+            <div className="leaderboardHighlights">
+              <div className="card leaderboardHighlightCard" data-tone="leader">
+                <div className="highlightLabel">League leader</div>
+                <div className="highlightName">{leaderEntry?.member.name ?? '—'}</div>
+                <div className="highlightValue">{leaderEntry?.totalPoints ?? 0}</div>
+                <div className="highlightMeta">
+                  <span>Exact {leaderEntry?.exactPoints ?? 0}</span>
+                  <span>Outcome {leaderEntry?.resultPoints ?? 0}</span>
+                  <span>Knockout {leaderEntry?.knockoutPoints ?? 0}</span>
                 </div>
-              ))}
-            </div>
-          )}
-          {leaderboard.length > pageSize ? (
-            <div className="leaderboardPagination">
-              <button
-                type="button"
-                className="paginationButton"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={page === 1}
-              >
-                Prev
-              </button>
-              <div className="paginationInfo">
-                Page {page} of {pageCount}
               </div>
-              <button
-                type="button"
-                className="paginationButton"
-                onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
-                disabled={page === pageCount}
-              >
-                Next
-              </button>
+              <div className="card leaderboardHighlightCard" data-tone="you">
+                <div className="highlightLabel">Your standing</div>
+                <div className="highlightName">{currentEntry?.member.name ?? 'You'}</div>
+                <div className="highlightValue">{currentEntry?.totalPoints ?? 0}</div>
+                <div className="highlightMeta">
+                  <span>{currentRank ? `Rank #${currentRank}` : 'Unranked'}</span>
+                  {leaderGap !== null ? (
+                    <span>{leaderGap === 0 ? 'Tied for lead' : `+${leaderGap} to lead`}</span>
+                  ) : null}
+                  <span>Bracket {currentEntry?.bracketPoints ?? 0}</span>
+                </div>
+              </div>
+              <div className="card leaderboardHighlightCard" data-tone="stats">
+                <div className="highlightLabel">League pulse</div>
+                <div className="highlightStatsGrid">
+                  <div className="highlightStat">
+                    <span className="highlightStatValue">{leaderboard.length}</span>
+                    <span className="highlightStatLabel">Players</span>
+                  </div>
+                  <div className="highlightStat">
+                    <span className="highlightStatValue">{averagePoints}</span>
+                    <span className="highlightStatLabel">Avg points</span>
+                  </div>
+                  <div className="highlightStat">
+                    <span className="highlightStatValue">{leaderEntry?.totalPoints ?? 0}</span>
+                    <span className="highlightStatLabel">Leader total</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          ) : null}
-        </div>
+
+            {podiumEntries.length > 0 ? (
+              <div className="card leaderboardPodium">
+                <div className="leaderboardPodiumHeader">
+                  <div>
+                    <div className="sectionKicker">Top performers</div>
+                    <div className="sectionTitle">Podium</div>
+                  </div>
+                  <div className="podiumMeta">
+                    Top {podiumEntries.length} of {leaderboard.length}
+                  </div>
+                </div>
+                <div className="podiumGrid">
+                  {podiumEntries.map((entry, index) => {
+                    const rank = index + 1
+                    return (
+                      <div
+                        key={entry.member.id}
+                        className={
+                          entry.member.id === CURRENT_USER_ID
+                            ? 'podiumCard podiumCardHighlight'
+                            : 'podiumCard'
+                        }
+                        data-rank={rank}
+                      >
+                        <div className="podiumRank">#{rank}</div>
+                        <div className="podiumName">
+                          {entry.member.name}
+                          {entry.member.handle ? (
+                            <span className="podiumHandle">@{entry.member.handle}</span>
+                          ) : null}
+                        </div>
+                        <div className="podiumPoints">{entry.totalPoints}</div>
+                        <div className="podiumBreakdown">
+                          <span>Exact {entry.exactPoints}</span>
+                          <span>Outcome {entry.resultPoints}</span>
+                          <span>KO {entry.knockoutPoints}</span>
+                          <span>Bracket {entry.bracketPoints}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            <div
+              className={
+                hasTournamentStarted ? 'leaderboardSplit' : 'leaderboardSplit leaderboardSplitSingle'
+              }
+            >
+              {hasTournamentStarted ? (
+                <div className="card leaderboardHistoryCard">
+                  <div className="leaderboardHistoryHeader">
+                    <div>
+                      <div className="sectionKicker">Momentum tracker</div>
+                      <div className="sectionTitle">Gameday history</div>
+                    </div>
+                  </div>
+                  <div className="historyControls">
+                    <label className="historyLabel">
+                      Compare
+                      <select
+                        className="historySelect"
+                        value={primaryId ?? ''}
+                        onChange={(event) => setPrimaryId(event.target.value)}
+                      >
+                        {state.members.map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <span className="historyVs">vs</span>
+                    <label className="historyLabel">
+                      Player
+                      <select
+                        className="historySelect"
+                        value={secondaryId ?? ''}
+                        onChange={(event) => setSecondaryId(event.target.value)}
+                      >
+                        {state.members.map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  {chartSeries ? (
+                    <div className="historyChart">
+                      <svg viewBox="0 0 640 180" role="img" aria-label="Gameday history chart">
+                        <defs>
+                          <linearGradient id="historyPrimary" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.4" />
+                            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+                          </linearGradient>
+                          <linearGradient id="historySecondary" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stopColor="var(--glow)" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="var(--glow)" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        {chartSeries.primaryValues.map((value, index) => {
+                          if (index === 0) return null
+                          if (index % chartSeries.labelEvery !== 0) return null
+                          const prev = chartSeries.primaryValues[index - 1]
+                          const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
+                          const x1 = 40 + step * (index - 1)
+                          const y1 = 150 - (prev / chartSeries.maxValue) * 110
+                          return (
+                            <line
+                              key={`grid-${index}`}
+                              x1={x1}
+                              x2={x1}
+                              y1={20}
+                              y2={150}
+                              stroke="var(--border-soft)"
+                              strokeDasharray="2 6"
+                            />
+                          )
+                        })}
+                        <polyline
+                          fill="none"
+                          stroke="var(--accent)"
+                          strokeWidth="3"
+                          points={chartSeries.primaryValues
+                            .map((value, index) => {
+                              const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
+                              const x = 40 + step * index
+                              const y = 150 - (value / chartSeries.maxValue) * 110
+                              return `${x},${y}`
+                            })
+                            .join(' ')}
+                        />
+                        <polyline
+                          fill="none"
+                          stroke="var(--glow)"
+                          strokeWidth="2"
+                          points={chartSeries.secondaryValues
+                            .map((value, index) => {
+                              const step = 560 / Math.max(1, chartSeries.secondaryValues.length - 1)
+                              const x = 40 + step * index
+                              const y = 150 - (value / chartSeries.maxValue) * 110
+                              return `${x},${y}`
+                            })
+                            .join(' ')}
+                        />
+                        {chartSeries.primaryValues.map((value, index) => {
+                          const isAnchor =
+                            index % chartSeries.labelEvery === 0 ||
+                            index === chartSeries.primaryValues.length - 1
+                          if (!isAnchor) return null
+                          const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
+                          const x = 40 + step * index
+                          const y = 150 - (value / chartSeries.maxValue) * 110
+                          return (
+                            <circle key={`p-${index}`} cx={x} cy={y} r="3.5" fill="var(--accent)" />
+                          )
+                        })}
+                        {chartSeries.secondaryValues.map((value, index) => {
+                          const isAnchor =
+                            index % chartSeries.labelEvery === 0 ||
+                            index === chartSeries.secondaryValues.length - 1
+                          if (!isAnchor) return null
+                          const step = 560 / Math.max(1, chartSeries.secondaryValues.length - 1)
+                          const x = 40 + step * index
+                          const y = 150 - (value / chartSeries.maxValue) * 110
+                          return <circle key={`s-${index}`} cx={x} cy={y} r="3" fill="var(--glow)" />
+                        })}
+                        {chartSeries.primaryValues.map((value, index) => {
+                          const isAnchor =
+                            index % chartSeries.labelEvery === 0 ||
+                            index === chartSeries.primaryValues.length - 1
+                          if (!isAnchor) return null
+                          const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
+                          const x = 40 + step * index
+                          const y = 150 - (value / chartSeries.maxValue) * 110
+                          return (
+                            <text
+                              key={`p-label-${index}`}
+                              x={x}
+                              y={y - 10}
+                              textAnchor="middle"
+                              fill="var(--accent)"
+                              fontSize="10"
+                            >
+                              {value}
+                            </text>
+                          )
+                        })}
+                        {chartSeries.secondaryValues.map((value, index) => {
+                          const isAnchor =
+                            index % chartSeries.labelEvery === 0 ||
+                            index === chartSeries.secondaryValues.length - 1
+                          if (!isAnchor) return null
+                          const step = 560 / Math.max(1, chartSeries.secondaryValues.length - 1)
+                          const x = 40 + step * index
+                          const y = 150 - (value / chartSeries.maxValue) * 110
+                          return (
+                            <text
+                              key={`s-label-${index}`}
+                              x={x}
+                              y={y + 14}
+                              textAnchor="middle"
+                              fill="var(--text)"
+                              opacity="0.85"
+                              fontSize="10"
+                            >
+                              {value}
+                            </text>
+                          )
+                        })}
+                        {history.map((entry, index) => {
+                          const isAnchor =
+                            index % chartSeries.labelEvery === 0 || index === history.length - 1
+                          if (!isAnchor) return null
+                          const label = formatLabel(entry.label)
+                          if (!label) return null
+                          const step = 560 / Math.max(1, history.length - 1)
+                          const x = 40 + step * index
+                          return (
+                            <text
+                              key={`label-${entry.key}`}
+                              x={x}
+                              y={170}
+                              textAnchor="middle"
+                              fill="var(--muted)"
+                              fontSize="10"
+                            >
+                              {label}
+                            </text>
+                          )
+                        })}
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="muted">No finished matches yet.</div>
+                  )}
+                </div>
+              ) : null}
+
+              <div className="card leaderboardListCard">
+                <div className="leaderboardListHeader">
+                  <div>Rank</div>
+                  <div>Player</div>
+                  <div>Total</div>
+                  <div>Exact</div>
+                  <div>Outcome</div>
+                  <div>KO</div>
+                  <div>Bracket</div>
+                  <div>Behind</div>
+                </div>
+                {pageEntries.length === 0 ? (
+                  <div className="muted">No additional players yet.</div>
+                ) : (
+                  <div className="leaderboardList">
+                    {pageEntries.map((entry, index) => {
+                      const rank = listOffset + pageStart + index + 1
+                      const delta = leaderEntry
+                        ? Math.max(0, leaderEntry.totalPoints - entry.totalPoints)
+                        : 0
+                      const deltaLabel =
+                        leaderEntry && entry.member.id === leaderEntry.member.id
+                          ? 'Leader'
+                          : `+${delta}`
+                      return (
+                        <div
+                          key={entry.member.id}
+                          className={
+                            entry.member.id === CURRENT_USER_ID
+                              ? 'leaderboardRow leaderboardHighlight'
+                              : 'leaderboardRow'
+                          }
+                          data-rank={rank}
+                        >
+                          <div className="leaderboardRank">#{rank}</div>
+                          <div className="leaderboardName">
+                            {entry.member.name}
+                            {entry.member.handle ? (
+                              <span className="leaderboardHandle">@{entry.member.handle}</span>
+                            ) : null}
+                          </div>
+                          <div className="leaderboardTotal">{entry.totalPoints}</div>
+                          <div className="leaderboardPoints">{entry.exactPoints}</div>
+                          <div>{entry.resultPoints}</div>
+                          <div>{entry.knockoutPoints}</div>
+                          <div>{entry.bracketPoints}</div>
+                          <div className="leaderboardDeltaTag">{deltaLabel}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {listSource.length > pageSize ? (
+                  <div className="leaderboardPagination">
+                    <button
+                      type="button"
+                      className="paginationButton"
+                      onClick={() => setPage((current) => Math.max(1, current - 1))}
+                      disabled={page === 1}
+                    >
+                      Prev
+                    </button>
+                    <div className="paginationInfo">
+                      Page {page} of {pageCount}
+                    </div>
+                    <button
+                      type="button"
+                      className="paginationButton"
+                      onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                      disabled={page === pageCount}
+                    >
+                      Next
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </>
+        )
       ) : null}
     </div>
   )

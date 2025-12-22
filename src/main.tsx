@@ -6,9 +6,11 @@ import App from './ui/App'
 import './ui/styles.css'
 import { applyTheme, getThemeId } from './lib/themes'
 import { applyColorMode, getColorMode } from './lib/colorMode'
+import { applyListDensity, getListDensity } from './lib/listDensity'
 
 applyTheme(getThemeId())
 applyColorMode(getColorMode())
+applyListDensity(getListDensity())
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
