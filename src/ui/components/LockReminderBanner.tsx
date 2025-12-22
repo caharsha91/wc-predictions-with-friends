@@ -82,16 +82,19 @@ export default function LockReminderBanner({ matches }: LockReminderBannerProps)
         </div>
         {sameDayMatches.length > 1 ? (
           <div className="lockBannerMatches">
-            {sameDayMatches.map((entry) => (
-              <div key={entry.id} className="lockBannerMatchItem">
-                <span className="lockBannerMatchTime">
-                  {formatLockTimeShort(getLockTime(entry.kickoffUtc))}
-                </span>
-                <span>
-                  {entry.homeTeam.code} vs {entry.awayTeam.code}
-                </span>
-              </div>
-            ))}
+            <div className="lockBannerMatchesTitle">Also locking today</div>
+            <div className="lockBannerMatchesList">
+              {sameDayMatches.map((entry) => (
+                <div key={entry.id} className="lockBannerMatchItem">
+                  <span className="lockBannerMatchTime">
+                    {formatLockTimeShort(getLockTime(entry.kickoffUtc))}
+                  </span>
+                  <span>
+                    {entry.homeTeam.code} vs {entry.awayTeam.code}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         ) : null}
       </div>

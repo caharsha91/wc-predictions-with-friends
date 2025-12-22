@@ -487,7 +487,7 @@ export default function LeaderboardPage() {
             <div className="muted">No finished matches to score yet.</div>
           ) : (
             <div className="leaderboardTable">
-              <div className="leaderboardRow leaderboardHeader">
+                  <div className="leaderboardRow leaderboardHeaderRow">
                 <div>#</div>
                 <div>Player</div>
                 <div>Exact</div>

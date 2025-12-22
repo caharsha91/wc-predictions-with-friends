@@ -29,22 +29,17 @@ export default function Layout() {
   return (
     <div className="appShell">
       <header className="header">
-        <div className="headerTicker">
-          <span className="onAirDot" aria-hidden="true" />
-          <span>Stadium Light Edition</span>
-        </div>
-        <div className="headerInner">
-          <div className="brandStack">
-            <div className="brand">WC Predictions</div>
-            <div className="brandSub">Under the floodlights</div>
+        <div className="headerBar">
+          <div className="brandBlock">
+            <div className="brandMark" aria-hidden="true">
+              WC
+            </div>
+            <div className="brandStack">
+              <div className="brand">WC Predictions</div>
+              <div className="brandSub">Under the floodlights</div>
+            </div>
           </div>
-          <div className="headerRight">
-            <nav className="nav">
-              <NavItem to="/upcoming" label="Upcoming" />
-              <NavItem to="/results" label="Results" />
-              <NavItem to="/bracket" label="Bracket" />
-              <NavItem to="/leaderboard" label="Leaderboard" />
-            </nav>
+          <div className="headerActions">
             <div className="modeToggle" role="group" aria-label="Color mode">
               <button
                 className={colorMode === 'dark' ? 'modeToggleButton active' : 'modeToggleButton'}
@@ -64,6 +59,18 @@ export default function Layout() {
             {user?.name && user.email ? (
               <UserInfo name={user.name} email={user.email} isAdmin={user.isAdmin} />
             ) : null}
+          </div>
+        </div>
+        <div className="headerNav">
+          <nav className="navTabs">
+            <NavItem to="/upcoming" label="Upcoming" />
+            <NavItem to="/results" label="Results" />
+            <NavItem to="/bracket" label="Bracket" />
+            <NavItem to="/leaderboard" label="Leaderboard" />
+          </nav>
+          <div className="headerMeta">
+            <span className="metaTag">Friends League</span>
+            <span className="metaNote">Season hub</span>
           </div>
         </div>
       </header>

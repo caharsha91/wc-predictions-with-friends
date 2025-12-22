@@ -47,9 +47,22 @@ function formatLastUpdated(iso: string) {
   })
 }
 
+function getStatusLabel(status: Match['status']) {
+  if (status === 'IN_PLAY') return 'Live'
+  if (status === 'FINISHED') return 'Final'
+  return 'Upcoming'
+}
+
+function getStatusTone(status: Match['status']) {
+  if (status === 'IN_PLAY') return 'live'
+  if (status === 'FINISHED') return 'final'
+  return 'upcoming'
+}
+
 export default function ResultsPage() {
   const [state, setState] = useState<LoadState>({ status: 'idle' })
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     let canceled = false
@@ -123,6 +136,10 @@ export default function ResultsPage() {
     }
     return groups
   }, [orderedMatches, state])
+
+  function toggleGroup(key: string) {
+    setCollapsedGroups((current) => ({ ...current, [key]: !current[key] }))
+  }
 
   function renderPickSummary(match: Match, pick?: Pick) {
     if (!pick) return <span className="pickMissing">No pick</span>
@@ -202,58 +219,90 @@ export default function ResultsPage() {
           ) : null}
           {groupedMatches.map((group) => {
             const [dateKey, stage] = group.key.split('__')
+            const isCollapsed = collapsedGroups[group.key] ?? false
+            const matchCountLabel = `${group.matches.length} match${group.matches.length === 1 ? '' : 'es'}`
             return (
               <section key={group.key} className="card matchGroup">
                 <div className="groupHeader">
-                  <div>
-                    <div className="groupDate">{formatDateHeader(dateKey)}</div>
-                    <div className="groupStage">{stage}</div>
-                  </div>
+                  <button
+                    type="button"
+                    className="groupHeaderButton"
+                    data-collapsed={isCollapsed ? 'true' : 'false'}
+                    onClick={() => toggleGroup(group.key)}
+                    aria-expanded={!isCollapsed}
+                  >
+                    <span className="toggleChevron" aria-hidden="true">
+                      ▾
+                    </span>
+                    <span className="groupTitle">
+                      <span className="groupDate">{formatDateHeader(dateKey)}</span>
+                      <span className="groupStage">{stage}</span>
+                    </span>
+                    <span className="toggleMeta">{matchCountLabel}</span>
+                  </button>
                 </div>
 
-                <div className="list">
-                  {group.matches.map((match, index) => {
-                    const currentPick = findPick(state.picks, match.id, CURRENT_USER_ID)
-                    const showScore =
-                      match.status === 'FINISHED' &&
-                      typeof match.score?.home === 'number' &&
-                      typeof match.score?.away === 'number'
-                    const rowStyle = { '--row-index': index } as CSSProperties
+                {!isCollapsed ? (
+                  <div className="list">
+                    {group.matches.map((match, index) => {
+                      const currentPick = findPick(state.picks, match.id, CURRENT_USER_ID)
+                      const showScore =
+                        match.status === 'FINISHED' &&
+                        typeof match.score?.home === 'number' &&
+                        typeof match.score?.away === 'number'
+                      const rowStyle = { '--row-index': index } as CSSProperties
+                      const statusLabel = getStatusLabel(match.status)
+                      const statusTone = getStatusTone(match.status)
 
-                    return (
-                      <div key={match.id} className="matchRow" style={rowStyle}>
-                        <div className="matchTeams">
-                          <div className="team">
-                            <span className="teamCode">{match.homeTeam.code}</span>
-                            <span className="teamName">{match.homeTeam.name}</span>
-                          </div>
-                          <div className="vs">vs</div>
-                          <div className="team">
-                            <span className="teamCode">{match.awayTeam.code}</span>
-                            <span className="teamName">{match.awayTeam.name}</span>
-                          </div>
-                        </div>
-
-                        <div className="matchMeta">
-                          <div className="muted small">{formatKickoff(match.kickoffUtc)}</div>
-                          <div className="pill">{match.status}</div>
-                          {showScore ? (
-                            <div className="score">
-                              {match.score!.home}-{match.score!.away}
+                      return (
+                        <div
+                          key={match.id}
+                          className="matchRow"
+                          style={rowStyle}
+                          data-status={statusTone}
+                        >
+                          <div className="matchInfo">
+                            <div className="matchTeams">
+                              <div className="team">
+                                <span className="teamCode">{match.homeTeam.code}</span>
+                                <span className="teamName">{match.homeTeam.name}</span>
+                              </div>
+                              <div className="vs">vs</div>
+                              <div className="team">
+                                <span className="teamCode">{match.awayTeam.code}</span>
+                                <span className="teamName">{match.awayTeam.name}</span>
+                              </div>
                             </div>
-                          ) : null}
-                        </div>
+                            <div className="matchSub">
+                              <div className="matchKickoff">{formatKickoff(match.kickoffUtc)}</div>
+                              <div className="statusRow">
+                                <span className="statusTag" data-tone={statusTone}>
+                                  {statusLabel}
+                                </span>
+                                {showScore ? (
+                                  <span className="scoreTag">
+                                    {match.score!.home}-{match.score!.away}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                          </div>
 
-                        <div className="matchActions">
-                          <div className={currentPick ? 'resultsPickRow' : 'resultsPickRow resultsPickMissing'}>
-                            <div className="resultsPickName">Your pick</div>
-                            {renderPickSummary(match, currentPick)}
+                          <div className="matchActions">
+                            <div
+                              className={
+                                currentPick ? 'resultsPickRow' : 'resultsPickRow resultsPickMissing'
+                              }
+                            >
+                              <div className="resultsPickName">Your pick</div>
+                              {renderPickSummary(match, currentPick)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                ) : null}
               </section>
             )
           })}
