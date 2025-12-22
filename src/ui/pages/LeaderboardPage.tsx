@@ -267,6 +267,8 @@ export default function LeaderboardPage() {
   const pageCount = Math.max(1, Math.ceil(leaderboard.length / pageSize))
   const pageStart = (page - 1) * pageSize
   const pageEntries = leaderboard.slice(pageStart, pageStart + pageSize)
+  const hasTournamentStarted =
+    state.status === 'ready' && state.matches.some((match) => match.status === 'FINISHED')
 
   const chartSeries = useMemo(() => {
     const primary = primaryId
@@ -297,7 +299,7 @@ export default function LeaderboardPage() {
       {state.status === 'loading' ? <div className="muted">Loading...</div> : null}
       {state.status === 'error' ? <div className="error">{state.message}</div> : null}
 
-      {state.status === 'ready' ? (
+      {state.status === 'ready' && hasTournamentStarted ? (
         <div className="card">
           <div className="sectionTitle">Gameday history</div>
           <div className="historyControls">
