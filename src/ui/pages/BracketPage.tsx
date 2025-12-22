@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
-import { fetchBracketPredictions, fetchMatches } from '../../lib/data'
+import { fetchBestThirdQualifiers, fetchBracketPredictions, fetchMatches } from '../../lib/data'
 import {
   hasBracketData,
   loadLocalBracketPrediction,
@@ -19,7 +19,13 @@ import type { KnockoutStage } from '../../types/scoring'
 type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; matches: Match[]; predictions: BracketPrediction[]; lastUpdated: string }
+  | {
+      status: 'ready'
+      matches: Match[]
+      predictions: BracketPrediction[]
+      bestThirdQualifiers: string[]
+      lastUpdated: string
+    }
 
 const knockoutStageOrder: KnockoutStage[] = ['R32', 'R16', 'QF', 'SF', 'Third', 'Final']
 const TBD_TEAM: Team = { code: 'TBD', name: 'TBD' }
@@ -135,15 +141,17 @@ export default function BracketPage() {
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [matchesFile, bracketFile] = await Promise.all([
+        const [matchesFile, bracketFile, bestThirdFile] = await Promise.all([
           fetchMatches(),
-          fetchBracketPredictions()
+          fetchBracketPredictions(),
+          fetchBestThirdQualifiers()
         ])
         if (canceled) return
         setState({
           status: 'ready',
           matches: matchesFile.matches,
           predictions: bracketFile.predictions,
+          bestThirdQualifiers: bestThirdFile.qualifiers,
           lastUpdated: matchesFile.lastUpdated
         })
       } catch (error) {
@@ -255,6 +263,25 @@ export default function BracketPage() {
     return groupMatches.every((match) => match.status === 'FINISHED')
   }, [state])
 
+  const bestThirdsReady = useMemo(() => {
+    if (state.status !== 'ready') return false
+    return state.bestThirdQualifiers.length >= 8
+  }, [state])
+
+  const knockoutDrawReady = useMemo(() => {
+    if (state.status !== 'ready') return false
+    for (const stage of knockoutStageOrder) {
+      const stageMatches = state.matches.filter((match) => match.stage === stage)
+      if (stageMatches.length === 0) continue
+      return stageMatches.every(
+        (match) => match.homeTeam.code !== 'TBD' && match.awayTeam.code !== 'TBD'
+      )
+    }
+    return false
+  }, [state])
+
+  const knockoutUnlocked = groupStageComplete && bestThirdsReady && knockoutDrawReady
+
   const groupMatchDates = useMemo(() => {
     if (state.status !== 'ready') return []
     const dates = new Set<string>()
@@ -297,10 +324,14 @@ export default function BracketPage() {
   }, [prediction])
 
   useEffect(() => {
-    if (view !== null) return
     if (state.status !== 'ready') return
-    setView(groupStageComplete ? 'knockout' : 'group')
-  }, [groupStageComplete, state, view])
+    if (view === 'knockout' && !knockoutUnlocked) {
+      setView('group')
+      return
+    }
+    if (view !== null) return
+    setView(knockoutUnlocked ? 'knockout' : 'group')
+  }, [knockoutUnlocked, state, view])
 
   function handleGroupChange(groupId: string, field: 'first' | 'second', value: string) {
     setPrediction((current) => {
@@ -434,21 +465,29 @@ export default function BracketPage() {
         >
           Group stage
         </button>
-        <button
-          className={
-            activeView === 'knockout' ? 'bracketToggleButton active' : 'bracketToggleButton'
-          }
-          type="button"
-          role="tab"
-          aria-selected={activeView === 'knockout'}
-          onClick={() => setView('knockout')}
-        >
-          Knockout
-        </button>
+        {knockoutUnlocked ? (
+          <button
+            className={
+              activeView === 'knockout' ? 'bracketToggleButton active' : 'bracketToggleButton'
+            }
+            type="button"
+            role="tab"
+            aria-selected={activeView === 'knockout'}
+            onClick={() => setView('knockout')}
+          >
+            Knockout
+          </button>
+        ) : null}
       </div>
 
       {activeView === 'group' ? (
         <>
+          {!knockoutUnlocked ? (
+            <div className="card muted">
+              Knockout predictions unlock after group stage completion, the best third-place
+              qualifiers are published, and the knockout draw is available.
+            </div>
+          ) : null}
           <section className="card">
             <div className="row rowSpaceBetween">
               <div className="sectionTitle">Group qualifiers</div>
