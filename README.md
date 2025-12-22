@@ -4,11 +4,11 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 
 ## App Flow (Current)
 
-- `/` next matchday picks (highlights missing picks)
-- `/upcoming` all remaining matches with picks
+- `/` redirects to `/upcoming`
+- `/upcoming` all remaining matches with picks + lock countdown banner
 - `/results` completed matches + your picks
 - `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks)
-- `/leaderboard` category points (exact, outcome, knockout extras, bracket)
+- `/leaderboard` category points + gameday history chart + pagination
 
 Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-predictions.json`, `best-third-qualifiers.json`).
 
@@ -24,6 +24,16 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 - Bracket group qualifiers + best third-place picks lock at 11:59 PM PST on the day before the first group match day.
 - Bracket knockout picks lock at 11:59 PM PST on the day before the first knockout match day.
 - Knockout eventual winner picks are independent of the result selection.
+
+## Admin & Sim Modes
+
+- Admin is available under the user dropdown (admins only).
+- Results mode options:
+  - Live
+  - Sim: Group partial / Group complete
+  - Sim: Knockout partial / Knockout complete
+- Sim modes swap JSON files using `-simulated-<mode>.json` suffixes (matches, picks, bracket predictions, best-third qualifiers).
+- Switching modes clears local picks + bracket predictions for the current user and reloads the app.
 
 ## Data Updates (Fixtures/Results)
 

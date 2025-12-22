@@ -5,7 +5,7 @@
 
 - [x] Create repo + Vite React + TypeScript app
 - [x] Add routing/pages:
-  - [x] `/` (next matchday picks)
+  - [x] `/` (redirects to `/upcoming`)
   - [x] `/upcoming` (all remaining matches)
   - [x] `/results` (completed matches)
   - [x] `/leaderboard` (placeholder)
@@ -43,6 +43,12 @@
   - [x] Separate points for exact, outcome, knockout extras
   - [x] Stage-specific knockout scoring (R32, R16, QF, SF, Third, Final)
   - [x] Render standings from mock members + picks
+- [x] Add admin-only navigation under user dropdown
+- [x] Add light/dark mode toggle in the header
+- [x] Add theme packs with admin selection
+- [x] Add upcoming lock reminder banner on `/upcoming`
+- [x] Add leaderboard pagination (default 6 per page)
+- [x] Add gameday history chart with user vs user comparison
 
 ---
 
@@ -82,6 +88,7 @@
 - [x] Add official best third-place qualifier list in `public/data/best-third-qualifiers.json`
 - [x] Refresh leaderboard on `matches.json` deploys
 - [x] Refresh bracket scoring on best third-place qualifier deploys
+- [x] Add simulated data modes (group partial/complete, knockout partial/complete) with per-mode JSON files
 - [x] Define Firebase data structure for bracket predictions
 
 ---
