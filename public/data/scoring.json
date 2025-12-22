@@ -2,56 +2,56 @@
   "group": {
     "exactScoreBoth": 3,
     "exactScoreOne": 1,
-    "result": 1
+    "result": 2
   },
   "knockout": {
     "R32": {
       "exactScoreBoth": 4,
-      "exactScoreOne": 1,
-      "result": 1,
+      "exactScoreOne": 2,
+      "result": 3,
       "knockoutWinner": 2
     },
     "R16": {
-      "exactScoreBoth": 4,
-      "exactScoreOne": 1,
-      "result": 1,
-      "knockoutWinner": 2
-    },
-    "QF": {
       "exactScoreBoth": 5,
       "exactScoreOne": 2,
-      "result": 2,
+      "result": 4,
+      "knockoutWinner": 3
+    },
+    "QF": {
+      "exactScoreBoth": 6,
+      "exactScoreOne": 3,
+      "result": 4,
       "knockoutWinner": 3
     },
     "SF": {
-      "exactScoreBoth": 5,
-      "exactScoreOne": 2,
-      "result": 2,
-      "knockoutWinner": 3
+      "exactScoreBoth": 8,
+      "exactScoreOne": 4,
+      "result": 4,
+      "knockoutWinner": 4
     },
     "Third": {
-      "exactScoreBoth": 5,
-      "exactScoreOne": 2,
-      "result": 2,
-      "knockoutWinner": 3
+      "exactScoreBoth": 9,
+      "exactScoreOne": 4,
+      "result": 4,
+      "knockoutWinner": 4
     },
     "Final": {
-      "exactScoreBoth": 6,
-      "exactScoreOne": 2,
-      "result": 2,
-      "knockoutWinner": 4
+      "exactScoreBoth": 12,
+      "exactScoreOne": 5,
+      "result": 5,
+      "knockoutWinner": 8
     }
   },
   "bracket": {
-    "groupQualifiers": 2,
-    "thirdPlaceQualifiers": 2,
+    "groupQualifiers": 3,
+    "thirdPlaceQualifiers": 1,
     "knockout": {
       "R32": 2,
       "R16": 3,
       "QF": 4,
       "SF": 5,
-      "Third": 4,
-      "Final": 6
+      "Third": 5,
+      "Final": 10
     }
   }
 }

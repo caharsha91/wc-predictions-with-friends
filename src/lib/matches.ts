@@ -142,7 +142,7 @@ export function groupMatchesByDateAndStage(matches: Match[]): MatchGroup[] {
   const byKey = new Map<string, MatchGroup>()
 
   for (const match of matches) {
-    const dateKey = getDateKeyLocal(match.kickoffUtc)
+    const dateKey = getDateKeyInTimeZone(match.kickoffUtc)
     const mapKey = `${dateKey}__${match.stage}`
     const existing = byKey.get(mapKey)
     if (existing) {

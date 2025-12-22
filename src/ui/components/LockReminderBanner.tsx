@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { getDateKeyLocal, getLockTime } from '../../lib/matches'
+import { getDateKeyInTimeZone, getLockTime } from '../../lib/matches'
 import type { Match } from '../../types/matches'
 
 type UpcomingLock = {
@@ -64,10 +64,10 @@ export default function LockReminderBanner({ matches }: LockReminderBannerProps)
 
   const { match, lockTime } = upcomingLock
   const countdown = formatCountdown(lockTime, now)
-  const dateKey = getDateKeyLocal(match.kickoffUtc)
+  const dateKey = getDateKeyInTimeZone(match.kickoffUtc)
   const sameDayMatches = matches
     .filter((entry) => entry.status !== 'FINISHED')
-    .filter((entry) => getDateKeyLocal(entry.kickoffUtc) === dateKey)
+    .filter((entry) => getDateKeyInTimeZone(entry.kickoffUtc) === dateKey)
     .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())
 
   return (

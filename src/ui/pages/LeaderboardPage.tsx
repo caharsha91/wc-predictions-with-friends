@@ -9,7 +9,7 @@ import {
   fetchPicks,
   fetchScoring
 } from '../../lib/data'
-import { getDateKeyLocal } from '../../lib/matches'
+import { getDateKeyInTimeZone } from '../../lib/matches'
 import { loadLocalBracketPrediction, mergeBracketPredictions } from '../../lib/bracket'
 import { loadLocalPicks, mergePicks } from '../../lib/picks'
 import { buildLeaderboard } from '../../lib/scoring'
@@ -137,7 +137,7 @@ export default function LeaderboardPage() {
     const groupMatches = state.matches.filter(
       (match) => match.stage === 'Group' && match.status === 'FINISHED'
     )
-    const keys = new Set(groupMatches.map((match) => getDateKeyLocal(match.kickoffUtc)))
+    const keys = new Set(groupMatches.map((match) => getDateKeyInTimeZone(match.kickoffUtc)))
     return [...keys].sort()
   }, [state])
 
@@ -156,7 +156,7 @@ export default function LeaderboardPage() {
         }
       }
       if (options.cutoffDateKey && match.stage === 'Group') {
-        const matchDate = getDateKeyLocal(match.kickoffUtc)
+        const matchDate = getDateKeyInTimeZone(match.kickoffUtc)
         if (matchDate > options.cutoffDateKey) {
           return {
             ...match,

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import { getDateKeyLocal } from '../../lib/matches'
+import { getDateKeyInTimeZone } from '../../lib/matches'
 import PicksBoard from '../components/PicksBoard'
 import { usePicksData } from '../hooks/usePicksData'
 
@@ -13,10 +13,10 @@ export default function HomePage() {
       .filter((match) => match.status !== 'FINISHED')
       .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())
     if (upcoming.length === 0) return null
-    const dateKey = getDateKeyLocal(upcoming[0].kickoffUtc)
+    const dateKey = getDateKeyInTimeZone(upcoming[0].kickoffUtc)
     return {
       dateKey,
-      matches: upcoming.filter((match) => getDateKeyLocal(match.kickoffUtc) === dateKey)
+      matches: upcoming.filter((match) => getDateKeyInTimeZone(match.kickoffUtc) === dateKey)
     }
   }, [state])
 

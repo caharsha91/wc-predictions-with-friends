@@ -55,6 +55,7 @@ function scoreResult(match: Match, pick: Pick, config: StageScoring) {
 function scoreKnockout(match: Match, pick: Pick, config: StageScoring) {
   if (match.stage === 'Group') return 0
   if (!match.winner || !config.knockoutWinner) return 0
+  if (match.decidedBy !== 'ET' && match.decidedBy !== 'PENS') return 0
   const predictedWinner = getPredictedWinner(pick)
   if (predictedWinner && predictedWinner === match.winner) {
     return config.knockoutWinner

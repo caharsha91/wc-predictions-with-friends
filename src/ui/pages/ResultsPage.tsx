@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
 import { fetchMatches, fetchPicks } from '../../lib/data'
-import { getDateKeyLocal } from '../../lib/matches'
+import { getDateKeyInTimeZone } from '../../lib/matches'
 import { findPick, loadLocalPicks, mergePicks } from '../../lib/picks'
 import type { MatchesFile, Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
@@ -111,7 +111,7 @@ export default function ResultsPage() {
     const groups: { key: string; matches: Match[] }[] = []
     const map = new Map<string, Match[]>()
     for (const match of orderedMatches) {
-      const dateKey = getDateKeyLocal(match.kickoffUtc)
+      const dateKey = getDateKeyInTimeZone(match.kickoffUtc)
       const groupKey = `${dateKey}__${match.stage}`
       const existing = map.get(groupKey)
       if (existing) {

@@ -84,8 +84,6 @@ export function getOutcomeFromScores(
 
 export function getPredictedWinner(pick: Pick): PickWinner | undefined {
   if (pick.winner === 'HOME' || pick.winner === 'AWAY') return pick.winner
-  if (pick.outcome === 'WIN') return 'HOME'
-  if (pick.outcome === 'LOSS') return 'AWAY'
   return undefined
 }
 
