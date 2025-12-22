@@ -21,13 +21,10 @@ export default function Layout() {
   const user = useCurrentUser()
   const [colorMode, setColorModeState] = useState(getColorMode())
 
-  function handleColorModeToggle() {
-    const next = colorMode === 'light' ? 'dark' : 'light'
+  function handleColorModeChange(next: 'light' | 'dark') {
     setColorModeState(next)
     setColorMode(next)
   }
-
-  const isLight = colorMode === 'light'
 
   return (
     <div className="appShell">
@@ -47,24 +44,26 @@ export default function Layout() {
               <NavItem to="/results" label="Results" />
               <NavItem to="/bracket" label="Bracket" />
               <NavItem to="/leaderboard" label="Leaderboard" />
-              <NavItem to="/admin" label="Admin" />
             </nav>
-            <button
-              className="themeToggle"
-              type="button"
-              role="switch"
-              aria-checked={isLight}
-              onClick={handleColorModeToggle}
-            >
-              <span className="themeToggleText">
-                <span className="themeToggleKicker">Mode</span>
-                <span className="themeToggleName">{isLight ? 'Light' : 'Dark'}</span>
-              </span>
-              <span className="themeToggleTrack" aria-hidden="true">
-                <span className="themeToggleThumb" />
-              </span>
-            </button>
-            {user?.name && user.email ? <UserInfo name={user.name} email={user.email} /> : null}
+            <div className="modeToggle" role="group" aria-label="Color mode">
+              <button
+                className={colorMode === 'dark' ? 'modeToggleButton active' : 'modeToggleButton'}
+                type="button"
+                onClick={() => handleColorModeChange('dark')}
+              >
+                Dark
+              </button>
+              <button
+                className={colorMode === 'light' ? 'modeToggleButton active' : 'modeToggleButton'}
+                type="button"
+                onClick={() => handleColorModeChange('light')}
+              >
+                Light
+              </button>
+            </div>
+            {user?.name && user.email ? (
+              <UserInfo name={user.name} email={user.email} isAdmin={user.isAdmin} />
+            ) : null}
           </div>
         </div>
       </header>

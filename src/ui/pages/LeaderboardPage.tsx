@@ -44,6 +44,8 @@ function formatUpdatedAt(iso: string) {
 
 export default function LeaderboardPage() {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   useEffect(() => {
     let canceled = false
@@ -108,6 +110,16 @@ export default function LeaderboardPage() {
     )
   }, [state])
 
+  useEffect(() => {
+    if (leaderboard.length === 0) return
+    const pageCount = Math.max(1, Math.ceil(leaderboard.length / pageSize))
+    setPage((current) => Math.min(current, pageCount))
+  }, [leaderboard, pageSize])
+
+  const pageCount = Math.max(1, Math.ceil(leaderboard.length / pageSize))
+  const pageStart = (page - 1) * pageSize
+  const pageEntries = leaderboard.slice(pageStart, pageStart + pageSize)
+
   return (
     <div className="stack">
       <div className="row rowSpaceBetween">
@@ -141,7 +153,7 @@ export default function LeaderboardPage() {
                 <div>Bracket</div>
                 <div>Total</div>
               </div>
-              {leaderboard.map((entry, index) => (
+              {pageEntries.map((entry, index) => (
                 <div
                   key={entry.member.id}
                   className={
@@ -150,7 +162,7 @@ export default function LeaderboardPage() {
                       : 'leaderboardRow'
                   }
                 >
-                  <div className="leaderboardRank">{index + 1}</div>
+                  <div className="leaderboardRank">{pageStart + index + 1}</div>
                   <div className="leaderboardName">
                     {entry.member.name}
                     {entry.member.handle ? (
@@ -166,6 +178,29 @@ export default function LeaderboardPage() {
               ))}
             </div>
           )}
+          {leaderboard.length > pageSize ? (
+            <div className="leaderboardPagination">
+              <button
+                type="button"
+                className="paginationButton"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page === 1}
+              >
+                Prev
+              </button>
+              <div className="paginationInfo">
+                Page {page} of {pageCount}
+              </div>
+              <button
+                type="button"
+                className="paginationButton"
+                onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                disabled={page === pageCount}
+              >
+                Next
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

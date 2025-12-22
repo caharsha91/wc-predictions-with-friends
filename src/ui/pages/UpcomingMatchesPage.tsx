@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import LockReminderBanner from '../components/LockReminderBanner'
 import PicksBoard from '../components/PicksBoard'
 import { usePicksData } from '../hooks/usePicksData'
 
@@ -36,6 +37,7 @@ export default function UpcomingMatchesPage() {
 
   return (
     <div className="stack">
+      <LockReminderBanner matches={upcomingMatches} />
       <div className="bracketToggle" role="tablist" aria-label="Upcoming matches view">
         <button
           className={activeView === 'group' ? 'bracketToggleButton active' : 'bracketToggleButton'}
