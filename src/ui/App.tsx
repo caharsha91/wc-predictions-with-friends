@@ -1,9 +1,8 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 
 import Layout from './Layout'
 import AdminPage from './pages/AdminPage'
 import BracketPage from './pages/BracketPage'
-import HomePage from './pages/HomePage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import ResultsPage from './pages/ResultsPage'
 import UpcomingMatchesPage from './pages/UpcomingMatchesPage'
@@ -13,7 +12,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<HomePage />} />
+        <Route index element={<Navigate to="/upcoming" replace />} />
         <Route path="upcoming" element={<UpcomingMatchesPage />} />
         <Route path="results" element={<ResultsPage />} />
         <Route path="bracket" element={<BracketPage />} />

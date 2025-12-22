@@ -4,6 +4,11 @@ import { HashRouter } from 'react-router-dom'
 
 import App from './ui/App'
 import './ui/styles.css'
+import { applyTheme, getThemeId } from './lib/themes'
+import { applyColorMode, getColorMode } from './lib/colorMode'
+
+applyTheme(getThemeId())
+applyColorMode(getColorMode())
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -12,4 +17,3 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </HashRouter>
   </React.StrictMode>
 )
-
