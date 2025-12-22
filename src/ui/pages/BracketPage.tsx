@@ -45,7 +45,6 @@ function formatLockTime(lockTime: Date) {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: PACIFIC_TIME_ZONE,
     timeZoneName: 'short'
   })
 }
