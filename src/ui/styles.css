@@ -6,6 +6,13 @@
   --font-display: 'Sora', system-ui, sans-serif;
   --font-mono: 'Space Grotesk', 'SFMono-Regular', ui-monospace, Menlo, Monaco, Consolas,
     'Liberation Mono', 'Courier New', monospace;
+  --text-xxs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
   --bg: #0a0e14;
   --bg-image:
     repeating-linear-gradient(
@@ -77,6 +84,13 @@
   --font-display: 'Bebas Neue', system-ui, sans-serif;
   --font-mono: 'Space Grotesk', 'SFMono-Regular', ui-monospace, Menlo, Monaco, Consolas,
     'Liberation Mono', 'Courier New', monospace;
+  --text-xxs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
   --bg: #0a0e14;
   --bg-image:
     repeating-linear-gradient(
@@ -228,7 +242,7 @@ body {
 }
 
 .brandSub {
-  font-size: 12px;
+  font-size: var(--text-xs);
   letter-spacing: 1.4px;
   text-transform: uppercase;
   color: var(--muted);
@@ -267,7 +281,7 @@ body {
   border: 1px solid var(--border-soft);
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   font-family: var(--font-display);
   font-weight: 600;
   background:
@@ -323,7 +337,7 @@ body {
 }
 
 .metaTag {
-  font-size: 10px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.6px;
   color: var(--accent);
@@ -335,7 +349,7 @@ body {
 }
 
 .metaNote {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--muted);
@@ -356,7 +370,7 @@ body {
   border-radius: 14px;
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  font-size: 10px;
+  font-size: var(--text-xxs);
   cursor: pointer;
   text-align: left;
   font-family: var(--font-display);
@@ -411,7 +425,7 @@ body {
 }
 
 .userMenuCaret {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--muted);
 }
 
@@ -438,7 +452,7 @@ body {
   color: var(--text);
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   border: 1px solid transparent;
 }
 
@@ -449,14 +463,14 @@ body {
 
 .userName {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-md);
   text-transform: uppercase;
   letter-spacing: 1.4px;
   font-weight: 700;
 }
 
 .userEmail {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--muted);
   font-family: var(--font-mono);
 }
@@ -541,7 +555,7 @@ body {
 .lockBannerKicker {
   text-transform: uppercase;
   letter-spacing: 1.6px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   color: var(--accent);
   font-family: var(--font-mono);
 }
@@ -555,7 +569,7 @@ body {
 }
 
 .lockBannerMeta {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 
@@ -570,7 +584,7 @@ body {
 }
 
 .lockBannerMatchesTitle {
-  font-size: 10px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.4px;
   color: var(--muted);
@@ -587,12 +601,12 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text);
 }
 
 .lockBannerMatchTime {
-  font-size: 10px;
+  font-size: var(--text-xxs);
   padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid var(--border-soft);
@@ -612,7 +626,7 @@ body {
 }
 
 .lockBannerCountdownLabel {
-  font-size: 10px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.4px;
   color: var(--muted);
@@ -643,7 +657,7 @@ body {
   border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   cursor: pointer;
   box-shadow: var(--button-shadow);
 }
@@ -654,7 +668,7 @@ body {
 }
 
 .paginationInfo {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -681,7 +695,7 @@ body {
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 1.4px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   margin-bottom: 12px;
   background: var(--tag-bg);
 }
@@ -695,7 +709,7 @@ body {
 }
 
 .sectionKicker {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   letter-spacing: 1.8px;
   text-transform: uppercase;
   color: var(--accent);
@@ -719,7 +733,7 @@ body {
 }
 
 .small {
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .error {
@@ -816,7 +830,7 @@ body {
 .buttonSmall {
   padding: 8px 12px;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
 }
 
 .button:disabled {
@@ -830,14 +844,14 @@ body {
   align-items: flex-end;
   gap: 4px;
   text-align: right;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .lastUpdatedLabel {
-  font-size: 10px;
+  font-size: var(--text-xxs);
   letter-spacing: 1.4px;
   font-family: var(--font-mono);
 }
@@ -912,7 +926,7 @@ body {
   border: 1px solid var(--border-soft);
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--muted);
   transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
@@ -927,7 +941,7 @@ body {
 
 .toggleMeta {
   margin-left: auto;
-  font-size: 10px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--muted);
@@ -943,7 +957,7 @@ body {
 }
 
 .groupStage {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   letter-spacing: 1.8px;
   text-transform: uppercase;
   color: var(--muted);
@@ -970,7 +984,7 @@ body {
 }
 
 .groupFilterLabel {
-  font-size: 12px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 1.4px;
   color: var(--muted);
@@ -997,7 +1011,7 @@ body {
   color: var(--muted);
   padding: 10px 12px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   cursor: pointer;
@@ -1060,7 +1074,7 @@ body {
 }
 
 .filterCallout {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text);
   font-family: var(--font-mono);
   padding: 10px 14px;
@@ -1093,7 +1107,7 @@ body {
   color: var(--muted);
   padding: 10px 12px;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   cursor: pointer;
@@ -1159,7 +1173,7 @@ body {
   background: var(--group-ticker-bg);
   border: 1px solid var(--group-ticker-border);
   color: var(--text);
-  font-size: 11px;
+  font-size: var(--text-xxs);
   letter-spacing: 1.4px;
   text-transform: uppercase;
 }
@@ -1253,7 +1267,7 @@ body {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .matchSub {
@@ -1264,7 +1278,7 @@ body {
 }
 
 .matchKickoff {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1279,7 +1293,7 @@ body {
 }
 
 .statusTag {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   letter-spacing: 1.4px;
   text-transform: uppercase;
   padding: 6px 10px;
@@ -1323,7 +1337,7 @@ body {
 
 .scoreTag {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   letter-spacing: 1px;
   padding: 6px 10px;
   border-radius: 999px;
@@ -1366,7 +1380,7 @@ body {
 
 .resultsPickName {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-md);
   display: flex;
   gap: 6px;
   align-items: center;
@@ -1376,7 +1390,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1385,7 +1399,7 @@ body {
 
 .pickMissing {
   color: var(--danger);
-  font-size: 12px;
+  font-size: var(--text-xs);
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
@@ -1406,7 +1420,7 @@ body {
   display: inline-flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 10px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.3px;
   color: var(--muted);
@@ -1438,7 +1452,7 @@ body {
   color: var(--text);
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 10px;
+  font-size: var(--text-xxs);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
@@ -1448,7 +1462,7 @@ body {
 }
 
 .pickStatus {
-  font-size: 10px;
+  font-size: var(--text-xxs);
   padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid var(--border-danger);
@@ -1458,14 +1472,14 @@ body {
 }
 
 .lockNote {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   color: var(--muted);
   font-family: var(--font-mono);
 }
 
 .sectionTitle {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: var(--text-sm);
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--text);
@@ -1488,7 +1502,7 @@ body {
   color: var(--muted);
   padding: 8px 16px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   cursor: pointer;
@@ -1505,6 +1519,250 @@ body {
   background: transparent;
   border-color: var(--accent);
   box-shadow: 0 0 0 1px rgba(95, 225, 210, 0.4);
+}
+
+.bracketGraph {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(260px, 1fr);
+  gap: 16px;
+  padding: 10px 4px 14px;
+  overflow-x: auto;
+  --connector-gap: 16px;
+}
+
+.bracketColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.bracketColumnHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid var(--border-soft);
+  padding-bottom: 6px;
+}
+
+.bracketColumnMatches {
+  position: relative;
+  min-height: var(--column-height, auto);
+}
+
+.bracketMatchPair {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.bracketMatchPair[data-has-next='true'][data-count='2']::before {
+  content: '';
+  position: absolute;
+  right: calc(-1 * var(--connector-gap) / 2);
+  top: calc(var(--bracket-card-height, 128px) / 2);
+  bottom: calc(var(--bracket-card-height, 128px) / 2);
+  width: 3px;
+  background: linear-gradient(180deg, transparent, rgba(95, 225, 210, 0.95), transparent);
+  box-shadow: 0 0 6px rgba(95, 225, 210, 0.35);
+}
+
+.bracketMatchCard {
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background:
+    linear-gradient(170deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)),
+    var(--surface-muted);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  min-height: var(--bracket-card-height, 128px);
+  height: var(--bracket-card-height, 128px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.bracketMatchCard[data-has-next='true']::after {
+  content: '';
+  position: absolute;
+  right: calc(-1 * var(--connector-gap) / 2);
+  top: 50%;
+  width: calc(var(--connector-gap) / 2);
+  height: 3px;
+  background: linear-gradient(90deg, rgba(95, 225, 210, 0.95), rgba(95, 225, 210, 0));
+  box-shadow: 0 0 6px rgba(95, 225, 210, 0.35);
+  transform: translateY(-50%);
+}
+
+.bracketMatchCard[data-has-prev='true']::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--connector-gap) / 2);
+  top: 50%;
+  width: calc(var(--connector-gap) / 2);
+  height: 3px;
+  background: linear-gradient(90deg, rgba(95, 225, 210, 0), rgba(95, 225, 210, 0.95));
+  box-shadow: 0 0 6px rgba(95, 225, 210, 0.35);
+  transform: translateY(-50%);
+}
+
+.bracketMatchCard[data-is-final='true'] {
+  overflow: visible;
+}
+
+.bracketGuide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bracketGuideContent {
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+
+.bracketGuideContent p {
+  margin: 0 0 10px;
+}
+
+.bracketGuideContent ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.bracketGuideContent li {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.bracketChampionBadge {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-accent);
+  background: var(--surface-muted);
+  box-shadow: 0 10px 18px rgba(2, 5, 10, 0.5);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.bracketChampionBadge::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 14px;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(95, 225, 210, 0.95), rgba(95, 225, 210, 0));
+  box-shadow: 0 0 6px rgba(95, 225, 210, 0.35);
+  transform: translateY(-50%);
+}
+
+.bracketChampionIcon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bracketChampionIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.bracketChampionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.1;
+}
+
+.bracketChampionLabel {
+  font-size: var(--text-xxs);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+}
+
+.bracketChampionTeam {
+  font-size: var(--text-sm);
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+  color: var(--accent);
+}
+
+.bracketMatchStageLabel {
+  font-size: var(--text-xs);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bracketMatchCard .teamCode {
+  font-size: var(--text-sm);
+  padding: 3px 7px;
+}
+
+.bracketMatchCard .teamName {
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.bracketMatchCard .muted.small {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.bracketMatchCard .matchTeams {
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.bracketMatchCard .team {
+  gap: 5px;
+}
+
+.bracketMatchCard .bracketMatchInfo {
+  line-height: 1.2;
+}
+
+.bracketTeamPick {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bracketTeamPick.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--border-accent);
+}
+
+.bracketTeamPick:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .bracketGroupGrid {
@@ -1533,7 +1791,7 @@ body {
 
 .bracketGroupHeader {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: var(--text-xs);
   letter-spacing: 1.2px;
   text-transform: uppercase;
   color: var(--accent);
@@ -1548,7 +1806,7 @@ body {
 
 .bracketStageTitle {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: var(--text-xs);
   letter-spacing: 1.2px;
   text-transform: uppercase;
   color: var(--muted);
@@ -1592,7 +1850,7 @@ body {
 }
 
 .podiumMeta {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--muted);
@@ -1604,7 +1862,7 @@ body {
   gap: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 10px;
+  font-size: var(--text-xxs);
   color: var(--muted);
   font-family: var(--font-mono);
 }
@@ -1622,13 +1880,13 @@ body {
 
 .podiumPulseValue {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: var(--text-base);
   letter-spacing: 1px;
   color: var(--text);
 }
 
 .podiumPulseLabel {
-  font-size: 9px;
+  font-size: var(--text-xxs);
   letter-spacing: 1.2px;
   color: var(--muted);
 }
@@ -1661,7 +1919,7 @@ body {
 
 .podiumRank {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-md);
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--accent);
@@ -1669,14 +1927,14 @@ body {
 
 .podiumName {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: var(--text-lg);
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
 
 .podiumHandle {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   color: var(--muted);
   letter-spacing: 1px;
 }
@@ -1691,7 +1949,7 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  font-size: 10px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--muted);
@@ -1714,7 +1972,7 @@ body {
 }
 
 .pageSubtitle {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--muted);
   margin-top: 4px;
 }
@@ -1733,7 +1991,7 @@ body {
 }
 
 .leaderboardOverviewMeta {
-  font-size: 10px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--muted);
@@ -1762,7 +2020,7 @@ body {
 }
 
 .leaderboardListTitle {
-  font-size: 12px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 1.4px;
   color: var(--muted);
@@ -1777,7 +2035,7 @@ body {
 }
 
 .leaderboardUserHint {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--muted);
 }
 
@@ -1793,7 +2051,7 @@ body {
   gap: 10px;
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  font-size: 11px;
+  font-size: var(--text-xxs);
   color: var(--muted);
   font-family: var(--font-mono);
 }
@@ -1866,24 +2124,24 @@ body {
 }
 
 .leaderboardHandle {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   color: var(--muted);
 }
 
 .leaderboardPoints {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--text-md);
   color: var(--accent);
 }
 
 .leaderboardTotal {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: var(--text-base);
   color: var(--text);
 }
 
 .leaderboardDeltaTag {
-  font-size: 10px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1px;
   padding: 6px 8px;
@@ -1920,7 +2178,7 @@ body {
 }
 
 .exportsGuideIntro {
-  font-size: 18px;
+  font-size: var(--text-lg);
   color: var(--muted);
   line-height: 1.6;
   margin: 0;
@@ -1939,7 +2197,7 @@ body {
 }
 
 .exportsGuideLabel {
-  font-size: 13px;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 1.3px;
   color: var(--muted);
@@ -1949,7 +2207,7 @@ body {
 .exportsGuideList {
   margin: 0;
   padding-left: 18px;
-  font-size: 16px;
+  font-size: var(--text-base);
   color: var(--muted);
 }
 
@@ -1962,7 +2220,7 @@ body {
   border: 1px solid var(--border-soft);
   background: var(--surface-muted);
   padding: 12px;
-  font-size: 16px;
+  font-size: var(--text-base);
   color: var(--muted);
   line-height: 1.6;
 }
@@ -1989,7 +2247,7 @@ body {
 }
 
 .exportNote {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--muted);
@@ -2001,7 +2259,7 @@ body {
   border-radius: 999px;
   border: 1px solid var(--border-soft);
   background: var(--surface-muted);
-  font-size: 11px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text);
@@ -2022,7 +2280,7 @@ body {
 }
 
 .exportFieldLabel {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--muted);
@@ -2044,7 +2302,7 @@ body {
   color: var(--muted);
   padding: 4px 8px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 1px;
   cursor: pointer;
@@ -2058,7 +2316,7 @@ body {
 }
 
 .exportHint {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--muted);
 }
 
@@ -2083,7 +2341,7 @@ body {
 }
 
 .exportStatLabel {
-  font-size: 11px;
+  font-size: var(--text-xxs);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--muted);
@@ -2092,7 +2350,7 @@ body {
 
 .exportStatValue {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: var(--text-xl);
   color: var(--text);
 }
 
@@ -2125,20 +2383,20 @@ body {
 
 .exportTileTitle {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: var(--text-base);
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
 
 .exportTileMeta {
-  font-size: 12px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--muted);
 }
 
 .exportTileHint {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 
@@ -2160,7 +2418,7 @@ body {
 }
 
 :root[data-density='compact'] .lockBannerMatch {
-  font-size: 20px;
+  font-size: var(--text-xl);
 }
 
 :root[data-density='compact'] .lockBannerMatches {

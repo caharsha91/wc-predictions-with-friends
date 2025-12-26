@@ -7,7 +7,7 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/` redirects to `/upcoming`
 - `/upcoming` remaining matches by matchday with picks + lock countdown banner (group filter; knockout unlocks after groups)
 - `/results` completed matches by matchday with your picks (group filter; knockout unlocks after groups)
-- `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks)
+- `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks, graphical knockout bracket + inline team pick pills)
 - `/leaderboard` category points + standings pagination
 - `/exports` finished-only CSV exports (picks, brackets, leaderboard)
 
@@ -25,6 +25,11 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 - Bracket group qualifiers + best third-place picks lock at 11:59 PM PST on the day before the first group match day.
 - Bracket knockout picks lock at 11:59 PM PST on the day before the first knockout match day.
 - Knockout eventual winner picks are independent of the result selection.
+
+## Bracket Guides
+
+- Group stage guide highlights group qualifiers + best third-place pick flow.
+- Knockout guide explains inline team-pill picks and champion badge from the Final.
 
 ## Admin & Sim Modes
 

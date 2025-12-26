@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
 import { fetchBestThirdQualifiers, fetchBracketPredictions, fetchMatches } from '../../lib/data'
@@ -27,7 +27,7 @@ type LoadState =
       lastUpdated: string
     }
 
-const knockoutStageOrder: KnockoutStage[] = ['R32', 'R16', 'QF', 'SF', 'Third', 'Final']
+  const knockoutStageOrder: KnockoutStage[] = ['R32', 'R16', 'QF', 'SF', 'Third', 'Final']
 const TBD_TEAM: Team = { code: 'TBD', name: 'TBD' }
 
 type DisplayMatch = Match & {
@@ -306,6 +306,31 @@ export default function BracketPage() {
   const now = useMemo(() => new Date(), [])
   const groupLocked = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
   const knockoutLocked = knockoutLockTime ? now.getTime() >= knockoutLockTime.getTime() : false
+  const bracketCardHeight = 76
+  const bracketGap = 6
+  const knockoutColumns = useMemo(() => {
+    const columns: Array<{ key: string; title: string; stages: KnockoutStage[] }> = []
+    knockoutStageOrder.forEach((stage) => {
+      if (stage === 'Third' || stage === 'Final') return
+      if ((knockoutDisplayMatches[stage]?.length ?? 0) === 0) return
+      columns.push({ key: stage, title: stage, stages: [stage] })
+    })
+    const finalStages: KnockoutStage[] = []
+    if ((knockoutDisplayMatches.Final?.length ?? 0) > 0) {
+      finalStages.push('Final')
+    }
+    if ((knockoutDisplayMatches.Third?.length ?? 0) > 0) {
+      finalStages.push('Third')
+    }
+    if (finalStages.length > 0) {
+      columns.push({ key: 'finals', title: 'Finals', stages: finalStages })
+    }
+    return columns
+  }, [knockoutDisplayMatches])
+  const semifinalsIndex = useMemo(
+    () => knockoutColumns.findIndex((column) => column.key === 'SF'),
+    [knockoutColumns]
+  )
 
 
   function toggleSection(key: string) {
@@ -496,6 +521,22 @@ export default function BracketPage() {
               qualifiers are published, and the knockout draw is available.
             </div>
           ) : null}
+          <section className="card bracketGuide">
+            <div className="sectionHeader">
+              <div className="sectionTitle">Group stage guide</div>
+            </div>
+            <div className="bracketGuideContent">
+              <p>
+                Pick the top two teams from each group in the order they will finish. Then select
+                the best third-place qualifiers. Locked picks stay visible after the deadline.
+              </p>
+              <ul>
+                <li>Use the group cards to set 1st and 2nd place.</li>
+                <li>Pick 8 third-place teams once group standings settle.</li>
+                <li>Saving is automatic; refresh if a lock window has passed.</li>
+              </ul>
+            </div>
+          </section>
           <section className="card">
             <div className="sectionHeader">
               <button
@@ -643,83 +684,211 @@ export default function BracketPage() {
       ) : null}
 
       {activeView === 'knockout' ? (
-        <section className="card">
-          <div className="sectionHeader">
-            <div className="sectionTitle">Knockout winners</div>
-            {knockoutLockTime ? (
-              <div className="lockNote">
-                {knockoutLocked
-                  ? `Locked since ${formatLockTime(knockoutLockTime)}`
-                  : `Locks at ${formatLockTime(knockoutLockTime)}`}
-              </div>
-            ) : null}
-          </div>
-          {knockoutStageOrder.map((stage) => {
-            const matches = knockoutDisplayMatches[stage]
-            if (!matches || matches.length === 0) return null
-            const stagePredictions = prediction.knockout?.[stage] ?? {}
-            const stageKey = `knockout-${stage}`
-            const stageCollapsed = collapsedSections[stageKey] ?? false
+        <>
+          <section className="card bracketGuide">
+            <div className="sectionHeader">
+              <div className="sectionTitle">Knockout guide</div>
+              {knockoutLockTime ? (
+                <div className="lockNote">
+                  {knockoutLocked
+                    ? `Locked since ${formatLockTime(knockoutLockTime)}`
+                    : `Locks at ${formatLockTime(knockoutLockTime)}`}
+                </div>
+              ) : null}
+            </div>
+            <div className="bracketGuideContent">
+              <p>
+                Select the winner for each knockout fixture. Picks are made directly on the team
+                pills. Your final pick drives the champion badge once selected.
+              </p>
+              <ul>
+                <li>Rounds progress left to right as the bracket advances.</li>
+                <li>Final and third-place games sit together at the end.</li>
+                <li>Locked matches remain visible for reference.</li>
+              </ul>
+            </div>
+          </section>
+          <section className="card">
+            <div className="sectionHeader">
+              <div className="sectionTitle">Knockout winners</div>
+            </div>
+            <div
+              className="bracketGraph"
+              role="presentation"
+              style={{ '--bracket-card-height': `${bracketCardHeight}px` } as CSSProperties}
+            >
+              {knockoutColumns.map((column, stageIndex) => {
+                const stageMatches = column.stages.flatMap((stage) =>
+                  (knockoutDisplayMatches[stage] ?? []).map((match) => ({ match, stage }))
+                )
+                if (stageMatches.length === 0) return null
+                const baseStep = bracketCardHeight + bracketGap
+                const referenceDepth =
+                  column.key === 'finals' && semifinalsIndex >= 0
+                    ? semifinalsIndex
+                    : stageIndex
+                let columnGap = baseStep * Math.pow(2, referenceDepth)
+                let columnOffset = ((Math.pow(2, referenceDepth) - 1) * baseStep) / 2
+                if (column.key === 'finals' && semifinalsIndex >= 0) {
+                  columnOffset += columnGap / 2
+                  columnGap = baseStep
+                }
+                const finalsExtraGap =
+                  column.key === 'finals' && stageMatches.length > 1 ? bracketGap * 3 : 0
+                const columnHeight =
+                  columnOffset +
+                  (stageMatches.length - 1) * columnGap +
+                  bracketCardHeight +
+                  finalsExtraGap
+                const hasNext = stageIndex < knockoutColumns.length - 1
 
-            return (
-              <div key={stage} className="bracketStageBlock">
-                <button
-                  type="button"
-                  className="stageToggle"
-                  data-collapsed={stageCollapsed ? 'true' : 'false'}
-                  onClick={() => toggleSection(stageKey)}
-                  aria-expanded={!stageCollapsed}
-                >
-                  <span className="toggleChevron" aria-hidden="true">
-                    ▾
-                  </span>
-                  <span className="bracketStageTitle">{stage}</span>
-                  <span className="toggleMeta">
-                    {matches.length} match{matches.length === 1 ? '' : 'es'}
-                  </span>
-                </button>
-                {!stageCollapsed ? (
-                  <div className="bracketStageList">
-                    {matches.map((match) => {
-                      const value = stagePredictions[match.id] ?? ''
-                      return (
-                        <div key={match.id} className="bracketMatchRow">
-                          <div className="bracketMatchInfo">
-                            <div className="matchTeams">
-                              <div className="team">
-                                <span className="teamCode">{match.displayHomeTeam.code}</span>
-                                <span className="teamName">{match.displayHomeTeam.name}</span>
-                              </div>
-                              <div className="vs">vs</div>
-                              <div className="team">
-                                <span className="teamCode">{match.displayAwayTeam.code}</span>
-                                <span className="teamName">{match.displayAwayTeam.name}</span>
-                              </div>
-                            </div>
-                            <div className="muted small">{formatKickoff(match.kickoffUtc)}</div>
+                return (
+                  <div
+                    key={column.key}
+                    className="bracketColumn"
+                    style={
+                      {
+                        '--column-gap': `${columnGap}px`,
+                        '--column-offset': `${columnOffset}px`,
+                      } as CSSProperties
+                    }
+                  >
+                    <div className="bracketColumnHeader">
+                      <span className="bracketStageTitle">{column.title}</span>
+                      <span className="toggleMeta">
+                        {stageMatches.length} match{stageMatches.length === 1 ? '' : 'es'}
+                      </span>
+                    </div>
+                    <div
+                      className="bracketColumnMatches"
+                      style={{ '--column-height': `${columnHeight}px` } as CSSProperties}
+                    >
+                      {Array.from({ length: Math.ceil(stageMatches.length / 2) }, (_, pairIndex) =>
+                        stageMatches.slice(pairIndex * 2, pairIndex * 2 + 2)
+                      ).map((pairMatches, pairIndex) => {
+                        const isFinalsColumn = column.key === 'finals' && pairMatches.length === 2
+                        const extraGap = isFinalsColumn ? bracketGap * 3 : 0
+                        const pairTop = columnOffset + pairIndex * 2 * columnGap
+                        const pairHeight =
+                          pairMatches.length === 1
+                            ? bracketCardHeight
+                            : columnGap + bracketCardHeight + extraGap
+                        return (
+                          <div
+                            key={`${column.key}-pair-${pairIndex}`}
+                            className="bracketMatchPair"
+                            data-has-next={hasNext ? 'true' : 'false'}
+                            data-count={String(pairMatches.length)}
+                            style={
+                              {
+                                '--pair-step': `${columnGap}px`,
+                                top: `${pairTop}px`,
+                                height: `${pairHeight}px`,
+                              } as CSSProperties
+                            }
+                          >
+                            {pairMatches.map(({ match, stage }, matchIndex) => {
+                              const stagePredictions = prediction.knockout?.[stage] ?? {}
+                              const value = stagePredictions[match.id] ?? ''
+                              const championTeam =
+                                stage === 'Final'
+                                  ? value === 'HOME'
+                                    ? match.displayHomeTeam
+                                    : value === 'AWAY'
+                                      ? match.displayAwayTeam
+                                      : null
+                                  : null
+                              return (
+                                <div
+                                  key={match.id}
+                                  className="bracketMatchCard"
+                                  data-has-prev={stageIndex > 0 ? 'true' : 'false'}
+                                  data-has-next={hasNext ? 'true' : 'false'}
+                                  data-is-final={stage === 'Final' ? 'true' : 'false'}
+                                  style={
+                                    {
+                                      top: `${matchIndex * columnGap + (matchIndex === 1 ? extraGap : 0)}px`,
+                                    } as CSSProperties
+                                  }
+                                >
+                                  <div className="bracketMatchInfo">
+                                    {column.stages.length > 1 ? (
+                                      <div className="bracketMatchStageLabel">{stage}</div>
+                                    ) : null}
+                                    <div className="matchTeams">
+                                      <div className="team">
+                                        <button
+                                          type="button"
+                                          className={
+                                            value === 'HOME'
+                                              ? 'bracketTeamPick active'
+                                              : 'bracketTeamPick'
+                                          }
+                                          disabled={knockoutLocked}
+                                          aria-pressed={value === 'HOME'}
+                                          onClick={() => handleKnockoutChange(match, 'HOME')}
+                                        >
+                                          {match.displayHomeTeam.code}
+                                        </button>
+                                        <span className="teamName">
+                                          {match.displayHomeTeam.name}
+                                        </span>
+                                      </div>
+                                      <div className="vs">vs</div>
+                                      <div className="team">
+                                        <button
+                                          type="button"
+                                          className={
+                                            value === 'AWAY'
+                                              ? 'bracketTeamPick active'
+                                              : 'bracketTeamPick'
+                                          }
+                                          disabled={knockoutLocked}
+                                          aria-pressed={value === 'AWAY'}
+                                          onClick={() => handleKnockoutChange(match, 'AWAY')}
+                                        >
+                                          {match.displayAwayTeam.code}
+                                        </button>
+                                        <span className="teamName">
+                                          {match.displayAwayTeam.name}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="muted small">
+                                      {formatKickoff(match.kickoffUtc)}
+                                    </div>
+                                  </div>
+                                  {stage === 'Final' ? (
+                                    <div className="bracketChampionBadge" aria-label="Champion">
+                                      <span className="bracketChampionIcon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                                          <path
+                                            d="M6 4h12v2a4 4 0 0 0 4 4v2a6 6 0 0 1-6 6h-1.5a4.5 4.5 0 0 1-9 0H4a6 6 0 0 1-6-6V10a4 4 0 0 0 4-4V4zm10 2H8a2 2 0 0 1-2 2v2a4 4 0 0 0 4 4h1.5a4.5 4.5 0 0 1 3 0H16a4 4 0 0 0 4-4V8a2 2 0 0 1-2-2zm-6.5 10a2.5 2.5 0 1 0 5 0h-5z"
+                                            fill="currentColor"
+                                          />
+                                        </svg>
+                                      </span>
+                                      <div className="bracketChampionText">
+                                        <span className="bracketChampionLabel">Champion</span>
+                                        <span className="bracketChampionTeam">
+                                          {championTeam ? championTeam.code : 'TBD'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              )
+                            })}
                           </div>
-                          <label className="pickLabel">
-                            Winner
-                            <select
-                              className="pickSelect"
-                              value={value}
-                              disabled={knockoutLocked}
-                              onChange={(event) => handleKnockoutChange(match, event.target.value)}
-                            >
-                              <option value="">Select winner</option>
-                              <option value="HOME">Home ({match.displayHomeTeam.code})</option>
-                              <option value="AWAY">Away ({match.displayAwayTeam.code})</option>
-                            </select>
-                          </label>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
                   </div>
-                ) : null}
-              </div>
-            )
-          })}
-        </section>
+                )
+              })}
+            </div>
+          </section>
+        </>
       ) : null}
     </div>
   )

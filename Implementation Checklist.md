@@ -88,6 +88,10 @@
 - [x] Auto-advance knockout bracket rounds based on user picks
 - [x] Lock bracket picks at 11:59 PM PST (group: day before first group match; knockout: day before first knockout match)
 - [x] Add bracket view toggle (group vs knockout) with knockout default after group stage
+- [x] Add bracket guides for group + knockout views
+- [x] Render graphical knockout bracket with round connectors
+- [x] Inline winner picks with team pills (no extra dropdown row)
+- [x] Champion badge linked to final winner pick
 - [x] Add official best third-place qualifier list in `public/data/best-third-qualifiers.json`
 - [x] Refresh leaderboard on `matches.json` deploys
 - [x] Refresh bracket scoring on best third-place qualifier deploys
