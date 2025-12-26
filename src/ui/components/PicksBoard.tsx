@@ -9,7 +9,7 @@ import {
 import { findPick, isPickComplete, upsertPick } from '../../lib/picks'
 import type { Match } from '../../types/matches'
 import type { Pick, PickOutcome } from '../../types/picks'
-import { CURRENT_USER_ID } from '../../lib/constants'
+import { useViewerId } from '../hooks/useViewerId'
 
 type PicksBoardProps = {
   matches: Match[]
@@ -73,16 +73,17 @@ export default function PicksBoard({
   emptyMessage,
   highlightMissing
 }: PicksBoardProps) {
+  const userId = useViewerId()
   const groups = useMemo(() => {
     return groupMatchesByDateAndStage(matches)
   }, [matches])
 
   const missingCount = useMemo(() => {
     return matches.filter((match) => {
-      const pick = findPick(picks, match.id, CURRENT_USER_ID)
+      const pick = findPick(picks, match.id, userId)
       return !isPickComplete(match, pick)
     }).length
-  }, [matches, picks])
+  }, [matches, picks, userId])
 
   const now = useMemo(() => new Date(), [])
 
@@ -92,12 +93,12 @@ export default function PicksBoard({
       field === 'homeScore'
         ? {
             matchId: match.id,
-            userId: CURRENT_USER_ID,
+            userId,
             homeScore: Number.isFinite(numeric) ? numeric : undefined
           }
         : {
             matchId: match.id,
-            userId: CURRENT_USER_ID,
+            userId,
             awayScore: Number.isFinite(numeric) ? numeric : undefined
           }
     const next = upsertPick(picks, input)
@@ -106,10 +107,10 @@ export default function PicksBoard({
 
   function handleOutcomeChange(match: Match, value: string) {
     const outcome = value === 'WIN' || value === 'DRAW' || value === 'LOSS' ? value : undefined
-    const existing = findPick(picks, match.id, CURRENT_USER_ID)
+    const existing = findPick(picks, match.id, userId)
     const next = upsertPick(picks, {
       matchId: match.id,
-      userId: CURRENT_USER_ID,
+      userId,
       outcome: outcome as PickOutcome | undefined,
       winner: existing?.winner,
       decidedBy: existing?.decidedBy
@@ -121,7 +122,7 @@ export default function PicksBoard({
     if (!value) {
       const next = upsertPick(picks, {
         matchId: match.id,
-        userId: CURRENT_USER_ID,
+        userId,
         winner: undefined,
         decidedBy: undefined
       })
@@ -134,7 +135,7 @@ export default function PicksBoard({
     if (!winner || !decidedBy) return
     const next = upsertPick(picks, {
       matchId: match.id,
-      userId: CURRENT_USER_ID,
+      userId,
       winner,
       decidedBy
     })
@@ -174,7 +175,7 @@ export default function PicksBoard({
 
             <div className="list">
               {group.matches.map((match) => {
-                const pick = findPick(picks, match.id, CURRENT_USER_ID)
+                const pick = findPick(picks, match.id, userId)
                 const locked = isMatchLocked(match.kickoffUtc, now)
                 const lockTime = getLockTime(match.kickoffUtc)
                 const missing = !isPickComplete(match, pick)

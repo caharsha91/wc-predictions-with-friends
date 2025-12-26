@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { CURRENT_USER_ID } from '../../lib/constants'
 import {
   fetchBestThirdQualifiers,
   fetchBracketPredictions,
@@ -17,6 +16,7 @@ import type { Member } from '../../types/members'
 import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 import type { ScoringConfig } from '../../types/scoring'
+import { useViewerId } from '../hooks/useViewerId'
 
 type LoadState =
   | { status: 'loading' }
@@ -43,9 +43,10 @@ function formatUpdatedAt(iso: string) {
 }
 
 export default function LeaderboardPage() {
+  const userId = useViewerId()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [page, setPage] = useState(1)
-  const basePageSize = 6
+  const basePageSize = 5
 
   useEffect(() => {
     let canceled = false
@@ -69,13 +70,13 @@ export default function LeaderboardPage() {
         ])
         if (canceled) return
 
-        const localPicks = loadLocalPicks(CURRENT_USER_ID)
-        const merged = mergePicks(picksFile.picks, localPicks, CURRENT_USER_ID)
-        const localBracket = loadLocalBracketPrediction(CURRENT_USER_ID)
+        const localPicks = loadLocalPicks(userId)
+        const merged = mergePicks(picksFile.picks, localPicks, userId)
+        const localBracket = loadLocalBracketPrediction(userId)
         const mergedBrackets = mergeBracketPredictions(
           bracketFile.predictions,
           localBracket,
-          CURRENT_USER_ID
+          userId
         )
         setState({
           status: 'ready',
@@ -96,7 +97,7 @@ export default function LeaderboardPage() {
     return () => {
       canceled = true
     }
-  }, [])
+  }, [userId])
 
   const leaderboard = useMemo(() => {
     if (state.status !== 'ready') return []
@@ -111,9 +112,9 @@ export default function LeaderboardPage() {
   }, [state])
 
   const leaderEntry = leaderboard[0]
-  const currentEntry = leaderboard.find((entry) => entry.member.id === CURRENT_USER_ID)
+  const currentEntry = leaderboard.find((entry) => entry.member.id === userId)
   const currentRank = currentEntry
-    ? leaderboard.findIndex((entry) => entry.member.id === CURRENT_USER_ID) + 1
+    ? leaderboard.findIndex((entry) => entry.member.id === userId) + 1
     : null
   const totalPoints = leaderboard.reduce((sum, entry) => sum + entry.totalPoints, 0)
   const averagePoints = leaderboard.length > 0 ? Math.round(totalPoints / leaderboard.length) : 0
@@ -156,7 +157,7 @@ export default function LeaderboardPage() {
       pinned ? 'Pinned' : leaderEntry && entry.member.id === leaderEntry.member.id ? 'Leader' : `+${delta}`
     const rowClassName = [
       'leaderboardRow',
-      entry.member.id === CURRENT_USER_ID ? 'leaderboardHighlight' : '',
+      entry.member.id === userId ? 'leaderboardHighlight' : '',
       pinned ? 'leaderboardRowPinned' : ''
     ]
       .filter(Boolean)
@@ -258,7 +259,7 @@ export default function LeaderboardPage() {
                       <div
                         key={entry.member.id}
                         className={
-                          entry.member.id === CURRENT_USER_ID
+                          entry.member.id === userId
                             ? 'podiumCard podiumCardHighlight'
                             : 'podiumCard'
                         }

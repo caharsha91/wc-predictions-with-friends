@@ -1,21 +1,10 @@
+import type { LeaderboardEntry } from '../types/leaderboard'
 import type { Match, Team } from '../types/matches'
 import type { Member } from '../types/members'
 import type { Pick } from '../types/picks'
 import type { BracketPrediction } from '../types/bracket'
 import type { KnockoutStage, ScoringConfig, StageScoring } from '../types/scoring'
 import { getPredictedWinner, isPickComplete } from './picks'
-
-export type LeaderboardEntry = {
-  member: Member
-  totalPoints: number
-  exactPoints: number
-  resultPoints: number
-  knockoutPoints: number
-  bracketPoints: number
-  exactCount: number
-  picksCount: number
-  earliestSubmission?: string
-}
 
 type Outcome = 'WIN' | 'DRAW' | 'LOSS'
 

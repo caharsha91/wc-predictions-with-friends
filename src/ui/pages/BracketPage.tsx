@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 
-import { CURRENT_USER_ID } from '../../lib/constants'
 import { fetchBestThirdQualifiers, fetchBracketPredictions, fetchMatches } from '../../lib/data'
 import {
   hasBracketData,
@@ -15,6 +14,7 @@ import {
 import type { BracketPrediction, GroupPrediction } from '../../types/bracket'
 import type { Match, MatchWinner, Team } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
+import { useViewerId } from '../hooks/useViewerId'
 
 type LoadState =
   | { status: 'loading' }
@@ -132,6 +132,7 @@ function ensureGroupEntries(prediction: BracketPrediction, groupIds: string[]): 
 }
 
 export default function BracketPage() {
+  const userId = useViewerId()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [prediction, setPrediction] = useState<BracketPrediction | null>(null)
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
@@ -339,20 +340,20 @@ export default function BracketPage() {
 
   useEffect(() => {
     if (state.status !== 'ready') return
-    const local = loadLocalBracketPrediction(CURRENT_USER_ID)
+    const local = loadLocalBracketPrediction(userId)
     const localReady = local ? hasBracketData(local) : false
-    const base = state.predictions.find((entry) => entry.userId === CURRENT_USER_ID)
+    const base = state.predictions.find((entry) => entry.userId === userId)
     const initial = ensureGroupEntries(
-      (localReady ? local : base) ?? createEmptyPrediction(CURRENT_USER_ID, groupIds),
+      (localReady ? local : base) ?? createEmptyPrediction(userId, groupIds),
       groupIds
     )
     setPrediction(initial)
-  }, [state, groupIds])
+  }, [state, groupIds, userId])
 
   useEffect(() => {
     if (!prediction) return
-    saveLocalBracketPrediction(CURRENT_USER_ID, prediction)
-  }, [prediction])
+    saveLocalBracketPrediction(userId, prediction)
+  }, [prediction, userId])
 
   useEffect(() => {
     if (state.status !== 'ready') return

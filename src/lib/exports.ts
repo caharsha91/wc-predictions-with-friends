@@ -52,15 +52,6 @@ export function formatExportFilename(prefix: string, matchScope: string): string
   return `${prefix}-all-${matchScope}-${date}.csv`
 }
 
-export function getLatestMatch<T extends { kickoffUtc: string }>(matches: T[]): T | undefined {
-  return matches.reduce<T | undefined>((latest, match) => {
-    if (!latest) return match
-    return new Date(match.kickoffUtc).getTime() > new Date(latest.kickoffUtc).getTime()
-      ? match
-      : latest
-  }, undefined)
-}
-
 function normalizeTeamCodes(codes: string[] | undefined): string[] {
   if (!codes) return []
   const normalized = codes

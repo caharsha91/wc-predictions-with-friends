@@ -120,7 +120,6 @@
 - [ ] Wire Firebase SDK into the app
   - [ ] Sign in/out buttons in header
   - [ ] Redirect signed-in users to `/`
-- [ ] Migrate local storage picks/members to Firestore
 - [ ] Final checks:
   - [ ] Repo updates daily
   - [ ] GitHub Pages serves updated JSON

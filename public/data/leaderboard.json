@@ -1,0 +1,21 @@
+{
+  "lastUpdated": "2025-12-26T06:46:48.661Z",
+  "entries": [
+    {
+      "member": {
+        "id": "user-1",
+        "name": "Harsha",
+        "handle": "harsha",
+        "email": "caharsha2025@gmail.com",
+        "isAdmin": true
+      },
+      "totalPoints": 0,
+      "exactPoints": 0,
+      "resultPoints": 0,
+      "knockoutPoints": 0,
+      "bracketPoints": 0,
+      "exactCount": 0,
+      "picksCount": 0
+    }
+  ]
+}

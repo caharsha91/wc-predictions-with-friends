@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 
-import { CURRENT_USER_ID } from '../../lib/constants'
 import { fetchMatches, fetchPicks } from '../../lib/data'
 import { loadLocalPicks, saveLocalPicks } from '../../lib/picks'
 import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
+import { useViewerId } from './useViewerId'
 
 type PicksLoadState =
   | { status: 'loading' }
@@ -12,8 +12,9 @@ type PicksLoadState =
   | { status: 'ready'; matches: Match[] }
 
 export function usePicksData() {
+  const userId = useViewerId()
   const [state, setState] = useState<PicksLoadState>({ status: 'loading' })
-  const [picks, setPicks] = useState<Pick[]>(() => loadLocalPicks(CURRENT_USER_ID))
+  const [picks, setPicks] = useState<Pick[]>(() => loadLocalPicks(userId))
 
   useEffect(() => {
     let canceled = false
@@ -23,14 +24,14 @@ export function usePicksData() {
         const [matchesFile, picksFile] = await Promise.all([fetchMatches(), fetchPicks()])
         if (canceled) return
 
-        const stored = loadLocalPicks(CURRENT_USER_ID)
+        const stored = loadLocalPicks(userId)
         if (stored.length > 0) {
           setPicks(stored)
         } else {
-          const seeded = picksFile.picks.filter((pick) => pick.userId === CURRENT_USER_ID)
+          const seeded = picksFile.picks.filter((pick) => pick.userId === userId)
           if (seeded.length > 0) {
             setPicks(seeded)
-            saveLocalPicks(CURRENT_USER_ID, seeded)
+            saveLocalPicks(userId, seeded)
           }
         }
 
@@ -44,11 +45,11 @@ export function usePicksData() {
     return () => {
       canceled = true
     }
-  }, [])
+  }, [userId])
 
   function updatePicks(nextPicks: Pick[]) {
     setPicks(nextPicks)
-    saveLocalPicks(CURRENT_USER_ID, nextPicks)
+    saveLocalPicks(userId, nextPicks)
   }
 
   return { state, picks, updatePicks }

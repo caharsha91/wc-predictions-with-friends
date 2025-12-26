@@ -1,30 +1,29 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { CURRENT_USER_ID } from '../../lib/constants'
 import {
   fetchBestThirdQualifiers,
   fetchBracketPredictions,
+  fetchLeaderboard,
   fetchMatches,
   fetchMembers,
-  fetchPicks,
-  fetchScoring
+  fetchPicks
 } from '../../lib/data'
 import {
   buildGroupStandingsSnapshot,
   type CsvValue,
   downloadCsv,
   formatExportFilename,
-  getLatestMatch,
   resolveBestThirdQualifiers
 } from '../../lib/exports'
 import { loadLocalBracketPrediction, mergeBracketPredictions } from '../../lib/bracket'
+import { getDateKeyInTimeZone, PACIFIC_TIME_ZONE } from '../../lib/matches'
 import { getOutcomeFromScores, loadLocalPicks, mergePicks } from '../../lib/picks'
-import { buildLeaderboard } from '../../lib/scoring'
 import type { BracketPrediction } from '../../types/bracket'
+import type { LeaderboardEntry } from '../../types/leaderboard'
 import type { Member } from '../../types/members'
 import type { Match, MatchWinner } from '../../types/matches'
 import type { Pick } from '../../types/picks'
-import type { ScoringConfig } from '../../types/scoring'
+import { useViewerId } from '../hooks/useViewerId'
 
 type LoadState =
   | { status: 'loading' }
@@ -35,8 +34,8 @@ type LoadState =
       members: Member[]
       picks: Pick[]
       predictions: BracketPrediction[]
-      scoring: ScoringConfig
       bestThirdQualifiers: string[]
+      leaderboard: LeaderboardEntry[]
       lastUpdated: string
     }
 
@@ -50,9 +49,33 @@ function formatUpdatedAt(iso: string) {
   })
 }
 
-export default function ExportsPage() {
+function formatMatchdayLabel(dateKey: string | null) {
+  if (!dateKey) return 'No finished matchdays yet'
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
+  const formatted = new Intl.DateTimeFormat('en-US', {
+    timeZone: PACIFIC_TIME_ZONE,
+    month: 'short',
+    day: 'numeric'
+  }).format(date)
+  return `Matchday ${formatted}`
+}
+
+function getLatestDateKey(matches: Match[]) {
+  let latest: string | null = null
+  for (const match of matches) {
+    const key = getDateKeyInTimeZone(match.kickoffUtc, PACIFIC_TIME_ZONE)
+    if (!latest || key > latest) {
+      latest = key
+    }
+  }
+  return latest
+}
+
+export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
+  const userId = useViewerId()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
-  const [exportMatchScope, setExportMatchScope] = useState<'finished' | 'latest'>('finished')
+  const [exportMatchScope, setExportMatchScope] = useState<'finished' | 'latest-day'>('finished')
 
   useEffect(() => {
     let canceled = false
@@ -63,26 +86,26 @@ export default function ExportsPage() {
           matchesFile,
           membersFile,
           picksFile,
-          scoringFile,
           bracketFile,
-          bestThirdFile
+          bestThirdFile,
+          leaderboardFile
         ] = await Promise.all([
           fetchMatches(),
           fetchMembers(),
           fetchPicks(),
-          fetchScoring(),
           fetchBracketPredictions(),
-          fetchBestThirdQualifiers()
+          fetchBestThirdQualifiers(),
+          fetchLeaderboard()
         ])
         if (canceled) return
 
-        const localPicks = loadLocalPicks(CURRENT_USER_ID)
-        const mergedPicks = mergePicks(picksFile.picks, localPicks, CURRENT_USER_ID)
-        const localBracket = loadLocalBracketPrediction(CURRENT_USER_ID)
+        const localPicks = loadLocalPicks(userId)
+        const mergedPicks = mergePicks(picksFile.picks, localPicks, userId)
+        const localBracket = loadLocalBracketPrediction(userId)
         const mergedBrackets = mergeBracketPredictions(
           bracketFile.predictions,
           localBracket,
-          CURRENT_USER_ID
+          userId
         )
 
         setState({
@@ -91,8 +114,8 @@ export default function ExportsPage() {
           members: membersFile.members,
           picks: mergedPicks,
           predictions: mergedBrackets,
-          scoring: scoringFile,
           bestThirdQualifiers: bestThirdFile.qualifiers,
+          leaderboard: leaderboardFile.entries,
           lastUpdated: matchesFile.lastUpdated
         })
       } catch (error) {
@@ -104,7 +127,7 @@ export default function ExportsPage() {
     return () => {
       canceled = true
     }
-  }, [])
+  }, [userId])
 
   const finishedMatches = useMemo(() => {
     if (state.status !== 'ready') return []
@@ -119,43 +142,70 @@ export default function ExportsPage() {
     return finishedMatches.filter((match) => match.stage !== 'Group')
   }, [finishedMatches])
 
-  const latestFinishedMatch = useMemo(
-    () => getLatestMatch(finishedMatches),
+  const latestFinishedDateKey = useMemo(
+    () => getLatestDateKey(finishedMatches),
     [finishedMatches]
   )
 
-  const latestGroupMatch = useMemo(
-    () => getLatestMatch(finishedGroupMatches),
+  const latestGroupDateKey = useMemo(
+    () => getLatestDateKey(finishedGroupMatches),
     [finishedGroupMatches]
   )
 
-  const latestKnockoutMatch = useMemo(
-    () => getLatestMatch(finishedKnockoutMatches),
+  const latestKnockoutDateKey = useMemo(
+    () => getLatestDateKey(finishedKnockoutMatches),
     [finishedKnockoutMatches]
   )
 
   const pickMatchIds = useMemo(() => {
-    if (exportMatchScope === 'latest') {
-      return latestFinishedMatch ? new Set([latestFinishedMatch.id]) : new Set()
+    if (exportMatchScope === 'latest-day') {
+      return new Set(
+        finishedMatches
+          .filter(
+            (match) =>
+              latestFinishedDateKey &&
+              getDateKeyInTimeZone(match.kickoffUtc, PACIFIC_TIME_ZONE) ===
+                latestFinishedDateKey
+          )
+          .map((match) => match.id)
+      )
     }
     return new Set(finishedMatches.map((match) => match.id))
-  }, [exportMatchScope, finishedMatches, latestFinishedMatch])
+  }, [exportMatchScope, finishedMatches, latestFinishedDateKey])
 
   const groupIdsForExport = useMemo(() => {
-    if (exportMatchScope === 'latest') {
-      return latestGroupMatch?.group ? new Set([latestGroupMatch.group]) : new Set()
+    if (exportMatchScope === 'latest-day') {
+      return new Set(
+        finishedGroupMatches
+          .filter(
+            (match) =>
+              latestGroupDateKey &&
+              getDateKeyInTimeZone(match.kickoffUtc, PACIFIC_TIME_ZONE) === latestGroupDateKey
+          )
+          .map((match) => match.group)
+          .filter((group): group is string => !!group)
+      )
     }
     return new Set(
       finishedGroupMatches.map((match) => match.group).filter((group): group is string => !!group)
     )
-  }, [exportMatchScope, finishedGroupMatches, latestGroupMatch])
+  }, [exportMatchScope, finishedGroupMatches, latestGroupDateKey])
 
   const knockoutMatchIds = useMemo(() => {
-    if (exportMatchScope === 'latest') {
-      return latestKnockoutMatch ? new Set([latestKnockoutMatch.id]) : new Set()
+    if (exportMatchScope === 'latest-day') {
+      return new Set(
+        finishedKnockoutMatches
+          .filter(
+            (match) =>
+              latestKnockoutDateKey &&
+              getDateKeyInTimeZone(match.kickoffUtc, PACIFIC_TIME_ZONE) ===
+                latestKnockoutDateKey
+          )
+          .map((match) => match.id)
+      )
     }
     return new Set(finishedKnockoutMatches.map((match) => match.id))
-  }, [exportMatchScope, finishedKnockoutMatches, latestKnockoutMatch])
+  }, [exportMatchScope, finishedKnockoutMatches, latestKnockoutDateKey])
 
   const matchById = useMemo(() => {
     if (state.status !== 'ready') return new Map<string, Match>()
@@ -179,14 +229,7 @@ export default function ExportsPage() {
 
   const leaderboard = useMemo(() => {
     if (state.status !== 'ready') return []
-    return buildLeaderboard(
-      state.members,
-      state.matches,
-      state.picks,
-      state.predictions,
-      state.scoring,
-      state.bestThirdQualifiers
-    )
+    return state.leaderboard
   }, [state])
 
   const hasPickExport =
@@ -197,15 +240,13 @@ export default function ExportsPage() {
     state.status === 'ready' && state.members.length > 0 && knockoutMatchIds.size > 0
   const hasLeaderboardExport = leaderboard.length > 0
 
-  const latestPickMatchLabel = latestFinishedMatch
-    ? `${latestFinishedMatch.homeTeam.code} vs ${latestFinishedMatch.awayTeam.code}`
-    : 'No finished matches yet'
-  const latestGroupMatchLabel = latestGroupMatch
-    ? `${latestGroupMatch.homeTeam.code} vs ${latestGroupMatch.awayTeam.code}`
-    : 'No finished group match yet'
-  const latestKnockoutMatchLabel = latestKnockoutMatch
-    ? `${latestKnockoutMatch.homeTeam.code} vs ${latestKnockoutMatch.awayTeam.code}`
-    : 'No finished knockout match yet'
+  const latestPickMatchLabel = formatMatchdayLabel(latestFinishedDateKey)
+  const latestGroupMatchLabel = latestGroupDateKey
+    ? formatMatchdayLabel(latestGroupDateKey)
+    : 'No finished group matchdays yet'
+  const latestKnockoutMatchLabel = latestKnockoutDateKey
+    ? formatMatchdayLabel(latestKnockoutDateKey)
+    : 'No finished knockout matchdays yet'
   const finishedMatchCount = finishedMatches.length
   const finishedGroupCount = finishedGroupMatches.length
   const finishedKnockoutCount = finishedKnockoutMatches.length
@@ -459,20 +500,22 @@ export default function ExportsPage() {
   }
 
   return (
-    <div className="stack">
-      <div className="row rowSpaceBetween">
-        <div>
-          <div className="sectionKicker">Data center</div>
-          <h1 className="h1">Exports</h1>
-          <div className="pageSubtitle">Download finished-only CSVs for the league.</div>
-        </div>
-        {state.status === 'ready' ? (
-          <div className="lastUpdated">
-            <div className="lastUpdatedLabel">Last updated</div>
-            <div className="lastUpdatedValue">{formatUpdatedAt(state.lastUpdated)}</div>
+    <div className={embedded ? 'stack adminExports' : 'stack'}>
+      {!embedded ? (
+        <div className="row rowSpaceBetween">
+          <div>
+            <div className="sectionKicker">Data center</div>
+            <h1 className="h1">Exports</h1>
+            <div className="pageSubtitle">Download finished-only CSVs for the league.</div>
           </div>
-        ) : null}
-      </div>
+          {state.status === 'ready' ? (
+            <div className="lastUpdated">
+              <div className="lastUpdatedLabel">Last updated</div>
+              <div className="lastUpdatedValue">{formatUpdatedAt(state.lastUpdated)}</div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {state.status === 'loading' ? <div className="muted">Loading...</div> : null}
       {state.status === 'error' ? <div className="error">{state.message}</div> : null}
@@ -486,7 +529,7 @@ export default function ExportsPage() {
               <p className="exportsGuideIntro">
                 Exports only include finished matches to keep picks private before kickoff. Use
                 the match window toggle to share everything completed so far or just the latest
-                match in each section.
+                matchday in each section.
               </p>
               <div className="exportsGuideGrid">
                 <div className="exportsGuideBlock">
@@ -538,20 +581,20 @@ export default function ExportsPage() {
                     <button
                       type="button"
                       className={
-                        exportMatchScope === 'latest'
+                        exportMatchScope === 'latest-day'
                           ? 'exportToggleButton exportToggleButtonActive'
                           : 'exportToggleButton'
                       }
-                      onClick={() => setExportMatchScope('latest')}
-                      aria-pressed={exportMatchScope === 'latest'}
+                      onClick={() => setExportMatchScope('latest-day')}
+                      aria-pressed={exportMatchScope === 'latest-day'}
                     >
-                      Latest match only
+                      Latest matchday only
                     </button>
                   </div>
                 </div>
                 <div className="exportHint">
-                  {exportMatchScope === 'latest'
-                    ? 'Exports include the latest finished match in each section.'
+                  {exportMatchScope === 'latest-day'
+                    ? 'Exports include the latest finished matchday in each section.'
                     : 'Exports include all finished matches.'}
                 </div>
               </div>
@@ -596,9 +639,7 @@ export default function ExportsPage() {
                   </button>
                 </div>
                 <div className="exportTileHint">
-                  {exportMatchScope === 'latest'
-                    ? latestPickMatchLabel
-                    : 'All finished matches.'}
+                  {exportMatchScope === 'latest-day' ? latestPickMatchLabel : 'All finished matches.'}
                 </div>
               </div>
 
@@ -618,7 +659,7 @@ export default function ExportsPage() {
                   </button>
                 </div>
                 <div className="exportTileHint">
-                  {exportMatchScope === 'latest'
+                  {exportMatchScope === 'latest-day'
                     ? latestGroupMatchLabel
                     : 'Groups with finished matches.'}
                   {!groupComplete ? ' Best third picks unlock after groups.' : ''}
@@ -641,7 +682,7 @@ export default function ExportsPage() {
                   </button>
                 </div>
                 <div className="exportTileHint">
-                  {exportMatchScope === 'latest'
+                  {exportMatchScope === 'latest-day'
                     ? latestKnockoutMatchLabel
                     : 'Finished knockout matches only.'}
                 </div>
@@ -670,4 +711,8 @@ export default function ExportsPage() {
       ) : null}
     </div>
   )
+}
+
+export default function ExportsPage() {
+  return <ExportsPanel />
 }

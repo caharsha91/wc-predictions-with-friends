@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import DayPagination from '../components/DayPagination'
-import { CURRENT_USER_ID } from '../../lib/constants'
 import { fetchMatches, fetchPicks } from '../../lib/data'
 import {
   getDateKeyInTimeZone,
@@ -12,6 +11,7 @@ import {
 import { findPick, loadLocalPicks, mergePicks } from '../../lib/picks'
 import type { MatchesFile, Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
+import { useViewerId } from '../hooks/useViewerId'
 
 type LoadState =
   | { status: 'idle' | 'loading' }
@@ -67,6 +67,7 @@ function getStatusTone(status: Match['status']) {
 }
 
 export default function ResultsPage() {
+  const userId = useViewerId()
   const [state, setState] = useState<LoadState>({ status: 'idle' })
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
   const [groupFilter, setGroupFilter] = useState('all')
@@ -79,8 +80,8 @@ export default function ResultsPage() {
       try {
         const [matchesFile, picksFile] = await Promise.all([fetchMatches(), fetchPicks()])
         if (canceled) return
-        const localPicks = loadLocalPicks(CURRENT_USER_ID)
-        const mergedPicks = mergePicks(picksFile.picks, localPicks, CURRENT_USER_ID)
+        const localPicks = loadLocalPicks(userId)
+        const mergedPicks = mergePicks(picksFile.picks, localPicks, userId)
         setState({
           status: 'ready',
           data: matchesFile,
@@ -95,7 +96,7 @@ export default function ResultsPage() {
     return () => {
       canceled = true
     }
-  }, [])
+  }, [userId])
 
   const groupStageComplete = useMemo(() => {
     if (state.status !== 'ready') return false
@@ -340,7 +341,7 @@ export default function ResultsPage() {
 
                 <div className="list">
                   {group.matches.map((match, index) => {
-                    const currentPick = findPick(state.picks, match.id, CURRENT_USER_ID)
+                    const currentPick = findPick(state.picks, match.id, userId)
                     const showScore =
                       match.status === 'FINISHED' &&
                       typeof match.score?.home === 'number' &&
