@@ -1,11 +1,7 @@
-import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
 import UserInfo from './components/UserInfo'
 import { useCurrentUser } from './hooks/useCurrentUser'
-import { getColorMode, setColorMode } from '../lib/colorMode'
-import { getListDensity, setListDensity } from '../lib/listDensity'
-import type { ListDensity } from '../lib/listDensity'
 
 function NavItem({ to, label }: { to: string; label: string }) {
   return (
@@ -21,18 +17,6 @@ function NavItem({ to, label }: { to: string; label: string }) {
 
 export default function Layout() {
   const user = useCurrentUser()
-  const [colorMode, setColorModeState] = useState(getColorMode())
-  const [listDensity, setListDensityState] = useState(getListDensity())
-
-  function handleColorModeChange(next: 'light' | 'dark') {
-    setColorModeState(next)
-    setColorMode(next)
-  }
-
-  function handleDensityChange(next: ListDensity) {
-    setListDensityState(next)
-    setListDensity(next)
-  }
 
   return (
     <div className="appShell">
@@ -48,40 +32,6 @@ export default function Layout() {
             </div>
           </div>
           <div className="headerActions">
-            <div className="modeToggle" role="group" aria-label="Color mode">
-              <button
-                className={colorMode === 'dark' ? 'modeToggleButton active' : 'modeToggleButton'}
-                type="button"
-                onClick={() => handleColorModeChange('dark')}
-              >
-                Dark
-              </button>
-              <button
-                className={colorMode === 'light' ? 'modeToggleButton active' : 'modeToggleButton'}
-                type="button"
-                onClick={() => handleColorModeChange('light')}
-              >
-                Light
-              </button>
-            </div>
-            <div className="modeToggle" role="group" aria-label="List density">
-              <button
-                className={listDensity === 'comfy' ? 'modeToggleButton active' : 'modeToggleButton'}
-                type="button"
-                onClick={() => handleDensityChange('comfy')}
-              >
-                Comfy
-              </button>
-              <button
-                className={
-                  listDensity === 'compact' ? 'modeToggleButton active' : 'modeToggleButton'
-                }
-                type="button"
-                onClick={() => handleDensityChange('compact')}
-              >
-                Compact
-              </button>
-            </div>
             {user?.name && user.email ? (
               <UserInfo name={user.name} email={user.email} isAdmin={user.isAdmin} />
             ) : null}

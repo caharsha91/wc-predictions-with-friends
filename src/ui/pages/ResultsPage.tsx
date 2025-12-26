@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
-import { fetchMatches, fetchPicks } from '../../lib/data'
+import { fetchMatches, fetchMembers, fetchPicks } from '../../lib/data'
+import { downloadCsv, formatExportFilename, getLatestMatch } from '../../lib/exports'
 import { getDateKeyInTimeZone } from '../../lib/matches'
-import { findPick, loadLocalPicks, mergePicks } from '../../lib/picks'
+import { findPick, getOutcomeFromScores, loadLocalPicks, mergePicks } from '../../lib/picks'
+import type { Member } from '../../types/members'
 import type { MatchesFile, Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 
@@ -15,6 +17,7 @@ type LoadState =
       status: 'ready'
       data: MatchesFile
       picks: Pick[]
+      members: Member[]
     }
 
 function formatKickoff(utcIso: string) {
@@ -63,20 +66,26 @@ export default function ResultsPage() {
   const [state, setState] = useState<LoadState>({ status: 'idle' })
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
+  const [exportMatchScope, setExportMatchScope] = useState<'finished' | 'latest'>('finished')
 
   useEffect(() => {
     let canceled = false
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [matchesFile, picksFile] = await Promise.all([fetchMatches(), fetchPicks()])
+        const [matchesFile, membersFile, picksFile] = await Promise.all([
+          fetchMatches(),
+          fetchMembers(),
+          fetchPicks()
+        ])
         if (canceled) return
         const localPicks = loadLocalPicks(CURRENT_USER_ID)
         const mergedPicks = mergePicks(picksFile.picks, localPicks, CURRENT_USER_ID)
         setState({
           status: 'ready',
           data: matchesFile,
-          picks: mergedPicks
+          picks: mergedPicks,
+          members: membersFile.members
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
@@ -137,8 +146,127 @@ export default function ResultsPage() {
     return groups
   }, [orderedMatches, state])
 
+  const finishedMatches = useMemo(() => {
+    if (state.status !== 'ready') return []
+    return state.data.matches.filter((match) => match.status === 'FINISHED')
+  }, [state])
+
+  const latestFinishedMatch = useMemo(
+    () => getLatestMatch(finishedMatches),
+    [finishedMatches]
+  )
+
+  const exportMatchIds = useMemo(() => {
+    if (state.status !== 'ready') return new Set<string>()
+    if (exportMatchScope === 'latest') {
+      return latestFinishedMatch ? new Set([latestFinishedMatch.id]) : new Set()
+    }
+    return new Set(finishedMatches.map((match) => match.id))
+  }, [exportMatchScope, finishedMatches, latestFinishedMatch, state])
+
+  const matchById = useMemo(() => {
+    if (state.status !== 'ready') return new Map<string, Match>()
+    return new Map(state.data.matches.map((match) => [match.id, match]))
+  }, [state])
+
+  const memberById = useMemo(() => {
+    if (state.status !== 'ready') return new Map<string, Member>()
+    return new Map(state.members.map((member) => [member.id, member]))
+  }, [state])
+
+  const hasPickExport =
+    state.status === 'ready' && state.members.length > 0 && exportMatchIds.size > 0
+  const latestPickMatchLabel = latestFinishedMatch
+    ? `${latestFinishedMatch.homeTeam.code} vs ${latestFinishedMatch.awayTeam.code}`
+    : 'No finished matches yet'
+
   function toggleGroup(key: string) {
     setCollapsedGroups((current) => ({ ...current, [key]: !current[key] }))
+  }
+
+  function handleExportPicks() {
+    if (state.status !== 'ready') return
+    if (state.members.length === 0 || exportMatchIds.size === 0) return
+    const headers = [
+      'user_id',
+      'user_name',
+      'match_id',
+      'stage',
+      'group',
+      'kickoff_utc',
+      'home_team',
+      'away_team',
+      'pick_home_score',
+      'pick_away_score',
+      'pick_outcome',
+      'pick_winner',
+      'pick_decided_by',
+      'result_home_score',
+      'result_away_score',
+      'result_winner',
+      'result_decided_by'
+    ]
+    const rows = state.picks
+      .filter((pick) => exportMatchIds.has(pick.matchId))
+      .map((pick) => {
+        const match = matchById.get(pick.matchId)
+        const member = memberById.get(pick.userId)
+        if (!match) {
+          return {
+            user_id: pick.userId,
+            user_name: member?.name ?? pick.userId,
+            match_id: pick.matchId,
+            stage: '',
+            group: '',
+            kickoff_utc: '',
+            home_team: '',
+            away_team: '',
+            pick_home_score: pick.homeScore ?? '',
+            pick_away_score: pick.awayScore ?? '',
+            pick_outcome: pick.outcome ?? getOutcomeFromScores(pick.homeScore, pick.awayScore) ?? '',
+            pick_winner: '',
+            pick_decided_by: pick.decidedBy ?? '',
+            result_home_score: '',
+            result_away_score: '',
+            result_winner: '',
+            result_decided_by: ''
+          }
+        }
+        const pickOutcome = pick.outcome ?? getOutcomeFromScores(pick.homeScore, pick.awayScore)
+        const pickWinner =
+          pick.winner === 'HOME'
+            ? match.homeTeam.code
+            : pick.winner === 'AWAY'
+              ? match.awayTeam.code
+              : ''
+        const resultWinner =
+          match.winner === 'HOME'
+            ? match.homeTeam.code
+            : match.winner === 'AWAY'
+              ? match.awayTeam.code
+              : ''
+        return {
+          user_id: pick.userId,
+          user_name: member?.name ?? pick.userId,
+          match_id: match.id,
+          stage: match.stage,
+          group: match.group ?? '',
+          kickoff_utc: match.kickoffUtc,
+          home_team: match.homeTeam.code,
+          away_team: match.awayTeam.code,
+          pick_home_score: pick.homeScore ?? '',
+          pick_away_score: pick.awayScore ?? '',
+          pick_outcome: pickOutcome ?? '',
+          pick_winner: pickWinner,
+          pick_decided_by: pick.decidedBy ?? '',
+          result_home_score: match.score?.home ?? '',
+          result_away_score: match.score?.away ?? '',
+          result_winner: resultWinner,
+          result_decided_by: match.decidedBy ?? ''
+        }
+      })
+
+    downloadCsv(formatExportFilename('picks', exportMatchScope), headers, rows)
   }
 
   function renderPickSummary(match: Match, pick?: Pick) {
@@ -192,6 +320,72 @@ export default function ResultsPage() {
 
       {state.status === 'ready' ? (
         <div className="stack">
+          <div className="card exportPanel">
+            <div className="exportHeader">
+              <div>
+                <div className="sectionKicker">Exports</div>
+                <div className="sectionTitle">Match picks</div>
+              </div>
+              <div className="exportMeta">
+                <span className="exportNote">Finished games only</span>
+                <span className="exportBadge">All users</span>
+              </div>
+            </div>
+            <div className="exportControls">
+              <div className="exportField">
+                <span className="exportFieldLabel">Match window</span>
+                <div className="exportToggle" role="group" aria-label="Match window">
+                  <button
+                    type="button"
+                    className={
+                      exportMatchScope === 'finished'
+                        ? 'exportToggleButton exportToggleButtonActive'
+                        : 'exportToggleButton'
+                    }
+                    onClick={() => setExportMatchScope('finished')}
+                    aria-pressed={exportMatchScope === 'finished'}
+                  >
+                    Finished matches
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      exportMatchScope === 'latest'
+                        ? 'exportToggleButton exportToggleButtonActive'
+                        : 'exportToggleButton'
+                    }
+                    onClick={() => setExportMatchScope('latest')}
+                    aria-pressed={exportMatchScope === 'latest'}
+                  >
+                    Latest match only
+                  </button>
+                </div>
+              </div>
+              <div className="exportHint">
+                {exportMatchScope === 'latest'
+                  ? 'Exports include the latest finished match.'
+                  : 'Exports include all finished matches.'}
+              </div>
+            </div>
+            <div className="exportList">
+              <div className="exportRow">
+                <div className="exportRowText">
+                  <div className="exportRowTitle">All picks</div>
+                  <div className="exportRowHint">
+                    {exportMatchScope === 'latest' ? latestPickMatchLabel : 'All finished matches.'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="button buttonSmall"
+                  onClick={handleExportPicks}
+                  disabled={!hasPickExport}
+                >
+                  CSV
+                </button>
+              </div>
+            </div>
+          </div>
           <div className="bracketToggle" role="tablist" aria-label="Results view">
             <button
               className={activeView === 'group' ? 'bracketToggleButton active' : 'bracketToggleButton'}

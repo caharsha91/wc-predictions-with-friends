@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
-import { fetchBestThirdQualifiers, fetchBracketPredictions, fetchMatches } from '../../lib/data'
+import {
+  fetchBestThirdQualifiers,
+  fetchBracketPredictions,
+  fetchMatches,
+  fetchMembers
+} from '../../lib/data'
+import {
+  buildGroupStandingsSnapshot,
+  downloadCsv,
+  formatExportFilename,
+  getLatestMatch,
+  resolveBestThirdQualifiers
+} from '../../lib/exports'
+import type { CsvValue } from '../../lib/exports'
 import {
   hasBracketData,
   loadLocalBracketPrediction,
@@ -13,6 +26,7 @@ import {
   PACIFIC_TIME_ZONE
 } from '../../lib/matches'
 import type { BracketPrediction, GroupPrediction } from '../../types/bracket'
+import type { Member } from '../../types/members'
 import type { Match, MatchWinner, Team } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 
@@ -24,6 +38,7 @@ type LoadState =
       matches: Match[]
       predictions: BracketPrediction[]
       bestThirdQualifiers: string[]
+      members: Member[]
       lastUpdated: string
     }
 
@@ -136,14 +151,16 @@ export default function BracketPage() {
   const [prediction, setPrediction] = useState<BracketPrediction | null>(null)
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+  const [exportMatchScope, setExportMatchScope] = useState<'finished' | 'latest'>('finished')
 
   useEffect(() => {
     let canceled = false
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [matchesFile, bracketFile, bestThirdFile] = await Promise.all([
+        const [matchesFile, membersFile, bracketFile, bestThirdFile] = await Promise.all([
           fetchMatches(),
+          fetchMembers(),
           fetchBracketPredictions(),
           fetchBestThirdQualifiers()
         ])
@@ -153,6 +170,7 @@ export default function BracketPage() {
           matches: matchesFile.matches,
           predictions: bracketFile.predictions,
           bestThirdQualifiers: bestThirdFile.qualifiers,
+          members: membersFile.members,
           lastUpdated: matchesFile.lastUpdated
         })
       } catch (error) {
@@ -189,6 +207,70 @@ export default function BracketPage() {
     if (state.status !== 'ready') return {}
     return buildKnockoutMatches(state.matches)
   }, [state])
+
+  const groupStandings = useMemo(() => {
+    if (state.status !== 'ready') return new Map()
+    return buildGroupStandingsSnapshot(state.matches)
+  }, [state])
+
+  const groupComplete = useMemo(() => {
+    if (groupStandings.size === 0) return false
+    return [...groupStandings.values()].every((summary) => summary.complete)
+  }, [groupStandings])
+
+  const finishedGroupMatches = useMemo(() => {
+    if (state.status !== 'ready') return []
+    return state.matches.filter((match) => match.stage === 'Group' && match.status === 'FINISHED')
+  }, [state])
+
+  const finishedKnockoutMatches = useMemo(() => {
+    if (state.status !== 'ready') return []
+    return state.matches.filter((match) => match.stage !== 'Group' && match.status === 'FINISHED')
+  }, [state])
+
+  const latestGroupMatch = useMemo(
+    () => getLatestMatch(finishedGroupMatches),
+    [finishedGroupMatches]
+  )
+
+  const latestKnockoutMatch = useMemo(
+    () => getLatestMatch(finishedKnockoutMatches),
+    [finishedKnockoutMatches]
+  )
+
+  const groupIdsForExport = useMemo(() => {
+    if (state.status !== 'ready') return new Set<string>()
+    if (exportMatchScope === 'latest') {
+      return latestGroupMatch?.group ? new Set([latestGroupMatch.group]) : new Set()
+    }
+    return new Set(
+      finishedGroupMatches.map((match) => match.group).filter((group): group is string => !!group)
+    )
+  }, [exportMatchScope, finishedGroupMatches, latestGroupMatch, state])
+
+  const knockoutMatchIds = useMemo(() => {
+    if (state.status !== 'ready') return new Set<string>()
+    if (exportMatchScope === 'latest') {
+      return latestKnockoutMatch ? new Set([latestKnockoutMatch.id]) : new Set()
+    }
+    return new Set(finishedKnockoutMatches.map((match) => match.id))
+  }, [exportMatchScope, finishedKnockoutMatches, latestKnockoutMatch, state])
+
+  const matchById = useMemo(() => {
+    if (state.status !== 'ready') return new Map<string, Match>()
+    return new Map(state.matches.map((match) => [match.id, match]))
+  }, [state])
+
+  const hasGroupExport =
+    state.status === 'ready' && state.members.length > 0 && groupIdsForExport.size > 0
+  const hasKnockoutExport =
+    state.status === 'ready' && state.members.length > 0 && knockoutMatchIds.size > 0
+  const latestGroupMatchLabel = latestGroupMatch
+    ? `${latestGroupMatch.homeTeam.code} vs ${latestGroupMatch.awayTeam.code}`
+    : 'No finished group match yet'
+  const latestKnockoutMatchLabel = latestKnockoutMatch
+    ? `${latestKnockoutMatch.homeTeam.code} vs ${latestKnockoutMatch.awayTeam.code}`
+    : 'No finished knockout match yet'
 
   const knockoutDisplayMatches = useMemo(() => {
     if (state.status !== 'ready' || !prediction) return {}
@@ -307,8 +389,146 @@ export default function BracketPage() {
   const groupLocked = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
   const knockoutLocked = knockoutLockTime ? now.getTime() >= knockoutLockTime.getTime() : false
 
+  const exportPredictions = useMemo(() => {
+    if (state.status !== 'ready') return []
+    if (!prediction) return state.predictions
+    const remaining = state.predictions.filter((item) => item.userId !== prediction.userId)
+    return [...remaining, prediction]
+  }, [prediction, state])
+
   function toggleSection(key: string) {
     setCollapsedSections((current) => ({ ...current, [key]: !current[key] }))
+  }
+
+  function handleExportGroup() {
+    if (state.status !== 'ready') return
+    if (state.members.length === 0 || groupIdsForExport.size === 0) return
+    const headers = [
+      'user_id',
+      'user_name',
+      'category',
+      'group_id',
+      'slot',
+      'pick',
+      'actual',
+      'group_complete'
+    ]
+    const rows: Array<Record<string, CsvValue>> = []
+    const actualBestThirds = groupComplete
+      ? resolveBestThirdQualifiers(groupStandings, state.bestThirdQualifiers)
+      : undefined
+    const predictionsByUser = new Map(exportPredictions.map((item) => [item.userId, item]))
+
+    for (const member of state.members) {
+      const predictionForMember = predictionsByUser.get(member.id)
+      if (!predictionForMember) continue
+      for (const [groupId, groupPick] of Object.entries(predictionForMember.groups)) {
+        if (!groupIdsForExport.has(groupId)) continue
+        const summary = groupStandings.get(groupId)
+        const actualFirst = summary?.complete ? summary.standings[0]?.team.code ?? '' : ''
+        const actualSecond = summary?.complete ? summary.standings[1]?.team.code ?? '' : ''
+        rows.push({
+          user_id: member.id,
+          user_name: member.name,
+          category: 'group',
+          group_id: groupId,
+          slot: 'first',
+          pick: groupPick.first ?? '',
+          actual: actualFirst,
+          group_complete: summary?.complete ?? false
+        })
+        rows.push({
+          user_id: member.id,
+          user_name: member.name,
+          category: 'group',
+          group_id: groupId,
+          slot: 'second',
+          pick: groupPick.second ?? '',
+          actual: actualSecond,
+          group_complete: summary?.complete ?? false
+        })
+      }
+
+      if (groupComplete && actualBestThirds && actualBestThirds.length > 0) {
+        const predictedThirds = predictionForMember.bestThirds ?? []
+        predictedThirds.forEach((team, index) => {
+          rows.push({
+            user_id: member.id,
+            user_name: member.name,
+            category: 'best_third',
+            group_id: '',
+            slot: `${index + 1}`,
+            pick: team ?? '',
+            actual: actualBestThirds[index] ?? '',
+            group_complete: true
+          })
+        })
+      }
+    }
+
+    downloadCsv(formatExportFilename('bracket-group', exportMatchScope), headers, rows)
+  }
+
+  function handleExportKnockout() {
+    if (state.status !== 'ready') return
+    if (state.members.length === 0 || knockoutMatchIds.size === 0) return
+    const headers = [
+      'user_id',
+      'user_name',
+      'stage',
+      'match_id',
+      'home_team',
+      'away_team',
+      'pick_winner',
+      'result_home_score',
+      'result_away_score',
+      'result_winner',
+      'result_decided_by'
+    ]
+    const rows: Array<Record<string, CsvValue>> = []
+    const predictionsByUser = new Map(exportPredictions.map((item) => [item.userId, item]))
+
+    for (const member of state.members) {
+      const predictionForMember = predictionsByUser.get(member.id)
+      if (!predictionForMember) continue
+      const stageEntries = Object.entries(predictionForMember.knockout ?? {}) as Array<
+        [string, Record<string, MatchWinner>]
+      >
+      for (const [stage, stagePicks] of stageEntries) {
+        for (const [matchId, winner] of Object.entries(stagePicks)) {
+          if (!knockoutMatchIds.has(matchId)) continue
+          const match = matchById.get(matchId)
+          if (!match || match.status !== 'FINISHED') continue
+          const pickWinner =
+            winner === 'HOME'
+              ? match.homeTeam.code
+              : winner === 'AWAY'
+                ? match.awayTeam.code
+                : ''
+          const resultWinner =
+            match.winner === 'HOME'
+              ? match.homeTeam.code
+              : match.winner === 'AWAY'
+                ? match.awayTeam.code
+                : ''
+          rows.push({
+            user_id: member.id,
+            user_name: member.name,
+            stage,
+            match_id: matchId,
+            home_team: match.homeTeam.code,
+            away_team: match.awayTeam.code,
+            pick_winner: pickWinner,
+            result_home_score: match.score?.home ?? '',
+            result_away_score: match.score?.away ?? '',
+            result_winner: resultWinner,
+            result_decided_by: match.decidedBy ?? ''
+          })
+        }
+      }
+    }
+
+    downloadCsv(formatExportFilename('bracket-knockout', exportMatchScope), headers, rows)
   }
 
   useEffect(() => {
@@ -459,6 +679,94 @@ export default function BracketPage() {
         <div className="lastUpdated">
           <div className="lastUpdatedLabel">Match data</div>
           <div className="lastUpdatedValue">{formatKickoff(state.lastUpdated)}</div>
+        </div>
+      </div>
+
+      <div className="card exportPanel">
+        <div className="exportHeader">
+          <div>
+            <div className="sectionKicker">Exports</div>
+            <div className="sectionTitle">Bracket picks</div>
+          </div>
+          <div className="exportMeta">
+            <span className="exportNote">Finished games only</span>
+            <span className="exportBadge">All users</span>
+          </div>
+        </div>
+        <div className="exportControls">
+          <div className="exportField">
+            <span className="exportFieldLabel">Match window</span>
+            <div className="exportToggle" role="group" aria-label="Match window">
+              <button
+                type="button"
+                className={
+                  exportMatchScope === 'finished'
+                    ? 'exportToggleButton exportToggleButtonActive'
+                    : 'exportToggleButton'
+                }
+                onClick={() => setExportMatchScope('finished')}
+                aria-pressed={exportMatchScope === 'finished'}
+              >
+                Finished matches
+              </button>
+              <button
+                type="button"
+                className={
+                  exportMatchScope === 'latest'
+                    ? 'exportToggleButton exportToggleButtonActive'
+                    : 'exportToggleButton'
+                }
+                onClick={() => setExportMatchScope('latest')}
+                aria-pressed={exportMatchScope === 'latest'}
+              >
+                Latest match only
+              </button>
+            </div>
+          </div>
+          <div className="exportHint">
+            {exportMatchScope === 'latest'
+              ? 'Exports include the latest finished match per bracket.'
+              : 'Exports include all finished matches.'}
+          </div>
+        </div>
+        <div className="exportList">
+          <div className="exportRow">
+            <div className="exportRowText">
+              <div className="exportRowTitle">Group bracket</div>
+              <div className="exportRowHint">
+                {exportMatchScope === 'latest'
+                  ? latestGroupMatchLabel
+                  : 'Groups with finished matches.'}
+                {!groupComplete ? ' Best third picks unlock after groups.' : ''}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="button buttonSmall"
+              onClick={handleExportGroup}
+              disabled={!hasGroupExport}
+            >
+              CSV
+            </button>
+          </div>
+          <div className="exportRow">
+            <div className="exportRowText">
+              <div className="exportRowTitle">Knockout bracket</div>
+              <div className="exportRowHint">
+                {exportMatchScope === 'latest'
+                  ? latestKnockoutMatchLabel
+                  : 'Finished knockout matches only.'}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="button buttonSmall"
+              onClick={handleExportKnockout}
+              disabled={!hasKnockoutExport}
+            >
+              CSV
+            </button>
+          </div>
         </div>
       </div>
 

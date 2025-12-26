@@ -5,12 +5,10 @@ import { HashRouter } from 'react-router-dom'
 import App from './ui/App'
 import './ui/styles.css'
 import { applyTheme, getThemeId } from './lib/themes'
-import { applyColorMode, getColorMode } from './lib/colorMode'
-import { applyListDensity, getListDensity } from './lib/listDensity'
 
 applyTheme(getThemeId())
-applyColorMode(getColorMode())
-applyListDensity(getListDensity())
+document.documentElement.dataset.mode = 'dark'
+document.documentElement.dataset.density = 'compact'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
