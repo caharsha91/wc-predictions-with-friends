@@ -309,12 +309,15 @@ export default function ResultsPage() {
             ) : null}
             {showDayPagination ? (
               <div className="filtersRow">
-                <DayPagination
-                  dateKeys={dateKeys}
-                  activeDateKey={activeDateKey}
-                  onSelect={setActiveDateKey}
-                  ariaLabel="Results day"
-                />
+                <div className="groupFilter">
+                  <div className="groupFilterLabel">Matchday</div>
+                  <DayPagination
+                    dateKeys={dateKeys}
+                    activeDateKey={activeDateKey}
+                    onSelect={setActiveDateKey}
+                    ariaLabel="Results day"
+                  />
+                </div>
               </div>
             ) : null}
           </div>

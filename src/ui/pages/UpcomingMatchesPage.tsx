@@ -169,12 +169,15 @@ export default function UpcomingMatchesPage() {
         ) : null}
         {showDayPagination ? (
           <div className="filtersRow">
-            <DayPagination
-              dateKeys={dateKeys}
-              activeDateKey={activeDateKey}
-              onSelect={setActiveDateKey}
-              ariaLabel="Upcoming match day"
-            />
+            <div className="groupFilter">
+              <div className="groupFilterLabel">Matchday</div>
+              <DayPagination
+                dateKeys={dateKeys}
+                activeDateKey={activeDateKey}
+                onSelect={setActiveDateKey}
+                ariaLabel="Upcoming match day"
+              />
+            </div>
           </div>
         ) : null}
       </div>
