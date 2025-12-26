@@ -48,7 +48,10 @@
 - [x] Add theme packs with admin selection
 - [x] Add upcoming lock reminder banner on `/upcoming`
 - [x] Add leaderboard pagination (default 6 per page)
-- [x] Add gameday history chart with user vs user comparison
+- [x] Paginate upcoming/results by match day (PST) and add group filters for group stage
+- [x] Hide knockout matches on upcoming/results until group stage completion
+- [x] Remove collapsible matchday sections on upcoming/results
+- [x] Add exports page with finished-only CSV downloads (picks, brackets, leaderboard)
 
 ---
 

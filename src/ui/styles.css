@@ -604,69 +604,6 @@ body {
   gap: 12px;
 }
 
-.historyMeta {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muted);
-  font-family: var(--font-mono);
-}
-
-.historyToolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-}
-
-.historyToolbarLabel {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: var(--muted);
-  font-family: var(--font-mono);
-}
-
-.historyPicker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.historySelect {
-  border-radius: 12px;
-  border: 1px solid var(--border-soft);
-  background: var(--input-bg);
-  color: var(--text);
-  padding: 6px 10px;
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  text-transform: none;
-}
-
-.historyVs {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: var(--muted);
-  padding-bottom: 2px;
-}
-
-.historyChart {
-  margin-top: 18px;
-  width: 100%;
-  overflow-x: auto;
-  padding-bottom: 6px;
-}
-
-.historyChart svg {
-  width: 100%;
-  min-width: 560px;
-  height: auto;
-}
 
 .paginationButton {
   border: 1px solid var(--button-border);
@@ -843,6 +780,10 @@ body {
   text-align: left;
 }
 
+.groupHeaderStatic {
+  cursor: default;
+}
+
 .groupHeaderButton:focus-visible,
 .sectionToggle:focus-visible,
 .stageToggle:focus-visible {
@@ -911,6 +852,109 @@ body {
   letter-spacing: 1.8px;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.filtersPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.filtersRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.groupFilter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 100%;
+}
+
+.groupFilterLabel {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.groupFilterChips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.groupFilterChip {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+
+.groupFilterChip.active {
+  color: var(--text);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--border-accent);
+}
+
+.filterCallout {
+  font-size: 13px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-muted);
+  width: 100%;
+}
+
+.dayPagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  align-self: flex-start;
+  width: 100%;
+}
+
+.dayPaginationButton {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.dayPaginationButton.active {
+  color: var(--text);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--border-accent);
 }
 
 .groupTicker {
@@ -1463,38 +1507,37 @@ body {
   align-items: flex-end;
 }
 
-.leaderboardSubtitle {
+.pageSubtitle {
   font-size: 13px;
   color: var(--muted);
   margin-top: 4px;
 }
 
-.leaderboardPulseStrip {
-  display: flex;
-  justify-content: flex-start;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--border-soft);
-  background: var(--surface-muted);
-}
-
-.leaderboardHistoryCard {
+.leaderboardOverview {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
 }
 
-.leaderboardHistoryFull {
-  width: 100%;
-}
-
-.leaderboardHistoryHeader {
+.leaderboardOverviewHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
+
+.leaderboardOverviewMeta {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.leaderboardOverviewGrid {
+  margin-top: 2px;
+}
+
 
 .leaderboardListCard {
   display: flex;
@@ -1648,6 +1691,79 @@ body {
   height: 100%;
 }
 
+.exportsLayout {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.2fr);
+  grid-template-areas:
+    "guide scope"
+    "tiles tiles";
+  gap: 16px;
+  align-items: start;
+}
+
+.exportsGuide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  grid-area: guide;
+}
+
+.exportsGuideIntro {
+  font-size: 18px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.exportsGuideGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.exportsGuideBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exportsGuideLabel {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1.3px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.exportsGuideList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.exportsGuideList li + li {
+  margin-top: 6px;
+}
+
+.exportsGuideCallout {
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-muted);
+  padding: 12px;
+  font-size: 16px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.exportsGuideCallout p {
+  margin: 0;
+}
+
+.exportScope {
+  grid-area: scope;
+}
+
 .exportHeader {
   display: flex;
   align-items: center;
@@ -1662,7 +1778,7 @@ body {
 }
 
 .exportNote {
-  font-size: 9px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--muted);
@@ -1674,7 +1790,7 @@ body {
   border-radius: 999px;
   border: 1px solid var(--border-soft);
   background: var(--surface-muted);
-  font-size: 9px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text);
@@ -1695,7 +1811,7 @@ body {
 }
 
 .exportFieldLabel {
-  font-size: 9px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--muted);
@@ -1717,7 +1833,7 @@ body {
   color: var(--muted);
   padding: 4px 8px;
   border-radius: 999px;
-  font-size: 8px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
   cursor: pointer;
@@ -1731,43 +1847,87 @@ body {
 }
 
 .exportHint {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 
-.exportList {
+.exportStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.exportStat {
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-muted);
+  padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.exportRow {
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  padding: 8px 10px;
-  background: var(--surface-muted);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.exportStatWide {
+  grid-column: 1 / -1;
+}
+
+.exportStatLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.exportStatValue {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text);
+}
+
+.exportsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
 
-.exportRowText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+.exportsGridWide {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
-.exportRowTitle {
+.exportsGridFull {
+  grid-area: tiles;
+}
+
+.exportTile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exportTileHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.exportTileTitle {
   font-family: var(--font-display);
-  font-size: 10px;
+  font-size: 16px;
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
 
-.exportRowHint {
-  font-size: 9px;
+.exportTileMeta {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+.exportTileHint {
+  font-size: 13px;
   color: var(--muted);
 }
 
@@ -1875,6 +2035,16 @@ body {
     minmax(60px, 0.8fr);
 }
 
+@media (max-width: 900px) {
+  .exportsLayout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "guide"
+      "scope"
+      "tiles";
+  }
+}
+
 @media (max-width: 720px) {
   .headerInner {
     flex-direction: column;
@@ -1944,10 +2114,6 @@ body {
 
   .leaderboardPagination {
     flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .historyToolbar {
     align-items: flex-start;
   }
 

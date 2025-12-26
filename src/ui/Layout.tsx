@@ -43,6 +43,7 @@ export default function Layout() {
             <NavItem to="/results" label="Results" />
             <NavItem to="/bracket" label="Bracket" />
             <NavItem to="/leaderboard" label="Leaderboard" />
+            <NavItem to="/exports" label="Exports" />
           </nav>
           <div className="headerMeta">
             <span className="metaTag">Friends League</span>

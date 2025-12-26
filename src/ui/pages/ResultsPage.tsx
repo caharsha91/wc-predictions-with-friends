@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 
+import DayPagination from '../components/DayPagination'
 import { CURRENT_USER_ID } from '../../lib/constants'
-import { fetchMatches, fetchMembers, fetchPicks } from '../../lib/data'
-import { downloadCsv, formatExportFilename, getLatestMatch } from '../../lib/exports'
-import { getDateKeyInTimeZone } from '../../lib/matches'
-import { findPick, getOutcomeFromScores, loadLocalPicks, mergePicks } from '../../lib/picks'
-import type { Member } from '../../types/members'
+import { fetchMatches, fetchPicks } from '../../lib/data'
+import {
+  getDateKeyInTimeZone,
+  groupMatchesByDateAndStage,
+  PACIFIC_TIME_ZONE
+} from '../../lib/matches'
+import { findPick, loadLocalPicks, mergePicks } from '../../lib/picks'
 import type { MatchesFile, Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 
@@ -17,7 +20,6 @@ type LoadState =
       status: 'ready'
       data: MatchesFile
       picks: Pick[]
-      members: Member[]
     }
 
 function formatKickoff(utcIso: string) {
@@ -32,12 +34,14 @@ function formatKickoff(utcIso: string) {
 }
 
 function formatDateHeader(dateKey: string) {
-  const date = new Date(`${dateKey}T00:00:00`)
-  return date.toLocaleDateString(undefined, {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: PACIFIC_TIME_ZONE,
     weekday: 'short',
     month: 'short',
     day: 'numeric'
-  })
+  }).format(date)
 }
 
 function formatLastUpdated(iso: string) {
@@ -65,27 +69,22 @@ function getStatusTone(status: Match['status']) {
 export default function ResultsPage() {
   const [state, setState] = useState<LoadState>({ status: 'idle' })
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
-  const [exportMatchScope, setExportMatchScope] = useState<'finished' | 'latest'>('finished')
+  const [groupFilter, setGroupFilter] = useState('all')
+  const [activeDateKey, setActiveDateKey] = useState<string | null>(null)
 
   useEffect(() => {
     let canceled = false
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [matchesFile, membersFile, picksFile] = await Promise.all([
-          fetchMatches(),
-          fetchMembers(),
-          fetchPicks()
-        ])
+        const [matchesFile, picksFile] = await Promise.all([fetchMatches(), fetchPicks()])
         if (canceled) return
         const localPicks = loadLocalPicks(CURRENT_USER_ID)
         const mergedPicks = mergePicks(picksFile.picks, localPicks, CURRENT_USER_ID)
         setState({
           status: 'ready',
           data: matchesFile,
-          picks: mergedPicks,
-          members: membersFile.members
+          picks: mergedPicks
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
@@ -97,16 +96,6 @@ export default function ResultsPage() {
       canceled = true
     }
   }, [])
-
-  const orderedMatches = useMemo(() => {
-    if (state.status !== 'ready') return []
-    return state.data.matches
-      .filter((match) => match.status === 'FINISHED')
-      .filter((match) =>
-        view === 'knockout' ? match.stage !== 'Group' : match.stage === 'Group'
-      )
-      .sort((a, b) => new Date(b.kickoffUtc).getTime() - new Date(a.kickoffUtc).getTime())
-  }, [state, view])
 
   const groupStageComplete = useMemo(() => {
     if (state.status !== 'ready') return false
@@ -122,152 +111,87 @@ export default function ResultsPage() {
     )
   }, [state])
 
+  const canShowKnockout = groupStageComplete
+
   useEffect(() => {
     if (view !== null) return
     if (state.status !== 'ready') return
-    setView(groupStageComplete && knockoutHasResults ? 'knockout' : 'group')
-  }, [groupStageComplete, knockoutHasResults, state, view])
+    setView(canShowKnockout && knockoutHasResults ? 'knockout' : 'group')
+  }, [canShowKnockout, knockoutHasResults, state, view])
+
+  useEffect(() => {
+    if (!canShowKnockout && view === 'knockout') setView('group')
+  }, [canShowKnockout, view])
+
+  const activeView = canShowKnockout ? view ?? 'group' : 'group'
+
+  const availableGroups = useMemo(() => {
+    if (state.status !== 'ready') return []
+    const groupMatches = state.data.matches.filter(
+      (match) => match.stage === 'Group' && match.status === 'FINISHED'
+    )
+    const groups = new Set(
+      groupMatches.map((match) => match.group).filter((group): group is string => !!group)
+    )
+    return [...groups].sort()
+  }, [state])
+
+  useEffect(() => {
+    if (activeView !== 'group' && groupFilter !== 'all') {
+      setGroupFilter('all')
+    }
+  }, [activeView, groupFilter])
+
+  useEffect(() => {
+    if (groupFilter !== 'all' && !availableGroups.includes(groupFilter)) {
+      setGroupFilter('all')
+    }
+  }, [availableGroups, groupFilter])
+
+  const filteredMatches = useMemo(() => {
+    if (state.status !== 'ready') return []
+    let matches = state.data.matches.filter((match) => match.status === 'FINISHED')
+    matches =
+      activeView === 'knockout'
+        ? matches.filter((match) => match.stage !== 'Group')
+        : matches.filter((match) => match.stage === 'Group')
+    if (activeView === 'group' && groupFilter !== 'all') {
+      matches = matches.filter((match) => match.group === groupFilter)
+    }
+    return matches.sort((a, b) => new Date(b.kickoffUtc).getTime() - new Date(a.kickoffUtc).getTime())
+  }, [activeView, groupFilter, state])
+
+  const dateKeys = useMemo(() => {
+    const keys = new Set<string>()
+    for (const match of filteredMatches) {
+      keys.add(getDateKeyInTimeZone(match.kickoffUtc))
+    }
+    return [...keys].sort((a, b) => b.localeCompare(a))
+  }, [filteredMatches])
+
+  useEffect(() => {
+    if (dateKeys.length === 0) {
+      setActiveDateKey(null)
+      return
+    }
+    setActiveDateKey((current) =>
+      current && dateKeys.includes(current) ? current : dateKeys[0]
+    )
+  }, [dateKeys])
+
+  const pagedMatches = useMemo(() => {
+    if (!activeDateKey) return []
+    return filteredMatches.filter(
+      (match) => getDateKeyInTimeZone(match.kickoffUtc) === activeDateKey
+    )
+  }, [activeDateKey, filteredMatches])
 
   const groupedMatches = useMemo(() => {
-    if (state.status !== 'ready') return []
-    const groups: { key: string; matches: Match[] }[] = []
-    const map = new Map<string, Match[]>()
-    for (const match of orderedMatches) {
-      const dateKey = getDateKeyInTimeZone(match.kickoffUtc)
-      const groupKey = `${dateKey}__${match.stage}`
-      const existing = map.get(groupKey)
-      if (existing) {
-        existing.push(match)
-      } else {
-        map.set(groupKey, [match])
-        groups.push({ key: groupKey, matches: map.get(groupKey)! })
-      }
-    }
-    return groups
-  }, [orderedMatches, state])
+    if (pagedMatches.length === 0) return []
+    return groupMatchesByDateAndStage(pagedMatches)
+  }, [pagedMatches])
 
-  const finishedMatches = useMemo(() => {
-    if (state.status !== 'ready') return []
-    return state.data.matches.filter((match) => match.status === 'FINISHED')
-  }, [state])
-
-  const latestFinishedMatch = useMemo(
-    () => getLatestMatch(finishedMatches),
-    [finishedMatches]
-  )
-
-  const exportMatchIds = useMemo(() => {
-    if (state.status !== 'ready') return new Set<string>()
-    if (exportMatchScope === 'latest') {
-      return latestFinishedMatch ? new Set([latestFinishedMatch.id]) : new Set()
-    }
-    return new Set(finishedMatches.map((match) => match.id))
-  }, [exportMatchScope, finishedMatches, latestFinishedMatch, state])
-
-  const matchById = useMemo(() => {
-    if (state.status !== 'ready') return new Map<string, Match>()
-    return new Map(state.data.matches.map((match) => [match.id, match]))
-  }, [state])
-
-  const memberById = useMemo(() => {
-    if (state.status !== 'ready') return new Map<string, Member>()
-    return new Map(state.members.map((member) => [member.id, member]))
-  }, [state])
-
-  const hasPickExport =
-    state.status === 'ready' && state.members.length > 0 && exportMatchIds.size > 0
-  const latestPickMatchLabel = latestFinishedMatch
-    ? `${latestFinishedMatch.homeTeam.code} vs ${latestFinishedMatch.awayTeam.code}`
-    : 'No finished matches yet'
-
-  function toggleGroup(key: string) {
-    setCollapsedGroups((current) => ({ ...current, [key]: !current[key] }))
-  }
-
-  function handleExportPicks() {
-    if (state.status !== 'ready') return
-    if (state.members.length === 0 || exportMatchIds.size === 0) return
-    const headers = [
-      'user_id',
-      'user_name',
-      'match_id',
-      'stage',
-      'group',
-      'kickoff_utc',
-      'home_team',
-      'away_team',
-      'pick_home_score',
-      'pick_away_score',
-      'pick_outcome',
-      'pick_winner',
-      'pick_decided_by',
-      'result_home_score',
-      'result_away_score',
-      'result_winner',
-      'result_decided_by'
-    ]
-    const rows = state.picks
-      .filter((pick) => exportMatchIds.has(pick.matchId))
-      .map((pick) => {
-        const match = matchById.get(pick.matchId)
-        const member = memberById.get(pick.userId)
-        if (!match) {
-          return {
-            user_id: pick.userId,
-            user_name: member?.name ?? pick.userId,
-            match_id: pick.matchId,
-            stage: '',
-            group: '',
-            kickoff_utc: '',
-            home_team: '',
-            away_team: '',
-            pick_home_score: pick.homeScore ?? '',
-            pick_away_score: pick.awayScore ?? '',
-            pick_outcome: pick.outcome ?? getOutcomeFromScores(pick.homeScore, pick.awayScore) ?? '',
-            pick_winner: '',
-            pick_decided_by: pick.decidedBy ?? '',
-            result_home_score: '',
-            result_away_score: '',
-            result_winner: '',
-            result_decided_by: ''
-          }
-        }
-        const pickOutcome = pick.outcome ?? getOutcomeFromScores(pick.homeScore, pick.awayScore)
-        const pickWinner =
-          pick.winner === 'HOME'
-            ? match.homeTeam.code
-            : pick.winner === 'AWAY'
-              ? match.awayTeam.code
-              : ''
-        const resultWinner =
-          match.winner === 'HOME'
-            ? match.homeTeam.code
-            : match.winner === 'AWAY'
-              ? match.awayTeam.code
-              : ''
-        return {
-          user_id: pick.userId,
-          user_name: member?.name ?? pick.userId,
-          match_id: match.id,
-          stage: match.stage,
-          group: match.group ?? '',
-          kickoff_utc: match.kickoffUtc,
-          home_team: match.homeTeam.code,
-          away_team: match.awayTeam.code,
-          pick_home_score: pick.homeScore ?? '',
-          pick_away_score: pick.awayScore ?? '',
-          pick_outcome: pickOutcome ?? '',
-          pick_winner: pickWinner,
-          pick_decided_by: pick.decidedBy ?? '',
-          result_home_score: match.score?.home ?? '',
-          result_away_score: match.score?.away ?? '',
-          result_winner: resultWinner,
-          result_decided_by: match.decidedBy ?? ''
-        }
-      })
-
-    downloadCsv(formatExportFilename('picks', exportMatchScope), headers, rows)
-  }
+  const showDayPagination = dateKeys.length > 1
 
   function renderPickSummary(match: Match, pick?: Pick) {
     if (!pick) return <span className="pickMissing">No pick</span>
@@ -298,8 +222,6 @@ export default function ResultsPage() {
     )
   }
 
-  const activeView = view ?? 'group'
-
   return (
     <div className="stack">
       <div className="row rowSpaceBetween">
@@ -320,183 +242,158 @@ export default function ResultsPage() {
 
       {state.status === 'ready' ? (
         <div className="stack">
-          <div className="card exportPanel">
-            <div className="exportHeader">
-              <div>
-                <div className="sectionKicker">Exports</div>
-                <div className="sectionTitle">Match picks</div>
-              </div>
-              <div className="exportMeta">
-                <span className="exportNote">Finished games only</span>
-                <span className="exportBadge">All users</span>
-              </div>
-            </div>
-            <div className="exportControls">
-              <div className="exportField">
-                <span className="exportFieldLabel">Match window</span>
-                <div className="exportToggle" role="group" aria-label="Match window">
+          <div className="card filtersPanel">
+            <div className="filtersRow">
+              {canShowKnockout ? (
+                <div className="bracketToggle" role="tablist" aria-label="Results view">
                   <button
-                    type="button"
                     className={
-                      exportMatchScope === 'finished'
-                        ? 'exportToggleButton exportToggleButtonActive'
-                        : 'exportToggleButton'
+                      activeView === 'group' ? 'bracketToggleButton active' : 'bracketToggleButton'
                     }
-                    onClick={() => setExportMatchScope('finished')}
-                    aria-pressed={exportMatchScope === 'finished'}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeView === 'group'}
+                    onClick={() => setView('group')}
                   >
-                    Finished matches
+                    Group stage
                   </button>
                   <button
-                    type="button"
                     className={
-                      exportMatchScope === 'latest'
-                        ? 'exportToggleButton exportToggleButtonActive'
-                        : 'exportToggleButton'
+                      activeView === 'knockout' ? 'bracketToggleButton active' : 'bracketToggleButton'
                     }
-                    onClick={() => setExportMatchScope('latest')}
-                    aria-pressed={exportMatchScope === 'latest'}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeView === 'knockout'}
+                    onClick={() => setView('knockout')}
                   >
-                    Latest match only
+                    Knockout
                   </button>
                 </div>
-              </div>
-              <div className="exportHint">
-                {exportMatchScope === 'latest'
-                  ? 'Exports include the latest finished match.'
-                  : 'Exports include all finished matches.'}
-              </div>
+              ) : (
+                <div className="filterCallout">Knockout results unlock after group stage.</div>
+              )}
             </div>
-            <div className="exportList">
-              <div className="exportRow">
-                <div className="exportRowText">
-                  <div className="exportRowTitle">All picks</div>
-                  <div className="exportRowHint">
-                    {exportMatchScope === 'latest' ? latestPickMatchLabel : 'All finished matches.'}
+            {activeView === 'group' && availableGroups.length > 0 ? (
+              <div className="filtersRow">
+                <div className="groupFilter">
+                  <div className="groupFilterLabel">Group filter</div>
+                  <div className="groupFilterChips" role="tablist" aria-label="Group filter">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={groupFilter === 'all'}
+                      className={
+                        groupFilter === 'all' ? 'groupFilterChip active' : 'groupFilterChip'
+                      }
+                      onClick={() => setGroupFilter('all')}
+                    >
+                      All groups
+                    </button>
+                    {availableGroups.map((group) => (
+                      <button
+                        key={group}
+                        type="button"
+                        role="tab"
+                        aria-selected={groupFilter === group}
+                        className={
+                          groupFilter === group ? 'groupFilterChip active' : 'groupFilterChip'
+                        }
+                        onClick={() => setGroupFilter(group)}
+                      >
+                        Group {group}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="button buttonSmall"
-                  onClick={handleExportPicks}
-                  disabled={!hasPickExport}
-                >
-                  CSV
-                </button>
               </div>
-            </div>
-          </div>
-          <div className="bracketToggle" role="tablist" aria-label="Results view">
-            <button
-              className={activeView === 'group' ? 'bracketToggleButton active' : 'bracketToggleButton'}
-              type="button"
-              role="tab"
-              aria-selected={activeView === 'group'}
-              onClick={() => setView('group')}
-            >
-              Group stage
-            </button>
-            <button
-              className={
-                activeView === 'knockout' ? 'bracketToggleButton active' : 'bracketToggleButton'
-              }
-              type="button"
-              role="tab"
-              aria-selected={activeView === 'knockout'}
-              onClick={() => setView('knockout')}
-            >
-              Knockout
-            </button>
+            ) : null}
+            {showDayPagination ? (
+              <div className="filtersRow">
+                <DayPagination
+                  dateKeys={dateKeys}
+                  activeDateKey={activeDateKey}
+                  onSelect={setActiveDateKey}
+                  ariaLabel="Results day"
+                />
+              </div>
+            ) : null}
           </div>
           {groupedMatches.length === 0 ? (
             <div className="card muted">No results yet.</div>
           ) : null}
           {groupedMatches.map((group) => {
-            const [dateKey, stage] = group.key.split('__')
-            const isCollapsed = collapsedGroups[group.key] ?? false
             const matchCountLabel = `${group.matches.length} match${group.matches.length === 1 ? '' : 'es'}`
             return (
-              <section key={group.key} className="card matchGroup">
+              <section key={`${group.dateKey}__${group.stage}`} className="card matchGroup">
                 <div className="groupHeader">
-                  <button
-                    type="button"
-                    className="groupHeaderButton"
-                    data-collapsed={isCollapsed ? 'true' : 'false'}
-                    onClick={() => toggleGroup(group.key)}
-                    aria-expanded={!isCollapsed}
-                  >
-                    <span className="toggleChevron" aria-hidden="true">
-                      ▾
-                    </span>
+                  <div className="groupHeaderButton groupHeaderStatic">
                     <span className="groupTitle">
-                      <span className="groupDate">{formatDateHeader(dateKey)}</span>
-                      <span className="groupStage">{stage}</span>
+                      <span className="groupDate">{formatDateHeader(group.dateKey)}</span>
+                      <span className="groupStage">{group.stage}</span>
                     </span>
                     <span className="toggleMeta">{matchCountLabel}</span>
-                  </button>
+                  </div>
                 </div>
 
-                {!isCollapsed ? (
-                  <div className="list">
-                    {group.matches.map((match, index) => {
-                      const currentPick = findPick(state.picks, match.id, CURRENT_USER_ID)
-                      const showScore =
-                        match.status === 'FINISHED' &&
-                        typeof match.score?.home === 'number' &&
-                        typeof match.score?.away === 'number'
-                      const rowStyle = { '--row-index': index } as CSSProperties
-                      const statusLabel = getStatusLabel(match.status)
-                      const statusTone = getStatusTone(match.status)
+                <div className="list">
+                  {group.matches.map((match, index) => {
+                    const currentPick = findPick(state.picks, match.id, CURRENT_USER_ID)
+                    const showScore =
+                      match.status === 'FINISHED' &&
+                      typeof match.score?.home === 'number' &&
+                      typeof match.score?.away === 'number'
+                    const rowStyle = { '--row-index': index } as CSSProperties
+                    const statusLabel = getStatusLabel(match.status)
+                    const statusTone = getStatusTone(match.status)
 
-                      return (
-                        <div
-                          key={match.id}
-                          className="matchRow"
-                          style={rowStyle}
-                          data-status={statusTone}
-                        >
-                          <div className="matchInfo">
-                            <div className="matchTeams">
-                              <div className="team">
-                                <span className="teamCode">{match.homeTeam.code}</span>
-                                <span className="teamName">{match.homeTeam.name}</span>
-                              </div>
-                              <div className="vs">vs</div>
-                              <div className="team">
-                                <span className="teamCode">{match.awayTeam.code}</span>
-                                <span className="teamName">{match.awayTeam.name}</span>
-                              </div>
+                    return (
+                      <div
+                        key={match.id}
+                        className="matchRow"
+                        style={rowStyle}
+                        data-status={statusTone}
+                      >
+                        <div className="matchInfo">
+                          <div className="matchTeams">
+                            <div className="team">
+                              <span className="teamCode">{match.homeTeam.code}</span>
+                              <span className="teamName">{match.homeTeam.name}</span>
                             </div>
-                            <div className="matchSub">
-                              <div className="matchKickoff">{formatKickoff(match.kickoffUtc)}</div>
-                              <div className="statusRow">
-                                <span className="statusTag" data-tone={statusTone}>
-                                  {statusLabel}
-                                </span>
-                                {showScore ? (
-                                  <span className="scoreTag">
-                                    {match.score!.home}-{match.score!.away}
-                                  </span>
-                                ) : null}
-                              </div>
+                            <div className="vs">vs</div>
+                            <div className="team">
+                              <span className="teamCode">{match.awayTeam.code}</span>
+                              <span className="teamName">{match.awayTeam.name}</span>
                             </div>
                           </div>
-
-                          <div className="matchActions">
-                            <div
-                              className={
-                                currentPick ? 'resultsPickRow' : 'resultsPickRow resultsPickMissing'
-                              }
-                            >
-                              <div className="resultsPickName">Your pick</div>
-                              {renderPickSummary(match, currentPick)}
+                          <div className="matchSub">
+                            <div className="matchKickoff">{formatKickoff(match.kickoffUtc)}</div>
+                            <div className="statusRow">
+                              <span className="statusTag" data-tone={statusTone}>
+                                {statusLabel}
+                              </span>
+                              {showScore ? (
+                                <span className="scoreTag">
+                                  {match.score!.home}-{match.score!.away}
+                                </span>
+                              ) : null}
                             </div>
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
-                ) : null}
+
+                        <div className="matchActions">
+                          <div
+                            className={
+                              currentPick ? 'resultsPickRow' : 'resultsPickRow resultsPickMissing'
+                            }
+                          >
+                            <div className="resultsPickName">Your pick</div>
+                            {renderPickSummary(match, currentPick)}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </section>
             )
           })}

@@ -9,11 +9,9 @@ import {
   fetchPicks,
   fetchScoring
 } from '../../lib/data'
-import { getDateKeyInTimeZone } from '../../lib/matches'
 import { loadLocalBracketPrediction, mergeBracketPredictions } from '../../lib/bracket'
 import { loadLocalPicks, mergePicks } from '../../lib/picks'
 import { buildLeaderboard } from '../../lib/scoring'
-import { downloadCsv, formatExportFilename } from '../../lib/exports'
 import type { BracketPrediction } from '../../types/bracket'
 import type { Member } from '../../types/members'
 import type { Match } from '../../types/matches'
@@ -44,32 +42,10 @@ function formatUpdatedAt(iso: string) {
   })
 }
 
-function formatDateKey(dateKey: string) {
-  const date = new Date(`${dateKey}T00:00:00`)
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-
-function formatLabel(value: string) {
-  if (!value) return ''
-  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return formatDateKey(value)
-  return value
-}
-
-type HistoryPoint = {
-  key: string
-  label: string
-  totals: Map<string, number>
-}
-
-const knockoutStageOrder = ['R32', 'R16', 'QF', 'SF', 'Final'] as const
-
-
 export default function LeaderboardPage() {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [page, setPage] = useState(1)
   const basePageSize = 6
-  const [primaryId, setPrimaryId] = useState<string | null>(null)
-  const [secondaryId, setSecondaryId] = useState<string | null>(null)
 
   useEffect(() => {
     let canceled = false
@@ -142,132 +118,6 @@ export default function LeaderboardPage() {
   const totalPoints = leaderboard.reduce((sum, entry) => sum + entry.totalPoints, 0)
   const averagePoints = leaderboard.length > 0 ? Math.round(totalPoints / leaderboard.length) : 0
 
-  const dateKeys = useMemo(() => {
-    if (state.status !== 'ready') return []
-    const groupMatches = state.matches.filter(
-      (match) => match.stage === 'Group' && match.status === 'FINISHED'
-    )
-    const keys = new Set(groupMatches.map((match) => getDateKeyInTimeZone(match.kickoffUtc)))
-    return [...keys].sort()
-  }, [state])
-
-  function buildSnapshotMatches(
-    matches: Match[],
-    options: { cutoffDateKey?: string; allowedStages?: Set<string> }
-  ): Match[] {
-    return matches.map((match) => {
-      if (options.allowedStages && !options.allowedStages.has(match.stage)) {
-        return {
-          ...match,
-          status: 'SCHEDULED',
-          score: undefined,
-          winner: undefined,
-          decidedBy: undefined
-        }
-      }
-      if (options.cutoffDateKey && match.stage === 'Group') {
-        const matchDate = getDateKeyInTimeZone(match.kickoffUtc)
-        if (matchDate > options.cutoffDateKey) {
-          return {
-            ...match,
-            status: 'SCHEDULED',
-            score: undefined,
-            winner: undefined,
-            decidedBy: undefined
-          }
-        }
-      }
-      return match
-    })
-  }
-
-  const history = useMemo<HistoryPoint[]>(() => {
-    if (state.status !== 'ready') return []
-    const groupMatches = state.matches.filter((match) => match.stage === 'Group')
-    const knockoutMatches = state.matches.filter((match) => match.stage !== 'Group')
-    const knockoutStarted = knockoutMatches.some((match) => match.status === 'FINISHED')
-    const historyPoints: HistoryPoint[] = []
-
-    historyPoints.push({
-      key: 'pre',
-      label: '',
-      totals: new Map(state.members.map((member) => [member.id, 0]))
-    })
-
-    if (!knockoutStarted) {
-      for (const dateKey of dateKeys) {
-        const cutoffMatches = buildSnapshotMatches(state.matches, {
-          cutoffDateKey: dateKey,
-          allowedStages: new Set(['Group'])
-        })
-        const snapshot = buildLeaderboard(
-          state.members,
-          cutoffMatches,
-          state.picks,
-          state.bracketPredictions,
-          state.scoring,
-          undefined
-        )
-        const totals = new Map(snapshot.map((entry) => [entry.member.id, entry.totalPoints]))
-        historyPoints.push({ key: dateKey, label: dateKey, totals })
-      }
-      return historyPoints
-    }
-
-    const groupComplete = groupMatches.length > 0 && groupMatches.every((match) => match.status === 'FINISHED')
-    const groupStages = new Set(['Group'])
-    const groupSnapshotMatches = buildSnapshotMatches(state.matches, {
-      allowedStages: groupStages
-    })
-    const groupSnapshot = buildLeaderboard(
-      state.members,
-      groupSnapshotMatches,
-      state.picks,
-      state.bracketPredictions,
-      state.scoring,
-      groupComplete ? state.bestThirdQualifiers : undefined
-    )
-    historyPoints.push({
-      key: 'group',
-      label: groupComplete ? 'Group complete' : 'Group',
-      totals: new Map(groupSnapshot.map((entry) => [entry.member.id, entry.totalPoints]))
-    })
-
-    const allowedStages = new Set(['Group'])
-    for (const stage of knockoutStageOrder) {
-      const stageMatches = state.matches.filter((match) => match.stage === stage)
-      if (stageMatches.length === 0) continue
-      const stageComplete = stageMatches.every((match) => match.status === 'FINISHED')
-      if (!stageComplete) break
-      allowedStages.add(stage)
-      const snapshotMatches = buildSnapshotMatches(state.matches, { allowedStages })
-      const snapshot = buildLeaderboard(
-        state.members,
-        snapshotMatches,
-        state.picks,
-        state.bracketPredictions,
-        state.scoring,
-        groupComplete ? state.bestThirdQualifiers : undefined
-      )
-      historyPoints.push({
-        key: stage,
-        label: stage,
-        totals: new Map(snapshot.map((entry) => [entry.member.id, entry.totalPoints]))
-      })
-    }
-
-    return historyPoints
-  }, [dateKeys, state])
-
-  useEffect(() => {
-    if (leaderboard.length === 0) return
-    const leaderId = leaderboard[0].member.id
-    const fallbackSecondary =
-      leaderId === CURRENT_USER_ID ? leaderboard[1]?.member.id ?? leaderId : CURRENT_USER_ID
-    setPrimaryId((current) => current ?? leaderId)
-    setSecondaryId((current) => current ?? fallbackSecondary)
-  }, [leaderboard])
-
   const podiumEntries = leaderboard.slice(0, 3)
   const currentInPodium = currentRank !== null && currentRank <= podiumEntries.length
   const shouldReducePageSize = !!currentEntry && !currentInPodium
@@ -291,53 +141,11 @@ export default function LeaderboardPage() {
   const pageStart = (page - 1) * pageSize
   const pageEntries = listSource.slice(pageStart, pageStart + pageSize)
   const currentOnPage = currentPageForUser === page
-  const hasTournamentStarted =
-    state.status === 'ready' && state.matches.some((match) => match.status === 'FINISHED')
-
-  const chartSeries = useMemo(() => {
-    const primary = primaryId
-    const secondary = secondaryId
-    if (!primary || !secondary || history.length === 0) return null
-    const primaryValues = history.map((entry) => entry.totals.get(primary) ?? 0)
-    const secondaryValues = history.map((entry) => entry.totals.get(secondary) ?? 0)
-    const maxValue = Math.max(...primaryValues, ...secondaryValues, 1)
-    const labelEvery = Math.max(1, Math.ceil(history.length / 8))
-    return { primaryValues, secondaryValues, maxValue, labelEvery }
-  }, [history, primaryId, secondaryId])
-
-  function handleExportLeaderboard() {
-    if (leaderboard.length === 0) return
-    const headers = [
-      'rank',
-      'user_id',
-      'user_name',
-      'handle',
-      'exact_points',
-      'outcome_points',
-      'knockout_points',
-      'bracket_points',
-      'total_points'
-    ]
-    const rows = leaderboard.map((entry, index) => ({
-      rank: index + 1,
-      user_id: entry.member.id,
-      user_name: entry.member.name,
-      handle: entry.member.handle ?? '',
-      exact_points: entry.exactPoints,
-      outcome_points: entry.resultPoints,
-      knockout_points: entry.knockoutPoints,
-      bracket_points: entry.bracketPoints,
-      total_points: entry.totalPoints
-    }))
-    downloadCsv(formatExportFilename('leaderboard', 'all'), headers, rows)
-  }
-
   function handleJumpToCurrent() {
     if (!currentPageForUser || currentInPodium) return
     setPage(currentPageForUser)
   }
 
-  const hasLeaderboardExport = leaderboard.length > 0
   const pinCurrentUser = true
   const showPinnedRow =
     pinCurrentUser && currentEntry && !currentInPodium && !currentOnPage && listSource.length > 0
@@ -377,7 +185,7 @@ export default function LeaderboardPage() {
         <div>
           <div className="sectionKicker">Standings</div>
           <h1 className="h1">Leaderboard</h1>
-          <div className="leaderboardSubtitle">Season momentum and full standings.</div>
+          <div className="pageSubtitle">League standings and point breakdowns.</div>
         </div>
         <div className="leaderboardHeaderActions">
           {state.status === 'ready' ? (
@@ -386,14 +194,6 @@ export default function LeaderboardPage() {
               <div className="lastUpdatedValue">{formatUpdatedAt(state.lastUpdated)}</div>
             </div>
           ) : null}
-          <button
-            type="button"
-            className="button buttonSmall buttonSecondary"
-            onClick={handleExportLeaderboard}
-            disabled={!hasLeaderboardExport}
-          >
-            Export leaderboard CSV
-          </button>
         </div>
       </div>
 
@@ -405,8 +205,15 @@ export default function LeaderboardPage() {
           <div className="card muted">No finished matches to score yet.</div>
         ) : (
           <>
-            <div className="leaderboardPulseStrip">
-              <div className="podiumPulse">
+            <div className="card leaderboardOverview">
+              <div className="leaderboardOverviewHeader">
+                <div>
+                  <div className="sectionKicker">League pulse</div>
+                  <div className="sectionTitle">Current snapshot</div>
+                </div>
+                <div className="leaderboardOverviewMeta">Finished matches only.</div>
+              </div>
+              <div className="podiumPulse leaderboardOverviewGrid">
                 <div className="podiumPulseStat">
                   <span className="podiumPulseValue">{leaderboard.length}</span>
                   <span className="podiumPulseLabel">Players</span>
@@ -419,6 +226,18 @@ export default function LeaderboardPage() {
                   <span className="podiumPulseValue">{leaderEntry?.totalPoints ?? 0}</span>
                   <span className="podiumPulseLabel">Leader total</span>
                 </div>
+                {currentRank ? (
+                  <div className="podiumPulseStat">
+                    <span className="podiumPulseValue">#{currentRank}</span>
+                    <span className="podiumPulseLabel">Your rank</span>
+                  </div>
+                ) : null}
+                {currentEntry ? (
+                  <div className="podiumPulseStat">
+                    <span className="podiumPulseValue">{currentEntry.totalPoints}</span>
+                    <span className="podiumPulseLabel">Your total</span>
+                  </div>
+                ) : null}
               </div>
             </div>
             {podiumEntries.length > 0 ? (
@@ -463,197 +282,6 @@ export default function LeaderboardPage() {
                     )
                   })}
                 </div>
-              </div>
-            ) : null}
-
-            {hasTournamentStarted ? (
-              <div className="card leaderboardHistoryCard leaderboardHistoryFull">
-                <div className="leaderboardHistoryHeader">
-                  <div>
-                    <div className="sectionKicker">Momentum tracker</div>
-                    <div className="sectionTitle">Gameday history</div>
-                  </div>
-                  <div className="historyMeta">Totals update after matches finish.</div>
-                </div>
-                <div className="historyToolbar">
-                  <div className="historyToolbarLabel">Compare</div>
-                  <div className="historyPicker">
-                    <select
-                      className="historySelect"
-                      aria-label="Primary player"
-                      value={primaryId ?? ''}
-                      onChange={(event) => setPrimaryId(event.target.value)}
-                    >
-                      {state.members.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.name}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="historyVs">vs</span>
-                    <select
-                      className="historySelect"
-                      aria-label="Compare player"
-                      value={secondaryId ?? ''}
-                      onChange={(event) => setSecondaryId(event.target.value)}
-                    >
-                      {state.members.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                {chartSeries ? (
-                  <div className="historyChart">
-                    <svg viewBox="0 0 640 180" role="img" aria-label="Gameday history chart">
-                      <defs>
-                        <linearGradient id="historyPrimary" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.4" />
-                          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-                        </linearGradient>
-                        <linearGradient id="historySecondary" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor="var(--glow)" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="var(--glow)" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
-                      {chartSeries.primaryValues.map((value, index) => {
-                        if (index === 0) return null
-                        if (index % chartSeries.labelEvery !== 0) return null
-                        const prev = chartSeries.primaryValues[index - 1]
-                        const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
-                        const x1 = 40 + step * (index - 1)
-                        const y1 = 150 - (prev / chartSeries.maxValue) * 110
-                        return (
-                          <line
-                            key={`grid-${index}`}
-                            x1={x1}
-                            x2={x1}
-                            y1={20}
-                            y2={150}
-                            stroke="var(--border-soft)"
-                            strokeDasharray="2 6"
-                          />
-                        )
-                      })}
-                      <polyline
-                        fill="none"
-                        stroke="var(--accent)"
-                        strokeWidth="3"
-                        points={chartSeries.primaryValues
-                          .map((value, index) => {
-                            const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
-                            const x = 40 + step * index
-                            const y = 150 - (value / chartSeries.maxValue) * 110
-                            return `${x},${y}`
-                          })
-                          .join(' ')}
-                      />
-                      <polyline
-                        fill="none"
-                        stroke="var(--glow)"
-                        strokeWidth="2"
-                        points={chartSeries.secondaryValues
-                          .map((value, index) => {
-                            const step = 560 / Math.max(1, chartSeries.secondaryValues.length - 1)
-                            const x = 40 + step * index
-                            const y = 150 - (value / chartSeries.maxValue) * 110
-                            return `${x},${y}`
-                          })
-                          .join(' ')}
-                      />
-                      {chartSeries.primaryValues.map((value, index) => {
-                        const isAnchor =
-                          index % chartSeries.labelEvery === 0 ||
-                          index === chartSeries.primaryValues.length - 1
-                        if (!isAnchor) return null
-                        const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
-                        const x = 40 + step * index
-                        const y = 150 - (value / chartSeries.maxValue) * 110
-                        return (
-                          <circle key={`p-${index}`} cx={x} cy={y} r="3.5" fill="var(--accent)" />
-                        )
-                      })}
-                      {chartSeries.secondaryValues.map((value, index) => {
-                        const isAnchor =
-                          index % chartSeries.labelEvery === 0 ||
-                          index === chartSeries.secondaryValues.length - 1
-                        if (!isAnchor) return null
-                        const step = 560 / Math.max(1, chartSeries.secondaryValues.length - 1)
-                        const x = 40 + step * index
-                        const y = 150 - (value / chartSeries.maxValue) * 110
-                        return <circle key={`s-${index}`} cx={x} cy={y} r="3" fill="var(--glow)" />
-                      })}
-                      {chartSeries.primaryValues.map((value, index) => {
-                        const isAnchor =
-                          index % chartSeries.labelEvery === 0 ||
-                          index === chartSeries.primaryValues.length - 1
-                        if (!isAnchor) return null
-                        const step = 560 / Math.max(1, chartSeries.primaryValues.length - 1)
-                        const x = 40 + step * index
-                        const y = 150 - (value / chartSeries.maxValue) * 110
-                        return (
-                          <text
-                            key={`p-label-${index}`}
-                            x={x}
-                            y={y - 10}
-                            textAnchor="middle"
-                            fill="var(--accent)"
-                            fontSize="10"
-                          >
-                            {value}
-                          </text>
-                        )
-                      })}
-                      {chartSeries.secondaryValues.map((value, index) => {
-                        const isAnchor =
-                          index % chartSeries.labelEvery === 0 ||
-                          index === chartSeries.secondaryValues.length - 1
-                        if (!isAnchor) return null
-                        const step = 560 / Math.max(1, chartSeries.secondaryValues.length - 1)
-                        const x = 40 + step * index
-                        const y = 150 - (value / chartSeries.maxValue) * 110
-                        return (
-                          <text
-                            key={`s-label-${index}`}
-                            x={x}
-                            y={y + 14}
-                            textAnchor="middle"
-                            fill="var(--text)"
-                            opacity="0.85"
-                            fontSize="10"
-                          >
-                            {value}
-                          </text>
-                        )
-                      })}
-                      {history.map((entry, index) => {
-                        const isAnchor =
-                          index % chartSeries.labelEvery === 0 || index === history.length - 1
-                        if (!isAnchor) return null
-                        const label = formatLabel(entry.label)
-                        if (!label) return null
-                        const step = 560 / Math.max(1, history.length - 1)
-                        const x = 40 + step * index
-                        return (
-                          <text
-                            key={`label-${entry.key}`}
-                            x={x}
-                            y={170}
-                            textAnchor="middle"
-                            fill="var(--muted)"
-                            fontSize="10"
-                          >
-                            {label}
-                          </text>
-                        )
-                      })}
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="muted">No finished matches yet.</div>
-                )}
               </div>
             ) : null}
 

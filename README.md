@@ -5,10 +5,11 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 ## App Flow (Current)
 
 - `/` redirects to `/upcoming`
-- `/upcoming` all remaining matches with picks + lock countdown banner
-- `/results` completed matches + your picks
+- `/upcoming` remaining matches by matchday with picks + lock countdown banner (group filter; knockout unlocks after groups)
+- `/results` completed matches by matchday with your picks (group filter; knockout unlocks after groups)
 - `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks)
-- `/leaderboard` category points + gameday history chart + pagination
+- `/leaderboard` category points + standings pagination
+- `/exports` finished-only CSV exports (picks, brackets, leaderboard)
 
 Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-predictions.json`, `best-third-qualifiers.json`).
 
