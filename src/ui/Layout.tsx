@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 
 import UserInfo from './components/UserInfo'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useAuthState } from './hooks/useAuthState'
-import { applyColorMode, getColorMode, setColorMode, type ColorMode } from '../lib/colorMode'
 import { firebaseAuth, hasFirebase } from '../lib/firebase'
 
 function NavItem({ to, label }: { to: string; label: string }) {
@@ -23,18 +22,7 @@ function NavItem({ to, label }: { to: string; label: string }) {
 export default function Layout() {
   const user = useCurrentUser()
   const authState = useAuthState()
-  const [mode, setMode] = useState<ColorMode>(() => getColorMode())
   const [authError, setAuthError] = useState<string | null>(null)
-
-  useEffect(() => {
-    applyColorMode(mode)
-  }, [mode])
-
-  function handleToggleMode() {
-    const nextMode: ColorMode = mode === 'dark' ? 'light' : 'dark'
-    setMode(nextMode)
-    setColorMode(nextMode)
-  }
 
   async function handleSignIn() {
     if (!firebaseAuth) return
@@ -73,15 +61,6 @@ export default function Layout() {
             </div>
           </div>
           <div className="headerActions">
-            <button
-              className={mode === 'light' ? 'modeToggle active' : 'modeToggle'}
-              type="button"
-              onClick={handleToggleMode}
-              aria-pressed={mode === 'light'}
-              aria-label="Toggle light mode"
-            >
-              {mode === 'light' ? 'Light' : 'Dark'}
-            </button>
             {hasFirebase ? (
               authState.user ? (
                 <button

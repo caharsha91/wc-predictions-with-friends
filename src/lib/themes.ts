@@ -63,14 +63,10 @@ export const THEMES = [
 
 export type ThemeId = (typeof THEMES)[number]['id']
 
-const STORAGE_KEY = 'wc-theme'
 const DEFAULT_THEME: ThemeId = 'neo-grid'
 
 export function getThemeId(): ThemeId {
-  if (typeof window === 'undefined') return DEFAULT_THEME
-  const stored = window.localStorage.getItem(STORAGE_KEY)
-  const valid = THEMES.some((theme) => theme.id === stored)
-  return valid ? (stored as ThemeId) : DEFAULT_THEME
+  return DEFAULT_THEME
 }
 
 export function applyTheme(themeId: ThemeId): void {
@@ -79,8 +75,5 @@ export function applyTheme(themeId: ThemeId): void {
 }
 
 export function setThemeId(themeId: ThemeId): void {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(STORAGE_KEY, themeId)
-  }
   applyTheme(themeId)
 }

@@ -353,11 +353,13 @@ export default function BracketPage() {
   useEffect(() => {
     if (state.status !== 'ready') return
     if (hasFirebase && authState.status === 'loading') return
+    const predictions = state.predictions
     let canceled = false
-    async function resolvePrediction() {
+    async function resolvePrediction(predictionsSource: BracketPrediction[]) {
       const local = loadLocalBracketPrediction(userId)
       const localReady = local ? hasBracketData(local) : false
-      const base = state.predictions.find((entry) => entry.userId === userId) ?? null
+      const base =
+        predictionsSource.find((entry: BracketPrediction) => entry.userId === userId) ?? null
       let initial = ensureGroupEntries(
         (localReady ? local : base) ?? createEmptyPrediction(userId, groupIds),
         groupIds
@@ -396,7 +398,7 @@ export default function BracketPage() {
 
       setPrediction(initial)
     }
-    void resolvePrediction()
+    void resolvePrediction(predictions)
     return () => {
       canceled = true
     }

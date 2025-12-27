@@ -4,11 +4,6 @@ import { HashRouter } from 'react-router-dom'
 
 import App from './ui/App'
 import './ui/styles.css'
-import { applyTheme, getThemeId } from './lib/themes'
-import { applyColorMode, getColorMode } from './lib/colorMode'
-
-applyTheme(getThemeId())
-applyColorMode(getColorMode())
 document.documentElement.dataset.density = 'compact'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

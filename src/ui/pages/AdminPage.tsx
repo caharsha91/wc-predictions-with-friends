@@ -34,11 +34,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!firebaseDb) return
+    const db = firebaseDb
     let canceled = false
     async function load() {
       setStatus('loading')
       try {
-        const ref = collection(firebaseDb, 'leagues', leagueId, 'allowlist')
+        const ref = collection(db, 'leagues', leagueId, 'allowlist')
         const snapshot = await getDocs(query(ref, orderBy('createdAt', 'desc')))
         if (canceled) return
         const next = snapshot.docs.map((docSnap) => {
