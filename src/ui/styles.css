@@ -2531,13 +2531,10 @@ body {
 
   .groupFilterChips,
   .dayPagination {
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(110px, max-content);
-    overflow-x: auto;
-    justify-content: start;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
     padding: 8px;
   }
 
@@ -2545,7 +2542,7 @@ body {
   .dayPaginationButton {
     padding: 8px 10px;
     font-size: var(--text-xs);
-    scroll-snap-align: start;
+    flex: 0 1 auto;
   }
 
   .matchRow {
@@ -2688,7 +2685,7 @@ body {
 
   .groupFilterChips,
   .dayPagination {
-    grid-auto-columns: minmax(96px, max-content);
+    gap: 6px;
   }
 
   .groupHeader {
