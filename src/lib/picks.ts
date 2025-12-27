@@ -1,5 +1,5 @@
 import type { Match } from '../types/matches'
-import type { Pick, PickInput, PickOutcome, PickWinner } from '../types/picks'
+import type { Pick, PickInput, PickOutcome, PickWinner, PicksFile } from '../types/picks'
 
 const STORAGE_PREFIX = 'wc-picks'
 
@@ -85,6 +85,15 @@ export function getOutcomeFromScores(
 export function getPredictedWinner(pick: Pick): PickWinner | undefined {
   if (pick.winner === 'HOME' || pick.winner === 'AWAY') return pick.winner
   return undefined
+}
+
+export function getUserPicksFromFile(picksFile: PicksFile, userId: string): Pick[] {
+  const doc = picksFile.picks.find((entry) => entry.userId === userId)
+  return doc?.picks ?? []
+}
+
+export function flattenPicksFile(picksFile: PicksFile): Pick[] {
+  return picksFile.picks.flatMap((entry) => entry.picks ?? [])
 }
 
 export function mergePicks(basePicks: Pick[], localPicks: Pick[], userId: string): Pick[] {

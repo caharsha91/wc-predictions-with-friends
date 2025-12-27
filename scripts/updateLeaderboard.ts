@@ -2,6 +2,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
+import { combineBracketPredictions } from '../src/lib/bracket'
+import { flattenPicksFile } from '../src/lib/picks'
 import { buildLeaderboard } from '../src/lib/scoring'
 import type { BracketPredictionsFile } from '../src/types/bracket'
 import type { LeaderboardFile } from '../src/types/leaderboard'
@@ -26,11 +28,14 @@ async function main() {
   const bracketFile = await readJson<BracketPredictionsFile>('bracket-predictions.json')
   const bestThirdFile = await readJson<BestThirdQualifiersFile>('best-third-qualifiers.json')
 
+  const picks = flattenPicksFile(picksFile)
+  const bracketPredictions = combineBracketPredictions(bracketFile)
+
   const entries = buildLeaderboard(
     membersFile.members,
     matchesFile.matches,
-    picksFile.picks,
-    bracketFile.predictions,
+    picks,
+    bracketPredictions,
     scoringFile,
     bestThirdFile.qualifiers
   )

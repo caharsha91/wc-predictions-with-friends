@@ -6,6 +6,19 @@ export type GroupPrediction = {
   second?: string
 }
 
+export type BracketGroupDoc = {
+  userId: string
+  groups: Record<string, GroupPrediction>
+  bestThirds?: string[]
+  updatedAt: string
+}
+
+export type BracketKnockoutDoc = {
+  userId: string
+  knockout?: Partial<Record<KnockoutStage, Record<string, MatchWinner>>>
+  updatedAt: string
+}
+
 export type BracketPrediction = {
   id: string
   userId: string
@@ -17,5 +30,6 @@ export type BracketPrediction = {
 }
 
 export type BracketPredictionsFile = {
-  predictions: BracketPrediction[]
+  group: BracketGroupDoc[]
+  knockout: BracketKnockoutDoc[]
 }

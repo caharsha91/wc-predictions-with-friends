@@ -1,0 +1,103 @@
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+
+import { firebaseDb, getLeagueId } from './firebase'
+import type { GroupPrediction } from '../types/bracket'
+import type { MatchWinner } from '../types/matches'
+import type { Pick } from '../types/picks'
+import type { KnockoutStage } from '../types/scoring'
+
+type BracketGroupDoc = {
+  userId: string
+  groups: Record<string, GroupPrediction>
+  bestThirds?: string[]
+  updatedAt: string
+}
+
+type BracketKnockoutDoc = {
+  userId: string
+  knockout?: Partial<Record<KnockoutStage, Record<string, MatchWinner>>>
+  updatedAt: string
+}
+
+type PicksDoc = {
+  userId: string
+  picks: Pick[]
+  updatedAt: string
+}
+
+function getUserDocRef(collectionName: string, userId: string) {
+  if (!firebaseDb) return null
+  return doc(firebaseDb, 'leagues', getLeagueId(), collectionName, userId)
+}
+
+export async function fetchUserPicksDoc(userId: string): Promise<Pick[] | null> {
+  const ref = getUserDocRef('picks', userId)
+  if (!ref) return null
+  const snapshot = await getDoc(ref)
+  if (!snapshot.exists()) return null
+  const data = snapshot.data() as PicksDoc
+  return Array.isArray(data.picks) ? data.picks : []
+}
+
+export async function saveUserPicksDoc(userId: string, picks: Pick[]): Promise<void> {
+  const ref = getUserDocRef('picks', userId)
+  if (!ref) return
+  const now = new Date().toISOString()
+  await setDoc(ref, { userId, picks, updatedAt: now } satisfies PicksDoc, { merge: true })
+}
+
+export async function fetchUserBracketGroupDoc(
+  userId: string
+): Promise<{ groups: Record<string, GroupPrediction>; bestThirds?: string[] } | null> {
+  const ref = getUserDocRef('bracket-group', userId)
+  if (!ref) return null
+  const snapshot = await getDoc(ref)
+  if (!snapshot.exists()) return null
+  const data = snapshot.data() as BracketGroupDoc
+  return {
+    groups: data.groups ?? {},
+    bestThirds: data.bestThirds ?? []
+  }
+}
+
+export async function saveUserBracketGroupDoc(
+  userId: string,
+  groups: Record<string, GroupPrediction>,
+  bestThirds?: string[]
+): Promise<void> {
+  const ref = getUserDocRef('bracket-group', userId)
+  if (!ref) return
+  const now = new Date().toISOString()
+  const normalizedBestThirds = bestThirds ?? []
+  await setDoc(
+    ref,
+    { userId, groups, bestThirds: normalizedBestThirds, updatedAt: now } satisfies BracketGroupDoc,
+    { merge: true }
+  )
+}
+
+export async function fetchUserBracketKnockoutDoc(
+  userId: string
+): Promise<Partial<Record<KnockoutStage, Record<string, MatchWinner>>> | null> {
+  const ref = getUserDocRef('bracket-knockout', userId)
+  if (!ref) return null
+  const snapshot = await getDoc(ref)
+  if (!snapshot.exists()) return null
+  const data = snapshot.data() as BracketKnockoutDoc
+  return data.knockout ?? {}
+}
+
+export async function saveUserBracketKnockoutDoc(
+  userId: string,
+  knockout: Partial<Record<KnockoutStage, Record<string, MatchWinner>>> | undefined
+): Promise<void> {
+  const ref = getUserDocRef('bracket-knockout', userId)
+  if (!ref) return
+  const now = new Date().toISOString()
+  const normalizedKnockout = knockout ?? {}
+  await setDoc(
+    ref,
+    { userId, knockout: normalizedKnockout, updatedAt: now } satisfies BracketKnockoutDoc,
+    { merge: true }
+  )
+}

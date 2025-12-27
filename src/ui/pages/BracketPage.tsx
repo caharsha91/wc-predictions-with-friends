@@ -2,10 +2,18 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 
 import { fetchBestThirdQualifiers, fetchBracketPredictions, fetchMatches } from '../../lib/data'
 import {
+  combineBracketPredictions,
   hasBracketData,
   loadLocalBracketPrediction,
   saveLocalBracketPrediction
 } from '../../lib/bracket'
+import {
+  fetchUserBracketGroupDoc,
+  fetchUserBracketKnockoutDoc,
+  saveUserBracketGroupDoc,
+  saveUserBracketKnockoutDoc
+} from '../../lib/firestoreData'
+import { hasFirebase } from '../../lib/firebase'
 import {
   getDateKeyInTimeZone,
   getLockTimePstForDateKey,
@@ -14,6 +22,7 @@ import {
 import type { BracketPrediction, GroupPrediction } from '../../types/bracket'
 import type { Match, MatchWinner, Team } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
+import { useAuthState } from '../hooks/useAuthState'
 import { useViewerId } from '../hooks/useViewerId'
 
 type LoadState =
@@ -27,7 +36,7 @@ type LoadState =
       lastUpdated: string
     }
 
-  const knockoutStageOrder: KnockoutStage[] = ['R32', 'R16', 'QF', 'SF', 'Third', 'Final']
+const knockoutStageOrder: KnockoutStage[] = ['R32', 'R16', 'QF', 'SF', 'Third', 'Final']
 const TBD_TEAM: Team = { code: 'TBD', name: 'TBD' }
 
 type DisplayMatch = Match & {
@@ -133,10 +142,12 @@ function ensureGroupEntries(prediction: BracketPrediction, groupIds: string[]): 
 
 export default function BracketPage() {
   const userId = useViewerId()
+  const authState = useAuthState()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [prediction, setPrediction] = useState<BracketPrediction | null>(null)
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+  const firestoreEnabled = hasFirebase && authState.status === 'ready' && !!authState.user
 
   useEffect(() => {
     let canceled = false
@@ -149,10 +160,11 @@ export default function BracketPage() {
           fetchBestThirdQualifiers()
         ])
         if (canceled) return
+        const predictions = combineBracketPredictions(bracketFile)
         setState({
           status: 'ready',
           matches: matchesFile.matches,
-          predictions: bracketFile.predictions,
+          predictions,
           bestThirdQualifiers: bestThirdFile.qualifiers,
           lastUpdated: matchesFile.lastUpdated
         })
@@ -340,20 +352,66 @@ export default function BracketPage() {
 
   useEffect(() => {
     if (state.status !== 'ready') return
-    const local = loadLocalBracketPrediction(userId)
-    const localReady = local ? hasBracketData(local) : false
-    const base = state.predictions.find((entry) => entry.userId === userId)
-    const initial = ensureGroupEntries(
-      (localReady ? local : base) ?? createEmptyPrediction(userId, groupIds),
-      groupIds
-    )
-    setPrediction(initial)
-  }, [state, groupIds, userId])
+    if (hasFirebase && authState.status === 'loading') return
+    let canceled = false
+    async function resolvePrediction() {
+      const local = loadLocalBracketPrediction(userId)
+      const localReady = local ? hasBracketData(local) : false
+      const base = state.predictions.find((entry) => entry.userId === userId) ?? null
+      let initial = ensureGroupEntries(
+        (localReady ? local : base) ?? createEmptyPrediction(userId, groupIds),
+        groupIds
+      )
+
+      if (firestoreEnabled) {
+        const [groupDoc, knockoutDoc] = await Promise.all([
+          fetchUserBracketGroupDoc(userId),
+          fetchUserBracketKnockoutDoc(userId)
+        ])
+        if (canceled) return
+        if (groupDoc || knockoutDoc) {
+          initial = {
+            ...initial,
+            groups: groupDoc?.groups ?? initial.groups,
+            bestThirds: groupDoc?.bestThirds ?? initial.bestThirds,
+            knockout: knockoutDoc ?? initial.knockout,
+            updatedAt: new Date().toISOString()
+          }
+        } else if (localReady) {
+          try {
+            await Promise.all([
+              saveUserBracketGroupDoc(
+                userId,
+                initial.groups ?? {},
+                initial.bestThirds
+              ),
+              saveUserBracketKnockoutDoc(userId, initial.knockout)
+            ])
+          } catch {
+            // Ignore Firestore write failures for local-only usage.
+          }
+        }
+        initial = ensureGroupEntries(initial, groupIds)
+      }
+
+      setPrediction(initial)
+    }
+    void resolvePrediction()
+    return () => {
+      canceled = true
+    }
+  }, [authState.status, firestoreEnabled, groupIds, state, userId])
 
   useEffect(() => {
     if (!prediction) return
     saveLocalBracketPrediction(userId, prediction)
-  }, [prediction, userId])
+    if (firestoreEnabled) {
+      void saveUserBracketGroupDoc(userId, prediction.groups ?? {}, prediction.bestThirds).catch(
+        () => {}
+      )
+      void saveUserBracketKnockoutDoc(userId, prediction.knockout).catch(() => {})
+    }
+  }, [firestoreEnabled, prediction, userId])
 
   useEffect(() => {
     if (state.status !== 'ready') return

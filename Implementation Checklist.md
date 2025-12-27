@@ -51,7 +51,7 @@
 - [x] Paginate upcoming/results by match day (PST) and add group filters for group stage
 - [x] Hide knockout matches on upcoming/results until group stage completion
 - [x] Remove collapsible matchday sections on upcoming/results
-- [x] Add exports page with finished-only CSV downloads (picks, brackets, leaderboard)
+- [x] Add finished-only CSV exports tab under admin (picks, brackets, leaderboard)
 
 ---
 
@@ -68,6 +68,7 @@
 - [x] Add GitHub Action workflow (cron, daily) that:
   - [x] Runs the script
   - [x] Commits updated `public/data/matches.json`
+  - [x] Builds `public/data/leaderboard.json` after match updates
 
 ---
 
@@ -95,7 +96,7 @@
 - [x] Add official best third-place qualifier list in `public/data/best-third-qualifiers.json`
 - [x] Refresh leaderboard on `matches.json` deploys
 - [x] Refresh bracket scoring on best third-place qualifier deploys
-- [x] Add simulated data modes (group partial/complete, knockout partial/complete) with per-mode JSON files
+- [x] Remove simulated data modes + per-mode JSON files
 - [x] Define Firebase data structure for bracket predictions
 
 ---
@@ -117,9 +118,14 @@
   - [ ] Only members can read league data
   - [ ] Users can only write their own picks
   - [ ] Only admin can manage allowlist/members
-- [ ] Wire Firebase SDK into the app
-  - [ ] Sign in/out buttons in header
-  - [ ] Redirect signed-in users to `/`
+- [x] Wire Firebase SDK into the app
+  - [x] Sign in/out buttons in header
+  - [x] Gate admin allowlist UI behind Firebase availability
+- [x] Use per-user Firestore documents for picks + bracket data
+  - [x] `leagues/{leagueId}/picks/{userId}`
+  - [x] `leagues/{leagueId}/bracket-group/{userId}`
+  - [x] `leagues/{leagueId}/bracket-knockout/{userId}`
+- [x] No legacy Firestore migration required (new setup)
 - [ ] Final checks:
   - [ ] Repo updates daily
   - [ ] GitHub Pages serves updated JSON

@@ -9,6 +9,35 @@ async function loadJson(filename) {
   return JSON.parse(raw)
 }
 
+function flattenPicksFile(file) {
+  const docs = Array.isArray(file.picks) ? file.picks : []
+  return docs.flatMap((entry) => entry.picks ?? [])
+}
+
+function combineBracketPredictions(file) {
+  const groupDocs = Array.isArray(file.group) ? file.group : []
+  const knockoutDocs = Array.isArray(file.knockout) ? file.knockout : []
+  const groupByUser = new Map(groupDocs.map((doc) => [doc.userId, doc]))
+  const knockoutByUser = new Map(knockoutDocs.map((doc) => [doc.userId, doc]))
+  const userIds = new Set([...groupByUser.keys(), ...knockoutByUser.keys()])
+  const predictions = []
+  for (const userId of userIds) {
+    const groupDoc = groupByUser.get(userId)
+    const knockoutDoc = knockoutByUser.get(userId)
+    const updatedAt = (knockoutDoc && knockoutDoc.updatedAt) || (groupDoc && groupDoc.updatedAt)
+    predictions.push({
+      id: `bracket-${userId}`,
+      userId,
+      groups: (groupDoc && groupDoc.groups) || {},
+      bestThirds: (groupDoc && groupDoc.bestThirds) || [],
+      knockout: (knockoutDoc && knockoutDoc.knockout) || {},
+      createdAt: updatedAt || new Date().toISOString(),
+      updatedAt: updatedAt || new Date().toISOString()
+    })
+  }
+  return predictions
+}
+
 function getOutcomeFromScore(score) {
   if (score.home > score.away) return 'WIN'
   if (score.away > score.home) return 'LOSS'
@@ -306,9 +335,9 @@ async function main() {
   ])
 
   const matches = matchesFile.matches
-  const picks = picksFile.picks
+  const picks = flattenPicksFile(picksFile)
   const members = membersFile.members
-  const bracketPredictions = bracketFile.predictions
+  const bracketPredictions = combineBracketPredictions(bracketFile)
   const bestThirdQualifiers = bestThirdFile.qualifiers
 
   const testResults = []

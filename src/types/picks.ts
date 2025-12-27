@@ -25,6 +25,12 @@ export type PickInput = {
   decidedBy?: PickDecision
 }
 
-export type PicksFile = {
+export type UserPicksDoc = {
+  userId: string
   picks: Pick[]
+  updatedAt: string
+}
+
+export type PicksFile = {
+  picks: UserPicksDoc[]
 }

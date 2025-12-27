@@ -3,14 +3,24 @@ import type { CSSProperties } from 'react'
 
 import DayPagination from '../components/DayPagination'
 import { fetchMatches, fetchPicks } from '../../lib/data'
+import { fetchUserPicksDoc, saveUserPicksDoc } from '../../lib/firestoreData'
+import { hasFirebase } from '../../lib/firebase'
 import {
   getDateKeyInTimeZone,
   groupMatchesByDateAndStage,
   PACIFIC_TIME_ZONE
 } from '../../lib/matches'
-import { findPick, loadLocalPicks, mergePicks } from '../../lib/picks'
+import {
+  findPick,
+  flattenPicksFile,
+  getUserPicksFromFile,
+  loadLocalPicks,
+  mergePicks,
+  saveLocalPicks
+} from '../../lib/picks'
 import type { MatchesFile, Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
+import { useAuthState } from '../hooks/useAuthState'
 import { useViewerId } from '../hooks/useViewerId'
 
 type LoadState =
@@ -67,21 +77,50 @@ function getStatusTone(status: Match['status']) {
 }
 
 export default function ResultsPage() {
+  const authState = useAuthState()
   const userId = useViewerId()
   const [state, setState] = useState<LoadState>({ status: 'idle' })
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
   const [groupFilter, setGroupFilter] = useState('all')
   const [activeDateKey, setActiveDateKey] = useState<string | null>(null)
+  const firestoreEnabled = hasFirebase && authState.status === 'ready' && !!authState.user
 
   useEffect(() => {
     let canceled = false
     async function load() {
+      if (hasFirebase && authState.status === 'loading') return
       setState({ status: 'loading' })
       try {
         const [matchesFile, picksFile] = await Promise.all([fetchMatches(), fetchPicks()])
         if (canceled) return
-        const localPicks = loadLocalPicks(userId)
-        const mergedPicks = mergePicks(picksFile.picks, localPicks, userId)
+        const allPicks = flattenPicksFile(picksFile)
+
+        let viewerPicks: Pick[] | null = null
+        if (firestoreEnabled) {
+          const remote = await fetchUserPicksDoc(userId)
+          if (remote !== null) {
+            viewerPicks = remote
+            saveLocalPicks(userId, remote)
+          }
+        }
+
+        if (viewerPicks === null) {
+          const localPicks = loadLocalPicks(userId)
+          if (localPicks.length > 0) {
+            viewerPicks = localPicks
+          } else {
+            viewerPicks = getUserPicksFromFile(picksFile, userId)
+          }
+          if (firestoreEnabled && viewerPicks.length > 0) {
+            try {
+              await saveUserPicksDoc(userId, viewerPicks)
+            } catch {
+              // Ignore Firestore write failures for local-only usage.
+            }
+          }
+        }
+
+        const mergedPicks = mergePicks(allPicks, viewerPicks ?? [], userId)
         setState({
           status: 'ready',
           data: matchesFile,
@@ -96,7 +135,7 @@ export default function ResultsPage() {
     return () => {
       canceled = true
     }
-  }, [userId])
+  }, [authState.status, firestoreEnabled, userId])
 
   const groupStageComplete = useMemo(() => {
     if (state.status !== 'ready') return false

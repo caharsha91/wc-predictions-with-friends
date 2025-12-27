@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 
 import { fetchMatches, fetchPicks } from '../../lib/data'
-import { loadLocalPicks, saveLocalPicks } from '../../lib/picks'
+import { fetchUserPicksDoc, saveUserPicksDoc } from '../../lib/firestoreData'
+import { hasFirebase } from '../../lib/firebase'
+import { getUserPicksFromFile, loadLocalPicks, saveLocalPicks } from '../../lib/picks'
 import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
+import { useAuthState } from './useAuthState'
 import { useViewerId } from './useViewerId'
 
 type PicksLoadState =
@@ -12,27 +15,50 @@ type PicksLoadState =
   | { status: 'ready'; matches: Match[] }
 
 export function usePicksData() {
+  const authState = useAuthState()
   const userId = useViewerId()
   const [state, setState] = useState<PicksLoadState>({ status: 'loading' })
   const [picks, setPicks] = useState<Pick[]>(() => loadLocalPicks(userId))
+  const firestoreEnabled = hasFirebase && authState.status === 'ready' && !!authState.user
 
   useEffect(() => {
     let canceled = false
     async function load() {
+      if (hasFirebase && authState.status === 'loading') return
       setState({ status: 'loading' })
       try {
-        const [matchesFile, picksFile] = await Promise.all([fetchMatches(), fetchPicks()])
+        const matchesFile = await fetchMatches()
         if (canceled) return
 
-        const stored = loadLocalPicks(userId)
-        if (stored.length > 0) {
-          setPicks(stored)
-        } else {
-          const seeded = picksFile.picks.filter((pick) => pick.userId === userId)
-          if (seeded.length > 0) {
-            setPicks(seeded)
-            saveLocalPicks(userId, seeded)
+        let nextPicks: Pick[] | null = null
+        if (firestoreEnabled) {
+          const remote = await fetchUserPicksDoc(userId)
+          if (remote !== null) {
+            nextPicks = remote
+            saveLocalPicks(userId, remote)
           }
+        }
+
+        if (nextPicks === null) {
+          const stored = loadLocalPicks(userId)
+          if (stored.length > 0) {
+            nextPicks = stored
+          } else {
+            const picksFile = await fetchPicks()
+            nextPicks = getUserPicksFromFile(picksFile, userId)
+          }
+          if (firestoreEnabled && nextPicks.length > 0) {
+            try {
+              await saveUserPicksDoc(userId, nextPicks)
+            } catch {
+              // Ignore Firestore write failures for local-only usage.
+            }
+          }
+        }
+
+        setPicks(nextPicks ?? [])
+        if (nextPicks && nextPicks.length > 0) {
+          saveLocalPicks(userId, nextPicks)
         }
 
         setState({ status: 'ready', matches: matchesFile.matches })
@@ -45,11 +71,14 @@ export function usePicksData() {
     return () => {
       canceled = true
     }
-  }, [userId])
+  }, [authState.status, firestoreEnabled, userId])
 
   function updatePicks(nextPicks: Pick[]) {
     setPicks(nextPicks)
     saveLocalPicks(userId, nextPicks)
+    if (firestoreEnabled) {
+      void saveUserPicksDoc(userId, nextPicks).catch(() => {})
+    }
   }
 
   return { state, picks, updatePicks }

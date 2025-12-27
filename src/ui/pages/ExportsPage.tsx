@@ -9,20 +9,42 @@ import {
   fetchPicks
 } from '../../lib/data'
 import {
+  fetchUserBracketGroupDoc,
+  fetchUserBracketKnockoutDoc,
+  fetchUserPicksDoc,
+  saveUserBracketGroupDoc,
+  saveUserBracketKnockoutDoc,
+  saveUserPicksDoc
+} from '../../lib/firestoreData'
+import { hasFirebase } from '../../lib/firebase'
+import {
   buildGroupStandingsSnapshot,
   type CsvValue,
   downloadCsv,
   formatExportFilename,
   resolveBestThirdQualifiers
 } from '../../lib/exports'
-import { loadLocalBracketPrediction, mergeBracketPredictions } from '../../lib/bracket'
+import {
+  combineBracketPredictions,
+  hasBracketData,
+  loadLocalBracketPrediction,
+  saveLocalBracketPrediction
+} from '../../lib/bracket'
 import { getDateKeyInTimeZone, PACIFIC_TIME_ZONE } from '../../lib/matches'
-import { getOutcomeFromScores, loadLocalPicks, mergePicks } from '../../lib/picks'
+import {
+  flattenPicksFile,
+  getOutcomeFromScores,
+  getUserPicksFromFile,
+  loadLocalPicks,
+  mergePicks,
+  saveLocalPicks
+} from '../../lib/picks'
 import type { BracketPrediction } from '../../types/bracket'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import type { Member } from '../../types/members'
 import type { Match, MatchWinner } from '../../types/matches'
 import type { Pick } from '../../types/picks'
+import { useAuthState } from '../hooks/useAuthState'
 import { useViewerId } from '../hooks/useViewerId'
 
 type LoadState =
@@ -74,12 +96,15 @@ function getLatestDateKey(matches: Match[]) {
 
 export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
   const userId = useViewerId()
+  const authState = useAuthState()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [exportMatchScope, setExportMatchScope] = useState<'finished' | 'latest-day'>('finished')
+  const firestoreEnabled = hasFirebase && authState.status === 'ready' && !!authState.user
 
   useEffect(() => {
     let canceled = false
     async function load() {
+      if (hasFirebase && authState.status === 'loading') return
       setState({ status: 'loading' })
       try {
         const [
@@ -98,15 +123,88 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
           fetchLeaderboard()
         ])
         if (canceled) return
+        const allPicks = flattenPicksFile(picksFile)
+        const basePredictions = combineBracketPredictions(bracketFile)
 
-        const localPicks = loadLocalPicks(userId)
-        const mergedPicks = mergePicks(picksFile.picks, localPicks, userId)
+        let viewerPicks: Pick[] | null = null
+        if (firestoreEnabled) {
+          const remote = await fetchUserPicksDoc(userId)
+          if (remote !== null) {
+            viewerPicks = remote
+            saveLocalPicks(userId, remote)
+          }
+        }
+
+        if (viewerPicks === null) {
+          const localPicks = loadLocalPicks(userId)
+          if (localPicks.length > 0) {
+            viewerPicks = localPicks
+          } else {
+            viewerPicks = getUserPicksFromFile(picksFile, userId)
+          }
+          if (firestoreEnabled && viewerPicks.length > 0) {
+            try {
+              await saveUserPicksDoc(userId, viewerPicks)
+            } catch {
+              // Ignore Firestore write failures for local-only usage.
+            }
+          }
+        }
+
+        const mergedPicks = mergePicks(allPicks, viewerPicks ?? [], userId)
         const localBracket = loadLocalBracketPrediction(userId)
-        const mergedBrackets = mergeBracketPredictions(
-          bracketFile.predictions,
-          localBracket,
-          userId
-        )
+        const localReady = localBracket ? hasBracketData(localBracket) : false
+        const basePrediction =
+          basePredictions.find((prediction) => prediction.userId === userId) ?? null
+        let viewerPrediction: BracketPrediction | null = localReady ? localBracket : basePrediction
+
+        if (firestoreEnabled) {
+          const [groupDoc, knockoutDoc] = await Promise.all([
+            fetchUserBracketGroupDoc(userId),
+            fetchUserBracketKnockoutDoc(userId)
+          ])
+          const hasRemote = !!groupDoc || !!knockoutDoc
+          if (hasRemote) {
+            const now = new Date().toISOString()
+            const fallback: BracketPrediction = viewerPrediction ?? {
+              id: `bracket-${userId}`,
+              userId,
+              groups: {},
+              bestThirds: [],
+              knockout: {},
+              createdAt: now,
+              updatedAt: now
+            }
+            viewerPrediction = {
+              ...fallback,
+              groups: groupDoc?.groups ?? fallback.groups,
+              bestThirds: groupDoc?.bestThirds ?? fallback.bestThirds,
+              knockout: knockoutDoc ?? fallback.knockout,
+              updatedAt: now
+            }
+            saveLocalBracketPrediction(userId, viewerPrediction)
+          } else if (viewerPrediction && hasBracketData(viewerPrediction)) {
+            try {
+              await Promise.all([
+                saveUserBracketGroupDoc(
+                  userId,
+                  viewerPrediction.groups ?? {},
+                  viewerPrediction.bestThirds
+                ),
+                saveUserBracketKnockoutDoc(userId, viewerPrediction.knockout)
+              ])
+            } catch {
+              // Ignore Firestore write failures for local-only usage.
+            }
+          }
+        }
+
+        const mergedBrackets = viewerPrediction
+          ? [
+              ...basePredictions.filter((prediction) => prediction.userId !== userId),
+              viewerPrediction
+            ]
+          : basePredictions
 
         setState({
           status: 'ready',
@@ -127,7 +225,7 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
     return () => {
       canceled = true
     }
-  }, [userId])
+  }, [authState.status, firestoreEnabled, userId])
 
   const finishedMatches = useMemo(() => {
     if (state.status !== 'ready') return []
