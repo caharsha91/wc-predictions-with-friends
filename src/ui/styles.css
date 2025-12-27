@@ -2629,6 +2629,11 @@ body {
     text-transform: none;
   }
 
+  .leaderboardDeltaTag {
+    grid-area: delta;
+    justify-self: flex-start;
+  }
+
   .leaderboardListHeader {
     display: none;
   }
