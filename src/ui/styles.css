@@ -68,72 +68,6 @@
   --input-bg: #11151c;
 }
 
-:root[data-theme='pitch'] {
-  --font-body: 'Manrope', system-ui, -apple-system, sans-serif;
-  --font-display: 'Manrope', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, Menlo, Monaco, Consolas,
-    'Liberation Mono', 'Courier New', monospace;
-  --text-xxs: 11px;
-  --text-xs: 12px;
-  --text-sm: 13px;
-  --text-md: 14px;
-  --text-base: 16px;
-  --text-lg: 18px;
-  --text-xl: 20px;
-  --bg: #0f1115;
-  --bg-image:
-    radial-gradient(1100px 520px at 14% -10%, rgba(23, 184, 144, 0.1), transparent 60%),
-    radial-gradient(900px 460px at 86% 0%, rgba(23, 184, 144, 0.06), transparent 60%),
-    linear-gradient(180deg, #0f1115 0%, #0d1014 100%);
-  --panel: #151a23;
-  --card: #1a202a;
-  --surface-muted: #11151c;
-  --border: #262c36;
-  --border-soft: #202632;
-  --border-strong: #2c3340;
-  --divider: #262c36;
-  --border-accent: rgba(23, 184, 144, 0.6);
-  --border-danger: rgba(239, 68, 68, 0.45);
-  --text: #f3f5fa;
-  --text-secondary: #c5ccd8;
-  --muted: #9aa4b3;
-  --accent: #17b890;
-  --accent-hover: #13a07f;
-  --accent-soft: rgba(23, 184, 144, 0.16);
-  --focus-ring: rgba(23, 184, 144, 0.4);
-  --glow: rgba(23, 184, 144, 0.3);
-  --danger: #ef4444;
-  --brand-mark-bg: linear-gradient(135deg, #17b890, #12a57f);
-  --banner-accent: rgba(23, 184, 144, 0.18);
-  --status-upcoming: #c5ccd8;
-  --status-live: #17b890;
-  --status-final: #f3f5fa;
-  --status-locked: #a2adbd;
-  --status-alert: #ef4444;
-  --header-bg: rgba(15, 17, 21, 0.88);
-  --header-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-  --ticker-bg: linear-gradient(
-    90deg,
-    rgba(23, 184, 144, 0.18),
-    rgba(21, 25, 34, 0.85) 60%
-  );
-  --ticker-border: rgba(23, 184, 144, 0.25);
-  --card-shadow: 0 18px 30px rgba(0, 0, 0, 0.32);
-  --row-border: #2a303c;
-  --row-inset: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-  --row-hover-border: rgba(23, 184, 144, 0.45);
-  --row-hover-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
-  --team-border: #323a48;
-  --pill-border: rgba(255, 255, 255, 0.12);
-  --pill-bg: rgba(255, 255, 255, 0.04);
-  --group-ticker-bg: rgba(23, 184, 144, 0.16);
-  --group-ticker-border: rgba(23, 184, 144, 0.45);
-  --button-border: rgba(23, 184, 144, 0.5);
-  --button-bg: rgba(23, 184, 144, 0.16);
-  --button-shadow: 0 10px 20px rgba(0, 0, 0, 0.28);
-  --input-bg: #11151c;
-}
-
 *,
 *::before,
 *::after {
@@ -2482,7 +2416,54 @@ body {
     minmax(60px, 0.8fr);
 }
 
+@media (max-width: 1024px) {
+  .headerBar,
+  .headerNav {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .groupFilterChips,
+  .dayPagination {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .bracketGraph {
+    grid-auto-columns: minmax(220px, 1fr);
+  }
+}
+
 @media (max-width: 900px) {
+  .headerBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .headerNav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .navTabs {
+    width: 100%;
+  }
+
+  .headerMeta {
+    align-items: flex-start;
+    padding-top: 6px;
+  }
+
   .exportsLayout {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -2493,15 +2474,32 @@ body {
 }
 
 @media (max-width: 720px) {
-  .headerInner {
-    flex-direction: column;
-    align-items: flex-start;
+  .headerBar {
+    padding: 14px 14px 10px;
   }
 
-  .headerRight {
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
+  .brandMark {
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+  }
+
+  .brand {
+    font-size: 20px;
+  }
+
+  .headerActions {
+    gap: 8px;
+  }
+
+  .navTabs {
+    gap: 8px;
+  }
+
+  .navLink {
+    padding: 8px 12px;
+    flex: 1 1 auto;
+    text-align: center;
   }
 
   .userInfo {
@@ -2523,6 +2521,33 @@ body {
     left: 0;
   }
 
+  .main {
+    padding: 22px 14px 40px;
+  }
+
+  .filtersPanel {
+    gap: 12px;
+  }
+
+  .groupFilterChips,
+  .dayPagination {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(110px, max-content);
+    overflow-x: auto;
+    justify-content: start;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px;
+  }
+
+  .groupFilterChip,
+  .dayPaginationButton {
+    padding: 8px 10px;
+    font-size: var(--text-xs);
+    scroll-snap-align: start;
+  }
+
   .matchRow {
     grid-template-columns: 1fr;
     gap: 14px;
@@ -2532,6 +2557,24 @@ body {
     align-items: stretch;
     border-left: none;
     padding-left: 0;
+  }
+
+  .pickForm {
+    align-items: stretch;
+  }
+
+  .pickLabel {
+    width: 100%;
+  }
+
+  .pickInput {
+    width: 100%;
+    max-width: 72px;
+  }
+
+  .pickSelect {
+    width: 100%;
+    min-width: 0;
   }
 
   .leaderboardRow {
@@ -2550,6 +2593,21 @@ body {
     align-items: flex-start;
   }
 
+  .leaderboardPagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .leaderboardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .leaderboardOverviewHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .lockBanner {
     grid-template-columns: 1fr;
     align-items: flex-start;
@@ -2559,13 +2617,90 @@ body {
     align-items: flex-start;
   }
 
-  .leaderboardPagination {
+  .bracketToggle {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .bracketToggleButton {
+    flex: 1 1 140px;
+    text-align: center;
+  }
+
+  .bracketGraph {
+    --bracket-card-height: 64px !important;
+    --connector-gap: 12px;
+    grid-auto-columns: minmax(200px, 1fr);
+    gap: 12px;
+    padding: 6px 0 10px;
+  }
+
+  .bracketChampionBadge {
+    position: static;
+    transform: none;
+    margin-top: 8px;
+    align-self: flex-start;
+  }
+
+  .bracketChampionBadge::before {
+    display: none;
+  }
+
+  .exportsGuideGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .exportHeader {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .leaderboardHeader {
+  .exportMeta {
+    flex-wrap: wrap;
+  }
+
+  .exportToggle {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .exportToggleButton {
+    flex: 1 1 160px;
+    text-align: center;
+  }
+
+  .exportsGrid,
+  .exportsGridWide {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .headerActions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .navLink {
+    flex: 1 1 100%;
+  }
+
+  .groupFilterChips,
+  .dayPagination {
+    grid-auto-columns: minmax(96px, max-content);
+  }
+
+  .groupHeader {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .groupDate {
+    font-size: 18px;
+  }
+
+  .matchRow {
+    padding: 12px;
   }
 }
