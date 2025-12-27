@@ -117,10 +117,20 @@ export default function LeaderboardPage() {
           {entry.member.handle ? <span className="leaderboardHandle">@{entry.member.handle}</span> : null}
         </div>
         <div className="leaderboardTotal">{entry.totalPoints}</div>
-        <div className="leaderboardPoints">{entry.exactPoints}</div>
-        <div>{entry.resultPoints}</div>
-        <div>{entry.knockoutPoints}</div>
-        <div>{entry.bracketPoints}</div>
+        <div className="leaderboardBreakdown">
+          <span className="leaderboardBreakdownItem leaderboardPoints" data-label="Exact">
+            {entry.exactPoints}
+          </span>
+          <span className="leaderboardBreakdownItem" data-label="Outcome">
+            {entry.resultPoints}
+          </span>
+          <span className="leaderboardBreakdownItem" data-label="KO">
+            {entry.knockoutPoints}
+          </span>
+          <span className="leaderboardBreakdownItem" data-label="Bracket">
+            {entry.bracketPoints}
+          </span>
+        </div>
         <div className="leaderboardDeltaTag">{deltaLabel}</div>
       </div>
     )

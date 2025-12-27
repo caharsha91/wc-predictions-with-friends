@@ -1978,6 +1978,10 @@ body {
   gap: 8px;
 }
 
+.leaderboardBreakdown {
+  display: contents;
+}
+
 .leaderboardRow {
   display: grid;
   grid-template-columns:
@@ -2575,11 +2579,54 @@ body {
   }
 
   .leaderboardRow {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "rank name total"
+      "breakdown breakdown breakdown"
+      "delta delta delta";
+    gap: 8px;
   }
 
   .leaderboardRow .leaderboardName {
-    grid-column: span 2;
+    grid-area: name;
+  }
+
+  .leaderboardRank {
+    grid-area: rank;
+  }
+
+  .leaderboardTotal {
+    grid-area: total;
+    justify-self: end;
+  }
+
+  .leaderboardBreakdown {
+    grid-area: breakdown;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .leaderboardBreakdownItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface-muted);
+    font-size: var(--text-xs);
+    color: var(--text);
+    font-family: var(--font-mono);
+    letter-spacing: 0.2px;
+  }
+
+  .leaderboardBreakdownItem::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: 10px;
+    letter-spacing: 0.2px;
+    text-transform: none;
   }
 
   .leaderboardListHeader {
