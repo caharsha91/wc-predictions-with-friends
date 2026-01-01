@@ -13,6 +13,13 @@ import {
 import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import { ensureSimulationStateReady } from '../../lib/simulation'
 import { CloseIcon } from '../components/Icons'
+import { Alert } from '../components/ui/Alert'
+import { Badge } from '../components/ui/Badge'
+import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { InputField } from '../components/ui/Field'
+import PageHeader from '../components/ui/PageHeader'
+import Table from '../components/ui/Table'
 import { useSimulationState } from '../hooks/useSimulationState'
 
 type AllowlistEntry = {
@@ -185,11 +192,8 @@ export default function AdminUsersPage() {
 
   return (
     <div className="stack">
-      <div>
-        <div className="sectionKicker">Backstage</div>
-        <h1 className="h1">Users</h1>
-      </div>
-      <div className="card adminUsersCard">
+      <PageHeader kicker="Backstage" title="Users" />
+      <Card className="adminUsersCard">
         <div className="stack">
           <div className="adminSectionHeader">
             <div>
@@ -207,18 +211,13 @@ export default function AdminUsersPage() {
               ) : null}
             </div>
             <div className="adminSectionActions">
-              <button
-                className="button buttonSmall"
-                type="button"
-                onClick={openAddDrawer}
-                disabled={!canManageAllowlist}
-              >
+              <Button type="button" size="sm" onClick={openAddDrawer} disabled={!canManageAllowlist}>
                 Add user
-              </button>
+              </Button>
             </div>
           </div>
 
-          {error ? <div className="error">{error}</div> : null}
+          {error ? <Alert tone="danger">{error}</Alert> : null}
 
           <div className="adminList">
             <div className="adminListHeaderRow">
@@ -236,52 +235,72 @@ export default function AdminUsersPage() {
             {entries.length > 0 ? (
               <div className="adminListHeader">
                 <div className="adminPagination">
-                  <button
-                    className="button buttonSmall buttonSecondary"
+                  <Button
                     type="button"
+                    size="sm"
+                    variant="secondary"
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                     disabled={safePage <= 1}
                   >
                     Prev
-                  </button>
+                  </Button>
                   <span className="muted small">
                     Page {safePage} of {totalPages}
                   </span>
-                  <button
-                    className="button buttonSmall buttonSecondary"
+                  <Button
                     type="button"
+                    size="sm"
+                    variant="secondary"
                     onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                     disabled={safePage >= totalPages}
                   >
                     Next
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : null}
-            <div className="adminListItems">
-              {pageEntries.map((entry) => (
-                <div key={entry.id} className="adminListItem">
-                  <div className="adminUserMeta">
-                    <div className="adminUserName">{entry.name || 'Unnamed user'}</div>
-                    <div className="adminUserEmail">{entry.email}</div>
-                  </div>
-                  <div className="adminUserActions">
-                    {entry.isAdmin ? <span className="adminBadge">Admin</span> : null}
-                    <button
-                      className="button buttonSmall buttonSecondary"
-                      type="button"
-                      onClick={() => openEditDrawer(entry)}
-                      disabled={!canManageAllowlist}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {entries.length > 0 ? (
+              <div className="tableWrapper">
+                <Table className="adminTable">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Role</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageEntries.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>
+                          <div className="adminUserMeta">
+                            <div className="adminUserName">{entry.name || 'Unnamed user'}</div>
+                            <div className="adminUserEmail">{entry.email}</div>
+                          </div>
+                        </td>
+                        <td>
+                          {entry.isAdmin ? <Badge tone="info">Admin</Badge> : <Badge>Member</Badge>}
+                        </td>
+                        <td>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => openEditDrawer(entry)}
+                            disabled={!canManageAllowlist}
+                          >
+                            Edit
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            ) : null}
           </div>
         </div>
-      </div>
+      </Card>
 
       <div
         className={drawerOpen ? 'adminDrawerScrim isVisible' : 'adminDrawerScrim'}
@@ -316,35 +335,25 @@ export default function AdminUsersPage() {
           </button>
         </div>
         <form className="adminForm adminDrawerForm" onSubmit={handleAddUser}>
-          <div className="adminField">
-            <label className="adminLabel" htmlFor="admin-name">
-              Name
-            </label>
-            <input
-              className="adminInput"
-              id="admin-name"
-              type="text"
-              placeholder="Harsha"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              disabled={!canManageAllowlist}
-            />
-          </div>
-          <div className="adminField">
-            <label className="adminLabel" htmlFor="admin-email">
-              Email
-            </label>
-            <input
-              className="adminInput"
-              id="admin-email"
-              type="email"
-              placeholder="caharsha2025@gmail.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              disabled={!canManageAllowlist || isEditing}
-              required
-            />
-          </div>
+          <InputField
+            id="admin-name"
+            label="Name"
+            type="text"
+            placeholder="Harsha"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            disabled={!canManageAllowlist}
+          />
+          <InputField
+            id="admin-email"
+            label="Email"
+            type="email"
+            placeholder="caharsha2025@gmail.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={!canManageAllowlist || isEditing}
+            required
+          />
           <label className="adminCheckbox">
             <input
               type="checkbox"
@@ -357,22 +366,14 @@ export default function AdminUsersPage() {
           {isEditing ? (
             <div className="adminFormNote">Email changes require removing and re-adding.</div>
           ) : null}
-          {error ? <div className="error">{error}</div> : null}
+          {error ? <Alert tone="danger">{error}</Alert> : null}
           <div className="adminDrawerActions">
-            <button
-              className="button buttonSmall buttonSecondary"
-              type="button"
-              onClick={closeDrawer}
-            >
+            <Button type="button" size="sm" variant="secondary" onClick={closeDrawer}>
               Cancel
-            </button>
-            <button
-              className="button buttonSmall"
-              type="submit"
-              disabled={!canManageAllowlist}
-            >
+            </Button>
+            <Button type="submit" size="sm" disabled={!canManageAllowlist}>
               {isEditing ? 'Save changes' : 'Add user'}
-            </button>
+            </Button>
           </div>
         </form>
       </section>

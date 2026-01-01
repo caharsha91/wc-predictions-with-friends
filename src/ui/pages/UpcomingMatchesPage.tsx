@@ -6,6 +6,8 @@ import LockReminderBanner from '../components/LockReminderBanner'
 import PicksBoard from '../components/PicksBoard'
 import { FilterIcon } from '../components/Icons'
 import { useTopBarAction } from '../components/AppShellContext'
+import { Alert } from '../components/ui/Alert'
+import Skeleton from '../components/ui/Skeleton'
 import { getDateKeyInTimeZone } from '../../lib/matches'
 import { usePicksData } from '../hooks/usePicksData'
 import { useMediaQuery } from '../hooks/useMediaQuery'
@@ -123,8 +125,22 @@ export default function UpcomingMatchesPage() {
 
   const showDayPagination = dateKeys.length > 1
 
-  if (state.status === 'loading') return <div className="muted">Loading...</div>
-  if (state.status === 'error') return <div className="error">{state.message}</div>
+  if (state.status === 'loading') {
+    return (
+      <div className="stack">
+        <Skeleton height={18} />
+        <Skeleton height={18} width="70%" />
+        <span className="sr-only">Loading...</span>
+      </div>
+    )
+  }
+  if (state.status === 'error') {
+    return (
+      <div className="stack">
+        <Alert tone="danger">{state.message}</Alert>
+      </div>
+    )
+  }
 
   return (
     <div className="stack">

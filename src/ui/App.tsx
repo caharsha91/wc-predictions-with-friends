@@ -13,6 +13,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useSimulationState } from './hooks/useSimulationState'
+import { Card } from './components/ui/Card'
 
 function AdminGate() {
   const authState = useAuthState()
@@ -22,10 +23,10 @@ function AdminGate() {
   if (simulation.enabled) return <Outlet />
   if (authState.status === 'loading') {
     return (
-      <div className="card">
+      <Card>
         <h1 className="h1">Backstage</h1>
-        <p className="muted">Checking access...</p>
-      </div>
+        <div className="pageSubtitle">Checking access...</div>
+      </Card>
     )
   }
   if (user?.isAdmin) return <Outlet />

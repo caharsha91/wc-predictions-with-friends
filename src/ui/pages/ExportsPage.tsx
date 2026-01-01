@@ -46,6 +46,10 @@ import type { Match, MatchWinner } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 import { useAuthState } from '../hooks/useAuthState'
 import { useViewerId } from '../hooks/useViewerId'
+import { Alert } from '../components/ui/Alert'
+import { Button } from '../components/ui/Button'
+import PageHeader from '../components/ui/PageHeader'
+import Skeleton from '../components/ui/Skeleton'
 
 type LoadState =
   | { status: 'loading' }
@@ -600,23 +604,29 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className={embedded ? 'stack adminExports' : 'stack'}>
       {!embedded ? (
-        <div className="row rowSpaceBetween">
-          <div>
-            <div className="sectionKicker">Data center</div>
-            <h1 className="h1">Exports</h1>
-            <div className="pageSubtitle">Download finished-only CSVs for the league.</div>
-          </div>
-          {state.status === 'ready' ? (
-            <div className="lastUpdated">
-              <div className="lastUpdatedLabel">Last updated</div>
-              <div className="lastUpdatedValue">{formatUpdatedAt(state.lastUpdated)}</div>
-            </div>
-          ) : null}
-        </div>
+        <PageHeader
+          kicker="Data center"
+          title="Exports"
+          subtitle="Download finished-only CSVs for the league."
+          actions={
+            state.status === 'ready' ? (
+              <div className="lastUpdated">
+                <div className="lastUpdatedLabel">Last updated</div>
+                <div className="lastUpdatedValue">{formatUpdatedAt(state.lastUpdated)}</div>
+              </div>
+            ) : null
+          }
+        />
       ) : null}
 
-      {state.status === 'loading' ? <div className="muted">Loading...</div> : null}
-      {state.status === 'error' ? <div className="error">{state.message}</div> : null}
+      {state.status === 'loading' ? (
+        <div className="stack">
+          <Skeleton height={16} />
+          <Skeleton height={14} width="60%" />
+          <span className="sr-only">Loading...</span>
+        </div>
+      ) : null}
+      {state.status === 'error' ? <Alert tone="danger">{state.message}</Alert> : null}
 
       {state.status === 'ready' ? (
         <div className="stack">
@@ -727,14 +737,14 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                     <div className="exportTileTitle">Match picks</div>
                     <div className="exportTileMeta">All users</div>
                   </div>
-                  <button
+                  <Button
                     type="button"
-                    className="button buttonSmall"
+                    size="sm"
                     onClick={handleExportPicks}
                     disabled={!hasPickExport}
                   >
                     CSV
-                  </button>
+                  </Button>
                 </div>
                 <div className="exportTileHint">
                   {exportMatchScope === 'latest-day' ? latestPickMatchLabel : 'All finished matches.'}
@@ -747,14 +757,14 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                     <div className="exportTileTitle">Group bracket</div>
                     <div className="exportTileMeta">All users</div>
                   </div>
-                  <button
+                  <Button
                     type="button"
-                    className="button buttonSmall"
+                    size="sm"
                     onClick={handleExportGroup}
                     disabled={!hasGroupExport}
                   >
                     CSV
-                  </button>
+                  </Button>
                 </div>
                 <div className="exportTileHint">
                   {exportMatchScope === 'latest-day'
@@ -770,14 +780,14 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                     <div className="exportTileTitle">Knockout bracket</div>
                     <div className="exportTileMeta">All users</div>
                   </div>
-                  <button
+                  <Button
                     type="button"
-                    className="button buttonSmall"
+                    size="sm"
                     onClick={handleExportKnockout}
                     disabled={!hasKnockoutExport}
                   >
                     CSV
-                  </button>
+                  </Button>
                 </div>
                 <div className="exportTileHint">
                   {exportMatchScope === 'latest-day'
@@ -792,14 +802,14 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                     <div className="exportTileTitle">Leaderboard</div>
                     <div className="exportTileMeta">All users</div>
                   </div>
-                  <button
+                  <Button
                     type="button"
-                    className="button buttonSmall"
+                    size="sm"
                     onClick={handleExportLeaderboard}
                     disabled={!hasLeaderboardExport}
                   >
                     CSV
-                  </button>
+                  </Button>
                 </div>
                 <div className="exportTileHint">Ranked totals for all players.</div>
               </div>

@@ -26,6 +26,10 @@ import { useAuthState } from '../hooks/useAuthState'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { useViewerId } from '../hooks/useViewerId'
+import { Alert } from '../components/ui/Alert'
+import { Button } from '../components/ui/Button'
+import PageHeader from '../components/ui/PageHeader'
+import Skeleton from '../components/ui/Skeleton'
 
 type LoadState =
   | { status: 'loading' }
@@ -802,8 +806,22 @@ export default function BracketPage() {
     scrollToTarget(`bracket-round-${roundKey}`)
   }
 
-  if (state.status === 'loading') return <div className="muted">Loading...</div>
-  if (state.status === 'error') return <div className="error">{state.message}</div>
+  if (state.status === 'loading') {
+    return (
+      <div className="stack">
+        <Skeleton height={18} />
+        <Skeleton height={18} width="70%" />
+        <span className="sr-only">Loading...</span>
+      </div>
+    )
+  }
+  if (state.status === 'error') {
+    return (
+      <div className="stack">
+        <Alert tone="danger">{state.message}</Alert>
+      </div>
+    )
+  }
   if (!prediction) return null
   const groupStepCollapsed = collapsedSections.groupStep ?? false
   const thirdStepCollapsed = collapsedSections.thirdStep ?? false
@@ -846,23 +864,23 @@ export default function BracketPage() {
 
   return (
     <div className="stack">
-      <div className="row rowSpaceBetween">
-        <div>
-          <div className="sectionKicker">Bracket Challenge</div>
-          <h1 className="h1">Bracket Predictions</h1>
-          <div className="muted small">
-            {missingGroups === 0 && missingThirds === 0 && missingKnockout === 0
-              ? 'All bracket picks are in.'
-              : `${missingGroups} group${missingGroups === 1 ? '' : 's'}, ${missingThirds} third-place pick${
-                  missingThirds === 1 ? '' : 's'
-                }, and ${missingKnockout} knockout pick${missingKnockout === 1 ? '' : 's'} missing.`}
+      <PageHeader
+        kicker="Bracket Challenge"
+        title="Bracket Predictions"
+        subtitle={
+          missingGroups === 0 && missingThirds === 0 && missingKnockout === 0
+            ? 'All bracket picks are in.'
+            : `${missingGroups} group${missingGroups === 1 ? '' : 's'}, ${missingThirds} third-place pick${
+                missingThirds === 1 ? '' : 's'
+              }, and ${missingKnockout} knockout pick${missingKnockout === 1 ? '' : 's'} missing.`
+        }
+        actions={
+          <div className="lastUpdated">
+            <div className="lastUpdatedLabel">Match data</div>
+            <div className="lastUpdatedValue">{formatKickoff(state.lastUpdated)}</div>
           </div>
-        </div>
-        <div className="lastUpdated">
-          <div className="lastUpdatedLabel">Match data</div>
-          <div className="lastUpdatedValue">{formatKickoff(state.lastUpdated)}</div>
-        </div>
-      </div>
+        }
+      />
 
       {issueCount > 0 ? (
         <div className="card validationBanner" role="status">
@@ -876,13 +894,14 @@ export default function BracketPage() {
             ) : null}
           </div>
           {firstIssue ? (
-            <button
-              className="button buttonSecondary buttonSmall"
+            <Button
               type="button"
+              size="sm"
+              variant="secondary"
               onClick={() => handleJumpToIssue(firstIssue)}
             >
               Jump to first pick
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : null}

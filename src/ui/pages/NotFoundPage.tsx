@@ -1,5 +1,8 @@
 import { useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+
+import { ButtonLink } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
 
 export default function NotFoundPage() {
   const navigate = useNavigate()
@@ -12,12 +15,12 @@ export default function NotFoundPage() {
   }, [navigate])
 
   return (
-    <div className="card">
+    <Card>
       <h1 className="h1">Not Found</h1>
-      <p className="muted">That page does not exist. Redirecting to Upcoming...</p>
-      <Link className="button" to="/upcoming">
+      <div className="pageSubtitle">That page does not exist. Redirecting to Upcoming...</div>
+      <ButtonLink to="/upcoming">
         Go to upcoming
-      </Link>
-    </div>
+      </ButtonLink>
+    </Card>
   )
 }

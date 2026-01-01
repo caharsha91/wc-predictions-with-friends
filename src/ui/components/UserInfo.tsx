@@ -1,3 +1,5 @@
+import { Badge } from './ui/Badge'
+
 type UserInfoProps = {
   name: string
   email: string
@@ -9,7 +11,7 @@ export default function UserInfo({ name, email, isAdmin }: UserInfoProps) {
     <div className="userInfo">
       <div className="userName">{name}</div>
       <div className="userEmail">{email}</div>
-      {isAdmin ? <span className="userBadge">Admin</span> : null}
+      {isAdmin ? <Badge tone="info">Admin</Badge> : null}
     </div>
   )
 }

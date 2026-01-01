@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 
 import App from './ui/App'
+import './styles/theme.css'
+import './styles/global.css'
 import './ui/styles.css'
 document.documentElement.dataset.density = 'compact'
 

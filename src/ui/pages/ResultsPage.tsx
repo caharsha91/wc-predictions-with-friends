@@ -5,6 +5,8 @@ import DayPagination from '../components/DayPagination'
 import FiltersPanel from '../components/FiltersPanel'
 import { FilterIcon } from '../components/Icons'
 import { useTopBarAction } from '../components/AppShellContext'
+import { Alert } from '../components/ui/Alert'
+import Skeleton from '../components/ui/Skeleton'
 import { fetchMatches, fetchPicks, fetchScoring } from '../../lib/data'
 import { fetchUserPicksDoc, saveUserPicksDoc } from '../../lib/firestoreData'
 import { hasFirebase } from '../../lib/firebase'
@@ -456,8 +458,14 @@ export default function ResultsPage() {
         ) : null}
       </div>
 
-      {state.status === 'loading' ? <div className="muted">Loading...</div> : null}
-      {state.status === 'error' ? <div className="error">{state.message}</div> : null}
+      {state.status === 'loading' ? (
+        <div className="stack">
+          <Skeleton height={18} />
+          <Skeleton height={18} width="70%" />
+          <span className="sr-only">Loading...</span>
+        </div>
+      ) : null}
+      {state.status === 'error' ? <Alert tone="danger">{state.message}</Alert> : null}
 
       {state.status === 'ready' ? (
         <div className="stack">

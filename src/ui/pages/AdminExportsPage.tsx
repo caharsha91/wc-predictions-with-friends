@@ -1,12 +1,10 @@
 import { ExportsPanel } from './ExportsPage'
+import PageHeader from '../components/ui/PageHeader'
 
 export default function AdminExportsPage() {
   return (
     <div className="stack">
-      <div>
-        <div className="sectionKicker">Backstage</div>
-        <h1 className="h1">Exports</h1>
-      </div>
+      <PageHeader kicker="Backstage" title="Exports" />
       <div className="adminExports">
         <ExportsPanel embedded />
       </div>

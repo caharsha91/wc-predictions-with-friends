@@ -3,6 +3,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchLeaderboard } from '../../lib/data'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import { useViewerId } from '../hooks/useViewerId'
+import { Alert } from '../components/ui/Alert'
+import { Badge } from '../components/ui/Badge'
+import { Button } from '../components/ui/Button'
+import PageHeader from '../components/ui/PageHeader'
+import Skeleton from '../components/ui/Skeleton'
 
 type LoadState =
   | { status: 'loading' }
@@ -152,7 +157,7 @@ export default function LeaderboardPage() {
         <div className="leaderboardName">
           <div className="leaderboardNameMain">
             <span className="leaderboardNameText">{entry.member.name}</span>
-            {isCurrent ? <span className="leaderboardYouTag">You</span> : null}
+            {isCurrent ? <Badge tone="info">You</Badge> : null}
           </div>
           {entry.member.handle ? <span className="leaderboardHandle">@{entry.member.handle}</span> : null}
         </div>
@@ -180,24 +185,28 @@ export default function LeaderboardPage() {
 
   return (
     <div className="stack">
-      <div className="leaderboardHeader">
-        <div>
-          <div className="sectionKicker">Standings</div>
-          <h1 className="h1">Leaderboard</h1>
-          <div className="pageSubtitle">League standings and point breakdowns.</div>
-        </div>
-        <div className="leaderboardHeaderActions">
-          {state.status === 'ready' ? (
+      <PageHeader
+        kicker="Standings"
+        title="Leaderboard"
+        subtitle="League standings and point breakdowns."
+        actions={
+          state.status === 'ready' ? (
             <div className="lastUpdated">
               <div className="lastUpdatedLabel">Last updated</div>
               <div className="lastUpdatedValue">{formatUpdatedAt(state.lastUpdated)}</div>
             </div>
-          ) : null}
-        </div>
-      </div>
+          ) : null
+        }
+      />
 
-      {state.status === 'loading' ? <div className="muted">Loading...</div> : null}
-      {state.status === 'error' ? <div className="error">{state.message}</div> : null}
+      {state.status === 'loading' ? (
+        <div className="stack">
+          <Skeleton height={18} />
+          <Skeleton height={18} width="70%" />
+          <span className="sr-only">Loading...</span>
+        </div>
+      ) : null}
+      {state.status === 'error' ? <Alert tone="danger">{state.message}</Alert> : null}
 
       {state.status === 'ready' ? (
         leaderboard.length === 0 ? (
@@ -324,14 +333,15 @@ export default function LeaderboardPage() {
                     <div className="leaderboardUserHint">You are on the podium.</div>
                   ) : (
                     <div className="leaderboardUserActions">
-                      <button
+                      <Button
                         type="button"
-                        className="button buttonSmall buttonSecondary"
+                        size="sm"
+                        variant="secondary"
                         onClick={handleJumpToCurrent}
                         disabled={!currentPageForUser || currentOnPage}
                       >
                         Find me
-                      </button>
+                      </Button>
                     </div>
                   )
                 ) : null}
@@ -361,25 +371,27 @@ export default function LeaderboardPage() {
               )}
               {listSource.length > pageSize ? (
                 <div className="leaderboardPagination">
-                  <button
+                  <Button
                     type="button"
-                    className="paginationButton"
+                    size="sm"
+                    variant="secondary"
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                     disabled={page === 1}
                   >
                     Prev
-                  </button>
+                  </Button>
                   <div className="paginationInfo">
                     Page {page} of {pageCount}
                   </div>
-                  <button
+                  <Button
                     type="button"
-                    className="paginationButton"
+                    size="sm"
+                    variant="secondary"
                     onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
                     disabled={page === pageCount}
                   >
                     Next
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </div>

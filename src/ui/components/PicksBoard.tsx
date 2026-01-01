@@ -11,6 +11,7 @@ import { findPick, isPickComplete, upsertPick } from '../../lib/picks'
 import type { Match } from '../../types/matches'
 import type { Pick, PickOutcome } from '../../types/picks'
 import { LockIcon } from './Icons'
+import PageHeader from './ui/PageHeader'
 import { useNow } from '../hooks/useNow'
 import { useViewerId } from '../hooks/useViewerId'
 
@@ -236,17 +237,15 @@ export default function PicksBoard({
 
   return (
     <div className="stack">
-      <div className="row rowSpaceBetween">
-        <div>
-          <div className="sectionKicker">{kicker}</div>
-          <h1 className="h1">{title}</h1>
-          <div className="muted small">
-            {missingCount === 0
-              ? 'All picks are in.'
-              : `${missingCount} match${missingCount === 1 ? '' : 'es'} missing a pick.`}
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        kicker={kicker}
+        title={title}
+        subtitle={
+          missingCount === 0
+            ? 'All picks are in.'
+            : `${missingCount} match${missingCount === 1 ? '' : 'es'} missing a pick.`
+        }
+      />
 
       {matchdays.length === 0 ? <div className="card muted">{emptyMessage}</div> : null}
       {matchdays.map((matchday) => {

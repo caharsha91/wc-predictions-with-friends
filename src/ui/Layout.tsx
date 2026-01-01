@@ -13,6 +13,7 @@ import {
   TrophyIcon,
   UsersIcon
 } from './components/Icons'
+import { Button } from './components/ui/Button'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useAuthState } from './hooks/useAuthState'
 import { useSimulationState } from './hooks/useSimulationState'
@@ -94,17 +95,13 @@ function LayoutFrame() {
             {topBarAction ? <div className="primaryActionSlot">{topBarAction}</div> : null}
             {hasFirebase && !simulation.enabled ? (
               authState.user ? (
-                <button
-                  className="button buttonSmall buttonSecondary"
-                  type="button"
-                  onClick={handleSignOut}
-                >
+                <Button size="sm" variant="secondary" type="button" onClick={handleSignOut}>
                   Sign out
-                </button>
+                </Button>
               ) : (
-                <button className="button buttonSmall" type="button" onClick={handleSignIn}>
+                <Button size="sm" type="button" onClick={handleSignIn}>
                   Sign in
-                </button>
+                </Button>
               )
             ) : null}
             {user?.name && user.email ? (

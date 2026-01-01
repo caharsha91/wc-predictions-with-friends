@@ -1,5 +1,8 @@
 import { useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+
+import { ButtonLink } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
 
 export default function AccessDeniedPage() {
   const navigate = useNavigate()
@@ -12,14 +15,14 @@ export default function AccessDeniedPage() {
   }, [navigate])
 
   return (
-    <div className="card">
+    <Card>
       <h1 className="h1">Access denied</h1>
-      <p className="muted">
+      <div className="pageSubtitle">
         You do not have access to that page. Redirecting to Upcoming...
-      </p>
-      <Link className="button" to="/upcoming">
+      </div>
+      <ButtonLink to="/upcoming">
         Go to upcoming
-      </Link>
-    </div>
+      </ButtonLink>
+    </Card>
   )
 }

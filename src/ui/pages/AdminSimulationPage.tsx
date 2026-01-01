@@ -14,6 +14,9 @@ import {
   type SimulationUserRole
 } from '../../lib/simulation'
 import { useSimulationState } from '../hooks/useSimulationState'
+import { Button } from '../components/ui/Button'
+import { SelectField } from '../components/ui/Field'
+import PageHeader from '../components/ui/PageHeader'
 
 const scenarioOptions: Array<{ value: SimulationScenario; label: string }> = [
   { value: 'group-partial', label: 'Group stage partial' },
@@ -146,10 +149,7 @@ export default function AdminSimulationPage() {
 
   return (
     <div className="stack">
-      <div>
-        <div className="sectionKicker">Backstage</div>
-        <h1 className="h1">Simulation</h1>
-      </div>
+      <PageHeader kicker="Backstage" title="Simulation" />
       <div className="card simulationCard">
         <div className="simulationSandbox">
           <div className="simulationSandboxIntro">
@@ -254,48 +254,48 @@ export default function AdminSimulationPage() {
               <div className="simulationControlHeader">
                 <div className="simulationControlTitle">Selected user</div>
               </div>
-              <div className="simulationControlRow">
-                <select
-                  id="sim-user"
-                  className="adminInput"
-                  value={simulation.selectedUserId}
-                  onChange={(event) => setSimulationSelectedUser(event.target.value)}
-                  disabled={lockSimControls}
-                >
-                  {simulation.users.length === 0 ? (
-                    <option value={simulation.selectedUserId}>Loading users...</option>
-                  ) : (
-                    simulation.users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name} ({user.email})
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
+              <SelectField
+                id="sim-user"
+                label="Selected user"
+                labelHidden
+                className="simulationControlRow"
+                value={simulation.selectedUserId}
+                onChange={(event) => setSimulationSelectedUser(event.target.value)}
+                disabled={lockSimControls}
+              >
+                {simulation.users.length === 0 ? (
+                  <option value={simulation.selectedUserId}>Loading users...</option>
+                ) : (
+                  simulation.users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} ({user.email})
+                    </option>
+                  ))
+                )}
+              </SelectField>
             </div>
             <div className="simulationControlGroup">
               <div className="simulationControlHeader">
                 <div className="simulationControlTitle">Role</div>
               </div>
-              <div className="simulationControlRow">
-                <select
-                  id="sim-role"
-                  className="adminInput"
-                  value={selectedSimRole}
-                  onChange={(event) => {
-                    if (!selectedSimUser) return
-                    setSimulationUserRole(
-                      selectedSimUser.id,
-                      event.currentTarget.value as SimulationUserRole
-                    )
-                  }}
-                  disabled={lockSimControls || !selectedSimUser}
-                >
-                  <option value="admin">admin</option>
-                  <option value="user">user</option>
-                </select>
-              </div>
+              <SelectField
+                id="sim-role"
+                label="Role"
+                labelHidden
+                className="simulationControlRow"
+                value={selectedSimRole}
+                onChange={(event) => {
+                  if (!selectedSimUser) return
+                  setSimulationUserRole(
+                    selectedSimUser.id,
+                    event.currentTarget.value as SimulationUserRole
+                  )
+                }}
+                disabled={lockSimControls || !selectedSimUser}
+              >
+                <option value="admin">admin</option>
+                <option value="user">user</option>
+              </SelectField>
             </div>
             <div className="simulationControlGroup">
               <div className="simulationControlHeader">
@@ -312,22 +312,24 @@ export default function AdminSimulationPage() {
                   onChange={(event) => setSimNowInput(event.target.value)}
                   disabled={simulationBusy}
                 />
-                <button
+                <Button
                   type="button"
-                  className="button buttonSmall buttonSecondary"
+                  size="sm"
+                  variant="secondary"
                   onClick={handleSimulationNowApply}
                   disabled={simulationBusy || !simNowInput}
                 >
                   Apply
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="button buttonSmall buttonSecondary"
+                  size="sm"
+                  variant="secondary"
                   onClick={handleSimulationNowReset}
                   disabled={simulationBusy}
                 >
                   Reset time
-                </button>
+                </Button>
               </div>
             </div>
             <div className="simulationControlGroup">
@@ -337,14 +339,16 @@ export default function AdminSimulationPage() {
                   <div className="simulationControlHint">Rebuilds 50 users, picks, brackets.</div>
                 </div>
               </div>
-              <button
-                className="button buttonSmall simulationReset"
+              <Button
+                className="simulationReset"
                 type="button"
+                size="sm"
+                variant="secondary"
                 onClick={handleResetSimulation}
                 disabled={resetDisabled}
               >
                 Seed 50 users
-              </button>
+              </Button>
             </div>
           </div>
         </div>
