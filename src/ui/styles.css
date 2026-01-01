@@ -311,50 +311,6 @@
   height: 22px;
 }
 
-.modeGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 8px;
-}
-
-.modeGridButton {
-  border: 1px solid var(--border-soft);
-  background: var(--surface-muted);
-  color: var(--text-secondary);
-  padding: 12px 14px;
-  border-radius: 14px;
-  text-transform: none;
-  letter-spacing: 0.2px;
-  font-size: var(--text-sm);
-  cursor: pointer;
-  text-align: left;
-  font-family: var(--font-body);
-  font-weight: 600;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.modeGridButton.active {
-  color: var(--text);
-  border-color: var(--border-accent);
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--border-accent);
-}
-
-.modeGridLabel {
-  font-size: var(--text-sm);
-  color: var(--text);
-}
-
-.modeGridMeta {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  letter-spacing: 0.2px;
-  text-transform: none;
-}
-
 .adminTabs {
   display: inline-flex;
   gap: 6px;
@@ -399,8 +355,8 @@
 }
 
 .simulationCard {
-  border: 1px solid var(--border-accent);
-  background: linear-gradient(180deg, var(--accent-soft), var(--card));
+  border: 1px solid var(--border);
+  background: var(--card);
 }
 
 .simulationSandbox {
@@ -423,14 +379,14 @@
 }
 
 .simulationMetaCard {
-  border-radius: 14px;
-  border: 1px solid var(--border-soft);
-  background: rgba(8, 12, 18, 0.7);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  box-shadow: var(--shadow-xs);
 }
 
 .simulationMetaLabel {
@@ -453,10 +409,10 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  border-radius: 16px;
-  border: 1px solid var(--border-soft);
-  background: rgba(10, 14, 20, 0.55);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow-xs);
 }
 
 .simulationPanelTitle {
@@ -506,27 +462,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
-}
-
-.simulationControlColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.simulationControlColumnTitle {
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-}
-
-.simulationControlColumnHint {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  letter-spacing: 0.2px;
 }
 
 .simulationTimeRow {
@@ -831,6 +766,18 @@
   gap: 2px;
 }
 
+.userMenuTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.userMenuBadge {
+  font-size: var(--text-xxs);
+  padding: 2px 6px;
+}
+
 .userMenuCaret {
   font-size: var(--text-xs);
   color: var(--text-secondary);
@@ -866,6 +813,67 @@
 .userMenuItem:hover {
   border-color: var(--border-accent);
   background: var(--accent-soft);
+}
+
+.userMenuItemButton {
+  appearance: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.userMenuToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.userMenuToggleLabel {
+  letter-spacing: 0.2px;
+}
+
+.userMenuToggleTrack {
+  position: relative;
+  width: 36px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
+}
+
+.userMenuToggleThumb {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--text-secondary);
+  transform: translate(0, -50%);
+  transition: transform 0.2s var(--ease-out), background 0.2s var(--ease-out);
+}
+
+.userMenuItemButton[aria-checked='true'] .userMenuToggleLabel {
+  color: var(--text);
+}
+
+.userMenuItemButton[aria-checked='true'] .userMenuToggleTrack {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.userMenuItemButton[aria-checked='true'] .userMenuToggleThumb {
+  transform: translate(20px, -50%);
+  background: var(--text-inverse);
 }
 
 .userName {
@@ -1298,6 +1306,7 @@
   background: var(--input-bg);
   color: var(--text);
   font-size: var(--text-sm);
+  width: 100%;
   min-height: 40px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }

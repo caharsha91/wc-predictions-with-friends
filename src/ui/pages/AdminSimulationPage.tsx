@@ -152,47 +152,6 @@ export default function AdminSimulationPage() {
       <PageHeader kicker="Backstage" title="Simulation" />
       <div className="card simulationCard">
         <div className="simulationSandbox">
-          <div className="simulationSandboxIntro">
-            <div>
-              <div className="sectionTitle">Simulation sandbox</div>
-              <p className="muted">
-                Local-only sandbox for locks, roles, and leaderboard positioning. No Firestore
-                writes while enabled.
-              </p>
-            </div>
-            <label className="adminCheckbox simulationToggle">
-              <input
-                type="checkbox"
-                checked={simulation.enabled}
-                onChange={(event) => handleSimulationToggle(event.target.checked)}
-              />
-              <span>Simulation: {simulation.enabled ? 'ON' : 'OFF'}</span>
-            </label>
-            <div className="simulationMetaGrid">
-              <div className="simulationMetaCard">
-                <span className="simulationMetaLabel">Status</span>
-                <span className="simulationMetaValue">
-                  {simulation.enabled ? 'Simulation' : 'Live'}
-                </span>
-              </div>
-              <div className="simulationMetaCard">
-                <span className="simulationMetaLabel">Mode</span>
-                <span className="simulationMetaValue">{scenarioLabel}</span>
-              </div>
-              <div className="simulationMetaCard">
-                <span className="simulationMetaLabel">Placement</span>
-                <span className="simulationMetaValue">{placementLabel}</span>
-              </div>
-              <div className="simulationMetaCard">
-                <span className="simulationMetaLabel">Users</span>
-                <span className="simulationMetaValue">{simUserCount}</span>
-              </div>
-              <div className="simulationMetaCard">
-                <span className="simulationMetaLabel">Time</span>
-                <span className="simulationMetaValue">{formatSimTimestamp(simulation.simNow)}</span>
-              </div>
-            </div>
-          </div>
           <div className="simulationPanel simulationSandboxPanel">
             <div className="simulationPanelTitle">Controls</div>
             <div className="simulationControlGroup">
@@ -205,49 +164,34 @@ export default function AdminSimulationPage() {
                 </div>
               </div>
               <div className="simulationControlSplit">
-                <div className="simulationControlColumn">
-                  <div className="simulationControlColumnTitle">Mode</div>
-                  <div className="simulationControlColumnHint">Match progression and unlocks.</div>
-                  <div className="modeGrid">
-                    {scenarioOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={
-                          simulation.scenario === option.value
-                            ? 'modeGridButton active'
-                            : 'modeGridButton'
-                        }
-                        onClick={() => handleScenarioChange(option.value)}
-                        disabled={simulationBusy}
-                      >
-                        <span className="modeGridLabel">{option.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="simulationControlColumn">
-                  <div className="simulationControlColumnTitle">Placement</div>
-                  <div className="simulationControlColumnHint">Target leaderboard band.</div>
-                  <div className="modeGrid">
-                    {placementOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={
-                          simulation.placement === option.value
-                            ? 'modeGridButton active'
-                            : 'modeGridButton'
-                        }
-                        onClick={() => handlePlacementChange(option.value)}
-                        disabled={simulationBusy}
-                      >
-                        <span className="modeGridLabel">{option.label}</span>
-                        <span className="modeGridMeta">Target rank #{option.rank}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <SelectField
+                  id="sim-scenario"
+                  label="Mode"
+                  helperText="Match progression and unlocks."
+                  value={simulation.scenario}
+                  onChange={(event) => handleScenarioChange(event.target.value as SimulationScenario)}
+                  disabled={simulationBusy}
+                >
+                  {scenarioOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </SelectField>
+                <SelectField
+                  id="sim-placement"
+                  label="Placement"
+                  helperText="Target leaderboard band."
+                  value={simulation.placement}
+                  onChange={(event) => handlePlacementChange(event.target.value as SimulationPlacement)}
+                  disabled={simulationBusy}
+                >
+                  {placementOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label} (Target rank #{option.rank})
+                    </option>
+                  ))}
+                </SelectField>
               </div>
             </div>
             <div className="simulationControlGroup">
@@ -315,7 +259,7 @@ export default function AdminSimulationPage() {
                 <Button
                   type="button"
                   size="sm"
-                  variant="secondary"
+                  variant="primary"
                   onClick={handleSimulationNowApply}
                   disabled={simulationBusy || !simNowInput}
                 >
@@ -343,12 +287,53 @@ export default function AdminSimulationPage() {
                 className="simulationReset"
                 type="button"
                 size="sm"
-                variant="secondary"
+                variant="primary"
                 onClick={handleResetSimulation}
                 disabled={resetDisabled}
               >
                 Seed 50 users
               </Button>
+            </div>
+          </div>
+          <div className="simulationPanel simulationSandboxIntro">
+            <div>
+              <div className="sectionTitle">Simulation sandbox</div>
+              <p className="muted">
+                Local-only sandbox for locks, roles, and leaderboard positioning. No Firestore
+                writes while enabled.
+              </p>
+            </div>
+            <label className="adminCheckbox simulationToggle">
+              <input
+                type="checkbox"
+                checked={simulation.enabled}
+                onChange={(event) => handleSimulationToggle(event.target.checked)}
+              />
+              <span>Simulation: {simulation.enabled ? 'ON' : 'OFF'}</span>
+            </label>
+            <div className="simulationMetaGrid">
+              <div className="simulationMetaCard">
+                <span className="simulationMetaLabel">Status</span>
+                <span className="simulationMetaValue">
+                  {simulation.enabled ? 'Simulation' : 'Live'}
+                </span>
+              </div>
+              <div className="simulationMetaCard">
+                <span className="simulationMetaLabel">Mode</span>
+                <span className="simulationMetaValue">{scenarioLabel}</span>
+              </div>
+              <div className="simulationMetaCard">
+                <span className="simulationMetaLabel">Placement</span>
+                <span className="simulationMetaValue">{placementLabel}</span>
+              </div>
+              <div className="simulationMetaCard">
+                <span className="simulationMetaLabel">Users</span>
+                <span className="simulationMetaValue">{simUserCount}</span>
+              </div>
+              <div className="simulationMetaCard">
+                <span className="simulationMetaLabel">Time</span>
+                <span className="simulationMetaValue">{formatSimTimestamp(simulation.simNow)}</span>
+              </div>
             </div>
           </div>
         </div>

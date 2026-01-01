@@ -20,3 +20,9 @@ export function setColorMode(mode: ColorMode): void {
   }
   applyColorMode(mode)
 }
+
+export function toggleColorMode(): ColorMode {
+  const next = getColorMode() === 'dark' ? 'light' : 'dark'
+  setColorMode(next)
+  return next
+}

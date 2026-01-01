@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { getDateKeyInTimeZone, getLockTime } from '../../lib/matches'
 import type { Match } from '../../types/matches'
 import { useNow } from '../hooks/useNow'
+import { Button } from './ui/Button'
 
 type UpcomingLock = {
   match: Match
@@ -63,16 +64,24 @@ export default function LockReminderBanner({ matches }: LockReminderBannerProps)
     .filter((entry) => entry.status !== 'FINISHED')
     .filter((entry) => getDateKeyInTimeZone(entry.kickoffUtc) === dateKey)
     .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())
+  const matchdayId = `matchday-${dateKey}`
+
+  function handleJumpToMatchday() {
+    const target = document.getElementById(matchdayId)
+    if (!target) return
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' })
+  }
 
   return (
     <section className="card validationBanner lockBanner" role="status">
       <div className="validationBannerInfo lockBannerInfo">
-        <div className="validationBannerTitle">Upcoming lock</div>
-        <div className="lockBannerMatch">
-          {match.homeTeam.code} vs {match.awayTeam.code}
-        </div>
+        <div className="validationBannerTitle">Action needed</div>
         <div className="validationBannerMeta">
           {match.stage} · Locks at {formatLockTime(lockTime)}
+        </div>
+        <div className="validationBannerIssue lockBannerMatch">
+          {match.homeTeam.code} vs {match.awayTeam.code}
         </div>
         <div className="lockBannerNote">Edits lock at kickoff.</div>
         {sameDayMatches.length > 1 ? (
@@ -96,6 +105,9 @@ export default function LockReminderBanner({ matches }: LockReminderBannerProps)
       <div className="lockBannerCountdown">
         <div className="lockBannerCountdownLabel">Locking in</div>
         <div className="lockBannerCountdownValue">{countdown}</div>
+        <Button type="button" size="sm" variant="secondary" onClick={handleJumpToMatchday}>
+          Jump to matchday
+        </Button>
       </div>
     </section>
   )

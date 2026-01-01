@@ -66,6 +66,8 @@ type ResultCounts = {
   correct: number
 }
 
+const emptyQualifiers: string[] = []
+
 const pickResultLabels: Record<PickResult, string> = {
   pending: 'Pending',
   correct: 'Correct',
@@ -624,13 +626,15 @@ export default function BracketPage() {
     return { results, summary }
   }, [groupIds, groupStandings, prediction])
 
+  const bestThirdQualifiers =
+    state.status === 'ready' ? state.bestThirdQualifiers : emptyQualifiers
+
   const thirdPickResults = useMemo(() => {
     const results: PickResult[] = []
     const summary: ResultCounts = { total: 0, decided: 0, correct: 0 }
     if (!prediction) return { results, summary }
-    const qualifiersReady =
-      state.status === 'ready' && state.bestThirdQualifiers.length >= 8
-    const qualifiers = qualifiersReady ? new Set(state.bestThirdQualifiers) : null
+    const qualifiersReady = bestThirdQualifiers.length >= 8
+    const qualifiers = qualifiersReady ? new Set(bestThirdQualifiers) : null
     for (let index = 0; index < 8; index += 1) {
       const pick = prediction.bestThirds?.[index] ?? ''
       const status = resolvePickStatus(pick, qualifiers)
@@ -638,7 +642,7 @@ export default function BracketPage() {
       recordResult(status, summary)
     }
     return { results, summary }
-  }, [prediction, state.bestThirdQualifiers, state.status])
+  }, [prediction, bestThirdQualifiers])
 
   const knockoutPickResults = useMemo(() => {
     const results = new Map<string, PickResult>()
