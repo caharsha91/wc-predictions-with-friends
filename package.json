@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "update-matches": "node scripts/updateMatches.js"
+    "update-matches": "node scripts/updateMatches.js",
+    "seed:prod": "tsx scripts/seedProd.ts"
   },
   "dependencies": {
     "firebase": "^12.7.0",
@@ -20,6 +21,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "firebase-admin": "^13.6.0",
     "tsx": "^4.21.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"

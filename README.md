@@ -10,11 +10,11 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks, graphical knockout bracket + inline team pick pills)
 - `/leaderboard` category points + standings pagination
 - `/themes` theme selector (light/dark + theme packs)
-- `/users` allowlist manager (admins only, or simulation enabled)
+- `/users` members manager (admins only, or simulation enabled)
 - `/simulation` local-only simulation sandbox (admins only, or simulation enabled)
 - `/exports` finished-only CSV exports (admins only, or simulation enabled)
 
-Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-group.json`, `bracket-knockout.json`, `best-third-qualifiers.json`, `leaderboard.json`, `allowlist.json`).
+Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-group.json`, `bracket-knockout.json`, `best-third-qualifiers.json`, `leaderboard.json`).
 
 ## How the App Works (Contributor Guide)
 
@@ -31,6 +31,19 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 2. Install deps: `npm install`
 3. Run: `npm run dev`
 
+## Local Firebase (Emulators)
+
+1. Install the Firebase CLI (one-time).
+2. Ensure `.env.local` includes:
+   - `VITE_USE_FIREBASE_EMULATORS=true`
+   - `VITE_FIREBASE_EMULATOR_HOST=127.0.0.1`
+   - `VITE_FIREBASE_AUTH_EMULATOR_PORT=9099`
+   - `VITE_FIRESTORE_EMULATOR_PORT=8080`
+3. Start emulators in a separate terminal: `firebase emulators:start`
+4. Seed emulator data:
+   - `VITE_USE_FIREBASE_EMULATORS=true FIREBASE_PROJECT_ID=demo-wc-predictions node scripts/seedEmulators.js`
+5. Run the app: `npm run dev`
+
 ## Pick Locks (PST)
 
 - Match picks lock 30 minutes before kickoff.
@@ -46,20 +59,19 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 ## Backstage
 
 - Backstage pages are available to admins (or when simulation mode is enabled).
-- `/users` includes the allowlist manager (name/email/admin flag).
+- `/users` includes the members manager (name/email/admin flag).
 - `/simulation` provides local-only simulation controls.
 - `/exports` provides finished-only CSV downloads (picks, brackets, leaderboard).
 
 ## Firestore Data Model (when enabled)
 
-- `leagues/{leagueId}/members/{userId}`
-  - optional `theme`: `{ id, mode, isSystemMode }`
+- `leagues/{leagueId}/members/{email}` (doc id is lower-case email)
+  - `email`, `name`, `handle?`, `isAdmin?`, `createdAt?`, `theme?`
 - `leagues/{leagueId}/picks/{userId}` → one doc per user with all match picks
 - `leagues/{leagueId}/bracket-group/{userId}` → one doc per user (group + best thirds)
 - `leagues/{leagueId}/bracket-knockout/{userId}` → one doc per user (knockout winners)
-- `leagues/{leagueId}/allowlist/{email}`
 
-JSON mirrors for local mode: `public/data/allowlist.json`, `public/data/members.json`, `public/data/picks.json`, `public/data/bracket-group.json`, `public/data/bracket-knockout.json`.
+JSON mirrors for local mode: `public/data/members.json`, `public/data/picks.json`, `public/data/bracket-group.json`, `public/data/bracket-knockout.json`.
 
 ## Firebase Setup (Step 5)
 
@@ -69,10 +81,39 @@ JSON mirrors for local mode: `public/data/allowlist.json`, `public/data/members.
 4. Create a Firestore database (production mode).
 5. Firestore rules: copy `firestore.rules` into the Rules editor and publish.
 6. Seed league access:
-   - Allowlist: `leagues/{leagueId}/allowlist/{email}` with `email`, `name`, `isAdmin`, `createdAt`.
-   - Members: `leagues/{leagueId}/members/{uid}` with `name`, `email`, `isAdmin`.
-   - `uid` comes from Firebase Authentication after the user signs in.
+   - Members: `leagues/{leagueId}/members/{email}` with `email`, `name`, `isAdmin`, `createdAt`.
+   - Doc id is the lower-case email address used to sign in with Google.
 7. Add env vars from `.env.example` (set `VITE_LEAGUE_ID` to your league ID) and restart dev server.
+
+## Secrets and Variables (GitHub Actions)
+
+Set these in GitHub: `Settings → Secrets and variables → Actions`.
+
+Secrets:
+- `FOOTBALL_DATA_TOKEN` (football-data.org API token used by `.github/workflows/update-matches.yml`)
+
+Variables (public web config used by Vite build):
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_LEAGUE_ID`
+
+## Seed Production Firestore (local only)
+
+Do this from your machine (never in CI). Requires a local service account JSON.
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS="$PWD/.secrets/firebase-adminsdk.json"
+export FIREBASE_PROJECT_ID="your-project-id"
+export LEAGUE_ID="default"
+# Optional: export MEMBERS_PATH="scripts/seed-data/members.json"
+npm run seed:prod
+```
+
+By default, `seed:prod` reads `public/data/members.json` (or `scripts/seed-data/members.json` if present).
 
 ## Data Updates (Fixtures/Results)
 
@@ -92,7 +133,8 @@ Notes:
 
 This repo includes a workflow at `.github/workflows/deploy-pages.yml` that builds the Vite app and deploys `dist/` to GitHub Pages on pushes to `main`.
 
-1. Commit and push to `main`: `git add -A && git commit -m "Deploy" && git push`
-2. In GitHub: `Settings → Pages → Build and deployment → Source: GitHub Actions`
-3. Wait for `Actions → Deploy to GitHub Pages` to finish, then open:
+1. Ensure GitHub Actions variables/secrets are set (see above).
+2. Commit and push to `main`: `git add -A && git commit -m "Deploy" && git push`
+3. In GitHub: `Settings → Pages → Build and deployment → Source: GitHub Actions`
+4. Wait for `Actions → Deploy to GitHub Pages` to finish, then open:
    - `https://<your-username>.github.io/<repo-name>/`

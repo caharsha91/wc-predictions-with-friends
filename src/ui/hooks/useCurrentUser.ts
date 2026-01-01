@@ -79,20 +79,26 @@ export function useCurrentUser() {
             }
             return
           }
-          const memberRef = doc(firebaseDb, 'leagues', getLeagueId(), 'members', user.uid)
-          const snapshot = await getDoc(memberRef)
+          const leagueId = getLeagueId()
+          const normalizedEmail = user.email?.toLowerCase() ?? null
+          const memberRef = normalizedEmail
+            ? doc(firebaseDb, 'leagues', leagueId, 'members', normalizedEmail)
+            : null
+          const memberSnap = memberRef ? await getDoc(memberRef) : null
           if (canceled) return
-          if (snapshot.exists()) {
-            const data = snapshot.data() as Member
-            const fallbackName = data.name ?? user.displayName ?? user.email ?? 'User'
-            const fallbackEmail = data.email ?? user.email ?? undefined
+          const memberData = memberSnap?.exists() ? (memberSnap.data() as Member) : null
+          const memberIsAdmin = memberData?.isAdmin === true
+          if (memberData) {
+            const fallbackName = memberData.name ?? user.displayName ?? user.email ?? 'User'
+            const fallbackEmail = memberData.email ?? user.email ?? undefined
             setState({
               status: 'ready',
               user: {
-                ...data,
+                ...memberData,
                 id: user.uid,
                 name: fallbackName,
-                email: fallbackEmail
+                email: fallbackEmail,
+                isAdmin: memberIsAdmin
               }
             })
             return
@@ -102,7 +108,8 @@ export function useCurrentUser() {
             user: {
               id: user.uid,
               name: user.displayName || user.email || 'User',
-              email: user.email || undefined
+              email: user.email || undefined,
+              isAdmin: false
             }
           })
           return

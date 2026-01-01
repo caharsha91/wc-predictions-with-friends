@@ -111,11 +111,14 @@ export async function saveUserBracketKnockoutDoc(
 }
 
 export async function saveUserThemePreference(
-  userId: string,
+  email: string | null | undefined,
   theme: ThemePreference
 ): Promise<void> {
   if (isSimulationMode()) return
-  const ref = getUserDocRef('members', userId)
+  if (!email) return
+  const normalizedEmail = email.toLowerCase()
+  if (!firebaseDb) return
+  const ref = doc(firebaseDb, 'leagues', getLeagueId(), 'members', normalizedEmail)
   if (!ref) return
   await setDoc(ref, { theme }, { merge: true })
 }

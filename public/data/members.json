@@ -5,7 +5,8 @@
       "name": "Harsha",
       "handle": "harsha",
       "email": "caharsha2025@gmail.com",
-      "isAdmin": true
+      "isAdmin": true,
+      "createdAt": "2025-12-20T05:00:00.000Z"
     }
   ]
 }

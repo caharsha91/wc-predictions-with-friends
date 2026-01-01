@@ -22,7 +22,7 @@ import PageHeader from '../components/ui/PageHeader'
 import Table from '../components/ui/Table'
 import { useSimulationState } from '../hooks/useSimulationState'
 
-type AllowlistEntry = {
+type MemberEntry = {
   id: string
   email: string
   name?: string
@@ -33,14 +33,14 @@ type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 export default function AdminUsersPage() {
   const [status, setStatus] = useState<LoadState>('idle')
-  const [entries, setEntries] = useState<AllowlistEntry[]>([])
+  const [entries, setEntries] = useState<MemberEntry[]>([])
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [page, setPage] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [editingEntry, setEditingEntry] = useState<AllowlistEntry | null>(null)
+  const [editingEntry, setEditingEntry] = useState<MemberEntry | null>(null)
   const leagueId = useMemo(() => getLeagueId(), [])
   const simulation = useSimulationState()
   const pageSize = 10
@@ -50,7 +50,7 @@ export default function AdminUsersPage() {
   const pageStart = totalEntries === 0 ? 0 : (safePage - 1) * pageSize + 1
   const pageEnd = totalEntries === 0 ? 0 : Math.min(safePage * pageSize, totalEntries)
   const pageEntries = totalEntries === 0 ? [] : entries.slice(pageStart - 1, pageEnd)
-  const canManageAllowlist = hasFirebase && !simulation.enabled
+  const canManageMembers = hasFirebase && !simulation.enabled
   const isEditing = Boolean(editingEntry)
 
   useEffect(() => {
@@ -71,18 +71,18 @@ export default function AdminUsersPage() {
     async function load() {
       setStatus('loading')
       try {
-        const ref = collection(db, 'leagues', leagueId, 'allowlist')
+        const ref = collection(db, 'leagues', leagueId, 'members')
         const snapshot = await getDocs(query(ref, orderBy('createdAt', 'desc')))
         if (canceled) return
         const next = snapshot.docs.map((docSnap) => {
-          const data = docSnap.data() as Omit<AllowlistEntry, 'id'>
+          const data = docSnap.data() as Omit<MemberEntry, 'id'>
           return { id: docSnap.id, ...data }
         })
         setEntries(next)
         setStatus('ready')
       } catch (loadError) {
         if (!canceled) {
-          const message = loadError instanceof Error ? loadError.message : 'Unable to load users.'
+          const message = loadError instanceof Error ? loadError.message : 'Unable to load members.'
           setError(message)
           setStatus('error')
         }
@@ -125,7 +125,7 @@ export default function AdminUsersPage() {
     setDrawerOpen(true)
   }
 
-  function openEditDrawer(entry: AllowlistEntry) {
+  function openEditDrawer(entry: MemberEntry) {
     setEditingEntry(entry)
     setName(entry.name ?? '')
     setEmail(entry.email)
@@ -153,7 +153,7 @@ export default function AdminUsersPage() {
     }
     setError(null)
     try {
-      const ref = doc(firebaseDb, 'leagues', leagueId, 'allowlist', trimmedEmail)
+      const ref = doc(firebaseDb, 'leagues', leagueId, 'members', trimmedEmail)
       await setDoc(
         ref,
         {
@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
       setDrawerOpen(false)
       setEditingEntry(null)
     } catch (addError) {
-      const message = addError instanceof Error ? addError.message : 'Unable to add user.'
+      const message = addError instanceof Error ? addError.message : 'Unable to add member.'
       setError(message)
       setStatus('error')
     }
@@ -197,12 +197,12 @@ export default function AdminUsersPage() {
         <div className="stack">
           <div className="adminSectionHeader">
             <div>
-              <div className="sectionTitle">Allowlist access</div>
+              <div className="sectionTitle">Member access</div>
               <p className="muted">
                 Add users who can sign in with Google. Admins can manage future invites.
               </p>
               {simulation.enabled ? (
-                <p className="muted">Simulation mode is active. Allowlist changes are disabled.</p>
+                <p className="muted">Simulation mode is active. Member changes are disabled.</p>
               ) : null}
               {!hasFirebase ? (
                 <p className="muted">
@@ -211,8 +211,8 @@ export default function AdminUsersPage() {
               ) : null}
             </div>
             <div className="adminSectionActions">
-              <Button type="button" size="sm" onClick={openAddDrawer} disabled={!canManageAllowlist}>
-                Add user
+              <Button type="button" size="sm" onClick={openAddDrawer} disabled={!canManageMembers}>
+                Add member
               </Button>
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function AdminUsersPage() {
 
           <div className="adminList">
             <div className="adminListHeaderRow">
-              <div className="sectionTitle">Authorized users</div>
+              <div className="sectionTitle">Members</div>
               {entries.length > 0 ? (
                 <div className="muted small">
                   Showing {pageStart}-{pageEnd} of {entries.length}
@@ -230,7 +230,7 @@ export default function AdminUsersPage() {
             </div>
             {status === 'loading' ? <div className="muted">Loading users…</div> : null}
             {status !== 'loading' && entries.length === 0 ? (
-              <div className="muted">No users added yet.</div>
+              <div className="muted">No members added yet.</div>
             ) : null}
             {entries.length > 0 ? (
               <div className="adminListHeader">
@@ -287,7 +287,7 @@ export default function AdminUsersPage() {
                             size="sm"
                             variant="secondary"
                             onClick={() => openEditDrawer(entry)}
-                            disabled={!canManageAllowlist}
+                            disabled={!canManageMembers}
                           >
                             Edit
                           </Button>
@@ -317,18 +317,18 @@ export default function AdminUsersPage() {
         <div className="adminDrawerHeader">
           <div>
             <div className="adminDrawerTitle" id="admin-drawer-title">
-              {isEditing ? 'Edit allowlist user' : 'Add allowlist user'}
+              {isEditing ? 'Edit member' : 'Add member'}
             </div>
             <div className="adminDrawerSubtitle">
               {isEditing
                 ? 'Update the name or admin access for this email.'
-                : 'Add a new email to the allowlist.'}
+                : 'Add a new email to the members list.'}
             </div>
           </div>
           <button
             className="iconButton adminDrawerClose"
             type="button"
-            aria-label="Close allowlist editor"
+            aria-label="Close member editor"
             onClick={closeDrawer}
           >
             <CloseIcon size={18} />
@@ -342,7 +342,7 @@ export default function AdminUsersPage() {
             placeholder="Harsha"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            disabled={!canManageAllowlist}
+            disabled={!canManageMembers}
           />
           <InputField
             id="admin-email"
@@ -351,7 +351,7 @@ export default function AdminUsersPage() {
             placeholder="caharsha2025@gmail.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            disabled={!canManageAllowlist || isEditing}
+            disabled={!canManageMembers || isEditing}
             required
           />
           <label className="adminCheckbox">
@@ -359,7 +359,7 @@ export default function AdminUsersPage() {
               type="checkbox"
               checked={isAdmin}
               onChange={(event) => setIsAdmin(event.target.checked)}
-              disabled={!canManageAllowlist}
+              disabled={!canManageMembers}
             />
             <span>Grant admin access</span>
           </label>
@@ -371,8 +371,8 @@ export default function AdminUsersPage() {
             <Button type="button" size="sm" variant="secondary" onClick={closeDrawer}>
               Cancel
             </Button>
-            <Button type="submit" size="sm" disabled={!canManageAllowlist}>
-              {isEditing ? 'Save changes' : 'Add user'}
+            <Button type="submit" size="sm" disabled={!canManageMembers}>
+              {isEditing ? 'Save changes' : 'Add member'}
             </Button>
           </div>
         </form>

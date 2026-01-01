@@ -102,18 +102,21 @@ function LayoutFrame() {
           <div className="headerActions">
             {topBarAction ? <div className="primaryActionSlot">{topBarAction}</div> : null}
             {hasFirebase && !simulation.enabled ? (
-              authState.user ? (
-                <Button size="sm" variant="secondary" type="button" onClick={handleSignOut}>
-                  Sign out
-                </Button>
-              ) : (
+              authState.user ? null : (
                 <Button size="sm" type="button" onClick={handleSignIn}>
                   Sign in
                 </Button>
               )
             ) : null}
             {user?.name && user.email ? (
-              <UserInfo name={user.name} email={user.email} isAdmin={user.isAdmin} />
+              <UserInfo
+                name={user.name}
+                email={user.email}
+                isAdmin={user.isAdmin}
+                onSignOut={
+                  hasFirebase && !simulation.enabled && authState.user ? handleSignOut : undefined
+                }
+              />
             ) : null}
             {authError ? <span className="authErrorTag">{authError}</span> : null}
           </div>

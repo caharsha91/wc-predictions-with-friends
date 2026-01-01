@@ -57,52 +57,29 @@ async function commitBatch(items, chunkSize = 400) {
   }
 }
 
-const allowlistPath = path.join(repoRoot, 'public', 'data', 'allowlist.json')
 const membersPath = path.join(repoRoot, 'public', 'data', 'members.json')
-
-const allowlistPayload = await loadJson(allowlistPath)
 const membersPayload = await loadJson(membersPath)
-
-const allowlistEntries = Array.isArray(allowlistPayload.allowlist)
-  ? allowlistPayload.allowlist
-  : []
 const membersEntries = Array.isArray(membersPayload.members) ? membersPayload.members : []
 
 const writes = []
 
-for (const entry of allowlistEntries) {
+for (const entry of membersEntries) {
   const email = String(entry.email ?? entry.id ?? '').trim().toLowerCase()
-  if (!email) continue
+  if (!email || !email.includes('@')) continue
   const data = cleanFields({
     email,
     name: entry.name ?? undefined,
+    handle: entry.handle ?? undefined,
     isAdmin: entry.isAdmin ?? undefined,
     createdAt: parseTimestamp(entry.createdAt)
   })
   writes.push({
-    ref: db.doc(`leagues/${leagueId}/allowlist/${email}`),
-    data
-  })
-}
-
-for (const entry of membersEntries) {
-  const userId = String(entry.id ?? '').trim()
-  if (!userId) continue
-  const data = cleanFields({
-    name: entry.name ?? undefined,
-    handle: entry.handle ?? undefined,
-    email: entry.email ?? undefined,
-    isAdmin: entry.isAdmin ?? undefined
-  })
-  writes.push({
-    ref: db.doc(`leagues/${leagueId}/members/${userId}`),
+    ref: db.doc(`leagues/${leagueId}/members/${email}`),
     data
   })
 }
 
 await commitBatch(writes)
 
-console.log(
-  `Seeded ${allowlistEntries.length} allowlist entries and ${membersEntries.length} members into leagues/${leagueId}.`
-)
+console.log(`Seeded ${writes.length} members into leagues/${leagueId}.`)
 await db.terminate()

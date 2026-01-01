@@ -111,17 +111,18 @@
 - [x] Create Firestore database
 - [ ] Add minimal Firestore structure:
   - [ ] `leagues/{leagueId}`
-  - [ ] `leagues/{leagueId}/allowlist/*` (or join-requests if you choose)
-  - [ ] `leagues/{leagueId}/members/*`
+  - [ ] `leagues/{leagueId}/members/*` (email as doc id; serves allowlist + admin)
   - [ ] `leagues/{leagueId}/picks/*`
+  - [ ] `leagues/{leagueId}/bracket-group/*`
+  - [ ] `leagues/{leagueId}/bracket-knockout/*`
 - [ ] Add minimal Firestore security rules:
   - [ ] Auth required
-  - [ ] Only members can read league data
+  - [ ] Only members (email allowlist) can read/write
   - [ ] Users can only write their own picks
-  - [ ] Only admin can manage allowlist/members
+  - [ ] Only admin can manage members
 - [x] Wire Firebase SDK into the app
   - [x] Sign in/out buttons in header
-  - [x] Gate admin allowlist UI behind Firebase availability
+- [x] Gate admin members UI behind Firebase availability
 - [x] Use per-user Firestore documents for picks + bracket data
   - [x] `leagues/{leagueId}/picks/{userId}`
   - [x] `leagues/{leagueId}/bracket-group/{userId}`
@@ -130,7 +131,7 @@
 - [x] Local dev (Emulator Suite):
   - [x] Add `firebase.json` emulator config
   - [x] Wire client to auth/firestore emulators via env flags
-  - [x] Add emulator seed script for allowlist + members
+- [x] Add emulator seed script for members
   - [x] Add local emulator env vars in `.env.local`
 - [ ] Final checks:
   - [ ] Repo updates daily

@@ -121,7 +121,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       isSystemMode: state.isSystemMode
     }
     if (isThemePreferenceEqual(lastSavedRef.current, payload)) return
-    void saveUserThemePreference(authState.user.uid, payload)
+    void saveUserThemePreference(authState.user.email, payload)
       .then(() => {
         lastSavedRef.current = payload
         setSyncNotice('Synced')

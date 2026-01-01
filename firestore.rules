@@ -12,18 +12,22 @@ service cloud.firestore {
     function isAllowlisted(leagueId) {
       return hasEmail()
         && exists(
-          /databases/$(database)/documents/leagues/$(leagueId)/allowlist/$(request.auth.token.email)
+          /databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.token.email)
         );
     }
 
     function isAdmin(leagueId) {
-      return isSignedIn()
-        && get(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.uid)).data
-          .isAdmin == true;
+      return hasEmail()
+        && get(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.token.email))
+            .data.isAdmin == true;
     }
 
     function isSelf(userId) {
       return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isSelfEmail(email) {
+      return hasEmail() && request.auth.token.email == email;
     }
 
     function isThemeOnlyUpdate() {
@@ -33,16 +37,11 @@ service cloud.firestore {
     match /leagues/{leagueId} {
       allow read, write: if false;
 
-      match /allowlist/{email} {
-        allow get, list: if isAdmin(leagueId);
-        allow create, update, delete: if isAdmin(leagueId);
-      }
-
-      match /members/{userId} {
-        allow get: if isAllowlisted(leagueId) && isSelf(userId);
+      match /members/{email} {
+        allow get: if isSelfEmail(email);
         allow list: if isAdmin(leagueId);
         allow create, update: if isAdmin(leagueId)
-          || (isAllowlisted(leagueId) && isSelf(userId) && isThemeOnlyUpdate());
+          || (isAllowlisted(leagueId) && isSelfEmail(email) && isThemeOnlyUpdate());
         allow delete: if isAdmin(leagueId);
       }
 
