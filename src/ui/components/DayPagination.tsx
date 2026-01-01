@@ -27,20 +27,6 @@ export default function DayPagination({
   const currentKey = activeDateKey ?? dateKeys[0]
   return (
     <div className="dayPagination" aria-label={ariaLabel}>
-      <div className="dayPaginationSelect">
-        <select
-          className="dayPaginationDropdown"
-          value={currentKey}
-          onChange={(event) => onSelect(event.target.value)}
-          aria-label={ariaLabel}
-        >
-          {dateKeys.map((dateKey) => (
-            <option key={dateKey} value={dateKey}>
-              {formatDayLabel(dateKey)}
-            </option>
-          ))}
-        </select>
-      </div>
       <div className="dayPaginationChips" role="tablist" aria-label={ariaLabel}>
         {dateKeys.map((dateKey) => {
           const isActive = dateKey === currentKey

@@ -9,11 +9,21 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/results` completed matches by matchday with your picks (group filter; knockout unlocks after groups)
 - `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks, graphical knockout bracket + inline team pick pills)
 - `/leaderboard` category points + standings pagination
+- `/themes` theme selector (light/dark + theme packs)
 - `/users` allowlist manager (admins only, or simulation enabled)
 - `/simulation` local-only simulation sandbox (admins only, or simulation enabled)
 - `/exports` finished-only CSV exports (admins only, or simulation enabled)
 
 Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-group.json`, `bracket-knockout.json`, `best-third-qualifiers.json`, `leaderboard.json`, `allowlist.json`).
+
+## How the App Works (Contributor Guide)
+
+- Entry + routing: `src/main.tsx` bootstraps the app and applies theme attributes; `src/ui/App.tsx` defines routes; `src/ui/Layout.tsx` owns the shared header/nav shell.
+- Data flow: `src/ui/hooks/*` fetches from Firestore when enabled (see `src/lib/firebase.ts`), otherwise reads mock JSON from `public/data/`. Picks updates flow through `src/lib/picks.ts`.
+- Match grouping: `src/lib/matches.ts` normalizes and groups matches by PST matchday + stage for upcoming/results views.
+- Scoring: `src/lib/scoring.ts` computes pick + bracket points from `public/data/scoring.json`, surfaced in leaderboard views.
+- Theming: base tokens live in `src/styles/theme.css`, per-theme palettes in `src/styles/themes.css`, and state in `src/theme/ThemeProvider.tsx` with persistence in localStorage.
+- UI primitives: reusable components are in `src/ui/components/ui/` and app-specific components in `src/ui/components/`.
 
 ## Dev
 

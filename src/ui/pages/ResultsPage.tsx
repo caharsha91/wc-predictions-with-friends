@@ -4,7 +4,6 @@ import type { CSSProperties } from 'react'
 import DayPagination from '../components/DayPagination'
 import FiltersPanel from '../components/FiltersPanel'
 import { FilterIcon } from '../components/Icons'
-import { useTopBarAction } from '../components/AppShellContext'
 import { Alert } from '../components/ui/Alert'
 import Skeleton from '../components/ui/Skeleton'
 import { fetchMatches, fetchPicks, fetchScoring } from '../../lib/data'
@@ -199,26 +198,6 @@ export default function ResultsPage() {
     setFiltersCollapsed((current) => !current)
   }, [isMobile])
 
-  const topBarAction = useMemo(
-    () => (
-      <button
-        className="actionButton"
-        type="button"
-        data-active={filtersExpanded ? 'true' : 'false'}
-        aria-expanded={filtersExpanded}
-        aria-controls={filtersId}
-        aria-haspopup="dialog"
-        onClick={toggleFilters}
-      >
-        <FilterIcon className="actionIcon" />
-        <span>Filters</span>
-      </button>
-    ),
-    [filtersExpanded, filtersId, toggleFilters]
-  )
-
-  useTopBarAction(topBarAction)
-
   useEffect(() => {
     let canceled = false
     async function load() {
@@ -353,7 +332,7 @@ export default function ResultsPage() {
       setActiveDateKey(null)
       return
     }
-    setActiveDateKey((current) => (current && dateKeys.includes(current) ? current : null))
+    setActiveDateKey((current) => (current && dateKeys.includes(current) ? current : dateKeys[0]))
   }, [dateKeys])
 
   const groupedMatches = useMemo(() => {
@@ -469,6 +448,20 @@ export default function ResultsPage() {
 
       {state.status === 'ready' ? (
         <div className="stack">
+          <div className="filtersToggleRow">
+            <button
+              className="actionButton filtersToggleButton"
+              type="button"
+              data-active={filtersExpanded ? 'true' : 'false'}
+              aria-expanded={filtersExpanded}
+              aria-controls={filtersId}
+              aria-haspopup="dialog"
+              onClick={toggleFilters}
+            >
+              <FilterIcon className="actionIcon" />
+              <span>{filtersExpanded ? 'Hide filters' : 'Filters'}</span>
+            </button>
+          </div>
           <FiltersPanel
             id={filtersId}
             title="Filters"

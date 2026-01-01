@@ -46,8 +46,8 @@
   - [x] Stage-specific knockout scoring (R32, R16, QF, SF, Third, Final)
   - [x] Render standings from mock members + picks
 - [x] Add admin-only navigation for backstage pages
-- [x] Add light/dark mode toggle in the header
-- [x] Add theme packs with admin selection
+- [x] Add multi-theme system (10 themes) with light/dark + system mode persistence
+- [x] Add `/themes` selector page with nav entry
 - [x] Add upcoming lock reminder banner on `/upcoming`
 - [x] Add leaderboard pagination (default 6 per page)
 - [x] Paginate upcoming/results by match day (PST) and add group filters for group stage

@@ -140,9 +140,15 @@ export default function PicksBoard({
   const now = useNow()
 
   useEffect(() => {
-    setExpandedMatchdays(new Set())
-    setExpandedMatches(new Set())
-  }, [matchdaySignature])
+    if (matchdays.length === 0) {
+      setExpandedMatchdays(new Set())
+      setExpandedMatches(new Set())
+      return
+    }
+    const initialMatchday = matchdays[0]
+    setExpandedMatchdays(new Set([initialMatchday.dateKey]))
+    setExpandedMatches(new Set(initialMatchday.matches.map((match) => match.id)))
+  }, [matchdaySignature, matchdays])
 
   useEffect(() => {
     if (!jumpToDateKey) return
@@ -152,13 +158,22 @@ export default function PicksBoard({
       next.add(jumpToDateKey)
       return next
     })
+    const jumpMatchday = matchdays.find((day) => day.dateKey === jumpToDateKey)
+    if (jumpMatchday) {
+      setExpandedMatches((current) => {
+        const next = new Set(current)
+        jumpMatchday.matches.forEach((match) => next.add(match.id))
+        return next
+      })
+    }
     const target = document.getElementById(`matchday-${jumpToDateKey}`)
     if (target) {
       target.scrollIntoView({ block: 'start' })
     }
-  }, [jumpToDateKey, jumpToDateKeyNonce])
+  }, [jumpToDateKey, jumpToDateKeyNonce, matchdays])
 
   function toggleMatchday(dateKey: string) {
+    const willExpand = !expandedMatchdays.has(dateKey)
     setExpandedMatchdays((current) => {
       const next = new Set(current)
       if (next.has(dateKey)) {
@@ -166,6 +181,19 @@ export default function PicksBoard({
       } else {
         next.add(dateKey)
       }
+      return next
+    })
+    const matchday = matchdays.find((day) => day.dateKey === dateKey)
+    if (!matchday) return
+    setExpandedMatches((current) => {
+      const next = new Set(current)
+      matchday.matches.forEach((match) => {
+        if (willExpand) {
+          next.add(match.id)
+        } else {
+          next.delete(match.id)
+        }
+      })
       return next
     })
   }
@@ -473,14 +501,28 @@ export default function PicksBoard({
                                             disabled={locked}
                                           >
                                             <option value="">Pick knockout winner</option>
-                                            <option value="HOME_ET">Home wins AET</option>
-                                            <option value="AWAY_ET">Away wins AET</option>
-                                            <option value="HOME_PENS">Home wins Pens</option>
-                                            <option value="AWAY_PENS">Away wins Pens</option>
+                                            <option value="HOME_ET">
+                                              {match.homeTeam.code} win AET
+                                            </option>
+                                            <option value="AWAY_ET">
+                                              {match.awayTeam.code} win AET
+                                            </option>
+                                            <option value="HOME_PENS">
+                                              {match.homeTeam.code} win Pens
+                                            </option>
+                                            <option value="AWAY_PENS">
+                                              {match.awayTeam.code} win Pens
+                                            </option>
                                           </select>
                                         </label>
                                       ) : null}
                                     </div>
+                                    {match.stage !== 'Group' ? (
+                                      <div className="pickNote">
+                                        Knockout scores are 90 minutes only. Eventual winner
+                                        handles extra time and pens.
+                                      </div>
+                                    ) : null}
                                   </div>
                                 ) : null}
                               </div>

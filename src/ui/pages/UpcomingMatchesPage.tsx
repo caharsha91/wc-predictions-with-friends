@@ -5,7 +5,6 @@ import FiltersPanel from '../components/FiltersPanel'
 import LockReminderBanner from '../components/LockReminderBanner'
 import PicksBoard from '../components/PicksBoard'
 import { FilterIcon } from '../components/Icons'
-import { useTopBarAction } from '../components/AppShellContext'
 import { Alert } from '../components/ui/Alert'
 import Skeleton from '../components/ui/Skeleton'
 import { getDateKeyInTimeZone } from '../../lib/matches'
@@ -31,26 +30,6 @@ export default function UpcomingMatchesPage() {
     }
     setFiltersCollapsed((current) => !current)
   }, [isMobile])
-
-  const topBarAction = useMemo(
-    () => (
-      <button
-        className="actionButton"
-        type="button"
-        data-active={filtersExpanded ? 'true' : 'false'}
-        aria-expanded={filtersExpanded}
-        aria-controls={filtersId}
-        aria-haspopup="dialog"
-        onClick={toggleFilters}
-      >
-        <FilterIcon className="actionIcon" />
-        <span>Filters</span>
-      </button>
-    ),
-    [filtersExpanded, filtersId, toggleFilters]
-  )
-
-  useTopBarAction(topBarAction)
 
   const groupStageComplete = useMemo(() => {
     if (state.status !== 'ready') return false
@@ -151,6 +130,20 @@ export default function UpcomingMatchesPage() {
   return (
     <div className="stack">
       <LockReminderBanner matches={filteredMatches} onJumpToMatchday={handleJumpToMatchday} />
+      <div className="filtersToggleRow">
+        <button
+          className="actionButton filtersToggleButton"
+          type="button"
+          data-active={filtersExpanded ? 'true' : 'false'}
+          aria-expanded={filtersExpanded}
+          aria-controls={filtersId}
+          aria-haspopup="dialog"
+          onClick={toggleFilters}
+        >
+          <FilterIcon className="actionIcon" />
+          <span>{filtersExpanded ? 'Hide filters' : 'Filters'}</span>
+        </button>
+      </div>
       <FiltersPanel
         id={filtersId}
         title="Filters"
