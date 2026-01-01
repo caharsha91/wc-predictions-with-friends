@@ -27,7 +27,7 @@ export type ThemeDefinition = {
   swatches: Record<ThemeMode, ThemeSwatch>
 }
 
-export const DEFAULT_THEME_ID: ThemeId = 'stadium-night'
+export const DEFAULT_THEME_ID: ThemeId = 'classic'
 
 export const THEMES: ThemeDefinition[] = [
   {

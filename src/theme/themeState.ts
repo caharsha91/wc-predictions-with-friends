@@ -33,10 +33,11 @@ export function getStoredThemeState(): ThemeState {
   const storedSystemMode = window.localStorage.getItem(SYSTEM_MODE_STORAGE_KEY)
   const isSystemMode = storedSystemMode === 'true'
   const systemMode = getSystemMode()
-  const mode =
-    isSystemMode || (storedMode !== 'light' && storedMode !== 'dark')
-      ? systemMode
-      : (storedMode as ThemeMode)
+  const mode = isSystemMode
+    ? systemMode
+    : storedMode === 'light' || storedMode === 'dark'
+      ? storedMode
+      : 'dark'
 
   return { themeId, mode, isSystemMode }
 }

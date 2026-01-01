@@ -53,6 +53,7 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 ## Firestore Data Model (when enabled)
 
 - `leagues/{leagueId}/members/{userId}`
+  - optional `theme`: `{ id, mode, isSystemMode }`
 - `leagues/{leagueId}/picks/{userId}` → one doc per user with all match picks
 - `leagues/{leagueId}/bracket-group/{userId}` → one doc per user (group + best thirds)
 - `leagues/{leagueId}/bracket-knockout/{userId}` → one doc per user (knockout winners)

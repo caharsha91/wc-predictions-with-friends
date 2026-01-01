@@ -13,10 +13,29 @@ type UserState =
   | { status: 'error' }
   | { status: 'ready'; user: Member | null }
 
+type RefreshListener = () => void
+
+const refreshListeners = new Set<RefreshListener>()
+
+export function refreshCurrentUser() {
+  refreshListeners.forEach((listener) => listener())
+}
+
 export function useCurrentUser() {
   const [state, setState] = useState<UserState>({ status: 'loading' })
+  const [refreshIndex, setRefreshIndex] = useState(0)
   const authState = useAuthState()
   const simulation = useSimulationState()
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      setRefreshIndex((current) => current + 1)
+    }
+    refreshListeners.add(handleRefresh)
+    return () => {
+      refreshListeners.delete(handleRefresh)
+    }
+  }, [])
 
   useEffect(() => {
     let canceled = false
@@ -65,7 +84,17 @@ export function useCurrentUser() {
           if (canceled) return
           if (snapshot.exists()) {
             const data = snapshot.data() as Member
-            setState({ status: 'ready', user: { ...data, id: user.uid } })
+            const fallbackName = data.name ?? user.displayName ?? user.email ?? 'User'
+            const fallbackEmail = data.email ?? user.email ?? undefined
+            setState({
+              status: 'ready',
+              user: {
+                ...data,
+                id: user.uid,
+                name: fallbackName,
+                email: fallbackEmail
+              }
+            })
             return
           }
           setState({
@@ -91,7 +120,14 @@ export function useCurrentUser() {
     return () => {
       canceled = true
     }
-  }, [authState.status, authState.user, simulation.enabled, simulation.selectedUserId, simulation.users])
+  }, [
+    authState.status,
+    authState.user,
+    refreshIndex,
+    simulation.enabled,
+    simulation.selectedUserId,
+    simulation.users
+  ])
 
   if (state.status === 'ready') return state.user
   return null

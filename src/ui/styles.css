@@ -1070,6 +1070,23 @@
   color: var(--text-secondary);
 }
 
+.themeSyncToast {
+  position: fixed;
+  right: var(--space-5);
+  bottom: calc(var(--bottom-nav-height) + var(--space-5) + env(safe-area-inset-bottom));
+  z-index: 30;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-md);
+}
+
 .lockBanner {
   display: flex;
   align-items: center;

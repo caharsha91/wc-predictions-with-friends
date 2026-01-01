@@ -4,6 +4,7 @@ import { firebaseDb, getLeagueId } from './firebase'
 import { isSimulationMode } from './simulation'
 import type { GroupPrediction } from '../types/bracket'
 import type { MatchWinner } from '../types/matches'
+import type { ThemePreference } from '../types/members'
 import type { Pick } from '../types/picks'
 import type { KnockoutStage } from '../types/scoring'
 
@@ -107,4 +108,14 @@ export async function saveUserBracketKnockoutDoc(
     { userId, knockout: normalizedKnockout, updatedAt: now } satisfies BracketKnockoutDoc,
     { merge: true }
   )
+}
+
+export async function saveUserThemePreference(
+  userId: string,
+  theme: ThemePreference
+): Promise<void> {
+  if (isSimulationMode()) return
+  const ref = getUserDocRef('members', userId)
+  if (!ref) return
+  await setDoc(ref, { theme }, { merge: true })
 }

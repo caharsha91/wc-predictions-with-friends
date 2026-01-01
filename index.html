@@ -13,14 +13,15 @@
           const storedSystem = window.localStorage.getItem('wc-system-mode')
           const prefersDark =
             window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-          const themeId = storedTheme || 'stadium-night'
+          const themeId = storedTheme || 'classic'
           const systemMode = storedSystem === 'true'
-          const mode =
-            systemMode || (storedMode !== 'light' && storedMode !== 'dark')
-              ? prefersDark
-                ? 'dark'
-                : 'light'
-              : storedMode
+          const mode = systemMode
+            ? prefersDark
+              ? 'dark'
+              : 'light'
+            : storedMode === 'light' || storedMode === 'dark'
+              ? storedMode
+              : 'dark'
           root.dataset.theme = themeId
           root.dataset.mode = mode
         } catch (error) {

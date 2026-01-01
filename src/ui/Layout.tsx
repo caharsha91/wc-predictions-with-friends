@@ -57,7 +57,7 @@ function LayoutFrame() {
   const routeKey = location.pathname.split('/')[1] || 'home'
   const pageTitle = PAGE_TITLES[routeKey] ?? 'WC Predictions'
   const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || canAccessAdmin)
-  const { themeId } = useTheme()
+  const { themeId, syncNotice } = useTheme()
   const themeMeta = getThemeById(themeId)
 
   async function handleSignIn() {
@@ -140,6 +140,11 @@ function LayoutFrame() {
       <main className="main">
         <Outlet />
       </main>
+      {syncNotice ? (
+        <div className="themeSyncToast" role="status" aria-live="polite">
+          {syncNotice}
+        </div>
+      ) : null}
       <nav className="bottomNav" aria-label="Primary">
         <div className="bottomNavInner">
           {navItems.map((item) => {
