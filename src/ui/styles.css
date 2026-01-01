@@ -278,7 +278,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   padding: 8px 6px;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
@@ -286,6 +286,7 @@
   letter-spacing: 0.6px;
   text-transform: uppercase;
   font-weight: 600;
+  position: relative;
 }
 
 .bottomNavLinkActive {
@@ -309,6 +310,38 @@
 .bottomNavIcon svg {
   width: 22px;
   height: 22px;
+}
+
+.bottomNavLabel {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translate(-50%, 6px);
+  opacity: 0;
+  pointer-events: none;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: var(--shadow-xs);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.bottomNavLink:hover .bottomNavLabel,
+.bottomNavLink:focus-visible .bottomNavLabel,
+.bottomNavLink:active .bottomNavLabel {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.bottomNavLinkActive .bottomNavLabel {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .adminTabs {
