@@ -32,6 +32,8 @@ export type SimulationScenario =
   | 'knockout-partial'
   | 'knockout-complete'
 
+export type SimulationPlacement = 'podium' | 'first-page' | 'middle' | 'last'
+
 export type SimulationUserRole = 'admin' | 'user'
 
 export type SimulationUser = {
@@ -45,6 +47,7 @@ export type SimulationState = {
   version: number
   enabled: boolean
   scenario: SimulationScenario
+  placement: SimulationPlacement
   simNow: string
   selectedUserId: string
   users: SimulationUser[]
@@ -60,6 +63,20 @@ const SCENARIO_DEFAULTS: Record<SimulationScenario, { simNow: string; rank: numb
   'knockout-complete': { simNow: '2026-07-20T12:00:00Z', rank: 50 }
 }
 
+const PLACEMENT_RANKS: Record<SimulationPlacement, number> = {
+  podium: 2,
+  'first-page': 4,
+  middle: 25,
+  last: 50
+}
+
+const SCENARIO_PLACEMENT_DEFAULTS: Record<SimulationScenario, SimulationPlacement> = {
+  'group-partial': 'podium',
+  'group-complete': 'first-page',
+  'knockout-partial': 'middle',
+  'knockout-complete': 'last'
+}
+
 let cachedBaseMatches: MatchesFile | null = null
 
 function canUseStorage(): boolean {
@@ -70,11 +87,16 @@ function isScenario(value: string): value is SimulationScenario {
   return value in SCENARIO_DEFAULTS
 }
 
+function isPlacement(value: string): value is SimulationPlacement {
+  return value in PLACEMENT_RANKS
+}
+
 function baseState(): SimulationState {
   return {
     version: CURRENT_VERSION,
     enabled: false,
     scenario: DEFAULT_SCENARIO,
+    placement: SCENARIO_PLACEMENT_DEFAULTS[DEFAULT_SCENARIO],
     simNow: SCENARIO_DEFAULTS[DEFAULT_SCENARIO].simNow,
     selectedUserId: 'sim-user-01',
     users: [],
@@ -88,11 +110,16 @@ function normalizeState(raw?: Partial<SimulationState> | null): SimulationState 
   const fallback = baseState()
   if (!raw) return fallback
   const scenario = raw.scenario && isScenario(raw.scenario) ? raw.scenario : fallback.scenario
+  const placement =
+    raw.placement && isPlacement(raw.placement)
+      ? raw.placement
+      : SCENARIO_PLACEMENT_DEFAULTS[scenario]
   const simNow = SCENARIO_DEFAULTS[scenario].simNow
   return {
     ...fallback,
     ...raw,
     scenario,
+    placement,
     simNow,
     users: Array.isArray(raw.users) ? raw.users : fallback.users,
     picks: raw.picks && Array.isArray(raw.picks.picks) ? raw.picks : fallback.picks,
@@ -157,6 +184,10 @@ export function setSimulationEnabled(enabled: boolean): SimulationState {
 export function setSimulationScenario(scenario: SimulationScenario): SimulationState {
   const defaults = SCENARIO_DEFAULTS[scenario]
   return updateSimulationState({ scenario, simNow: defaults.simNow })
+}
+
+export function setSimulationPlacement(placement: SimulationPlacement): SimulationState {
+  return updateSimulationState({ placement })
 }
 
 export function setSimulationNow(simNow: string): SimulationState {
@@ -477,9 +508,16 @@ export async function resetSimulationState(
   overrides: Partial<SimulationState> = {}
 ): Promise<SimulationState> {
   const current = getSimulationState()
-  const scenario = overrides.scenario && isScenario(overrides.scenario) ? overrides.scenario : current.scenario
+  const scenario =
+    overrides.scenario && isScenario(overrides.scenario) ? overrides.scenario : current.scenario
   const simNow = SCENARIO_DEFAULTS[scenario].simNow
   const enabled = overrides.enabled ?? current.enabled
+  const placement =
+    overrides.placement && isPlacement(overrides.placement)
+      ? overrides.placement
+      : isPlacement(current.placement)
+        ? current.placement
+        : SCENARIO_PLACEMENT_DEFAULTS[scenario]
   const users = buildUsers()
   const baseMatches = await fetchSimulationBaseMatches()
   const selectedUserId =
@@ -491,6 +529,7 @@ export async function resetSimulationState(
     version: CURRENT_VERSION,
     enabled,
     scenario,
+    placement,
     simNow,
     selectedUserId,
     users,
@@ -574,10 +613,13 @@ export async function fetchSimulationLeaderboard(): Promise<LeaderboardFile> {
   const memberMap = new Map<string, SimulationUser>(state.users.map((user) => [user.id, user]))
   const sortedIds = [...memberMap.keys()].sort()
   const selectedId = memberMap.has(state.selectedUserId) ? state.selectedUserId : sortedIds[0]
-  const rankForSelected = Math.min(
-    SCENARIO_DEFAULTS[state.scenario]?.rank ?? 1,
-    sortedIds.length
-  )
+  const placement =
+    isPlacement(state.placement) && PLACEMENT_RANKS[state.placement]
+      ? state.placement
+      : SCENARIO_PLACEMENT_DEFAULTS[state.scenario]
+  const placementRank =
+    PLACEMENT_RANKS[placement] ?? SCENARIO_DEFAULTS[state.scenario]?.rank ?? 1
+  const rankForSelected = Math.min(placementRank, sortedIds.length)
   const withoutSelected = sortedIds.filter((id) => id !== selectedId)
   withoutSelected.splice(rankForSelected - 1, 0, selectedId)
 

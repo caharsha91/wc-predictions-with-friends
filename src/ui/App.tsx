@@ -1,7 +1,9 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
 import Layout from './Layout'
-import AdminPage from './pages/AdminPage'
+import AdminExportsPage from './pages/AdminExportsPage'
+import AdminSimulationPage from './pages/AdminSimulationPage'
+import AdminUsersPage from './pages/AdminUsersPage'
 import AccessDeniedPage from './pages/AccessDeniedPage'
 import BracketPage from './pages/BracketPage'
 import LeaderboardPage from './pages/LeaderboardPage'
@@ -17,16 +19,16 @@ function AdminGate() {
   const user = useCurrentUser()
   const simulation = useSimulationState()
 
-  if (simulation.enabled) return <AdminPage />
+  if (simulation.enabled) return <Outlet />
   if (authState.status === 'loading') {
     return (
       <div className="card">
-        <h1 className="h1">Admin</h1>
+        <h1 className="h1">Backstage</h1>
         <p className="muted">Checking access...</p>
       </div>
     )
   }
-  if (user?.isAdmin) return <AdminPage />
+  if (user?.isAdmin) return <Outlet />
   return <AccessDeniedPage />
 }
 
@@ -39,8 +41,11 @@ export default function App() {
         <Route path="results" element={<ResultsPage />} />
         <Route path="bracket" element={<BracketPage />} />
         <Route path="leaderboard" element={<LeaderboardPage />} />
-        <Route path="exports" element={<Navigate to="/admin" replace />} />
-        <Route path="admin" element={<AdminGate />} />
+        <Route element={<AdminGate />}>
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="simulation" element={<AdminSimulationPage />} />
+          <Route path="exports" element={<AdminExportsPage />} />
+        </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

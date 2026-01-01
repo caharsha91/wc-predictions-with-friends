@@ -1,16 +1,53 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import DayPagination from '../components/DayPagination'
+import FiltersPanel from '../components/FiltersPanel'
 import LockReminderBanner from '../components/LockReminderBanner'
 import PicksBoard from '../components/PicksBoard'
+import { FilterIcon } from '../components/Icons'
+import { useTopBarAction } from '../components/AppShellContext'
 import { getDateKeyInTimeZone } from '../../lib/matches'
 import { usePicksData } from '../hooks/usePicksData'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 export default function UpcomingMatchesPage() {
   const { state, picks, updatePicks } = usePicksData()
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
   const [groupFilter, setGroupFilter] = useState('all')
   const [activeDateKey, setActiveDateKey] = useState<string | null>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false)
+  const isMobile = useMediaQuery('(max-width: 900px)')
+  const filtersExpanded = isMobile ? filtersOpen : !filtersCollapsed
+  const filtersId = 'upcoming-filters'
+
+  const toggleFilters = useCallback(() => {
+    if (isMobile) {
+      setFiltersOpen((current) => !current)
+      return
+    }
+    setFiltersCollapsed((current) => !current)
+  }, [isMobile])
+
+  const topBarAction = useMemo(
+    () => (
+      <button
+        className="actionButton"
+        type="button"
+        data-active={filtersExpanded ? 'true' : 'false'}
+        aria-expanded={filtersExpanded}
+        aria-controls={filtersId}
+        aria-haspopup="dialog"
+        onClick={toggleFilters}
+      >
+        <FilterIcon className="actionIcon" />
+        <span>Filters</span>
+      </button>
+    ),
+    [filtersExpanded, filtersId, toggleFilters]
+  )
+
+  useTopBarAction(topBarAction)
 
   const groupStageComplete = useMemo(() => {
     if (state.status !== 'ready') return false
@@ -78,21 +115,11 @@ export default function UpcomingMatchesPage() {
   }, [filteredMatches])
 
   useEffect(() => {
-    if (dateKeys.length === 0) {
-      setActiveDateKey(null)
-      return
-    }
-    setActiveDateKey((current) =>
-      current && dateKeys.includes(current) ? current : dateKeys[0]
-    )
-  }, [dateKeys])
+    if (!activeDateKey) return
+    if (!dateKeys.includes(activeDateKey)) setActiveDateKey(null)
+  }, [activeDateKey, dateKeys])
 
-  const upcomingMatches = useMemo(() => {
-    if (!activeDateKey) return []
-    return filteredMatches.filter(
-      (match) => getDateKeyInTimeZone(match.kickoffUtc) === activeDateKey
-    )
-  }, [activeDateKey, filteredMatches])
+  const upcomingMatches = useMemo(() => filteredMatches, [filteredMatches])
 
   const showDayPagination = dateKeys.length > 1
 
@@ -101,8 +128,15 @@ export default function UpcomingMatchesPage() {
 
   return (
     <div className="stack">
-      <LockReminderBanner matches={upcomingMatches} />
-      <div className="card filtersPanel">
+      <LockReminderBanner matches={filteredMatches} />
+      <FiltersPanel
+        id={filtersId}
+        title="Filters"
+        subtitle="Refine upcoming matches"
+        isOpen={filtersOpen}
+        isCollapsed={filtersCollapsed}
+        onClose={() => setFiltersOpen(false)}
+      >
         <div className="filtersRow">
           {canShowKnockout ? (
             <div className="bracketToggle" role="tablist" aria-label="Upcoming matches view">
@@ -170,21 +204,22 @@ export default function UpcomingMatchesPage() {
         {showDayPagination ? (
           <div className="filtersRow">
             <div className="groupFilter">
-              <div className="groupFilterLabel">Matchday</div>
+              <div className="groupFilterLabel">Jump to matchday</div>
               <DayPagination
                 dateKeys={dateKeys}
                 activeDateKey={activeDateKey}
                 onSelect={setActiveDateKey}
-                ariaLabel="Upcoming match day"
+                ariaLabel="Jump to matchday"
               />
             </div>
           </div>
         ) : null}
-      </div>
+      </FiltersPanel>
       <PicksBoard
         matches={upcomingMatches}
         picks={picks}
         onUpdatePicks={updatePicks}
+        jumpToDateKey={activeDateKey}
         kicker="Upcoming Matches"
         title="All Remaining Matches"
         emptyMessage="No upcoming matches."

@@ -74,6 +74,7 @@ export default function LockReminderBanner({ matches }: LockReminderBannerProps)
         <div className="lockBannerMeta">
           {match.stage} · Locks at {formatLockTime(lockTime)}
         </div>
+        <div className="lockBannerNote">Edits lock at kickoff.</div>
         {sameDayMatches.length > 1 ? (
           <div className="lockBannerMatches">
             <div className="lockBannerMatchesTitle">Also locking today</div>

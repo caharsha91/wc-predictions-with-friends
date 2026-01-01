@@ -57,13 +57,47 @@ export default function LeaderboardPage() {
     return state.leaderboard
   }, [state])
 
+  const leaderboardSummary = useMemo(() => {
+    const totals = {
+      total: 0,
+      exact: 0,
+      outcome: 0,
+      knockout: 0,
+      bracket: 0
+    }
+    for (const entry of leaderboard) {
+      totals.total += entry.totalPoints
+      totals.exact += entry.exactPoints
+      totals.outcome += entry.resultPoints
+      totals.knockout += entry.knockoutPoints
+      totals.bracket += entry.bracketPoints
+    }
+    const count = leaderboard.length
+    const averages =
+      count > 0
+        ? {
+            total: Math.round(totals.total / count),
+            exact: Math.round(totals.exact / count),
+            outcome: Math.round(totals.outcome / count),
+            knockout: Math.round(totals.knockout / count),
+            bracket: Math.round(totals.bracket / count)
+          }
+        : {
+            total: 0,
+            exact: 0,
+            outcome: 0,
+            knockout: 0,
+            bracket: 0
+          }
+    return { totals, averages }
+  }, [leaderboard])
+
   const leaderEntry = leaderboard[0]
   const currentEntry = leaderboard.find((entry) => entry.member.id === userId)
   const currentRank = currentEntry
     ? leaderboard.findIndex((entry) => entry.member.id === userId) + 1
     : null
-  const totalPoints = leaderboard.reduce((sum, entry) => sum + entry.totalPoints, 0)
-  const averagePoints = leaderboard.length > 0 ? Math.round(totalPoints / leaderboard.length) : 0
+  const averagePoints = leaderboardSummary.averages.total
 
   const podiumEntries = leaderboard.slice(0, 3)
   const currentInPodium = currentRank !== null && currentRank <= podiumEntries.length
@@ -98,12 +132,15 @@ export default function LeaderboardPage() {
     pinCurrentUser && currentEntry && !currentInPodium && !currentOnPage && listSource.length > 0
 
   const renderRow = (entry: typeof leaderboard[number], rank: number, pinned?: boolean) => {
+    const isLeader = leaderEntry ? entry.member.id === leaderEntry.member.id : false
+    const isCurrent = entry.member.id === userId
     const delta = leaderEntry ? Math.max(0, leaderEntry.totalPoints - entry.totalPoints) : 0
     const deltaLabel =
-      pinned ? 'Pinned' : leaderEntry && entry.member.id === leaderEntry.member.id ? 'Leader' : `+${delta}`
+      pinned ? 'You' : isLeader ? 'Leader' : `+${delta}`
+    const deltaTone = pinned ? 'you' : isLeader ? 'leader' : 'gap'
     const rowClassName = [
       'leaderboardRow',
-      entry.member.id === userId ? 'leaderboardHighlight' : '',
+      isCurrent ? 'leaderboardHighlight' : '',
       pinned ? 'leaderboardRowPinned' : ''
     ]
       .filter(Boolean)
@@ -113,7 +150,10 @@ export default function LeaderboardPage() {
       <div key={`${entry.member.id}-${pinned ? 'pinned' : 'row'}`} className={rowClassName}>
         <div className="leaderboardRank">#{rank}</div>
         <div className="leaderboardName">
-          {entry.member.name}
+          <div className="leaderboardNameMain">
+            <span className="leaderboardNameText">{entry.member.name}</span>
+            {isCurrent ? <span className="leaderboardYouTag">You</span> : null}
+          </div>
           {entry.member.handle ? <span className="leaderboardHandle">@{entry.member.handle}</span> : null}
         </div>
         <div className="leaderboardTotal">{entry.totalPoints}</div>
@@ -131,7 +171,9 @@ export default function LeaderboardPage() {
             {entry.bracketPoints}
           </span>
         </div>
-        <div className="leaderboardDeltaTag">{deltaLabel}</div>
+        <div className="leaderboardDeltaTag" data-tone={deltaTone}>
+          {deltaLabel}
+        </div>
       </div>
     )
   }
@@ -169,6 +211,38 @@ export default function LeaderboardPage() {
                   <div className="sectionTitle">Current snapshot</div>
                 </div>
                 <div className="leaderboardOverviewMeta">Finished matches only.</div>
+              </div>
+              <div className="leaderboardCategoryRow">
+                <div className="leaderboardCategoryChip" data-tone="total">
+                  <span className="leaderboardCategoryLabel">Avg total</span>
+                  <span className="leaderboardCategoryValue">
+                    {leaderboardSummary.averages.total}
+                  </span>
+                </div>
+                <div className="leaderboardCategoryChip">
+                  <span className="leaderboardCategoryLabel">Exact avg</span>
+                  <span className="leaderboardCategoryValue">
+                    {leaderboardSummary.averages.exact}
+                  </span>
+                </div>
+                <div className="leaderboardCategoryChip">
+                  <span className="leaderboardCategoryLabel">Outcome avg</span>
+                  <span className="leaderboardCategoryValue">
+                    {leaderboardSummary.averages.outcome}
+                  </span>
+                </div>
+                <div className="leaderboardCategoryChip">
+                  <span className="leaderboardCategoryLabel">KO avg</span>
+                  <span className="leaderboardCategoryValue">
+                    {leaderboardSummary.averages.knockout}
+                  </span>
+                </div>
+                <div className="leaderboardCategoryChip">
+                  <span className="leaderboardCategoryLabel">Bracket avg</span>
+                  <span className="leaderboardCategoryValue">
+                    {leaderboardSummary.averages.bracket}
+                  </span>
+                </div>
               </div>
               <div className="podiumPulse leaderboardOverviewGrid">
                 <div className="podiumPulseStat">
@@ -256,7 +330,7 @@ export default function LeaderboardPage() {
                         onClick={handleJumpToCurrent}
                         disabled={!currentPageForUser || currentOnPage}
                       >
-                        Jump to my rank
+                        Find me
                       </button>
                     </div>
                   )

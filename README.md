@@ -9,7 +9,9 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/results` completed matches by matchday with your picks (group filter; knockout unlocks after groups)
 - `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks, graphical knockout bracket + inline team pick pills)
 - `/leaderboard` category points + standings pagination
-- `/admin` admin controls (allowlist + finished-only CSV exports)
+- `/users` allowlist manager (admins only, or simulation enabled)
+- `/simulation` local-only simulation sandbox (admins only, or simulation enabled)
+- `/exports` finished-only CSV exports (admins only, or simulation enabled)
 
 Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-group.json`, `bracket-knockout.json`, `best-third-qualifiers.json`, `leaderboard.json`, `allowlist.json`).
 
@@ -31,11 +33,12 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 - Group stage guide highlights group qualifiers + best third-place pick flow.
 - Knockout guide explains inline team-pill picks and champion badge from the Final.
 
-## Admin
+## Backstage
 
-- Admin is available under the user dropdown (admins only).
-- Admin includes an allowlist manager (name/email/admin flag).
-- Exports tab provides finished-only CSV downloads (picks, brackets, leaderboard).
+- Backstage pages are available to admins (or when simulation mode is enabled).
+- `/users` includes the allowlist manager (name/email/admin flag).
+- `/simulation` provides local-only simulation controls.
+- `/exports` provides finished-only CSV downloads (picks, brackets, leaderboard).
 
 ## Firestore Data Model (when enabled)
 

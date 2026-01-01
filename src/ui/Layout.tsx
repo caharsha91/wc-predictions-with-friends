@@ -1,31 +1,55 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 
 import UserInfo from './components/UserInfo'
+import { AppShellProvider, useAppShell } from './components/AppShellContext'
+import {
+  BracketIcon,
+  CalendarIcon,
+  ExportIcon,
+  ResultsIcon,
+  SimulationIcon,
+  TrophyIcon,
+  UsersIcon
+} from './components/Icons'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useAuthState } from './hooks/useAuthState'
 import { useSimulationState } from './hooks/useSimulationState'
 import { firebaseAuth, hasFirebase } from '../lib/firebase'
 
-function NavItem({ to, label }: { to: string; label: string }) {
-  return (
-    <NavLink
-      to={to}
-      className={({ isActive }) => (isActive ? 'navLink navLinkActive' : 'navLink')}
-      end={to === '/'}
-    >
-      {label}
-    </NavLink>
-  )
+const PAGE_TITLES: Record<string, string> = {
+  upcoming: 'Upcoming',
+  results: 'Results',
+  bracket: 'Bracket',
+  leaderboard: 'Leaderboard',
+  users: 'Users',
+  simulation: 'Simulation',
+  exports: 'Exports'
 }
 
-export default function Layout() {
+const NAV_ITEMS = [
+  { to: '/upcoming', label: 'Upcoming', icon: CalendarIcon },
+  { to: '/results', label: 'Results', icon: ResultsIcon },
+  { to: '/bracket', label: 'Bracket', icon: BracketIcon },
+  { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
+  { to: '/users', label: 'Users', icon: UsersIcon, adminOnly: true },
+  { to: '/simulation', label: 'Simulation', icon: SimulationIcon, adminOnly: true },
+  { to: '/exports', label: 'Exports', icon: ExportIcon, adminOnly: true }
+]
+
+function LayoutFrame() {
   const user = useCurrentUser()
   const authState = useAuthState()
   const simulation = useSimulationState()
   const [authError, setAuthError] = useState<string | null>(null)
   const canAccessAdmin = simulation.enabled || user?.isAdmin
+  const location = useLocation()
+  const appShell = useAppShell()
+  const topBarAction = appShell?.topBarAction ?? null
+  const routeKey = location.pathname.split('/')[1] || 'upcoming'
+  const pageTitle = PAGE_TITLES[routeKey] ?? 'WC Predictions'
+  const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || canAccessAdmin)
 
   async function handleSignIn() {
     if (!firebaseAuth) return
@@ -62,11 +86,12 @@ export default function Layout() {
               WC
             </div>
             <div className="brandStack">
-              <div className="brand">WC Predictions</div>
-              <div className="brandSub">Under the floodlights</div>
+              <div className="brand">{pageTitle}</div>
+              <div className="brandSub">WC Predictions · Friends League</div>
             </div>
           </div>
           <div className="headerActions">
+            {topBarAction ? <div className="primaryActionSlot">{topBarAction}</div> : null}
             {hasFirebase && !simulation.enabled ? (
               authState.user ? (
                 <button
@@ -85,26 +110,61 @@ export default function Layout() {
             {user?.name && user.email ? (
               <UserInfo name={user.name} email={user.email} isAdmin={user.isAdmin} />
             ) : null}
+            {authError ? <span className="authErrorTag">{authError}</span> : null}
           </div>
         </div>
         <div className="headerNav">
           <nav className="navTabs">
-            <NavItem to="/upcoming" label="Upcoming" />
-            <NavItem to="/results" label="Results" />
-            <NavItem to="/bracket" label="Bracket" />
-            <NavItem to="/leaderboard" label="Leaderboard" />
-            {canAccessAdmin ? <NavItem to="/admin" label="Admin" /> : null}
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => (isActive ? 'navLink navLinkActive' : 'navLink')}
+                end={item.to === '/'}
+              >
+                {item.label}
+              </NavLink>
+            ))}
           </nav>
           <div className="headerMeta">
-            <span className="metaTag">Friends League</span>
-            <span className="metaNote">Season hub</span>
-            {authError ? <span className="metaNote error">{authError}</span> : null}
+            <span className="metaTag">Stadium Night</span>
+            <span className="metaNote">Neon picks hub</span>
           </div>
         </div>
       </header>
       <main className="main">
         <Outlet />
       </main>
+      <nav className="bottomNav" aria-label="Primary">
+        <div className="bottomNavInner">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  isActive ? 'bottomNavLink bottomNavLinkActive' : 'bottomNavLink'
+                }
+                end={item.to === '/'}
+              >
+                <span className="bottomNavIcon">
+                  <Icon />
+                </span>
+                <span className="bottomNavLabel">{item.label}</span>
+              </NavLink>
+            )
+          })}
+        </div>
+      </nav>
     </div>
+  )
+}
+
+export default function Layout() {
+  return (
+    <AppShellProvider>
+      <LayoutFrame />
+    </AppShellProvider>
   )
 }

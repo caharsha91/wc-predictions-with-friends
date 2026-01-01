@@ -9,7 +9,9 @@
   - [x] `/upcoming` (all remaining matches)
   - [x] `/results` (completed matches)
   - [x] `/leaderboard` (placeholder)
-  - [x] `/admin` (placeholder)
+  - [x] `/users` (placeholder)
+  - [x] `/simulation` (placeholder)
+  - [x] `/exports` (placeholder)
 - [x] Add `public/data/matches.json` with mock matches + `lastUpdated`
 - [x] Build results view reading `/data/matches.json`
   - [x] Show teams, kickoff time, status, score (if finished)
@@ -43,7 +45,7 @@
   - [x] Separate points for exact, outcome, knockout extras
   - [x] Stage-specific knockout scoring (R32, R16, QF, SF, Third, Final)
   - [x] Render standings from mock members + picks
-- [x] Add admin-only navigation under user dropdown
+- [x] Add admin-only navigation for backstage pages
 - [x] Add light/dark mode toggle in the header
 - [x] Add theme packs with admin selection
 - [x] Add upcoming lock reminder banner on `/upcoming`
@@ -51,7 +53,7 @@
 - [x] Paginate upcoming/results by match day (PST) and add group filters for group stage
 - [x] Hide knockout matches on upcoming/results until group stage completion
 - [x] Remove collapsible matchday sections on upcoming/results
-- [x] Add finished-only CSV exports tab under admin (picks, brackets, leaderboard)
+- [x] Add finished-only CSV exports page (picks, brackets, leaderboard)
 
 ---
 
