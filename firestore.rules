@@ -9,16 +9,20 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email != null;
     }
 
+    function normalizedEmail() {
+      return request.auth.token.email.toLowerCase();
+    }
+
     function isAllowlisted(leagueId) {
       return hasEmail()
         && exists(
-          /databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.token.email)
+          /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
         );
     }
 
     function isAdmin(leagueId) {
       return hasEmail()
-        && get(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.token.email))
+        && get(/databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail()))
             .data.isAdmin == true;
     }
 
@@ -27,7 +31,7 @@ service cloud.firestore {
     }
 
     function isSelfEmail(email) {
-      return hasEmail() && request.auth.token.email == email;
+      return hasEmail() && normalizedEmail() == email;
     }
 
     function isThemeOnlyUpdate() {
