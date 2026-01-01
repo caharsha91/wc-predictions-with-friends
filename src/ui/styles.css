@@ -1053,15 +1053,10 @@ body::before {
 }
 
 .lockBanner {
-  border: 1px solid var(--border-strong);
-  background: var(--card);
-  border-radius: var(--radius-lg);
-  padding: 18px;
-  display: grid;
-  grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 0.9fr);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  box-shadow: var(--card-shadow);
-  margin-bottom: 20px;
 }
 
 .lockBannerInfo {
@@ -1070,25 +1065,12 @@ body::before {
   gap: 6px;
 }
 
-.lockBannerKicker {
-  text-transform: none;
-  letter-spacing: 0.4px;
-  font-size: var(--text-xs);
-  color: var(--accent);
-  font-family: var(--font-body);
-}
-
 .lockBannerMatch {
   font-family: var(--font-display);
   font-size: 22px;
   letter-spacing: 0.2px;
   text-transform: none;
   font-weight: 700;
-}
-
-.lockBannerMeta {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
 }
 
 .lockBannerNote {
@@ -1100,7 +1082,6 @@ body::before {
 }
 
 .lockBannerMatches {
-  grid-column: 1 / -1;
   margin-top: 6px;
   border-top: 1px solid var(--border-soft);
   padding-top: 12px;
@@ -3643,11 +3624,6 @@ body::before {
   padding: 14px;
 }
 
-:root[data-density='compact'] .lockBanner {
-  padding: 12px;
-  gap: 12px;
-}
-
 :root[data-density='compact'] .lockBannerMatch {
   font-size: var(--text-xl);
 }
@@ -4047,11 +4023,6 @@ body::before {
 
   .leaderboardListControls {
     flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .lockBanner {
-    grid-template-columns: 1fr;
     align-items: flex-start;
   }
 

@@ -869,7 +869,7 @@ export default function BracketPage() {
           <div className="validationBannerInfo">
             <div className="validationBannerTitle">Action needed</div>
             <div className="validationBannerMeta">
-              {issueCount} issue{issueCount === 1 ? '' : 's'} to resolve.
+              {issueCount === 1 ? '1 pick needs attention.' : `${issueCount} picks need attention.`}
             </div>
             {firstIssue ? (
               <div className="validationBannerIssue">{firstIssue.message}</div>
@@ -881,7 +881,7 @@ export default function BracketPage() {
               type="button"
               onClick={() => handleJumpToIssue(firstIssue)}
             >
-              Jump to first issue
+              Jump to first pick
             </button>
           ) : null}
         </div>

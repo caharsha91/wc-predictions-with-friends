@@ -65,13 +65,13 @@ export default function LockReminderBanner({ matches }: LockReminderBannerProps)
     .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())
 
   return (
-    <section className="lockBanner">
-      <div className="lockBannerInfo">
-        <div className="lockBannerKicker">Upcoming lock</div>
+    <section className="card validationBanner lockBanner" role="status">
+      <div className="validationBannerInfo lockBannerInfo">
+        <div className="validationBannerTitle">Upcoming lock</div>
         <div className="lockBannerMatch">
           {match.homeTeam.code} vs {match.awayTeam.code}
         </div>
-        <div className="lockBannerMeta">
+        <div className="validationBannerMeta">
           {match.stage} · Locks at {formatLockTime(lockTime)}
         </div>
         <div className="lockBannerNote">Edits lock at kickoff.</div>
