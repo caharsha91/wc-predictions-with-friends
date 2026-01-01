@@ -5,7 +5,7 @@
 
 - [x] Create repo + Vite React + TypeScript app
 - [x] Add routing/pages:
-  - [x] `/` (redirects to `/upcoming`)
+  - [x] `/` (landing page)
   - [x] `/upcoming` (all remaining matches)
   - [x] `/results` (completed matches)
   - [x] `/leaderboard` (placeholder)
@@ -27,10 +27,9 @@
   - [x] `public/data/members.json` with sample users
   - [x] `public/data/picks.json` with sample picks
   - [x] `public/data/scoring.json` for group + knockout points
-- [x] Home: next matchday only
-  - [x] Highlight missing picks
+- [x] Home: landing page with how-to + scoring overview
 - [x] Upcoming page: all remaining matches in ascending order
-  - [x] Same pick inputs as home
+  - [x] Uses the main picks board inputs
 - [x] Results page: completed matches (descending)
   - [x] Show results + your picks (including missing picks)
 - [x] Implement pick entry UI

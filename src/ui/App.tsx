@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Outlet, Route, Routes } from 'react-router-dom'
 
 import Layout from './Layout'
 import AdminExportsPage from './pages/AdminExportsPage'
@@ -7,6 +7,7 @@ import AdminUsersPage from './pages/AdminUsersPage'
 import AccessDeniedPage from './pages/AccessDeniedPage'
 import BracketPage from './pages/BracketPage'
 import LeaderboardPage from './pages/LeaderboardPage'
+import LandingPage from './pages/LandingPage'
 import ResultsPage from './pages/ResultsPage'
 import ThemeSelectorPage from './pages/ThemeSelectorPage'
 import UpcomingMatchesPage from './pages/UpcomingMatchesPage'
@@ -38,7 +39,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="/upcoming" replace />} />
+        <Route index element={<LandingPage />} />
         <Route path="upcoming" element={<UpcomingMatchesPage />} />
         <Route path="results" element={<ResultsPage />} />
         <Route path="bracket" element={<BracketPage />} />

@@ -8,8 +8,8 @@ import {
   BracketIcon,
   CalendarIcon,
   ExportIcon,
+  HomeIcon,
   ResultsIcon,
-  SimulationIcon,
   ThemeIcon,
   TrophyIcon,
   UsersIcon
@@ -23,6 +23,7 @@ import { useTheme } from '../theme/ThemeProvider'
 import { getThemeById } from '../theme/themes'
 
 const PAGE_TITLES: Record<string, string> = {
+  home: 'Home',
   upcoming: 'Upcoming',
   results: 'Results',
   bracket: 'Bracket',
@@ -34,13 +35,13 @@ const PAGE_TITLES: Record<string, string> = {
 }
 
 const NAV_ITEMS = [
+  { to: '/', label: 'Home', icon: HomeIcon },
   { to: '/upcoming', label: 'Upcoming', icon: CalendarIcon },
   { to: '/results', label: 'Results', icon: ResultsIcon },
   { to: '/bracket', label: 'Bracket', icon: BracketIcon },
   { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { to: '/themes', label: 'Themes', icon: ThemeIcon },
   { to: '/users', label: 'Users', icon: UsersIcon, adminOnly: true },
-  { to: '/simulation', label: 'Simulation', icon: SimulationIcon, adminOnly: true },
   { to: '/exports', label: 'Exports', icon: ExportIcon, adminOnly: true }
 ]
 
@@ -53,7 +54,7 @@ function LayoutFrame() {
   const location = useLocation()
   const appShell = useAppShell()
   const topBarAction = appShell?.topBarAction ?? null
-  const routeKey = location.pathname.split('/')[1] || 'upcoming'
+  const routeKey = location.pathname.split('/')[1] || 'home'
   const pageTitle = PAGE_TITLES[routeKey] ?? 'WC Predictions'
   const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || canAccessAdmin)
   const { themeId } = useTheme()

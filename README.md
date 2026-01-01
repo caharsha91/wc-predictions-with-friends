@@ -4,7 +4,7 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 
 ## App Flow (Current)
 
-- `/` redirects to `/upcoming`
+- `/` home landing page (how to play, scoring, quick CTAs)
 - `/upcoming` remaining matches by matchday with picks + lock countdown banner (group filter; knockout unlocks after groups)
 - `/results` completed matches by matchday with your picks (group filter; knockout unlocks after groups)
 - `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks, graphical knockout bracket + inline team pick pills)

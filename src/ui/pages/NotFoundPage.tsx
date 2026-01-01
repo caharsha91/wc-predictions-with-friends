@@ -9,7 +9,7 @@ export default function NotFoundPage() {
 
   useEffect(() => {
     const id = window.setTimeout(() => {
-      navigate('/upcoming', { replace: true })
+      navigate('/', { replace: true })
     }, 3000)
     return () => window.clearTimeout(id)
   }, [navigate])
@@ -17,9 +17,9 @@ export default function NotFoundPage() {
   return (
     <Card>
       <h1 className="h1">Not Found</h1>
-      <div className="pageSubtitle">That page does not exist. Redirecting to Upcoming...</div>
-      <ButtonLink to="/upcoming">
-        Go to upcoming
+      <div className="pageSubtitle">That page does not exist. Redirecting home...</div>
+      <ButtonLink to="/">
+        Go to home
       </ButtonLink>
     </Card>
   )

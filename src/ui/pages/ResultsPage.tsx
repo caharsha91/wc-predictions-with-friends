@@ -357,7 +357,7 @@ export default function ResultsPage() {
         matches: [...group.matches]
       })
     }
-    return [...byDate.values()]
+    return [...byDate.values()].sort((a, b) => b.dateKey.localeCompare(a.dateKey))
   }, [groupedMatches])
   const matchdayKeys = useMemo(() => matchdays.map((day) => day.dateKey), [matchdays])
   const matchdaySignature = matchdayKeys.join('|')
@@ -377,13 +377,22 @@ export default function ResultsPage() {
       next.add(activeDateKey)
       return next
     })
+    const activeMatchday = matchdays.find((day) => day.dateKey === activeDateKey)
+    if (activeMatchday) {
+      setExpandedMatches((current) => {
+        const next = new Set(current)
+        activeMatchday.matches.forEach((match) => next.add(match.id))
+        return next
+      })
+    }
     const target = document.getElementById(`matchday-${activeDateKey}`)
     if (target) {
       target.scrollIntoView({ block: 'start' })
     }
-  }, [activeDateKey])
+  }, [activeDateKey, matchdays])
 
   function toggleMatchday(dateKey: string) {
+    const willExpand = !expandedMatchdays.has(dateKey)
     setExpandedMatchdays((current) => {
       const next = new Set(current)
       if (next.has(dateKey)) {
@@ -391,6 +400,19 @@ export default function ResultsPage() {
       } else {
         next.add(dateKey)
       }
+      return next
+    })
+    const matchday = matchdays.find((day) => day.dateKey === dateKey)
+    if (!matchday) return
+    setExpandedMatches((current) => {
+      const next = new Set(current)
+      matchday.matches.forEach((match) => {
+        if (willExpand) {
+          next.add(match.id)
+        } else {
+          next.delete(match.id)
+        }
+      })
       return next
     })
   }
