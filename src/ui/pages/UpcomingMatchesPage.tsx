@@ -17,6 +17,7 @@ export default function UpcomingMatchesPage() {
   const [view, setView] = useState<'group' | 'knockout' | null>(null)
   const [groupFilter, setGroupFilter] = useState('all')
   const [activeDateKey, setActiveDateKey] = useState<string | null>(null)
+  const [jumpNonce, setJumpNonce] = useState(0)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [filtersCollapsed, setFiltersCollapsed] = useState(false)
   const isMobile = useMediaQuery('(max-width: 900px)')
@@ -125,6 +126,11 @@ export default function UpcomingMatchesPage() {
 
   const showDayPagination = dateKeys.length > 1
 
+  const handleJumpToMatchday = useCallback((dateKey: string) => {
+    setActiveDateKey(dateKey)
+    setJumpNonce((current) => current + 1)
+  }, [])
+
   if (state.status === 'loading') {
     return (
       <div className="stack">
@@ -144,7 +150,7 @@ export default function UpcomingMatchesPage() {
 
   return (
     <div className="stack">
-      <LockReminderBanner matches={filteredMatches} />
+      <LockReminderBanner matches={filteredMatches} onJumpToMatchday={handleJumpToMatchday} />
       <FiltersPanel
         id={filtersId}
         title="Filters"
@@ -224,7 +230,7 @@ export default function UpcomingMatchesPage() {
               <DayPagination
                 dateKeys={dateKeys}
                 activeDateKey={activeDateKey}
-                onSelect={setActiveDateKey}
+                onSelect={handleJumpToMatchday}
                 ariaLabel="Jump to matchday"
               />
             </div>
@@ -236,6 +242,7 @@ export default function UpcomingMatchesPage() {
         picks={picks}
         onUpdatePicks={updatePicks}
         jumpToDateKey={activeDateKey}
+        jumpToDateKeyNonce={jumpNonce}
         kicker="Upcoming Matches"
         title="All Remaining Matches"
         emptyMessage="No upcoming matches."

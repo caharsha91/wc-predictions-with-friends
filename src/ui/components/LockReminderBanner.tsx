@@ -41,9 +41,13 @@ function formatCountdown(target: Date, now: Date) {
 
 type LockReminderBannerProps = {
   matches: Match[]
+  onJumpToMatchday?: (dateKey: string) => void
 }
 
-export default function LockReminderBanner({ matches }: LockReminderBannerProps) {
+export default function LockReminderBanner({
+  matches,
+  onJumpToMatchday
+}: LockReminderBannerProps) {
   const now = useNow({ tickMs: 1000 })
 
   const upcomingLock = useMemo<UpcomingLock | null>(() => {
@@ -67,6 +71,10 @@ export default function LockReminderBanner({ matches }: LockReminderBannerProps)
   const matchdayId = `matchday-${dateKey}`
 
   function handleJumpToMatchday() {
+    if (onJumpToMatchday) {
+      onJumpToMatchday(dateKey)
+      return
+    }
     const target = document.getElementById(matchdayId)
     if (!target) return
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches

@@ -24,6 +24,7 @@ type PicksBoardProps = {
   emptyMessage: string
   highlightMissing?: boolean
   jumpToDateKey?: string | null
+  jumpToDateKeyNonce?: number
 }
 
 function formatKickoff(utcIso: string) {
@@ -100,7 +101,8 @@ export default function PicksBoard({
   title,
   emptyMessage,
   highlightMissing,
-  jumpToDateKey
+  jumpToDateKey,
+  jumpToDateKeyNonce
 }: PicksBoardProps) {
   const userId = useViewerId()
   const groups = useMemo(() => {
@@ -154,7 +156,7 @@ export default function PicksBoard({
     if (target) {
       target.scrollIntoView({ block: 'start' })
     }
-  }, [jumpToDateKey])
+  }, [jumpToDateKey, jumpToDateKeyNonce])
 
   function toggleMatchday(dateKey: string) {
     setExpandedMatchdays((current) => {
