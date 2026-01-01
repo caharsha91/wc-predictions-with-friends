@@ -61,6 +61,19 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 
 JSON mirrors for local mode: `public/data/allowlist.json`, `public/data/members.json`, `public/data/picks.json`, `public/data/bracket-group.json`, `public/data/bracket-knockout.json`.
 
+## Firebase Setup (Step 5)
+
+1. Create a Firebase project (Spark plan) and add a Web app.
+2. Enable Google sign-in.
+3. Add authorized domains (localhost + GitHub Pages domain).
+4. Create a Firestore database (production mode).
+5. Firestore rules: copy `firestore.rules` into the Rules editor and publish.
+6. Seed league access:
+   - Allowlist: `leagues/{leagueId}/allowlist/{email}` with `email`, `name`, `isAdmin`, `createdAt`.
+   - Members: `leagues/{leagueId}/members/{uid}` with `name`, `email`, `isAdmin`.
+   - `uid` comes from Firebase Authentication after the user signs in.
+7. Add env vars from `.env.example` (set `VITE_LEAGUE_ID` to your league ID) and restart dev server.
+
 ## Data Updates (Fixtures/Results)
 
 Match data is sourced from `https://api.football-data.org/v4/competitions/WC/matches`.

@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasEmail() {
+      return isSignedIn() && request.auth.token.email != null;
+    }
+
+    function isAllowlisted(leagueId) {
+      return hasEmail()
+        && exists(
+          /databases/$(database)/documents/leagues/$(leagueId)/allowlist/$(request.auth.token.email)
+        );
+    }
+
+    function isAdmin(leagueId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.uid)).data
+          .isAdmin == true;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isThemeOnlyUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['theme']);
+    }
+
+    match /leagues/{leagueId} {
+      allow read, write: if false;
+
+      match /allowlist/{email} {
+        allow get, list: if isAdmin(leagueId);
+        allow create, update, delete: if isAdmin(leagueId);
+      }
+
+      match /members/{userId} {
+        allow get: if isAllowlisted(leagueId) && isSelf(userId);
+        allow list: if isAdmin(leagueId);
+        allow create, update: if isAdmin(leagueId)
+          || (isAllowlisted(leagueId) && isSelf(userId) && isThemeOnlyUpdate());
+        allow delete: if isAdmin(leagueId);
+      }
+
+      match /picks/{userId} {
+        allow get: if isAllowlisted(leagueId) && isSelf(userId);
+        allow create, update: if isAllowlisted(leagueId)
+          && isSelf(userId)
+          && request.resource.data.userId == request.auth.uid;
+      }
+
+      match /bracket-group/{userId} {
+        allow get: if isAllowlisted(leagueId) && isSelf(userId);
+        allow create, update: if isAllowlisted(leagueId)
+          && isSelf(userId)
+          && request.resource.data.userId == request.auth.uid;
+      }
+
+      match /bracket-knockout/{userId} {
+        allow get: if isAllowlisted(leagueId) && isSelf(userId);
+        allow create, update: if isAllowlisted(leagueId)
+          && isSelf(userId)
+          && request.resource.data.userId == request.auth.uid;
+      }
+    }
+  }
+}

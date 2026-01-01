@@ -105,10 +105,10 @@
 ## Step 5 — Firebase Auth + Firestore (Free Tier)
 **Goal:** Replace local mock storage with real auth + database.
 
-- [ ] Create Firebase project (Spark plan)
-- [ ] Enable Google sign-in provider
-- [ ] Add authorized domains (localhost + GitHub Pages domain)
-- [ ] Create Firestore database
+- [x] Create Firebase project (Spark plan)
+- [x] Enable Google sign-in provider
+- [x] Add authorized domains (localhost + GitHub Pages domain)
+- [x] Create Firestore database
 - [ ] Add minimal Firestore structure:
   - [ ] `leagues/{leagueId}`
   - [ ] `leagues/{leagueId}/allowlist/*` (or join-requests if you choose)
@@ -127,6 +127,11 @@
   - [x] `leagues/{leagueId}/bracket-group/{userId}`
   - [x] `leagues/{leagueId}/bracket-knockout/{userId}`
 - [x] No legacy Firestore migration required (new setup)
+- [x] Local dev (Emulator Suite):
+  - [x] Add `firebase.json` emulator config
+  - [x] Wire client to auth/firestore emulators via env flags
+  - [x] Add emulator seed script for allowlist + members
+  - [x] Add local emulator env vars in `.env.local`
 - [ ] Final checks:
   - [ ] Repo updates daily
   - [ ] GitHub Pages serves updated JSON
