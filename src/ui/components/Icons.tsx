@@ -121,6 +121,17 @@ export function FilterIcon(props: IconProps) {
   )
 }
 
+export function ThemeIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 3a9 9 0 0 0 0 18h1.2a2.2 2.2 0 0 0 0-4.4H12a4.6 4.6 0 1 1 0-9.2h1.2a2.2 2.2 0 0 0 0-4.4H12z" />
+      <circle cx="8.5" cy="10" r="1" />
+      <circle cx="15.5" cy="10" r="1" />
+      <circle cx="9.5" cy="15" r="1" />
+    </IconBase>
+  )
+}
+
 export function CloseIcon(props: IconProps) {
   return (
     <IconBase {...props}>

@@ -10,6 +10,7 @@ import {
   ExportIcon,
   ResultsIcon,
   SimulationIcon,
+  ThemeIcon,
   TrophyIcon,
   UsersIcon
 } from './components/Icons'
@@ -18,12 +19,15 @@ import { useCurrentUser } from './hooks/useCurrentUser'
 import { useAuthState } from './hooks/useAuthState'
 import { useSimulationState } from './hooks/useSimulationState'
 import { firebaseAuth, hasFirebase } from '../lib/firebase'
+import { useTheme } from '../theme/ThemeProvider'
+import { getThemeById } from '../theme/themes'
 
 const PAGE_TITLES: Record<string, string> = {
   upcoming: 'Upcoming',
   results: 'Results',
   bracket: 'Bracket',
   leaderboard: 'Leaderboard',
+  themes: 'Themes',
   users: 'Users',
   simulation: 'Simulation',
   exports: 'Exports'
@@ -34,6 +38,7 @@ const NAV_ITEMS = [
   { to: '/results', label: 'Results', icon: ResultsIcon },
   { to: '/bracket', label: 'Bracket', icon: BracketIcon },
   { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
+  { to: '/themes', label: 'Themes', icon: ThemeIcon },
   { to: '/users', label: 'Users', icon: UsersIcon, adminOnly: true },
   { to: '/simulation', label: 'Simulation', icon: SimulationIcon, adminOnly: true },
   { to: '/exports', label: 'Exports', icon: ExportIcon, adminOnly: true }
@@ -51,6 +56,8 @@ function LayoutFrame() {
   const routeKey = location.pathname.split('/')[1] || 'upcoming'
   const pageTitle = PAGE_TITLES[routeKey] ?? 'WC Predictions'
   const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || canAccessAdmin)
+  const { themeId } = useTheme()
+  const themeMeta = getThemeById(themeId)
 
   async function handleSignIn() {
     if (!firebaseAuth) return
@@ -124,8 +131,8 @@ function LayoutFrame() {
             ))}
           </nav>
           <div className="headerMeta">
-            <span className="metaTag">Stadium Night</span>
-            <span className="metaNote">Neon picks hub</span>
+            <span className="metaTag">{themeMeta.name}</span>
+            <span className="metaNote">{themeMeta.description}</span>
           </div>
         </div>
       </header>

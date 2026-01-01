@@ -8,6 +8,7 @@ import AccessDeniedPage from './pages/AccessDeniedPage'
 import BracketPage from './pages/BracketPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import ResultsPage from './pages/ResultsPage'
+import ThemeSelectorPage from './pages/ThemeSelectorPage'
 import UpcomingMatchesPage from './pages/UpcomingMatchesPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { useAuthState } from './hooks/useAuthState'
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="results" element={<ResultsPage />} />
         <Route path="bracket" element={<BracketPage />} />
         <Route path="leaderboard" element={<LeaderboardPage />} />
+        <Route path="themes" element={<ThemeSelectorPage />} />
         <Route element={<AdminGate />}>
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="simulation" element={<AdminSimulationPage />} />

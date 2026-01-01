@@ -3,17 +3,21 @@ import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 
 import App from './ui/App'
-import { applyColorMode, getColorMode } from './lib/colorMode'
+import { ThemeProvider } from './theme/ThemeProvider'
+import { applyInitialTheme } from './theme/themeState'
 import './styles/theme.css'
+import './styles/themes.css'
 import './styles/global.css'
 import './ui/styles.css'
 document.documentElement.dataset.density = 'compact'
-applyColorMode(getColorMode())
+applyInitialTheme()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <HashRouter>
-      <App />
-    </HashRouter>
+    <ThemeProvider>
+      <HashRouter>
+        <App />
+      </HashRouter>
+    </ThemeProvider>
   </React.StrictMode>
 )

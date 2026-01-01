@@ -4,10 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>World Cup Predictions</title>
+    <script>
+      ;(() => {
+        try {
+          const root = document.documentElement
+          const storedTheme = window.localStorage.getItem('wc-theme-id')
+          const storedMode = window.localStorage.getItem('wc-color-mode')
+          const storedSystem = window.localStorage.getItem('wc-system-mode')
+          const prefersDark =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+          const themeId = storedTheme || 'stadium-night'
+          const systemMode = storedSystem === 'true'
+          const mode =
+            systemMode || (storedMode !== 'light' && storedMode !== 'dark')
+              ? prefersDark
+                ? 'dark'
+                : 'light'
+              : storedMode
+          root.dataset.theme = themeId
+          root.dataset.mode = mode
+        } catch (error) {
+          // no-op
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

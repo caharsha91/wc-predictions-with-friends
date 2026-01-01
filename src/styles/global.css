@@ -9,6 +9,10 @@ body {
   height: 100%;
 }
 
+:root {
+  --theme-transition: 200ms ease;
+}
+
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -21,8 +25,16 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-variant-numeric: tabular-nums;
-  transition: background-color 0.4s ease, color 0.4s ease;
+  transition: background-color var(--theme-transition), background-image var(--theme-transition),
+    color var(--theme-transition);
   position: relative;
+}
+
+body,
+body * {
+  transition: background-color var(--theme-transition), background-image var(--theme-transition),
+    color var(--theme-transition), border-color var(--theme-transition),
+    box-shadow var(--theme-transition);
 }
 
 body::before {
@@ -88,6 +100,10 @@ svg {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --theme-transition: 0ms ease;
+  }
+
   *,
   *::before,
   *::after {

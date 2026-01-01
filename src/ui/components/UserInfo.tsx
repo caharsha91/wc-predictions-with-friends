@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { getColorMode, toggleColorMode } from '../../lib/colorMode'
+import { useTheme } from '../../theme/ThemeProvider'
 import { Badge } from './ui/Badge'
 
 type UserInfoProps = {
@@ -10,13 +10,12 @@ type UserInfoProps = {
 }
 
 export default function UserInfo({ name, email, isAdmin }: UserInfoProps) {
-  const [mode, setMode] = useState(() => getColorMode())
+  const { mode, setMode } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   function handleToggleMode() {
-    const next = toggleColorMode()
-    setMode(next)
+    setMode(mode === 'dark' ? 'light' : 'dark')
     setMenuOpen(false)
   }
 
