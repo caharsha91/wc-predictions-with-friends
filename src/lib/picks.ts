@@ -52,6 +52,7 @@ export function upsertPick(picks: Pick[], input: PickInput): Pick[] {
       userId: input.userId,
       homeScore: input.homeScore,
       awayScore: input.awayScore,
+      outcome: input.outcome,
       winner: input.winner,
       decidedBy: input.decidedBy,
       createdAt: now,

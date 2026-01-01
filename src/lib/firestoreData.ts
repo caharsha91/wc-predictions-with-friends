@@ -32,6 +32,22 @@ function getUserDocRef(collectionName: string, userId: string) {
   return doc(firebaseDb, 'leagues', getLeagueId(), collectionName, userId)
 }
 
+function sanitizePick(pick: Pick, fallbackTimestamp: string): Pick {
+  const cleaned: Pick = {
+    id: pick.id,
+    matchId: pick.matchId,
+    userId: pick.userId,
+    createdAt: pick.createdAt || fallbackTimestamp,
+    updatedAt: pick.updatedAt || fallbackTimestamp
+  }
+  if (typeof pick.homeScore === 'number') cleaned.homeScore = pick.homeScore
+  if (typeof pick.awayScore === 'number') cleaned.awayScore = pick.awayScore
+  if (pick.outcome) cleaned.outcome = pick.outcome
+  if (pick.winner) cleaned.winner = pick.winner
+  if (pick.decidedBy) cleaned.decidedBy = pick.decidedBy
+  return cleaned
+}
+
 export async function fetchUserPicksDoc(userId: string): Promise<Pick[] | null> {
   if (isSimulationMode()) return null
   const ref = getUserDocRef('picks', userId)
@@ -47,7 +63,12 @@ export async function saveUserPicksDoc(userId: string, picks: Pick[]): Promise<v
   const ref = getUserDocRef('picks', userId)
   if (!ref) return
   const now = new Date().toISOString()
-  await setDoc(ref, { userId, picks, updatedAt: now } satisfies PicksDoc, { merge: true })
+  const sanitizedPicks = picks.map((pick) => sanitizePick(pick, now))
+  await setDoc(
+    ref,
+    { userId, picks: sanitizedPicks, updatedAt: now } satisfies PicksDoc,
+    { merge: true }
+  )
 }
 
 export async function fetchUserBracketGroupDoc(
