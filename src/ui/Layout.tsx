@@ -5,6 +5,7 @@ import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 import UserInfo from './components/UserInfo'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useAuthState } from './hooks/useAuthState'
+import { useSimulationState } from './hooks/useSimulationState'
 import { firebaseAuth, hasFirebase } from '../lib/firebase'
 
 function NavItem({ to, label }: { to: string; label: string }) {
@@ -22,7 +23,9 @@ function NavItem({ to, label }: { to: string; label: string }) {
 export default function Layout() {
   const user = useCurrentUser()
   const authState = useAuthState()
+  const simulation = useSimulationState()
   const [authError, setAuthError] = useState<string | null>(null)
+  const canAccessAdmin = simulation.enabled || user?.isAdmin
 
   async function handleSignIn() {
     if (!firebaseAuth) return
@@ -49,6 +52,9 @@ export default function Layout() {
 
   return (
     <div className="appShell">
+      {simulation.enabled ? (
+        <div className="simulationBanner">SIMULATION MODE (LOCAL ONLY)</div>
+      ) : null}
       <header className="header">
         <div className="headerBar">
           <div className="brandBlock">
@@ -61,7 +67,7 @@ export default function Layout() {
             </div>
           </div>
           <div className="headerActions">
-            {hasFirebase ? (
+            {hasFirebase && !simulation.enabled ? (
               authState.user ? (
                 <button
                   className="button buttonSmall buttonSecondary"
@@ -87,6 +93,7 @@ export default function Layout() {
             <NavItem to="/results" label="Results" />
             <NavItem to="/bracket" label="Bracket" />
             <NavItem to="/leaderboard" label="Leaderboard" />
+            {canAccessAdmin ? <NavItem to="/admin" label="Admin" /> : null}
           </nav>
           <div className="headerMeta">
             <span className="metaTag">Friends League</span>

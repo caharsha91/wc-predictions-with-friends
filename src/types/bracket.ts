@@ -33,3 +33,11 @@ export type BracketPredictionsFile = {
   group: BracketGroupDoc[]
   knockout: BracketKnockoutDoc[]
 }
+
+export type BracketGroupFile = {
+  group: BracketGroupDoc[]
+}
+
+export type BracketKnockoutFile = {
+  knockout: BracketKnockoutDoc[]
+}

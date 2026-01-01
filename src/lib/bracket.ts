@@ -4,6 +4,7 @@ import type {
   BracketPrediction,
   BracketPredictionsFile
 } from '../types/bracket'
+import { getSimulationState, isSimulationMode, setSimulationState } from './simulation'
 
 const STORAGE_PREFIX = 'wc-bracket'
 
@@ -13,6 +14,22 @@ export function getLocalBracketKey(userId: string): string {
 
 export function loadLocalBracketPrediction(userId: string): BracketPrediction | null {
   if (typeof window === 'undefined') return null
+  if (isSimulationMode()) {
+    const state = getSimulationState()
+    const groupDoc = state.bracketGroup.group.find((doc) => doc.userId === userId)
+    const knockoutDoc = state.bracketKnockout.knockout.find((doc) => doc.userId === userId)
+    if (!groupDoc && !knockoutDoc) return null
+    const updatedAt = knockoutDoc?.updatedAt ?? groupDoc?.updatedAt ?? new Date().toISOString()
+    return {
+      id: `bracket-${userId}`,
+      userId,
+      groups: groupDoc?.groups ?? {},
+      bestThirds: groupDoc?.bestThirds ?? [],
+      knockout: knockoutDoc?.knockout ?? {},
+      createdAt: updatedAt,
+      updatedAt
+    }
+  }
   const raw = window.localStorage.getItem(getLocalBracketKey(userId))
   if (!raw) return null
   try {
@@ -25,6 +42,29 @@ export function loadLocalBracketPrediction(userId: string): BracketPrediction | 
 
 export function saveLocalBracketPrediction(userId: string, prediction: BracketPrediction): void {
   if (typeof window === 'undefined') return
+  if (isSimulationMode()) {
+    const state = getSimulationState()
+    const updatedAt = prediction.updatedAt || new Date().toISOString()
+    const nextGroup = state.bracketGroup.group.filter((doc) => doc.userId !== userId)
+    nextGroup.push({
+      userId,
+      groups: prediction.groups ?? {},
+      bestThirds: prediction.bestThirds ?? [],
+      updatedAt
+    })
+    const nextKnockout = state.bracketKnockout.knockout.filter((doc) => doc.userId !== userId)
+    nextKnockout.push({
+      userId,
+      knockout: prediction.knockout ?? {},
+      updatedAt
+    })
+    setSimulationState({
+      ...state,
+      bracketGroup: { group: nextGroup },
+      bracketKnockout: { knockout: nextKnockout }
+    })
+    return
+  }
   const payload = JSON.stringify({ prediction })
   window.localStorage.setItem(getLocalBracketKey(userId), payload)
 }

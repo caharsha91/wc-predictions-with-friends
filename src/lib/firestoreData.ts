@@ -1,6 +1,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
 import { firebaseDb, getLeagueId } from './firebase'
+import { isSimulationMode } from './simulation'
 import type { GroupPrediction } from '../types/bracket'
 import type { MatchWinner } from '../types/matches'
 import type { Pick } from '../types/picks'
@@ -31,6 +32,7 @@ function getUserDocRef(collectionName: string, userId: string) {
 }
 
 export async function fetchUserPicksDoc(userId: string): Promise<Pick[] | null> {
+  if (isSimulationMode()) return null
   const ref = getUserDocRef('picks', userId)
   if (!ref) return null
   const snapshot = await getDoc(ref)
@@ -40,6 +42,7 @@ export async function fetchUserPicksDoc(userId: string): Promise<Pick[] | null> 
 }
 
 export async function saveUserPicksDoc(userId: string, picks: Pick[]): Promise<void> {
+  if (isSimulationMode()) return
   const ref = getUserDocRef('picks', userId)
   if (!ref) return
   const now = new Date().toISOString()
@@ -49,6 +52,7 @@ export async function saveUserPicksDoc(userId: string, picks: Pick[]): Promise<v
 export async function fetchUserBracketGroupDoc(
   userId: string
 ): Promise<{ groups: Record<string, GroupPrediction>; bestThirds?: string[] } | null> {
+  if (isSimulationMode()) return null
   const ref = getUserDocRef('bracket-group', userId)
   if (!ref) return null
   const snapshot = await getDoc(ref)
@@ -65,6 +69,7 @@ export async function saveUserBracketGroupDoc(
   groups: Record<string, GroupPrediction>,
   bestThirds?: string[]
 ): Promise<void> {
+  if (isSimulationMode()) return
   const ref = getUserDocRef('bracket-group', userId)
   if (!ref) return
   const now = new Date().toISOString()
@@ -79,6 +84,7 @@ export async function saveUserBracketGroupDoc(
 export async function fetchUserBracketKnockoutDoc(
   userId: string
 ): Promise<Partial<Record<KnockoutStage, Record<string, MatchWinner>>> | null> {
+  if (isSimulationMode()) return null
   const ref = getUserDocRef('bracket-knockout', userId)
   if (!ref) return null
   const snapshot = await getDoc(ref)
@@ -91,6 +97,7 @@ export async function saveUserBracketKnockoutDoc(
   userId: string,
   knockout: Partial<Record<KnockoutStage, Record<string, MatchWinner>>> | undefined
 ): Promise<void> {
+  if (isSimulationMode()) return
   const ref = getUserDocRef('bracket-knockout', userId)
   if (!ref) return
   const now = new Date().toISOString()

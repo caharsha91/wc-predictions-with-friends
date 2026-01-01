@@ -11,7 +11,7 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/leaderboard` category points + standings pagination
 - `/admin` admin controls (allowlist + finished-only CSV exports)
 
-Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-predictions.json`, `best-third-qualifiers.json`, `leaderboard.json`).
+Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-group.json`, `bracket-knockout.json`, `best-third-qualifiers.json`, `leaderboard.json`, `allowlist.json`).
 
 ## Dev
 
@@ -44,6 +44,8 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 - `leagues/{leagueId}/bracket-group/{userId}` → one doc per user (group + best thirds)
 - `leagues/{leagueId}/bracket-knockout/{userId}` → one doc per user (knockout winners)
 - `leagues/{leagueId}/allowlist/{email}`
+
+JSON mirrors for local mode: `public/data/allowlist.json`, `public/data/members.json`, `public/data/picks.json`, `public/data/bracket-group.json`, `public/data/bracket-knockout.json`.
 
 ## Data Updates (Fixtures/Results)
 

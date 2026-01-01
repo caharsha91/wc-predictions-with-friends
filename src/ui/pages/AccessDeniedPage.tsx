@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-export default function NotFoundPage() {
+export default function AccessDeniedPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -13,8 +13,10 @@ export default function NotFoundPage() {
 
   return (
     <div className="card">
-      <h1 className="h1">Not Found</h1>
-      <p className="muted">That page does not exist. Redirecting to Upcoming...</p>
+      <h1 className="h1">Access denied</h1>
+      <p className="muted">
+        You do not have access to that page. Redirecting to Upcoming...
+      </p>
       <Link className="button" to="/upcoming">
         Go to upcoming
       </Link>

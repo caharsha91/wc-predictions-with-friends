@@ -23,6 +23,7 @@ import type { BracketPrediction, GroupPrediction } from '../../types/bracket'
 import type { Match, MatchWinner, Team } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 import { useAuthState } from '../hooks/useAuthState'
+import { useNow } from '../hooks/useNow'
 import { useViewerId } from '../hooks/useViewerId'
 
 type LoadState =
@@ -316,7 +317,7 @@ export default function BracketPage() {
     return getLockTimePstForDateKey(knockoutMatchDates[0], -1)
   }, [knockoutMatchDates])
 
-  const now = useMemo(() => new Date(), [])
+  const now = useNow()
   const groupLocked = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
   const knockoutLocked = knockoutLockTime ? now.getTime() >= knockoutLockTime.getTime() : false
   const bracketCardHeight = 76

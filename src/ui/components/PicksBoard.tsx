@@ -9,6 +9,7 @@ import {
 import { findPick, isPickComplete, upsertPick } from '../../lib/picks'
 import type { Match } from '../../types/matches'
 import type { Pick, PickOutcome } from '../../types/picks'
+import { useNow } from '../hooks/useNow'
 import { useViewerId } from '../hooks/useViewerId'
 
 type PicksBoardProps = {
@@ -85,7 +86,7 @@ export default function PicksBoard({
     }).length
   }, [matches, picks, userId])
 
-  const now = useMemo(() => new Date(), [])
+  const now = useNow()
 
   function handleScoreChange(match: Match, field: 'homeScore' | 'awayScore', value: string) {
     const numeric = value === '' ? undefined : Number(value)

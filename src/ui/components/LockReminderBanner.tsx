@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { getDateKeyInTimeZone, getLockTime } from '../../lib/matches'
 import type { Match } from '../../types/matches'
+import { useNow } from '../hooks/useNow'
 
 type UpcomingLock = {
   match: Match
@@ -42,14 +43,7 @@ type LockReminderBannerProps = {
 }
 
 export default function LockReminderBanner({ matches }: LockReminderBannerProps) {
-  const [now, setNow] = useState(() => new Date())
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000)
-    return () => {
-      window.clearInterval(id)
-    }
-  }, [])
+  const now = useNow({ tickMs: 1000 })
 
   const upcomingLock = useMemo<UpcomingLock | null>(() => {
     const candidates = matches

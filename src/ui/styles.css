@@ -97,6 +97,17 @@ body {
   flex-direction: column;
 }
 
+.simulationBanner {
+  text-align: center;
+  padding: 8px 16px;
+  background: linear-gradient(90deg, rgba(23, 184, 144, 0.35), rgba(15, 17, 21, 0.9));
+  border-bottom: 1px solid var(--border-strong);
+  font-size: var(--text-xs);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
 .header {
   position: sticky;
   top: 0;
@@ -320,6 +331,67 @@ body {
   align-items: end;
 }
 
+.simulationCard {
+  border: 1px solid var(--border-accent);
+  background: linear-gradient(180deg, rgba(23, 184, 144, 0.08), rgba(17, 21, 28, 0.96));
+}
+
+.simulationPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background: rgba(10, 14, 20, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.simulationPanelTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.simulationToggle {
+  align-self: flex-start;
+}
+
+.simulationRows {
+  display: grid;
+  gap: 10px;
+}
+
+.simulationRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.simulationRow + .simulationRow {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+
+.simulationRowLabel {
+  min-width: 140px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.simulationRowControl {
+  flex: 1;
+}
+
+.simulationRowControl .adminInput {
+  width: 100%;
+}
+
+.simulationReset {
+  align-self: flex-start;
+}
+
 .adminField {
   display: flex;
   flex-direction: column;
@@ -344,6 +416,23 @@ body {
   opacity: 0.6;
 }
 
+.adminReadOnly {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+@media (max-width: 640px) {
+  .simulationRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .simulationRowLabel {
+    min-width: 0;
+  }
+}
+
 .adminCheckbox {
   display: inline-flex;
   align-items: center;
@@ -365,6 +454,23 @@ body {
 .adminListItems {
   display: grid;
   gap: 10px;
+}
+
+.adminListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.adminPagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .adminListItem {
@@ -403,6 +509,15 @@ body {
   align-items: flex-end;
   gap: 2px;
   min-width: 140px;
+}
+
+.userBadge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-xs);
 }
 
 .userMenu {

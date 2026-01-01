@@ -1,5 +1,6 @@
 import type { Match } from '../types/matches'
-import type { Pick, PickInput, PickOutcome, PickWinner, PicksFile } from '../types/picks'
+import type { Pick, PickInput, PickOutcome, PickWinner, PicksFile, UserPicksDoc } from '../types/picks'
+import { getSimulationState, isSimulationMode, setSimulationState } from './simulation'
 
 const STORAGE_PREFIX = 'wc-picks'
 
@@ -9,6 +10,11 @@ export function getLocalStorageKey(userId: string): string {
 
 export function loadLocalPicks(userId: string): Pick[] {
   if (typeof window === 'undefined') return []
+  if (isSimulationMode()) {
+    const state = getSimulationState()
+    const doc = state.picks.picks.find((entry) => entry.userId === userId)
+    return doc?.picks ?? []
+  }
   const raw = window.localStorage.getItem(getLocalStorageKey(userId))
   if (!raw) return []
   try {
@@ -21,6 +27,14 @@ export function loadLocalPicks(userId: string): Pick[] {
 
 export function saveLocalPicks(userId: string, picks: Pick[]): void {
   if (typeof window === 'undefined') return
+  if (isSimulationMode()) {
+    const state = getSimulationState()
+    const updatedAt = new Date().toISOString()
+    const nextDocs: UserPicksDoc[] = state.picks.picks.filter((entry) => entry.userId !== userId)
+    nextDocs.push({ userId, picks, updatedAt })
+    setSimulationState({ ...state, picks: { picks: nextDocs } })
+    return
+  }
   const payload = JSON.stringify({ picks })
   window.localStorage.setItem(getLocalStorageKey(userId), payload)
 }
