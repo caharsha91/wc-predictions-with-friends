@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 
 import { fetchBestThirdQualifiers, fetchBracketPredictions, fetchMatches } from '../../lib/data'
+import { buildGroupStandingsSnapshot, type GroupSummary } from '../../lib/exports'
 import {
   combineBracketPredictions,
   hasBracketData,
@@ -50,6 +51,28 @@ type ValidationIssue = {
   message: string
   targetId: string
   step: 'group' | 'third' | 'knockout'
+}
+
+type PickResult = 'pending' | 'correct' | 'incorrect'
+type ResultSummary = 'pending' | 'partial' | 'correct' | 'incorrect'
+
+type ResultCounts = {
+  total: number
+  decided: number
+  correct: number
+}
+
+const pickResultLabels: Record<PickResult, string> = {
+  pending: 'Pending',
+  correct: 'Correct',
+  incorrect: 'Incorrect'
+}
+
+const summaryResultLabels: Record<ResultSummary, string> = {
+  pending: 'Pending',
+  partial: 'Partial',
+  correct: 'Correct',
+  incorrect: 'Incorrect'
 }
 
 function formatKickoff(utcIso: string) {
@@ -116,6 +139,32 @@ function resolvePickLoser(match: DisplayMatch, winner?: MatchWinner): Team | und
   if (winner === 'HOME') return match.displayAwayTeam
   if (winner === 'AWAY') return match.displayHomeTeam
   return undefined
+}
+
+function recordResult(status: PickResult, counts: ResultCounts) {
+  counts.total += 1
+  if (status !== 'pending') counts.decided += 1
+  if (status === 'correct') counts.correct += 1
+}
+
+function resolvePickStatus(pick: string | undefined, actualSet: Set<string> | null): PickResult {
+  if (!actualSet || actualSet.size === 0) return 'pending'
+  if (!pick) return 'incorrect'
+  return actualSet.has(pick) ? 'correct' : 'incorrect'
+}
+
+function resolveKnockoutPickStatus(match: Match, pick?: MatchWinner): PickResult {
+  if (match.status !== 'FINISHED' || !match.winner) return 'pending'
+  if (!pick) return 'incorrect'
+  return pick === match.winner ? 'correct' : 'incorrect'
+}
+
+function resolveSummaryStatus(counts: ResultCounts): ResultSummary {
+  if (counts.total === 0 || counts.decided === 0) return 'pending'
+  if (counts.decided < counts.total) return 'partial'
+  if (counts.correct === counts.total) return 'correct'
+  if (counts.correct === 0) return 'incorrect'
+  return 'partial'
 }
 
 function createEmptyPrediction(userId: string, groupIds: string[]): BracketPrediction {
@@ -195,6 +244,11 @@ export default function BracketPage() {
   const groupTeams = useMemo(() => {
     if (state.status !== 'ready') return {}
     return buildGroupTeams(state.matches)
+  }, [state])
+
+  const groupStandings = useMemo(() => {
+    if (state.status !== 'ready') return new Map<string, GroupSummary>()
+    return buildGroupStandingsSnapshot(state.matches)
   }, [state])
 
   const groupIds = useMemo(() => {
@@ -546,6 +600,58 @@ export default function BracketPage() {
     return missing
   }, [knockoutMatches, prediction])
 
+  const groupPickResults = useMemo(() => {
+    const results = new Map<string, { first: PickResult; second: PickResult }>()
+    const summary: ResultCounts = { total: 0, decided: 0, correct: 0 }
+    if (!prediction) return { results, summary }
+    for (const groupId of groupIds) {
+      const group = prediction.groups[groupId] ?? {}
+      const summaryData = groupStandings.get(groupId)
+      const actualTopTwo = summaryData?.complete
+        ? summaryData.standings.slice(0, 2).map((entry) => entry.team.code)
+        : []
+      const actualSet = summaryData?.complete ? new Set(actualTopTwo) : null
+      const firstResult = resolvePickStatus(group.first, actualSet)
+      const secondResult = resolvePickStatus(group.second, actualSet)
+      results.set(groupId, { first: firstResult, second: secondResult })
+      recordResult(firstResult, summary)
+      recordResult(secondResult, summary)
+    }
+    return { results, summary }
+  }, [groupIds, groupStandings, prediction])
+
+  const thirdPickResults = useMemo(() => {
+    const results: PickResult[] = []
+    const summary: ResultCounts = { total: 0, decided: 0, correct: 0 }
+    if (!prediction) return { results, summary }
+    const qualifiersReady =
+      state.status === 'ready' && state.bestThirdQualifiers.length >= 8
+    const qualifiers = qualifiersReady ? new Set(state.bestThirdQualifiers) : null
+    for (let index = 0; index < 8; index += 1) {
+      const pick = prediction.bestThirds?.[index] ?? ''
+      const status = resolvePickStatus(pick, qualifiers)
+      results[index] = status
+      recordResult(status, summary)
+    }
+    return { results, summary }
+  }, [prediction, state.bestThirdQualifiers, state.status])
+
+  const knockoutPickResults = useMemo(() => {
+    const results = new Map<string, PickResult>()
+    const summary: ResultCounts = { total: 0, decided: 0, correct: 0 }
+    if (!prediction) return { results, summary }
+    for (const stage of knockoutStageOrder) {
+      const matches = knockoutDisplayMatches[stage] ?? []
+      const stagePredictions = prediction.knockout?.[stage] ?? {}
+      for (const match of matches) {
+        const status = resolveKnockoutPickStatus(match, stagePredictions[match.id])
+        results.set(match.id, status)
+        recordResult(status, summary)
+      }
+    }
+    return { results, summary }
+  }, [knockoutDisplayMatches, prediction])
+
   const validation = useMemo(() => {
     const groupErrors: Record<string, { first?: string; second?: string }> = {}
     const thirdErrors: string[] = []
@@ -711,11 +817,13 @@ export default function BracketPage() {
     : groupComplete
       ? 'Complete'
       : `${missingGroups} missing`
+  const groupResultStatus = resolveSummaryStatus(groupPickResults.summary)
   const thirdStatusLabel = groupLocked
     ? 'Locked'
     : thirdComplete
       ? 'Complete'
       : `${missingThirds} missing`
+  const thirdResultStatus = resolveSummaryStatus(thirdPickResults.summary)
   const knockoutStatusLabel = !knockoutUnlocked
     ? 'Locked'
     : knockoutLocked
@@ -723,6 +831,7 @@ export default function BracketPage() {
       : knockoutComplete
         ? 'Complete'
         : `${missingKnockout} missing`
+  const knockoutResultStatus = resolveSummaryStatus(knockoutPickResults.summary)
   const knockoutStatusNote = knockoutLocked
     ? knockoutLockTime
       ? `Locked since ${formatLockTime(knockoutLockTime)}`
@@ -790,12 +899,17 @@ export default function BracketPage() {
             <span className="bracketStepNavTitle">Group qualifiers</span>
             <span className="bracketStepNavMeta">{groupIds.length} groups</span>
           </span>
-          <span
-            className="bracketStepStatus"
-            data-status={groupLocked ? 'locked' : groupComplete ? 'complete' : 'pending'}
-          >
-            {groupStatusLabel}
-          </span>
+          <div className="bracketStepBadges">
+            <span
+              className="bracketStepStatus"
+              data-status={groupLocked ? 'locked' : groupComplete ? 'complete' : 'pending'}
+            >
+              {groupStatusLabel}
+            </span>
+            <span className="bracketResultTag" data-status={groupResultStatus}>
+              {summaryResultLabels[groupResultStatus]}
+            </span>
+          </div>
         </button>
         <button
           type="button"
@@ -808,12 +922,17 @@ export default function BracketPage() {
             <span className="bracketStepNavTitle">Third-place flow</span>
             <span className="bracketStepNavMeta">8 slots</span>
           </span>
-          <span
-            className="bracketStepStatus"
-            data-status={groupLocked ? 'locked' : thirdComplete ? 'complete' : 'pending'}
-          >
-            {thirdStatusLabel}
-          </span>
+          <div className="bracketStepBadges">
+            <span
+              className="bracketStepStatus"
+              data-status={groupLocked ? 'locked' : thirdComplete ? 'complete' : 'pending'}
+            >
+              {thirdStatusLabel}
+            </span>
+            <span className="bracketResultTag" data-status={thirdResultStatus}>
+              {summaryResultLabels[thirdResultStatus]}
+            </span>
+          </div>
         </button>
         <button
           type="button"
@@ -828,18 +947,23 @@ export default function BracketPage() {
               {availableRounds.length} round{availableRounds.length === 1 ? '' : 's'}
             </span>
           </span>
-          <span
-            className="bracketStepStatus"
-            data-status={
-              !knockoutUnlocked || knockoutLocked
-                ? 'locked'
-                : knockoutComplete
-                  ? 'complete'
-                  : 'pending'
-            }
-          >
-            {knockoutStatusLabel}
-          </span>
+          <div className="bracketStepBadges">
+            <span
+              className="bracketStepStatus"
+              data-status={
+                !knockoutUnlocked || knockoutLocked
+                  ? 'locked'
+                  : knockoutComplete
+                    ? 'complete'
+                    : 'pending'
+              }
+            >
+              {knockoutStatusLabel}
+            </span>
+            <span className="bracketResultTag" data-status={knockoutResultStatus}>
+              {summaryResultLabels[knockoutResultStatus]}
+            </span>
+          </div>
         </button>
       </div>
 
@@ -907,6 +1031,9 @@ export default function BracketPage() {
                   const secondOptions = teams.filter((team) => team.code !== firstValue)
                   const errors = validation.groupErrors[groupId] ?? {}
                   const hasError = Boolean(errors.first || errors.second)
+                  const groupResult = groupPickResults.results.get(groupId)
+                  const firstResult = groupResult?.first ?? 'pending'
+                  const secondResult = groupResult?.second ?? 'pending'
 
                   return (
                     <div
@@ -915,7 +1042,12 @@ export default function BracketPage() {
                     >
                       <div className="bracketGroupHeader">Group {groupId}</div>
                       <label className="pickLabel" data-error={errors.first ? 'true' : 'false'}>
-                        1st place
+                        <span className="pickLabelRow">
+                          <span>1st place</span>
+                          <span className="bracketResultTag" data-status={firstResult}>
+                            {pickResultLabels[firstResult]}
+                          </span>
+                        </span>
                         <select
                           id={`group-${groupId}-first`}
                           className="pickSelect"
@@ -941,7 +1073,12 @@ export default function BracketPage() {
                         ) : null}
                       </label>
                       <label className="pickLabel" data-error={errors.second ? 'true' : 'false'}>
-                        2nd place
+                        <span className="pickLabelRow">
+                          <span>2nd place</span>
+                          <span className="bracketResultTag" data-status={secondResult}>
+                            {pickResultLabels[secondResult]}
+                          </span>
+                        </span>
                         <select
                           id={`group-${groupId}-second`}
                           className="pickSelect"
@@ -1033,9 +1170,15 @@ export default function BracketPage() {
                   )
                   const options = allGroupTeams.filter((team) => !taken.has(team.code))
                   const error = validation.thirdErrors[index]
+                  const resultStatus = thirdPickResults.results[index] ?? 'pending'
                   return (
                     <label key={`third-${index}`} className="pickLabel" data-error={error ? 'true' : 'false'}>
-                      Slot {index + 1}
+                      <span className="pickLabelRow">
+                        <span>Slot {index + 1}</span>
+                        <span className="bracketResultTag" data-status={resultStatus}>
+                          {pickResultLabels[resultStatus]}
+                        </span>
+                      </span>
                       <select
                         id={`third-${index}`}
                         className="pickSelect"
@@ -1144,6 +1287,7 @@ export default function BracketPage() {
                           const stage = match.stage as KnockoutStage
                           const stagePredictions = prediction.knockout?.[stage] ?? {}
                           const value = stagePredictions[match.id] ?? ''
+                          const resultStatus = knockoutPickResults.results.get(match.id) ?? 'pending'
                           const championTeam =
                             stage === 'Final'
                               ? value === 'HOME'
@@ -1160,7 +1304,12 @@ export default function BracketPage() {
                               id={`knockout-${match.id}`}
                             >
                               <div className="bracketRoundMatchHeader">
-                                <span className="bracketRoundStage">{stage}</span>
+                                <span className="bracketRoundMatchTitle">
+                                  <span className="bracketRoundStage">{stage}</span>
+                                  <span className="bracketResultTag" data-status={resultStatus}>
+                                    {pickResultLabels[resultStatus]}
+                                  </span>
+                                </span>
                                 <span className="bracketRoundKickoff">
                                   {formatKickoff(match.kickoffUtc)}
                                 </span>
@@ -1326,6 +1475,7 @@ export default function BracketPage() {
                                     {pairMatches.map(({ match, stage }, matchIndex) => {
                                       const stagePredictions = prediction.knockout?.[stage] ?? {}
                                       const value = stagePredictions[match.id] ?? ''
+                                      const resultStatus = knockoutPickResults.results.get(match.id) ?? 'pending'
                                       const championTeam =
                                         stage === 'Final'
                                           ? value === 'HOME'
@@ -1354,9 +1504,14 @@ export default function BracketPage() {
                                           }
                                         >
                                           <div className="bracketMatchInfo">
-                                            {column.stages.length > 1 ? (
-                                              <div className="bracketMatchStageLabel">{stage}</div>
-                                            ) : null}
+                                            <div className="bracketMatchMeta">
+                                              {column.stages.length > 1 ? (
+                                                <div className="bracketMatchStageLabel">{stage}</div>
+                                              ) : null}
+                                              <span className="bracketResultTag" data-status={resultStatus}>
+                                                {pickResultLabels[resultStatus]}
+                                              </span>
+                                            </div>
                                             <div className="matchTeams">
                                               <div className="team">
                                                 <button

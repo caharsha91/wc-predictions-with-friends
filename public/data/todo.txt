@@ -12,18 +12,3 @@ Migrate members.json into Firestore members as the source of truth.
 
 
 Add Firestore read try/catch -> go to a generic error page on failure.
-
-Add UI indicator for bracket prediction result.
-
-
-Ensure that the datasets planned for firestore and json datasets are in sync.
-
-Add a simulation mode to the Admin page.
-Here are the modes to simulate - Group stage partial, group stage complete, knockout stage partial, knockout stage complete.
-Have the simulation mode data completely separate from live data.
-Add 50 users for simulation mode.
-Have the selected user be on the podium, first page, middle page, last page for different simulations.
-Have a specific date that the simulation mode corresponds to.
-This is to test the locks and also the User Interface behavior.
-
-Select a default simulation time based on scenario - display this but do not let the user change this.
