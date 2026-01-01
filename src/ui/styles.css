@@ -3067,12 +3067,30 @@
 }
 
 .bracketMatchCard .matchTeams {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
   gap: 6px;
-  flex-wrap: nowrap;
 }
 
 .bracketMatchCard .team {
   gap: 5px;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.bracketMatchCard .teamName {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bracketMatchCard .muted.small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bracketMatchCard .bracketMatchInfo {
