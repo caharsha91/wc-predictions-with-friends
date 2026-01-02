@@ -749,6 +749,134 @@
   flex-wrap: wrap;
 }
 
+.aboutScrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 10, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 32;
+}
+
+.aboutScrim.isVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.aboutDrawer {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: min(320px, 92vw);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateY(12px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  z-index: 33;
+}
+
+.aboutDrawer[data-open='true'] {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.aboutDrawerTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.aboutDrawerBody {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.aboutDrawerActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.confettiBurst {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 40;
+}
+
+.confettiPiece {
+  position: absolute;
+  top: -12vh;
+  left: var(--confetti-left);
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  background: hsl(var(--confetti-hue) 80% 60%);
+  opacity: 0;
+  transform: rotate(var(--confetti-rotate));
+  animation:
+    confetti-fall var(--confetti-duration) ease-in forwards,
+    confetti-spin calc(var(--confetti-duration) * 0.8) linear forwards;
+  animation-delay: var(--confetti-delay);
+}
+
+.nerdToast {
+  position: fixed;
+  right: var(--space-5);
+  bottom: calc(var(--bottom-nav-height) + var(--space-6) + env(safe-area-inset-bottom));
+  z-index: 41;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-md);
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(var(--confetti-rotate));
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, var(--confetti-fall), 0) rotate(calc(var(--confetti-rotate) + 180deg));
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-spin {
+  0% {
+    filter: saturate(120%);
+  }
+  100% {
+    filter: saturate(90%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confettiPiece {
+    animation-duration: 0.01ms;
+  }
+}
+
 .userInfo {
   display: flex;
   flex-direction: column;
