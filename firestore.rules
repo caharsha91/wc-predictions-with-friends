@@ -10,7 +10,7 @@ service cloud.firestore {
     }
 
     function normalizedEmail() {
-      return request.auth.token.email.toLowerCase();
+      return request.auth.token.email.lower();
     }
 
     function isAllowlisted(leagueId) {
