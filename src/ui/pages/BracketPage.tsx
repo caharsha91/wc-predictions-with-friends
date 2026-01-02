@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 
 import { fetchBestThirdQualifiers, fetchBracketPredictions, fetchMatches } from '../../lib/data'
 import { buildGroupStandingsSnapshot, type GroupSummary } from '../../lib/exports'
@@ -208,6 +208,7 @@ export default function BracketPage() {
   const authState = useAuthState()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [prediction, setPrediction] = useState<BracketPrediction | null>(null)
+  const canPersistFirestoreRef = useRef(false)
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     groupStep: false,
     thirdStep: true,
@@ -450,6 +451,7 @@ export default function BracketPage() {
     const predictions = state.predictions
     let canceled = false
     async function resolvePrediction(predictionsSource: BracketPrediction[]) {
+      canPersistFirestoreRef.current = false
       const local = loadLocalBracketPrediction(userId)
       const localReady = local ? hasBracketData(local) : false
       const base =
@@ -490,6 +492,8 @@ export default function BracketPage() {
         initial = ensureGroupEntries(initial, groupIds)
       }
 
+      if (canceled) return
+      canPersistFirestoreRef.current = firestoreEnabled
       setPrediction(initial)
     }
     void resolvePrediction(predictions)
@@ -500,8 +504,9 @@ export default function BracketPage() {
 
   useEffect(() => {
     if (!prediction) return
+    if (prediction.userId !== userId) return
     saveLocalBracketPrediction(userId, prediction)
-    if (firestoreEnabled) {
+    if (firestoreEnabled && canPersistFirestoreRef.current) {
       void saveUserBracketGroupDoc(userId, prediction.groups ?? {}, prediction.bestThirds).catch(
         () => {}
       )
