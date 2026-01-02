@@ -6,24 +6,45 @@ service cloud.firestore {
     }
 
     function hasEmail() {
-      return isSignedIn() && request.auth.token.email != null;
+      return isSignedIn() && request.auth.token.email is string;
+    }
+
+    function rawEmail() {
+      return request.auth.token.email;
     }
 
     function normalizedEmail() {
-      return request.auth.token.email.lower();
+      return rawEmail().lower();
     }
 
     function isAllowlisted(leagueId) {
       return hasEmail()
-        && exists(
-          /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
+        && (
+          exists(
+            /databases/$(database)/documents/leagues/$(leagueId)/members/$(rawEmail())
+          )
+          || exists(
+            /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
+          )
         );
     }
 
     function isAdmin(leagueId) {
       return hasEmail()
-        && get(/databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail()))
-            .data.isAdmin == true;
+        && (
+          (exists(
+            /databases/$(database)/documents/leagues/$(leagueId)/members/$(rawEmail())
+          )
+            && get(
+              /databases/$(database)/documents/leagues/$(leagueId)/members/$(rawEmail())
+            ).data.isAdmin == true)
+          || (exists(
+            /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
+          )
+            && get(
+              /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
+            ).data.isAdmin == true)
+        );
     }
 
     function isSelf(userId) {
@@ -31,7 +52,7 @@ service cloud.firestore {
     }
 
     function isSelfEmail(email) {
-      return hasEmail() && normalizedEmail() == email;
+      return hasEmail() && (rawEmail() == email || normalizedEmail() == email);
     }
 
     function isThemeOnlyUpdate() {
