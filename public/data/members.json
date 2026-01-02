@@ -7,6 +7,14 @@
       "email": "caharsha2025@gmail.com",
       "isAdmin": true,
       "createdAt": "2025-12-20T05:00:00.000Z"
+    },
+    {
+      "id": "user-2",
+      "name": "Chicken",
+      "handle": "chicken-panda",
+      "email": "chicken.panda.558@example.com",
+      "isAdmin": true,
+      "createdAt": "2025-12-22T05:00:00.000Z"
     }
   ]
 }

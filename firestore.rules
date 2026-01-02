@@ -10,11 +10,11 @@ service cloud.firestore {
     }
 
     function rawEmail() {
-      return request.auth.token.email;
+      return hasEmail() ? request.auth.token.email : '__missing__';
     }
 
     function normalizedEmail() {
-      return rawEmail().lower();
+      return hasEmail() ? request.auth.token.email.lower() : '__missing__';
     }
 
     function isAllowlisted(leagueId) {
