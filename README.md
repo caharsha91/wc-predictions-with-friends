@@ -16,6 +16,11 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 
 Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-group.json`, `bracket-knockout.json`, `best-third-qualifiers.json`, `leaderboard.json`).
 
+## Docs
+
+- `skills.md` Codex project guide and pointers.
+- `docs/pages/` page summaries for each route.
+
 ## How the App Works (Contributor Guide)
 
 - Entry + routing: `src/main.tsx` bootstraps the app and applies theme attributes; `src/ui/App.tsx` defines routes; `src/ui/Layout.tsx` owns the shared header/nav shell.
