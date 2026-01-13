@@ -106,17 +106,17 @@
 - [x] Enable Google sign-in provider
 - [x] Add authorized domains (localhost + GitHub Pages domain)
 - [x] Create Firestore database
-- [ ] Add minimal Firestore structure:
-  - [ ] `leagues/{leagueId}`
-  - [ ] `leagues/{leagueId}/members/*` (email as doc id; serves allowlist + admin)
-  - [ ] `leagues/{leagueId}/picks/*`
-  - [ ] `leagues/{leagueId}/bracket-group/*`
-  - [ ] `leagues/{leagueId}/bracket-knockout/*`
-- [ ] Add minimal Firestore security rules:
-  - [ ] Auth required
-  - [ ] Only members (email allowlist) can read/write
-  - [ ] Users can only write their own picks
-  - [ ] Only admin can manage members
+- [x] Add minimal Firestore structure:
+  - [x] `leagues/{leagueId}`
+  - [x] `leagues/{leagueId}/members/*` (email as doc id; serves allowlist + admin)
+  - [x] `leagues/{leagueId}/picks/*`
+  - [x] `leagues/{leagueId}/bracket-group/*`
+  - [x] `leagues/{leagueId}/bracket-knockout/*`
+- [x] Add minimal Firestore security rules:
+  - [x] Auth required
+  - [x] Only members (email allowlist) can read/write
+  - [x] Users can only write their own picks
+  - [x] Only admin can manage members
 - [x] Wire Firebase SDK into the app
   - [x] Sign in/out buttons in header
 - [x] Gate admin members UI behind Firebase availability
@@ -130,7 +130,7 @@
   - [x] Wire client to auth/firestore emulators via env flags
 - [x] Add emulator seed script for members
   - [x] Add local emulator env vars in `.env.local`
-- [ ] Final checks:
-  - [ ] Repo updates daily
-  - [ ] GitHub Pages serves updated JSON
-  - [ ] App reflects new results on next load/refresh
+- [x] Final checks:
+  - [x] Repo updates daily
+  - [x] GitHub Pages serves updated JSON
+  - [x] App reflects new results on next load/refresh
