@@ -11,10 +11,7 @@ import {
 import {
   fetchUserBracketGroupDoc,
   fetchUserBracketKnockoutDoc,
-  fetchUserPicksDoc,
-  saveUserBracketGroupDoc,
-  saveUserBracketKnockoutDoc,
-  saveUserPicksDoc
+  fetchUserPicksDoc
 } from '../../lib/firestoreData'
 import { hasFirebase } from '../../lib/firebase'
 import {
@@ -45,9 +42,12 @@ import type { Member } from '../../types/members'
 import type { Match, MatchWinner } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 import { useAuthState } from '../hooks/useAuthState'
+import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useViewerId } from '../hooks/useViewerId'
 import { Alert } from '../components/ui/Alert'
+import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
 import PageHeader from '../components/ui/PageHeader'
 import Skeleton from '../components/ui/Skeleton'
 
@@ -101,9 +101,14 @@ function getLatestDateKey(matches: Match[]) {
 export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
   const userId = useViewerId()
   const authState = useAuthState()
+  const currentUser = useCurrentUser()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [exportMatchScope, setExportMatchScope] = useState<'finished' | 'latest-day'>('finished')
-  const firestoreEnabled = hasFirebase && authState.status === 'ready' && !!authState.user
+  const firestoreEnabled =
+    hasFirebase &&
+    authState.status === 'ready' &&
+    !!authState.user &&
+    currentUser?.isMember === true
 
   useEffect(() => {
     let canceled = false
@@ -146,13 +151,6 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
           } else {
             viewerPicks = getUserPicksFromFile(picksFile, userId)
           }
-          if (firestoreEnabled && viewerPicks.length > 0) {
-            try {
-              await saveUserPicksDoc(userId, viewerPicks)
-            } catch {
-              // Ignore Firestore write failures for local-only usage.
-            }
-          }
         }
 
         const mergedPicks = mergePicks(allPicks, viewerPicks ?? [], userId)
@@ -187,19 +185,6 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
               updatedAt: now
             }
             saveLocalBracketPrediction(userId, viewerPrediction)
-          } else if (viewerPrediction && hasBracketData(viewerPrediction)) {
-            try {
-              await Promise.all([
-                saveUserBracketGroupDoc(
-                  userId,
-                  viewerPrediction.groups ?? {},
-                  viewerPrediction.bestThirds
-                ),
-                saveUserBracketKnockoutDoc(userId, viewerPrediction.knockout)
-              ])
-            } catch {
-              // Ignore Firestore write failures for local-only usage.
-            }
           }
         }
 
@@ -610,9 +595,11 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
           subtitle="Download finished-only CSVs for the league."
           actions={
             state.status === 'ready' ? (
-              <div className="lastUpdated">
-                <div className="lastUpdatedLabel">Last updated</div>
-                <div className="lastUpdatedValue">{formatUpdatedAt(state.lastUpdated)}</div>
+              <div className="flex flex-col items-end gap-1 text-right text-xs text-muted-foreground">
+                <div className="uppercase tracking-[0.2em]">Last updated</div>
+                <div className="text-sm font-semibold text-foreground">
+                  {formatUpdatedAt(state.lastUpdated)}
+                </div>
               </div>
             ) : null
           }
@@ -631,9 +618,9 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
       {state.status === 'ready' ? (
         <div className="stack">
           <div className="exportsLayout">
-            <section className="card exportsGuide">
-              <div className="sectionKicker">Export guide</div>
-              <div className="sectionTitle">Finished-only data drops</div>
+            <Card as="section" className="exportsGuide p-5">
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Export guide</div>
+              <div className="text-lg font-semibold text-foreground">Finished-only data drops</div>
               <p className="exportsGuideIntro">
                 Exports only include finished matches to keep picks private before kickoff. Use
                 the match window toggle to share everything completed so far or just the latest
@@ -657,50 +644,48 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                   </p>
                 </div>
               </div>
-            </section>
+            </Card>
 
-            <div className="card exportPanel exportScope">
+            <Card className="exportPanel exportScope p-5">
               <div className="exportHeader">
                 <div>
-                  <div className="sectionKicker">Export scope</div>
-                  <div className="sectionTitle">Match window</div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Export scope</div>
+                  <div className="text-lg font-semibold text-foreground">Match window</div>
                 </div>
-                <div className="exportMeta">
-                  <span className="exportNote">Finished games only</span>
-                  <span className="exportBadge">All users</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge>Finished games only</Badge>
+                  <Badge>All users</Badge>
                 </div>
               </div>
-              <div className="exportControls">
-                <div className="exportField">
-                  <span className="exportFieldLabel">Match window</span>
-                  <div className="exportToggle" role="group" aria-label="Match window">
-                    <button
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Match window
+                  </div>
+                  <div className="flex flex-wrap gap-2" role="group" aria-label="Match window">
+                    <Button
                       type="button"
-                      className={
-                        exportMatchScope === 'finished'
-                          ? 'exportToggleButton exportToggleButtonActive'
-                          : 'exportToggleButton'
-                      }
+                      size="sm"
+                      variant="pill"
+                      data-active={exportMatchScope === 'finished' ? 'true' : 'false'}
                       onClick={() => setExportMatchScope('finished')}
                       aria-pressed={exportMatchScope === 'finished'}
                     >
                       Finished matches
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      className={
-                        exportMatchScope === 'latest-day'
-                          ? 'exportToggleButton exportToggleButtonActive'
-                          : 'exportToggleButton'
-                      }
+                      size="sm"
+                      variant="pill"
+                      data-active={exportMatchScope === 'latest-day' ? 'true' : 'false'}
                       onClick={() => setExportMatchScope('latest-day')}
                       aria-pressed={exportMatchScope === 'latest-day'}
                     >
                       Latest matchday only
-                    </button>
+                    </Button>
                   </div>
                 </div>
-                <div className="exportHint">
+                <div className="text-sm text-muted-foreground">
                   {exportMatchScope === 'latest-day'
                     ? 'Exports include the latest finished matchday in each section.'
                     : 'Exports include all finished matches.'}
@@ -728,10 +713,10 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                   <div className="exportStatValue">{groupStatusLabel}</div>
                 </div>
               </div>
-            </div>
+            </Card>
 
             <div className="exportsGrid exportsGridWide exportsGridFull">
-              <div className="card exportTile">
+              <Card className="exportTile p-5">
                 <div className="exportTileHeader">
                   <div>
                     <div className="exportTileTitle">Match picks</div>
@@ -749,9 +734,9 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                 <div className="exportTileHint">
                   {exportMatchScope === 'latest-day' ? latestPickMatchLabel : 'All finished matches.'}
                 </div>
-              </div>
+              </Card>
 
-              <div className="card exportTile">
+              <Card className="exportTile p-5">
                 <div className="exportTileHeader">
                   <div>
                     <div className="exportTileTitle">Group bracket</div>
@@ -772,9 +757,9 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                     : 'Groups with finished matches.'}
                   {!groupComplete ? ' Best third picks unlock after groups.' : ''}
                 </div>
-              </div>
+              </Card>
 
-              <div className="card exportTile">
+              <Card className="exportTile p-5">
                 <div className="exportTileHeader">
                   <div>
                     <div className="exportTileTitle">Knockout bracket</div>
@@ -794,9 +779,9 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                     ? latestKnockoutMatchLabel
                     : 'Finished knockout matches only.'}
                 </div>
-              </div>
+              </Card>
 
-              <div className="card exportTile">
+              <Card className="exportTile p-5">
                 <div className="exportTileHeader">
                   <div>
                     <div className="exportTileTitle">Leaderboard</div>
@@ -812,7 +797,7 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                   </Button>
                 </div>
                 <div className="exportTileHint">Ranked totals for all players.</div>
-              </div>
+              </Card>
             </div>
           </div>
         </div>

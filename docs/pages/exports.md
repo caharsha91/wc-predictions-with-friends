@@ -8,6 +8,7 @@ src/ui/pages/AdminExportsPage.tsx (wraps ExportsPanel from src/ui/pages/ExportsP
 
 ## Purpose
 Download finished-only CSV exports for picks, bracket predictions, and the leaderboard.
+This page is linked from Settings for admins.
 
 ## Data and state
 - Loads matches, members, picks, bracket predictions, best-third qualifiers, and leaderboard data.

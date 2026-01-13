@@ -44,7 +44,12 @@ export default function AdminUsersPage() {
   const leagueId = useMemo(() => getLeagueId(), [])
   const simulation = useSimulationState()
   const pageSize = 10
+  const adminCount = useMemo(
+    () => entries.reduce((count, entry) => (entry.isAdmin ? count + 1 : count), 0),
+    [entries]
+  )
   const totalEntries = entries.length
+  const memberCount = Math.max(0, totalEntries - adminCount)
   const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize))
   const safePage = Math.min(Math.max(1, page), totalPages)
   const pageStart = totalEntries === 0 ? 0 : (safePage - 1) * pageSize + 1
@@ -192,75 +197,91 @@ export default function AdminUsersPage() {
 
   return (
     <div className="stack">
-      <PageHeader kicker="Backstage" title="Users" />
-      <Card className="adminUsersCard">
-        <div className="stack">
-          <div className="adminSectionHeader">
+      <PageHeader
+        kicker="Backstage"
+        title="Users"
+        subtitle="Invite-only access for your league. Manage who can sign in with Google."
+      />
+
+      {simulation.enabled ? (
+        <Alert tone="warning" title="Simulation mode">
+          Member changes are disabled while simulation mode is active.
+        </Alert>
+      ) : null}
+      {!hasFirebase ? (
+        <Alert tone="warning" title="Firebase not configured">
+          Add env vars to enable member management.
+        </Alert>
+      ) : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
+
+      <Card className="rounded-2xl border-border/60 p-6">
+        <div className="adminList">
+          <div className="adminListHeaderRow">
             <div>
-              <div className="sectionTitle">Member access</div>
-              <p className="muted">
-                Add users who can sign in with Google. Admins can manage future invites.
-              </p>
-              {simulation.enabled ? (
-                <p className="muted">Simulation mode is active. Member changes are disabled.</p>
-              ) : null}
-              {!hasFirebase ? (
-                <p className="muted">
-                  Firebase is not configured yet. Add env vars to enable this.
-                </p>
-              ) : null}
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Members</div>
+              <div className="text-lg font-semibold text-foreground">Invite-only roster</div>
+              <div className="text-sm text-muted-foreground">
+                Add members who can sign in with Google.
+              </div>
             </div>
-            <div className="adminSectionActions">
-              <Button type="button" size="sm" onClick={openAddDrawer} disabled={!canManageMembers}>
-                Add member
-              </Button>
+            <div className="flex flex-col items-start gap-3 sm:items-end">
+              <div className="adminSummary">
+                <div className="adminSummaryItem">
+                  <div className="adminSummaryLabel">Total</div>
+                  <div className="adminSummaryValue">{totalEntries}</div>
+                </div>
+                <div className="adminSummaryItem">
+                  <div className="adminSummaryLabel">Admins</div>
+                  <div className="adminSummaryValue">{adminCount}</div>
+                </div>
+                <div className="adminSummaryItem">
+                  <div className="adminSummaryLabel">Members</div>
+                  <div className="adminSummaryValue">{memberCount}</div>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {!canManageMembers ? <Badge tone="warning">Read-only</Badge> : null}
+                <Button type="button" size="sm" onClick={openAddDrawer} disabled={!canManageMembers}>
+                  Add member
+                </Button>
+              </div>
             </div>
           </div>
 
-          {error ? <Alert tone="danger">{error}</Alert> : null}
+          {status === 'loading' ? (
+            <div className="text-sm text-muted-foreground">Loading users…</div>
+          ) : null}
+          {status !== 'loading' && entries.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No members added yet.</div>
+          ) : null}
 
-          <div className="adminList">
-            <div className="adminListHeaderRow">
-              <div className="sectionTitle">Members</div>
-              {entries.length > 0 ? (
-                <div className="muted small">
-                  Showing {pageStart}-{pageEnd} of {entries.length}
-                </div>
-              ) : null}
-            </div>
-            {status === 'loading' ? <div className="muted">Loading users…</div> : null}
-            {status !== 'loading' && entries.length === 0 ? (
-              <div className="muted">No members added yet.</div>
-            ) : null}
-            {entries.length > 0 ? (
-              <div className="adminListHeader">
-                <div className="adminPagination">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    disabled={safePage <= 1}
-                  >
-                    Prev
-                  </Button>
-                  <span className="muted small">
-                    Page {safePage} of {totalPages}
-                  </span>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                    disabled={safePage >= totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
+          {entries.length > 0 ? (
+            <>
+              <div className="adminListItems adminListItemsMobile">
+                {pageEntries.map((entry) => (
+                  <div key={entry.id} className="adminListItem">
+                    <div className="adminUserMeta">
+                      <div className="adminUserName">{entry.name || 'Unnamed user'}</div>
+                      <div className="adminUserEmail">{entry.email}</div>
+                    </div>
+                    <div className="adminUserActions">
+                      {entry.isAdmin ? <Badge tone="info">Admin</Badge> : <Badge>Member</Badge>}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openEditDrawer(entry)}
+                        disabled={!canManageMembers}
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : null}
-            {entries.length > 0 ? (
-              <div className="tableWrapper">
+
+              <div className="tableWrapper adminTableWrap">
                 <Table className="adminTable">
                   <thead>
                     <tr>
@@ -297,8 +318,37 @@ export default function AdminUsersPage() {
                   </tbody>
                 </Table>
               </div>
-            ) : null}
-          </div>
+
+              <div className="adminListFooter">
+                <div className="adminListMeta">
+                  Showing {pageStart}-{pageEnd} of {entries.length}
+                </div>
+                <div className="adminPagination">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    disabled={safePage <= 1}
+                  >
+                    Prev
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Page {safePage} of {totalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                    disabled={safePage >= totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : null}
         </div>
       </Card>
 
@@ -325,14 +375,16 @@ export default function AdminUsersPage() {
                 : 'Add a new email to the members list.'}
             </div>
           </div>
-          <button
-            className="iconButton adminDrawerClose"
+          <Button
             type="button"
+            size="sm"
+            variant="secondary"
+            className="h-9 w-9 shrink-0 p-0"
             aria-label="Close member editor"
             onClick={closeDrawer}
           >
             <CloseIcon size={18} />
-          </button>
+          </Button>
         </div>
         <form className="adminForm adminDrawerForm" onSubmit={handleAddUser}>
           <InputField

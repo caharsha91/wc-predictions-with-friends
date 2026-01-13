@@ -5,6 +5,8 @@ import type {
   TextareaHTMLAttributes
 } from 'react'
 
+import { cn } from '../../lib/utils'
+
 type FieldBaseProps = {
   label: string
   helperText?: string
@@ -38,9 +40,12 @@ export function InputField({
 }: InputFieldProps) {
   const { fieldId, helperId, errorId, describedBy } = useFieldIds(id, helperText, error)
   return (
-    <div className={['field', className].filter(Boolean).join(' ')}>
+    <div className={cn('space-y-1', className)}>
       <label
-        className={['fieldLabel', labelHidden && 'sr-only'].filter(Boolean).join(' ')}
+        className={cn(
+          'text-xs uppercase tracking-[0.22em] text-muted-foreground',
+          labelHidden && 'sr-only'
+        )}
         htmlFor={fieldId}
       >
         {label}
@@ -48,17 +53,17 @@ export function InputField({
       <input
         {...props}
         id={fieldId}
-        className="fieldControl"
+        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-60"
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={describedBy}
       />
       {helperText ? (
-        <div className="fieldHelper" id={helperId}>
+        <div className="text-xs text-muted-foreground" id={helperId}>
           {helperText}
         </div>
       ) : null}
       {error ? (
-        <div className="fieldError" id={errorId} role="alert">
+        <div className="text-xs text-destructive" id={errorId} role="alert">
           {error}
         </div>
       ) : null}
@@ -78,9 +83,12 @@ export function SelectField({
 }: SelectFieldProps) {
   const { fieldId, helperId, errorId, describedBy } = useFieldIds(id, helperText, error)
   return (
-    <div className={['field', className].filter(Boolean).join(' ')}>
+    <div className={cn('space-y-1', className)}>
       <label
-        className={['fieldLabel', labelHidden && 'sr-only'].filter(Boolean).join(' ')}
+        className={cn(
+          'text-xs uppercase tracking-[0.22em] text-muted-foreground',
+          labelHidden && 'sr-only'
+        )}
         htmlFor={fieldId}
       >
         {label}
@@ -88,19 +96,19 @@ export function SelectField({
       <select
         {...props}
         id={fieldId}
-        className="fieldControl"
+        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-60"
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={describedBy}
       >
         {children}
       </select>
       {helperText ? (
-        <div className="fieldHelper" id={helperId}>
+        <div className="text-xs text-muted-foreground" id={helperId}>
           {helperText}
         </div>
       ) : null}
       {error ? (
-        <div className="fieldError" id={errorId} role="alert">
+        <div className="text-xs text-destructive" id={errorId} role="alert">
           {error}
         </div>
       ) : null}
@@ -119,9 +127,12 @@ export function TextareaField({
 }: TextareaFieldProps) {
   const { fieldId, helperId, errorId, describedBy } = useFieldIds(id, helperText, error)
   return (
-    <div className={['field', className].filter(Boolean).join(' ')}>
+    <div className={cn('space-y-1', className)}>
       <label
-        className={['fieldLabel', labelHidden && 'sr-only'].filter(Boolean).join(' ')}
+        className={cn(
+          'text-xs uppercase tracking-[0.22em] text-muted-foreground',
+          labelHidden && 'sr-only'
+        )}
         htmlFor={fieldId}
       >
         {label}
@@ -129,17 +140,17 @@ export function TextareaField({
       <textarea
         {...props}
         id={fieldId}
-        className="fieldControl"
+        className="min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-60"
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={describedBy}
       />
       {helperText ? (
-        <div className="fieldHelper" id={helperId}>
+        <div className="text-xs text-muted-foreground" id={helperId}>
           {helperText}
         </div>
       ) : null}
       {error ? (
-        <div className="fieldError" id={errorId} role="alert">
+        <div className="text-xs text-destructive" id={errorId} role="alert">
           {error}
         </div>
       ) : null}

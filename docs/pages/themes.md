@@ -1,23 +1,23 @@
-# Themes Page
+# Settings Page
 
 ## Route
-/themes
+/settings (the legacy /themes route redirects here)
 
 ## Component
 src/ui/pages/ThemeSelectorPage.tsx
 
 ## Purpose
-Let users pick a theme palette and toggle between light, dark, or system-driven mode.
+Personalize appearance (light/dark/system) for the ChatGPT-inspired palette, review the about copy, and surface admin shortcuts.
 
 ## Data and state
-- Uses useTheme() from src/theme/ThemeProvider.tsx for theme list, mode, and setters.
-- Local notice state shows feedback after applying a theme.
+- Uses useTheme() from src/theme/ThemeProvider.tsx for light/dark/system mode and setters.
+- Reads current member/admin state from useCurrentUser and simulation state for admin controls.
 
 ## Key UI
-- Mode toggle (light/dark) and system mode toggle.
-- Theme cards with color swatches, active badge, and apply button.
-- Footer note showing the currently selected theme.
+- Appearance controls for light/dark/system mode.
+- About section with league guidance.
+- Admin shortcuts (members, exports, simulation) when permitted.
 
 ## Behavior
-- Applying a theme updates ThemeProvider state and shows a short notice.
-- Swatches reflect the current color mode (light or dark).
+- Updating color mode updates ThemeProvider state, persists to localStorage, and syncs to Firestore for members.
+- /themes redirects to /settings.

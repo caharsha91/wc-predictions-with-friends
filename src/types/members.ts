@@ -1,7 +1,6 @@
-import type { ThemeId, ThemeMode } from '../theme/themes'
+import type { ThemeMode } from '../theme/themes'
 
 export type ThemePreference = {
-  id: ThemeId
   mode: ThemeMode
   isSystemMode: boolean
 }
@@ -12,6 +11,7 @@ export type Member = {
   handle?: string
   email?: string
   isAdmin?: boolean
+  isMember?: boolean
   theme?: ThemePreference
 }
 

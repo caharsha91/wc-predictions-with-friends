@@ -1,7 +1,7 @@
 :root {
-  --font-body: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: var(--font-body);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+  --font-body: 'Manrope', 'Segoe UI', sans-serif;
+  --font-display: 'Manrope', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
     'Courier New', monospace;
   --font-numeric: var(--font-mono);
   --font-size-h1: 32px;
@@ -66,7 +66,24 @@
   --success: var(--color-success);
   --info: var(--color-info);
   --locked: var(--color-locked);
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text);
+  --primary-foreground: var(--text-inverse);
+  --secondary: var(--color-surface-2);
+  --secondary-foreground: var(--color-text);
+  --muted: var(--color-surface-2);
+  --muted-foreground: var(--color-text-muted);
+  --accent-foreground: var(--text-inverse);
+  --destructive: var(--color-danger);
+  --destructive-foreground: var(--text-inverse);
+  --input: var(--color-border);
+  --ring: var(--color-accent);
   --brand-mark-bg: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
+  --brand-mark-text: var(--text-inverse);
   --status-upcoming: var(--text-secondary);
   --status-live: var(--accent);
   --status-final: var(--success);
@@ -95,23 +112,23 @@
 
 :root[data-mode='light'] {
   color-scheme: light;
-  --focus-alpha: 0.35;
-  --glow-alpha: 0.25;
-  --border-accent-alpha: 0.4;
+  --focus-alpha: 0.4;
+  --glow-alpha: 0.55;
+  --border-accent-alpha: 0.46;
   --border-warning-alpha: 0.4;
-  --border-danger-alpha: 0.4;
-  --accent-soft-alpha: 0.12;
-  --accent-violet-soft-alpha: 0.12;
-  --banner-accent-alpha: 0.14;
-  --group-ticker-bg-alpha: 0.1;
-  --group-ticker-border-alpha: 0.3;
-  --button-border-alpha: 0.45;
-  --button-bg-alpha: 0.12;
-  --row-hover-border-alpha: 0.35;
+  --border-danger-alpha: 0.42;
+  --accent-soft-alpha: 0.2;
+  --accent-violet-soft-alpha: 0.14;
+  --banner-accent-alpha: 0.22;
+  --group-ticker-bg-alpha: 0.14;
+  --group-ticker-border-alpha: 0.36;
+  --button-border-alpha: 0.5;
+  --button-bg-alpha: 0.2;
+  --row-hover-border-alpha: 0.45;
   --row-inset-alpha: 0.04;
-  --team-border-alpha: 0.12;
-  --pill-border-alpha: 0.12;
-  --pill-bg-alpha: 0.03;
+  --team-border-alpha: 0.14;
+  --pill-border-alpha: 0.16;
+  --pill-bg-alpha: 0.05;
   --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 8px 20px rgba(15, 23, 42, 0.12);
@@ -126,23 +143,23 @@
 
 :root[data-mode='dark'] {
   color-scheme: dark;
-  --focus-alpha: 0.5;
-  --glow-alpha: 0.35;
-  --border-accent-alpha: 0.45;
-  --border-warning-alpha: 0.4;
-  --border-danger-alpha: 0.45;
-  --accent-soft-alpha: 0.14;
-  --accent-violet-soft-alpha: 0.12;
-  --banner-accent-alpha: 0.18;
-  --group-ticker-bg-alpha: 0.12;
-  --group-ticker-border-alpha: 0.35;
-  --button-border-alpha: 0.5;
-  --button-bg-alpha: 0.12;
-  --row-hover-border-alpha: 0.4;
+  --focus-alpha: 0.62;
+  --glow-alpha: 0.78;
+  --border-accent-alpha: 0.55;
+  --border-warning-alpha: 0.42;
+  --border-danger-alpha: 0.5;
+  --accent-soft-alpha: 0.28;
+  --accent-violet-soft-alpha: 0.18;
+  --banner-accent-alpha: 0.28;
+  --group-ticker-bg-alpha: 0.16;
+  --group-ticker-border-alpha: 0.4;
+  --button-border-alpha: 0.62;
+  --button-bg-alpha: 0.26;
+  --row-hover-border-alpha: 0.52;
   --row-inset-alpha: 0.04;
-  --team-border-alpha: 0.16;
-  --pill-border-alpha: 0.14;
-  --pill-bg-alpha: 0.04;
+  --team-border-alpha: 0.2;
+  --pill-border-alpha: 0.2;
+  --pill-bg-alpha: 0.06;
   --shadow-xs: 0 8px 14px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 10px 22px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 18px 34px rgba(0, 0, 0, 0.45);

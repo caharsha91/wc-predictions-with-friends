@@ -15,6 +15,8 @@ import {
 } from '../../lib/simulation'
 import { useSimulationState } from '../hooks/useSimulationState'
 import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { Input } from '../components/ui/Input'
 import { SelectField } from '../components/ui/Field'
 import PageHeader from '../components/ui/PageHeader'
 
@@ -150,7 +152,7 @@ export default function AdminSimulationPage() {
   return (
     <div className="stack">
       <PageHeader kicker="Backstage" title="Simulation" />
-      <div className="card simulationCard">
+      <Card className="rounded-2xl border-border/60 p-6">
         <div className="simulationSandbox">
           <div className="simulationPanel simulationSandboxPanel">
             <div className="simulationPanelTitle">Controls</div>
@@ -249,12 +251,12 @@ export default function AdminSimulationPage() {
                 </div>
               </div>
               <div className="simulationTimeRow">
-                <input
-                  className="adminInput"
+                <Input
                   type="datetime-local"
                   value={simNowInput}
                   onChange={(event) => setSimNowInput(event.target.value)}
                   disabled={simulationBusy}
+                  className="w-full min-[640px]:min-w-[220px] min-[640px]:w-auto"
                 />
                 <Button
                   type="button"
@@ -297,8 +299,8 @@ export default function AdminSimulationPage() {
           </div>
           <div className="simulationPanel simulationSandboxIntro">
             <div>
-              <div className="sectionTitle">Simulation sandbox</div>
-              <p className="muted">
+              <div className="text-lg font-semibold text-foreground">Simulation sandbox</div>
+              <p className="text-sm text-muted-foreground">
                 Local-only sandbox for locks, roles, and leaderboard positioning. No Firestore
                 writes while enabled.
               </p>
@@ -337,7 +339,7 @@ export default function AdminSimulationPage() {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

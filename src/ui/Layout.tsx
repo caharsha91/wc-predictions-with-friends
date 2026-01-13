@@ -2,66 +2,50 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 
-import UserInfo from './components/UserInfo'
 import { AppShellProvider, useAppShell } from './components/AppShellContext'
 import {
   BracketIcon,
-  CalendarIcon,
-  ExportIcon,
   HomeIcon,
-  ResultsIcon,
-  ThemeIcon,
-  TrophyIcon,
-  UsersIcon
+  CalendarIcon,
+  SettingsIcon,
+  TrophyIcon
 } from './components/Icons'
-import { Button } from './components/ui/Button'
-import { useCurrentUser } from './hooks/useCurrentUser'
+import { Badge } from './components/ui/Badge'
+import { Button, ButtonLink } from './components/ui/Button'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from './components/ui/Sheet'
 import { useAuthState } from './hooks/useAuthState'
+import { useCurrentUser } from './hooks/useCurrentUser'
 import { useSimulationState } from './hooks/useSimulationState'
+import { cn } from './lib/utils'
 import { firebaseAuth, hasFirebase } from '../lib/firebase'
-import { useTheme } from '../theme/ThemeProvider'
-import { getThemeById } from '../theme/themes'
 
 const PAGE_TITLES: Record<string, string> = {
   home: 'Home',
-  upcoming: 'Upcoming',
-  results: 'Results',
+  picks: 'Picks',
+  upcoming: 'Picks',
+  results: 'Picks',
   bracket: 'Bracket',
   leaderboard: 'Leaderboard',
-  themes: 'Themes',
+  settings: 'Settings',
   users: 'Users',
   simulation: 'Simulation',
   exports: 'Exports'
 }
 
-const PAGE_TAGLINES: Record<string, string> = {
-  upcoming: 'Make your picks. Beat your friends. Own the chat.',
-  bracket: 'Lock it in—then talk your talk.',
-  leaderboard: 'Where friendships go to overtime.'
-}
-
 const NAV_ITEMS = [
   { to: '/', label: 'Home', icon: HomeIcon },
-  { to: '/upcoming', label: 'Upcoming', icon: CalendarIcon },
-  { to: '/results', label: 'Results', icon: ResultsIcon },
+  { to: '/picks', label: 'Picks', icon: CalendarIcon },
   { to: '/bracket', label: 'Bracket', icon: BracketIcon },
   { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
-  { to: '/themes', label: 'Themes', icon: ThemeIcon },
-  { to: '/users', label: 'Users', icon: UsersIcon, adminOnly: true },
-  { to: '/exports', label: 'Exports', icon: ExportIcon, adminOnly: true }
-]
-
-const ABOUT_SEQUENCE = [
-  'ArrowUp',
-  'ArrowUp',
-  'ArrowDown',
-  'ArrowDown',
-  'ArrowLeft',
-  'ArrowRight',
-  'ArrowLeft',
-  'ArrowRight',
-  'b',
-  'a'
+  { to: '/settings', label: 'Settings', icon: SettingsIcon }
 ]
 
 type ConfettiPiece = {
@@ -84,98 +68,56 @@ const CONFETTI_PIECES: ConfettiPiece[] = Array.from({ length: 28 }, (_, index) =
   fall: 70 + Math.random() * 40
 }))
 
+function getInitials(name?: string | null, email?: string | null) {
+  const base = name || email || ''
+  if (!base) return 'WC'
+  const parts = base.split(' ').filter(Boolean)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+}
+
 function LayoutFrame() {
   const user = useCurrentUser()
   const authState = useAuthState()
   const simulation = useSimulationState()
   const [authError, setAuthError] = useState<string | null>(null)
-  const [aboutOpen, setAboutOpen] = useState(false)
   const [confettiVisible, setConfettiVisible] = useState(false)
   const [confettiSeed, setConfettiSeed] = useState(0)
-  const [nerdToast, setNerdToast] = useState(false)
-  const aboutIndexRef = useRef(0)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
   const logoClickCountRef = useRef(0)
-  const longPressTimerRef = useRef<number | null>(null)
   const logoClickTimerRef = useRef<number | null>(null)
   const confettiTimerRef = useRef<number | null>(null)
-  const nerdToastTimerRef = useRef<number | null>(null)
+  const toastTimerRef = useRef<number | null>(null)
+  const creditsTimerRef = useRef<number | null>(null)
+  const skipLogoClickRef = useRef(false)
   const canAccessAdmin = simulation.enabled || user?.isAdmin
   const location = useLocation()
   const appShell = useAppShell()
   const topBarAction = appShell?.topBarAction ?? null
   const routeKey = location.pathname.split('/')[1] || 'home'
   const pageTitle = PAGE_TITLES[routeKey] ?? 'WC Predictions'
-  const pageTagline =
-    PAGE_TAGLINES[routeKey] ?? 'One league. Many opinions. One champion.'
-  const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || canAccessAdmin)
-  const { themeId, syncNotice } = useTheme()
-  const themeMeta = getThemeById(themeId)
-
-  useEffect(() => {
-    function isEditableTarget(target: EventTarget | null) {
-      if (!(target instanceof HTMLElement)) return false
-      if (target.isContentEditable) return true
-      const tagName = target.tagName
-      return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT'
-    }
-
-    function normalizeKey(key: string) {
-      return key.length === 1 ? key.toLowerCase() : key
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && aboutOpen) {
-        setAboutOpen(false)
-        return
-      }
-      if (isEditableTarget(event.target)) return
-      const key = normalizeKey(event.key)
-      const expected = ABOUT_SEQUENCE[aboutIndexRef.current]
-      if (key === expected) {
-        aboutIndexRef.current += 1
-        if (aboutIndexRef.current === ABOUT_SEQUENCE.length) {
-          aboutIndexRef.current = 0
-          setAboutOpen(true)
-        }
-        return
-      }
-      aboutIndexRef.current = key === ABOUT_SEQUENCE[0] ? 1 : 0
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [aboutOpen])
+  const navItems = NAV_ITEMS
 
   useEffect(() => {
     return () => {
-      if (longPressTimerRef.current) {
-        window.clearTimeout(longPressTimerRef.current)
-      }
       if (logoClickTimerRef.current) {
         window.clearTimeout(logoClickTimerRef.current)
       }
       if (confettiTimerRef.current) {
         window.clearTimeout(confettiTimerRef.current)
       }
-      if (nerdToastTimerRef.current) {
-        window.clearTimeout(nerdToastTimerRef.current)
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current)
+      }
+      if (creditsTimerRef.current) {
+        window.clearTimeout(creditsTimerRef.current)
       }
     }
   }, [])
-
-  function startLogoLongPress() {
-    if (longPressTimerRef.current) return
-    longPressTimerRef.current = window.setTimeout(() => {
-      longPressTimerRef.current = null
-      setAboutOpen(true)
-    }, 2000)
-  }
-
-  function cancelLogoLongPress() {
-    if (!longPressTimerRef.current) return
-    window.clearTimeout(longPressTimerRef.current)
-    longPressTimerRef.current = null
-  }
 
   function resetLogoClickTimer() {
     if (!logoClickTimerRef.current) return
@@ -184,26 +126,27 @@ function LayoutFrame() {
   }
 
   function triggerNerdEasterEgg() {
+    triggerConfetti()
+    showToast('Respectfully, you are a nerd.')
+  }
+
+  function triggerConfetti() {
     setConfettiSeed((current) => current + 1)
     setConfettiVisible(true)
-    setNerdToast(true)
     if (confettiTimerRef.current) {
       window.clearTimeout(confettiTimerRef.current)
-    }
-    if (nerdToastTimerRef.current) {
-      window.clearTimeout(nerdToastTimerRef.current)
     }
     confettiTimerRef.current = window.setTimeout(() => {
       setConfettiVisible(false)
       confettiTimerRef.current = null
     }, 1800)
-    nerdToastTimerRef.current = window.setTimeout(() => {
-      setNerdToast(false)
-      nerdToastTimerRef.current = null
-    }, 2600)
   }
 
   function handleLogoClick() {
+    if (skipLogoClickRef.current) {
+      skipLogoClickRef.current = false
+      return
+    }
     resetLogoClickTimer()
     logoClickCountRef.current += 1
     if (logoClickCountRef.current >= 7) {
@@ -215,6 +158,38 @@ function LayoutFrame() {
       logoClickCountRef.current = 0
       logoClickTimerRef.current = null
     }, 2500)
+  }
+
+  function showToast(message: string) {
+    setToastMessage(message)
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current)
+    }
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage(null)
+      toastTimerRef.current = null
+    }, 2600)
+  }
+
+  function handleLogoPressStart() {
+    if (creditsTimerRef.current) {
+      window.clearTimeout(creditsTimerRef.current)
+    }
+    creditsTimerRef.current = window.setTimeout(() => {
+      skipLogoClickRef.current = true
+      triggerConfetti()
+      showToast('Vibe coded by caharsha91.')
+      if (creditsTimerRef.current) {
+        window.clearTimeout(creditsTimerRef.current)
+        creditsTimerRef.current = null
+      }
+    }, 2000)
+  }
+
+  function handleLogoPressEnd() {
+    if (!creditsTimerRef.current) return
+    window.clearTimeout(creditsTimerRef.current)
+    creditsTimerRef.current = null
   }
 
   async function handleSignIn() {
@@ -240,74 +215,144 @@ function LayoutFrame() {
     }
   }
 
+  const initials = getInitials(user?.name, user?.email)
+
   return (
-    <div className="appShell">
+    <div className="min-h-screen pb-[calc(var(--bottom-nav-height)+env(safe-area-inset-bottom))] min-[901px]:pb-0">
       {simulation.enabled ? (
-        <div className="simulationBanner">SIMULATION MODE (LOCAL ONLY)</div>
+        <div className="bg-[var(--ticker-bg)] px-3 py-2 text-center text-[11px] uppercase tracking-[0.35em] text-foreground">
+          Simulation mode (local only)
+        </div>
       ) : null}
-      <header className="header">
-        <div className="headerBar">
-          <div className="brandBlock">
-            <div
-              className="brandMark"
-              aria-hidden="true"
-              onClick={handleLogoClick}
-              onPointerDown={startLogoLongPress}
-              onPointerUp={cancelLogoLongPress}
-              onPointerLeave={cancelLogoLongPress}
-              onPointerCancel={cancelLogoLongPress}
-            >
-              WC
-            </div>
-            <div className="brandStack">
-              <div className="brand">{pageTitle}</div>
-              <div className="brandSub">{pageTagline}</div>
-            </div>
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-[var(--header-bg)] backdrop-blur">
+        <div className="container flex items-center justify-between gap-3 py-3">
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-mark-bg)] text-sm font-semibold uppercase tracking-[0.2em] text-[var(--brand-mark-text)] shadow-soft drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] font-display"
+            type="button"
+            aria-label="Toggle Easter egg"
+            onClick={handleLogoClick}
+            onPointerDown={handleLogoPressStart}
+            onPointerUp={handleLogoPressEnd}
+            onPointerLeave={handleLogoPressEnd}
+            onPointerCancel={handleLogoPressEnd}
+          >
+            WC
+          </button>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">{pageTitle}</span>
+            <span className="truncate text-sm font-semibold uppercase tracking-[0.16em] text-foreground">
+              World Cup Predictions
+            </span>
           </div>
-          <div className="headerActions">
-            {topBarAction ? <div className="primaryActionSlot">{topBarAction}</div> : null}
-            {hasFirebase && !simulation.enabled ? (
-              authState.user ? null : (
-                <Button size="sm" type="button" onClick={handleSignIn}>
-                  Sign in
-                </Button>
-              )
+          <div className="flex items-center gap-2">
+            {topBarAction ? <div>{topBarAction}</div> : null}
+            {hasFirebase && !simulation.enabled && !authState.user ? (
+              <Button size="sm" type="button" onClick={handleSignIn}>
+                Sign in
+              </Button>
             ) : null}
-            {user?.name && user.email ? (
-              <UserInfo
-                name={user.name}
-                email={user.email}
-                isAdmin={user.isAdmin}
-                onSignOut={
-                  hasFirebase && !simulation.enabled && authState.user ? handleSignOut : undefined
-                }
-              />
+            {authState.user ? (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-[var(--surface-muted)] text-xs font-semibold uppercase text-foreground"
+                    type="button"
+                    aria-label="Open user settings"
+                  >
+                    {initials}
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[92vw] max-w-sm">
+                  <SheetHeader>
+                    <SheetTitle>Account</SheetTitle>
+                    <SheetDescription>Invite-only league controls.</SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-4 px-4">
+                    <div className="rounded-lg border border-border/60 bg-[var(--surface-muted)] p-3">
+                      <div className="text-sm font-semibold text-foreground">
+                        {user?.name || authState.user.displayName || 'Signed in'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {user?.email || authState.user.email || 'No email on file'}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {user?.isAdmin ? <Badge tone="info">Admin</Badge> : null}
+                        {user ? (
+                          user.isMember ? (
+                            <Badge>Member</Badge>
+                          ) : (
+                            <Badge tone="warning">Not allowlisted</Badge>
+                          )
+                        ) : (
+                          <Badge tone="info">Checking access</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <ButtonLink to="/settings" variant="secondary">
+                        Settings
+                      </ButtonLink>
+                      {canAccessAdmin ? (
+                        <ButtonLink to="/users" variant="secondary">
+                          Manage members
+                        </ButtonLink>
+                      ) : null}
+                    </div>
+                    {user && !user.isMember ? (
+                      <div className="rounded-lg border border-[var(--border-warning)] bg-[var(--banner-accent)] p-3 text-xs text-foreground">
+                        This league is invite-only. Ask an admin to add your email.
+                      </div>
+                    ) : null}
+                  </div>
+                  <SheetFooter className="flex items-center justify-between gap-2">
+                    <Button variant="ghost" onClick={handleSignOut}>
+                      Sign out
+                    </Button>
+                    <ButtonLink to="/settings" variant="primary">
+                      View settings
+                    </ButtonLink>
+                  </SheetFooter>
+                </SheetContent>
+              </Sheet>
             ) : null}
-            {authError ? <span className="authErrorTag">{authError}</span> : null}
           </div>
         </div>
-        <div className="headerNav">
-          <nav className="navTabs">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) => (isActive ? 'navLink navLinkActive' : 'navLink')}
-                end={item.to === '/'}
-              >
-                {item.label}
-              </NavLink>
-            ))}
+        {authError ? (
+          <div className="container pb-3 text-xs text-destructive">{authError}</div>
+        ) : null}
+        <div className="hidden min-[901px]:block border-t border-border/60">
+          <nav className="container flex flex-wrap items-center gap-2 py-2" aria-label="Primary">
+            {navItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    cn(
+                      'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] transition',
+                      isActive
+                        ? 'border-[var(--border-accent)] bg-[var(--accent-soft)] text-foreground'
+                        : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
+                    )
+                  }
+                  end={item.to === '/'}
+                >
+                  <span className="text-sm">
+                    <Icon />
+                  </span>
+                  <span>{item.label}</span>
+                </NavLink>
+              )
+            })}
           </nav>
-          <div className="headerMeta">
-            <span className="metaTag">{themeMeta.name}</span>
-            <span className="metaNote">{themeMeta.description}</span>
-          </div>
         </div>
       </header>
-      <main className="main">
+
+      <main className="container relative z-10 flex-1 py-5">
         <Outlet />
       </main>
+
       {confettiVisible ? (
         <div className="confettiBurst" aria-hidden="true" key={confettiSeed}>
           {CONFETTI_PIECES.map((piece) => (
@@ -328,42 +373,21 @@ function LayoutFrame() {
           ))}
         </div>
       ) : null}
-      {nerdToast ? (
-        <div className="nerdToast" role="status" aria-live="polite">
-          Respectfully, you&apos;re a nerd.
+      {toastMessage ? (
+        <div
+          className="fixed bottom-[calc(var(--bottom-nav-height)+1.5rem+env(safe-area-inset-bottom))] right-5 z-50 rounded-full border border-border bg-card px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-foreground shadow-soft min-[901px]:bottom-6"
+          role="status"
+          aria-live="polite"
+        >
+          {toastMessage}
         </div>
       ) : null}
-      <div
-        className={aboutOpen ? 'aboutScrim isVisible' : 'aboutScrim'}
-        onClick={() => setAboutOpen(false)}
-      />
-      <div
-        className="aboutDrawer"
-        data-open={aboutOpen ? 'true' : 'false'}
-        role={aboutOpen ? 'dialog' : undefined}
-        aria-modal={aboutOpen ? 'true' : undefined}
-        aria-labelledby="about-drawer-title"
-        aria-describedby="about-drawer-body"
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-[var(--header-bg)] backdrop-blur min-[901px]:hidden"
+        aria-label="Primary"
       >
-        <div className="aboutDrawerTitle" id="about-drawer-title">
-          About
-        </div>
-        <div className="aboutDrawerBody" id="about-drawer-body">
-          Built by Harsha Copparam (caharsha2025@gmail.com) 2026
-        </div>
-        <div className="aboutDrawerActions">
-          <Button size="sm" variant="ghost" onClick={() => setAboutOpen(false)}>
-            Close
-          </Button>
-        </div>
-      </div>
-      {syncNotice ? (
-        <div className="themeSyncToast" role="status" aria-live="polite">
-          {syncNotice}
-        </div>
-      ) : null}
-      <nav className="bottomNav" aria-label="Primary">
-        <div className="bottomNavInner">
+        <div className="container flex items-center justify-between gap-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
           {navItems.map((item) => {
             const Icon = item.icon
             return (
@@ -371,14 +395,19 @@ function LayoutFrame() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  isActive ? 'bottomNavLink bottomNavLinkActive' : 'bottomNavLink'
+                  cn(
+                    'flex flex-1 flex-col items-center gap-1 rounded-lg px-2 py-1 text-[10px] uppercase tracking-[0.2em]',
+                    isActive
+                      ? 'bg-[var(--accent-soft)] text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )
                 }
                 end={item.to === '/'}
               >
-                <span className="bottomNavIcon">
+                <span className="text-base">
                   <Icon />
                 </span>
-                <span className="bottomNavLabel">{item.label}</span>
+                <span>{item.label}</span>
               </NavLink>
             )
           })}

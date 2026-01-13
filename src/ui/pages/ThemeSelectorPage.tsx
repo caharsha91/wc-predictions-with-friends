@@ -1,130 +1,116 @@
-import { useMemo, useState } from 'react'
-
-import PageHeader from '../components/ui/PageHeader'
 import { Badge } from '../components/ui/Badge'
-import { Button } from '../components/ui/Button'
-import { Card, CardBody, CardFooter, CardHeader } from '../components/ui/Card'
+import { Button, ButtonLink } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
+import { useCurrentUser } from '../hooks/useCurrentUser'
+import { useSimulationState } from '../hooks/useSimulationState'
 import { useTheme } from '../../theme/ThemeProvider'
-import type { ThemeMode, ThemeSwatch } from '../../theme/themes'
-
-const SWATCH_ORDER: Array<{ key: keyof ThemeSwatch; label: string }> = [
-  { key: 'bg', label: 'Background' },
-  { key: 'surface', label: 'Surface' },
-  { key: 'accent', label: 'Accent' },
-  { key: 'success', label: 'Success' },
-  { key: 'danger', label: 'Danger' }
-]
 
 export default function ThemeSelectorPage() {
-  const { themes, themeId, mode, isSystemMode, setMode, setThemeId, setSystemMode } = useTheme()
-  const [notice, setNotice] = useState<string | null>(null)
-
-  const activeTheme = useMemo(() => themes.find((theme) => theme.id === themeId), [themeId, themes])
-
-  const handleApply = (nextThemeId: typeof themeId) => {
-    setThemeId(nextThemeId)
-    const nextTheme = themes.find((theme) => theme.id === nextThemeId)
-    setNotice(nextTheme ? `Applied ${nextTheme.name}.` : 'Theme applied.')
-  }
-
-  const swatchMode: ThemeMode = mode
+  const { mode, isSystemMode, setMode, setSystemMode, syncNotice } = useTheme()
+  const user = useCurrentUser()
+  const simulation = useSimulationState()
+  const canAccessAdmin = simulation.enabled || user?.isAdmin
 
   return (
-    <div className="stack">
-      <PageHeader
-        kicker="Personalize"
-        title="Themes"
-        subtitle="Pick a look and toggle light or dark."
-      />
-      <Card className="themeControlsCard">
-        <div className="themeControls">
-          <div className="themeControlsRow">
-            <div className="themeControlsText">
-              <div className="sectionTitle">Mode</div>
-              <div className="pageSubtitle">Switch between light and dark palettes.</div>
+    <div className="space-y-6">
+      <Card className="rounded-2xl border border-border/60 bg-card p-6 shadow-card">
+        <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Settings</div>
+        <h1 className="mt-3 text-2xl font-semibold uppercase tracking-[0.12em] text-foreground">
+          Personalize your league view
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          A ChatGPT-inspired take on the league hub: calm neutrals, crisp contrast, and a hint of green.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {syncNotice ? <Badge tone="success">Synced</Badge> : null}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Appearance</div>
+            <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em]">
+              Color mode
             </div>
-            <div className="bracketToggle" role="tablist" aria-label="Color mode">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'light'}
-                className={mode === 'light' ? 'bracketToggleButton active' : 'bracketToggleButton'}
-                onClick={() => setMode('light')}
-              >
-                Light
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'dark'}
-                className={mode === 'dark' ? 'bracketToggleButton active' : 'bracketToggleButton'}
-                onClick={() => setMode('dark')}
-              >
-                Dark
-              </button>
+            <div className="text-xs text-muted-foreground">
+              Choose light or dark, or let the system decide.
             </div>
           </div>
-          <div className="themeControlsRow">
-            <div className="themeControlsText">
-              <div className="sectionTitle">System mode</div>
-              <div className="pageSubtitle">Follow your device appearance.</div>
-            </div>
+          <div className="flex flex-wrap gap-2">
             <Button
-              variant="secondary"
-              aria-pressed={isSystemMode}
-              onClick={() => setSystemMode(!isSystemMode)}
+              type="button"
+              variant="pill"
+              size="sm"
+              data-active={!isSystemMode && mode === 'light' ? 'true' : 'false'}
+              aria-pressed={!isSystemMode && mode === 'light'}
+              onClick={() => setMode('light')}
             >
-              {isSystemMode ? 'System On' : 'Use system mode'}
+              Light
+            </Button>
+            <Button
+              type="button"
+              variant="pill"
+              size="sm"
+              data-active={!isSystemMode && mode === 'dark' ? 'true' : 'false'}
+              aria-pressed={!isSystemMode && mode === 'dark'}
+              onClick={() => setMode('dark')}
+            >
+              Dark
+            </Button>
+            <Button
+              type="button"
+              variant="pill"
+              size="sm"
+              data-active={isSystemMode ? 'true' : 'false'}
+              aria-pressed={isSystemMode}
+              onClick={() => setSystemMode(true)}
+            >
+              System
             </Button>
           </div>
         </div>
       </Card>
-      {notice ? (
-        <div className="themeNotice" role="status" aria-live="polite">
-          {notice}
+
+      <Card>
+        <div className="px-4 py-4">
+          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">About</div>
+          <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em]">
+            Minimal, focused, and friendly
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            One league. Many opinions. One champion. Picks lock before kickoff, and the leaderboard
+            refreshes daily from the offline pipeline.
+          </p>
+          <div className="mt-3 text-xs text-muted-foreground">
+            Built for invite-only leagues with offline match updates and precomputed standings.
+          </div>
         </div>
-      ) : null}
-      <div className="themeGrid">
-        {themes.map((theme) => {
-          const isActive = theme.id === themeId
-          const swatches = theme.swatches[swatchMode]
-          return (
-            <Card key={theme.id} className="themeCard" data-active={isActive ? 'true' : undefined}>
-              <CardHeader
-                title={theme.name}
-                subtitle={theme.description}
-                actions={isActive ? <Badge tone="success">Active</Badge> : null}
-              />
-              <CardBody>
-                <div className="themeSwatches" role="list">
-                  {SWATCH_ORDER.map((swatch) => (
-                    <span
-                      key={swatch.key}
-                      className="themeSwatch"
-                      style={{ background: swatches[swatch.key] }}
-                      role="img"
-                      aria-label={swatch.label}
-                    />
-                  ))}
-                </div>
-              </CardBody>
-              <CardFooter>
-                <Button
-                  variant={isActive ? 'secondary' : 'primary'}
-                  disabled={isActive}
-                  onClick={() => handleApply(theme.id)}
-                >
-                  {isActive ? 'Applied' : 'Apply'}
-                </Button>
-              </CardFooter>
-            </Card>
-          )
-        })}
-      </div>
-      {activeTheme ? (
-        <div className="themeFooterNote">
-          Current theme: <span className="themeFooterHighlight">{activeTheme.name}</span>
-        </div>
+      </Card>
+
+      {canAccessAdmin ? (
+        <Card>
+          <div className="px-4 py-4">
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Admin</div>
+            <div className="mt-2 text-sm font-semibold uppercase tracking-[0.12em]">
+              League controls
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Manage member access and exports from here. Simulation tools stay local.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <ButtonLink to="/users" variant="secondary">
+                Members
+              </ButtonLink>
+              <ButtonLink to="/exports" variant="secondary">
+                Exports
+              </ButtonLink>
+              <ButtonLink to="/simulation" variant="secondary">
+                Simulation
+              </ButtonLink>
+            </div>
+          </div>
+        </Card>
       ) : null}
     </div>
   )

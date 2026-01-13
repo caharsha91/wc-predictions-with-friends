@@ -1,44 +1,46 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Link, type LinkProps } from 'react-router-dom'
+import { cva, type VariantProps } from 'class-variance-authority'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost'
-export type ButtonSize = 'sm' | 'md'
+import { cn } from '../../lib/utils'
 
-type BaseButtonProps = {
-  variant?: ButtonVariant
-  size?: ButtonSize
-  className?: string
-}
+const buttonVariants = cva(
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+  {
+    variants: {
+      variant: {
+        primary:
+          'border-transparent bg-[var(--accent)] text-[var(--text-inverse)] shadow-soft hover:bg-[var(--accent-strong)]',
+        secondary:
+          'border-border/70 bg-[var(--surface-muted)] text-foreground hover:border-[var(--border-strong)]',
+        ghost:
+          'border-border/60 bg-transparent text-muted-foreground hover:border-border hover:bg-[var(--surface-muted)]',
+        pill:
+          'border-[var(--border-accent)] bg-[var(--button-bg)] text-foreground shadow-[var(--shadow-xs)] hover:border-[var(--accent-strong)] hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow-sm)] data-[active=true]:border-[var(--accent-strong)] data-[active=true]:bg-[var(--accent-soft)] data-[active=true]:shadow-[var(--shadow-sm)] disabled:shadow-none'
+      },
+      size: {
+        sm: 'h-9 px-3 text-xs',
+        md: 'h-10 px-4 text-sm'
+      }
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'md'
+    }
+  }
+)
 
-type ButtonProps = BaseButtonProps &
+type ButtonProps = VariantProps<typeof buttonVariants> &
   ButtonHTMLAttributes<HTMLButtonElement> & {
     loading?: boolean
     icon?: ReactNode
   }
 
-type ButtonLinkProps = BaseButtonProps & LinkProps & { icon?: ReactNode }
-
-function getButtonClassName(
-  variant: ButtonVariant,
-  size: ButtonSize,
-  className?: string,
-  loading?: boolean
-) {
-  return [
-    'button',
-    variant === 'secondary' && 'buttonSecondary',
-    variant === 'ghost' && 'buttonGhost',
-    size === 'sm' && 'buttonSmall',
-    loading && 'buttonLoading',
-    className
-  ]
-    .filter(Boolean)
-    .join(' ')
-}
+type ButtonLinkProps = VariantProps<typeof buttonVariants> & LinkProps & { icon?: ReactNode }
 
 export function Button({
-  variant = 'primary',
-  size = 'md',
+  variant,
+  size,
   loading = false,
   icon,
   className,
@@ -47,17 +49,25 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
-  const classes = getButtonClassName(variant, size, className, loading)
   return (
     <button
       {...props}
       type={type ?? 'button'}
-      className={classes}
+      className={cn(
+        buttonVariants({ variant, size }),
+        loading && 'cursor-wait',
+        className
+      )}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
     >
-      {loading ? <span className="buttonSpinner" aria-hidden="true" /> : null}
-      <span className="buttonLabel">
+      {loading ? (
+        <span
+          className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--accent-soft)] border-t-[var(--primary)]"
+          aria-hidden="true"
+        />
+      ) : null}
+      <span className="inline-flex items-center gap-2">
         {icon ? <span aria-hidden="true">{icon}</span> : null}
         {children}
       </span>
@@ -66,20 +76,21 @@ export function Button({
 }
 
 export function ButtonLink({
-  variant = 'primary',
-  size = 'md',
+  variant,
+  size,
   icon,
   className,
   children,
   ...props
 }: ButtonLinkProps) {
-  const classes = getButtonClassName(variant, size, className)
   return (
-    <Link {...props} className={classes}>
-      <span className="buttonLabel">
+    <Link {...props} className={cn(buttonVariants({ variant, size }), className)}>
+      <span className="inline-flex items-center gap-2">
         {icon ? <span aria-hidden="true">{icon}</span> : null}
         {children}
       </span>
     </Link>
   )
 }
+
+export { buttonVariants }

@@ -5,17 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="author" content="Harsha Copparam" />
     <meta name="creator" content="Harsha Copparam" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>World Cup Predictions</title>
     <script>
       ;(() => {
         try {
           const root = document.documentElement
-          const storedTheme = window.localStorage.getItem('wc-theme-id')
           const storedMode = window.localStorage.getItem('wc-color-mode')
           const storedSystem = window.localStorage.getItem('wc-system-mode')
           const prefersDark =
             window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-          const themeId = storedTheme || 'classic'
           const systemMode = storedSystem === 'true'
           const mode = systemMode
             ? prefersDark
@@ -24,7 +23,6 @@
             : storedMode === 'light' || storedMode === 'dark'
               ? storedMode
               : 'dark'
-          root.dataset.theme = themeId
           root.dataset.mode = mode
         } catch (error) {
           // no-op

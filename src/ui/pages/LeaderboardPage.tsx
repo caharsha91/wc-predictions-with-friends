@@ -6,6 +6,7 @@ import { useViewerId } from '../hooks/useViewerId'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
 import PageHeader from '../components/ui/PageHeader'
 import Skeleton from '../components/ui/Skeleton'
 
@@ -191,9 +192,11 @@ export default function LeaderboardPage() {
         subtitle="League standings and point breakdowns."
         actions={
           state.status === 'ready' ? (
-            <div className="lastUpdated">
-              <div className="lastUpdatedLabel">Last updated</div>
-              <div className="lastUpdatedValue">{formatUpdatedAt(state.lastUpdated)}</div>
+            <div className="flex flex-col items-end gap-1 text-right text-xs text-muted-foreground">
+              <div className="uppercase tracking-[0.2em]">Last updated</div>
+              <div className="text-sm font-semibold text-foreground">
+                {formatUpdatedAt(state.lastUpdated)}
+              </div>
             </div>
           ) : null
         }
@@ -210,14 +213,18 @@ export default function LeaderboardPage() {
 
       {state.status === 'ready' ? (
         leaderboard.length === 0 ? (
-          <div className="card muted">No finished matches to score yet.</div>
+          <Card className="p-4 text-sm text-muted-foreground">
+            No finished matches to score yet.
+          </Card>
         ) : (
           <>
-            <div className="card leaderboardOverview">
+            <Card className="leaderboardOverview p-5">
               <div className="leaderboardOverviewHeader">
                 <div>
-                  <div className="sectionKicker">League pulse</div>
-                  <div className="sectionTitle">Current snapshot</div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    League pulse
+                  </div>
+                  <div className="text-lg font-semibold text-foreground">Current snapshot</div>
                 </div>
                 <div className="leaderboardOverviewMeta">Finished matches only.</div>
               </div>
@@ -279,13 +286,15 @@ export default function LeaderboardPage() {
                   </div>
                 ) : null}
               </div>
-            </div>
+            </Card>
             {podiumEntries.length > 0 ? (
-              <div className="card leaderboardPodium">
+              <Card className="leaderboardPodium p-5">
                 <div className="leaderboardPodiumHeader">
                   <div>
-                    <div className="sectionKicker">Podium</div>
-                    <div className="sectionTitle">Top 3</div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Podium
+                    </div>
+                    <div className="text-lg font-semibold text-foreground">Top 3</div>
                     <div className="podiumMeta">
                       Top {podiumEntries.length} of {leaderboard.length}
                     </div>
@@ -322,10 +331,10 @@ export default function LeaderboardPage() {
                     )
                   })}
                 </div>
-              </div>
+              </Card>
             ) : null}
 
-            <div className="card leaderboardListCard leaderboardListFull">
+            <Card className="leaderboardListCard leaderboardListFull p-5">
               <div className="leaderboardListControls">
                 <div className="leaderboardListTitle">Full standings</div>
                 {currentEntry && currentRank ? (
@@ -357,7 +366,7 @@ export default function LeaderboardPage() {
                 <div>Behind</div>
               </div>
               {pageEntries.length === 0 ? (
-                <div className="muted">No additional players yet.</div>
+                <div className="text-sm text-muted-foreground">No additional players yet.</div>
               ) : (
                 <div className="leaderboardList">
                   {showPinnedRow && currentEntry && currentRank
@@ -394,7 +403,7 @@ export default function LeaderboardPage() {
                   </Button>
                 </div>
               ) : null}
-            </div>
+            </Card>
           </>
         )
       ) : null}

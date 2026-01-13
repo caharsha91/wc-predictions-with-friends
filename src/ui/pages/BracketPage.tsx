@@ -23,11 +23,13 @@ import type { BracketPrediction, GroupPrediction } from '../../types/bracket'
 import type { Match, MatchWinner, Team } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 import { useAuthState } from '../hooks/useAuthState'
+import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { useViewerId } from '../hooks/useViewerId'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
+import { Card } from '../components/ui/Card'
 import PageHeader from '../components/ui/PageHeader'
 import Skeleton from '../components/ui/Skeleton'
 
@@ -59,6 +61,7 @@ type ValidationIssue = {
 
 type PickResult = 'pending' | 'correct' | 'incorrect'
 type ResultSummary = 'pending' | 'partial' | 'correct' | 'incorrect'
+type BracketStep = 'group' | 'third' | 'knockout'
 
 type ResultCounts = {
   total: number
@@ -206,17 +209,18 @@ function ensureGroupEntries(prediction: BracketPrediction, groupIds: string[]): 
 export default function BracketPage() {
   const userId = useViewerId()
   const authState = useAuthState()
+  const currentUser = useCurrentUser()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [prediction, setPrediction] = useState<BracketPrediction | null>(null)
   const canPersistFirestoreRef = useRef(false)
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
-    groupStep: false,
-    thirdStep: true,
-    knockoutStep: true
-  })
+  const [activeStep, setActiveStep] = useState<BracketStep>('group')
   const isMobile = useMediaQuery('(max-width: 900px)')
   const [activeRound, setActiveRound] = useState<KnockoutStage | null>(null)
-  const firestoreEnabled = hasFirebase && authState.status === 'ready' && !!authState.user
+  const firestoreEnabled =
+    hasFirebase &&
+    authState.status === 'ready' &&
+    !!authState.user &&
+    currentUser?.isMember === true
 
   useEffect(() => {
     let canceled = false
@@ -440,10 +444,6 @@ export default function BracketPage() {
     [knockoutColumns]
   )
 
-
-  function toggleSection(key: string) {
-    setCollapsedSections((current) => ({ ...current, [key]: !current[key] }))
-  }
 
   useEffect(() => {
     if (state.status !== 'ready') return
@@ -786,31 +786,22 @@ export default function BracketPage() {
     }
   }
 
-  function openStep(step: ValidationIssue['step']) {
-    const key =
-      step === 'group' ? 'groupStep' : step === 'third' ? 'thirdStep' : 'knockoutStep'
-    setCollapsedSections((current) => ({ ...current, [key]: false }))
-  }
-
   function handleJumpToIssue(issue: ValidationIssue) {
-    openStep(issue.step)
+    setActiveStep(issue.step)
     requestAnimationFrame(() => {
       scrollToTarget(issue.targetId)
     })
   }
 
-  function handleJumpToStep(
-    stepId: 'bracket-step-group' | 'bracket-step-third' | 'bracket-step-knockout'
-  ) {
-    if (stepId === 'bracket-step-group') openStep('group')
-    if (stepId === 'bracket-step-third') openStep('third')
-    if (stepId === 'bracket-step-knockout') openStep('knockout')
+  function handleStepSelect(step: BracketStep) {
+    setActiveStep(step)
     requestAnimationFrame(() => {
-      scrollToTarget(stepId)
+      scrollToTarget(`bracket-step-${step}`)
     })
   }
 
   function handleJumpToRound(roundKey: string, stage?: KnockoutStage) {
+    setActiveStep('knockout')
     if (stage) setActiveRound(stage)
     scrollToTarget(`bracket-round-${roundKey}`)
   }
@@ -832,9 +823,6 @@ export default function BracketPage() {
     )
   }
   if (!prediction) return null
-  const groupStepCollapsed = collapsedSections.groupStep ?? false
-  const thirdStepCollapsed = collapsedSections.thirdStep ?? false
-  const knockoutStepCollapsed = collapsedSections.knockoutStep ?? false
   const activeRoundMatches =
     activeRound && knockoutDisplayMatches[activeRound]
       ? knockoutDisplayMatches[activeRound]
@@ -884,15 +872,17 @@ export default function BracketPage() {
               }, and ${missingKnockout} knockout pick${missingKnockout === 1 ? '' : 's'} missing.`
         }
         actions={
-          <div className="lastUpdated">
-            <div className="lastUpdatedLabel">Match data</div>
-            <div className="lastUpdatedValue">{formatKickoff(state.lastUpdated)}</div>
+          <div className="flex flex-col items-end gap-1 text-right text-xs text-muted-foreground">
+            <div className="uppercase tracking-[0.2em]">Match data</div>
+            <div className="text-sm font-semibold text-foreground">
+              {formatKickoff(state.lastUpdated)}
+            </div>
           </div>
         }
       />
 
       {issueCount > 0 ? (
-        <div className="card validationBanner" role="status">
+        <Card className="validationBanner p-5" role="status">
           <div className="validationBannerInfo">
             <div className="validationBannerTitle">Action needed</div>
             <div className="validationBannerMeta">
@@ -912,7 +902,7 @@ export default function BracketPage() {
               Jump to first pick
             </Button>
           ) : null}
-        </div>
+        </Card>
       ) : null}
 
       <div className="bracketStepper" role="list">
@@ -920,7 +910,8 @@ export default function BracketPage() {
           type="button"
           className="bracketStepNav"
           role="listitem"
-          onClick={() => handleJumpToStep('bracket-step-group')}
+          data-active={activeStep === 'group' ? 'true' : 'false'}
+          onClick={() => handleStepSelect('group')}
         >
           <span className="bracketStepIndex">1</span>
           <span className="bracketStepNavText">
@@ -943,7 +934,8 @@ export default function BracketPage() {
           type="button"
           className="bracketStepNav"
           role="listitem"
-          onClick={() => handleJumpToStep('bracket-step-third')}
+          data-active={activeStep === 'third' ? 'true' : 'false'}
+          onClick={() => handleStepSelect('third')}
         >
           <span className="bracketStepIndex">2</span>
           <span className="bracketStepNavText">
@@ -966,7 +958,8 @@ export default function BracketPage() {
           type="button"
           className="bracketStepNav"
           role="listitem"
-          onClick={() => handleJumpToStep('bracket-step-knockout')}
+          data-active={activeStep === 'knockout' ? 'true' : 'false'}
+          onClick={() => handleStepSelect('knockout')}
         >
           <span className="bracketStepIndex">3</span>
           <span className="bracketStepNavText">
@@ -995,44 +988,36 @@ export default function BracketPage() {
         </button>
       </div>
 
-      <section
-        id="bracket-step-group"
-        className="card bracketStep"
-        data-status={groupLocked ? 'locked' : groupComplete ? 'complete' : 'pending'}
-      >
-        <div className="bracketStepHeader">
-          <button
-            type="button"
-            className="sectionToggle bracketStepToggle"
-            data-collapsed={groupStepCollapsed ? 'true' : 'false'}
-            onClick={() => toggleSection('groupStep')}
-            aria-expanded={!groupStepCollapsed}
-          >
-            <span className="toggleChevron" aria-hidden="true">
-              ▾
-            </span>
-            <span className="bracketStepTitle">Step 1 · Group qualifiers</span>
-          </button>
-          <div className="bracketStepMeta">
-            <span
-              className="bracketStepStatus"
-              data-status={groupLocked ? 'locked' : groupComplete ? 'complete' : 'pending'}
-            >
-              {groupStatusLabel}
-            </span>
-            {groupLockTime ? (
-              <div className="lockNote">
-                {groupLocked
-                  ? `Locked since ${formatLockTime(groupLockTime)}`
-                  : `Locks at ${formatLockTime(groupLockTime)}`}
-              </div>
-            ) : null}
+      {activeStep === 'group' ? (
+        <Card
+          as="section"
+          id="bracket-step-group"
+          className="bracketStep p-5"
+          data-status={groupLocked ? 'locked' : groupComplete ? 'complete' : 'pending'}
+        >
+          <div className="bracketStepHeader">
+            <div className="bracketStepToggle">
+              <span className="bracketStepTitle">Step 1 · Group qualifiers</span>
+            </div>
+            <div className="bracketStepMeta">
+              <span
+                className="bracketStepStatus"
+                data-status={groupLocked ? 'locked' : groupComplete ? 'complete' : 'pending'}
+              >
+                {groupStatusLabel}
+              </span>
+              {groupLockTime ? (
+                <div className="text-xs text-muted-foreground">
+                  {groupLocked
+                    ? `Locked since ${formatLockTime(groupLockTime)}`
+                    : `Locks at ${formatLockTime(groupLockTime)}`}
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
-        {!groupStepCollapsed ? (
           <div className="bracketStepBody">
             <div className="bracketGuide bracketGuideCompact">
-              <div className="sectionTitle">Group stage guide</div>
+              <div className="text-lg font-semibold text-foreground">Group stage guide</div>
               <div className="bracketGuideContent">
                 <p>
                   Pick the top two teams from each group in the order they will finish. Then select
@@ -1046,7 +1031,7 @@ export default function BracketPage() {
               </div>
             </div>
             {groupIds.length === 0 ? (
-              <div className="muted">
+              <div className="text-sm text-muted-foreground">
                 Group data is not available yet. Run the daily sync once group assignments are known.
               </div>
             ) : (
@@ -1137,47 +1122,39 @@ export default function BracketPage() {
               </div>
             )}
           </div>
-        ) : null}
-      </section>
+        </Card>
+      ) : null}
 
-      <section
-        id="bracket-step-third"
-        className="card bracketStep"
-        data-status={groupLocked ? 'locked' : thirdComplete ? 'complete' : 'pending'}
-      >
-        <div className="bracketStepHeader">
-          <button
-            type="button"
-            className="sectionToggle bracketStepToggle"
-            data-collapsed={thirdStepCollapsed ? 'true' : 'false'}
-            onClick={() => toggleSection('thirdStep')}
-            aria-expanded={!thirdStepCollapsed}
-          >
-            <span className="toggleChevron" aria-hidden="true">
-              ▾
-            </span>
-            <span className="bracketStepTitle">Step 2 · Third-place flow</span>
-          </button>
-          <div className="bracketStepMeta">
-            <span
-              className="bracketStepStatus"
-              data-status={groupLocked ? 'locked' : thirdComplete ? 'complete' : 'pending'}
-            >
-              {thirdStatusLabel}
-            </span>
-            {groupLockTime ? (
-              <div className="lockNote">
-                {groupLocked
-                  ? `Locked since ${formatLockTime(groupLockTime)}`
-                  : `Locks at ${formatLockTime(groupLockTime)}`}
-              </div>
-            ) : null}
+      {activeStep === 'third' ? (
+        <Card
+          as="section"
+          id="bracket-step-third"
+          className="bracketStep p-5"
+          data-status={groupLocked ? 'locked' : thirdComplete ? 'complete' : 'pending'}
+        >
+          <div className="bracketStepHeader">
+            <div className="bracketStepToggle">
+              <span className="bracketStepTitle">Step 2 · Third-place flow</span>
+            </div>
+            <div className="bracketStepMeta">
+              <span
+                className="bracketStepStatus"
+                data-status={groupLocked ? 'locked' : thirdComplete ? 'complete' : 'pending'}
+              >
+                {thirdStatusLabel}
+              </span>
+              {groupLockTime ? (
+                <div className="text-xs text-muted-foreground">
+                  {groupLocked
+                    ? `Locked since ${formatLockTime(groupLockTime)}`
+                    : `Locks at ${formatLockTime(groupLockTime)}`}
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
-        {!thirdStepCollapsed ? (
           <div className="bracketStepBody">
             <div className="bracketGuide bracketGuideCompact">
-              <div className="sectionTitle">Third-place guide</div>
+              <div className="text-lg font-semibold text-foreground">Third-place guide</div>
               <div className="bracketGuideContent">
                 <p>
                   Pick eight third-place qualifiers. Duplicate teams are not allowed, so each slot
@@ -1186,7 +1163,7 @@ export default function BracketPage() {
               </div>
             </div>
             {allGroupTeams.length === 0 ? (
-              <div className="muted">
+              <div className="text-sm text-muted-foreground">
                 Group data is not available yet. Run the daily sync once group assignments are known.
               </div>
             ) : (
@@ -1234,46 +1211,40 @@ export default function BracketPage() {
               </div>
             )}
           </div>
-        ) : null}
-      </section>
+        </Card>
+      ) : null}
 
-      <section
-        id="bracket-step-knockout"
-        className="card bracketStep"
-        data-status={
-          !knockoutUnlocked || knockoutLocked ? 'locked' : knockoutComplete ? 'complete' : 'pending'
-        }
-      >
-        <div className="bracketStepHeader">
-          <button
-            type="button"
-            className="sectionToggle bracketStepToggle"
-            data-collapsed={knockoutStepCollapsed ? 'true' : 'false'}
-            onClick={() => toggleSection('knockoutStep')}
-            aria-expanded={!knockoutStepCollapsed}
-          >
-            <span className="toggleChevron" aria-hidden="true">
-              ▾
-            </span>
-            <span className="bracketStepTitle">Step 3 · Knockout bracket</span>
-          </button>
-          <div className="bracketStepMeta">
-            <span
-              className="bracketStepStatus"
-              data-status={
-                !knockoutUnlocked || knockoutLocked
-                  ? 'locked'
-                  : knockoutComplete
-                    ? 'complete'
-                    : 'pending'
-              }
-            >
-              {knockoutStatusLabel}
-            </span>
-            {knockoutStatusNote ? <div className="lockNote">{knockoutStatusNote}</div> : null}
+      {activeStep === 'knockout' ? (
+        <Card
+          as="section"
+          id="bracket-step-knockout"
+          className="bracketStep p-5"
+          data-status={
+            !knockoutUnlocked || knockoutLocked ? 'locked' : knockoutComplete ? 'complete' : 'pending'
+          }
+        >
+          <div className="bracketStepHeader">
+            <div className="bracketStepToggle">
+              <span className="bracketStepTitle">Step 3 · Knockout bracket</span>
+            </div>
+            <div className="bracketStepMeta">
+              <span
+                className="bracketStepStatus"
+                data-status={
+                  !knockoutUnlocked || knockoutLocked
+                    ? 'locked'
+                    : knockoutComplete
+                      ? 'complete'
+                      : 'pending'
+                }
+              >
+                {knockoutStatusLabel}
+              </span>
+              {knockoutStatusNote ? (
+                <div className="text-xs text-muted-foreground">{knockoutStatusNote}</div>
+              ) : null}
+            </div>
           </div>
-        </div>
-        {!knockoutStepCollapsed ? (
           <div className="bracketStepBody">
             {!knockoutUnlocked ? (
               <div className="bracketLockCallout">
@@ -1283,7 +1254,7 @@ export default function BracketPage() {
             ) : (
               <>
                 <div className="bracketGuide bracketGuideCompact">
-                  <div className="sectionTitle">Knockout guide</div>
+                  <div className="text-lg font-semibold text-foreground">Knockout guide</div>
                   <div className="bracketGuideContent">
                     <p>
                       Select the winner for each knockout fixture. Picks are made directly on the team
@@ -1309,7 +1280,9 @@ export default function BracketPage() {
                     </div>
                     <div className="bracketRoundList">
                       {activeRoundMatches.length === 0 ? (
-                        <div className="muted">No matches available for this round yet.</div>
+                        <div className="text-sm text-muted-foreground">
+                          No matches available for this round yet.
+                        </div>
                       ) : (
                         activeRoundMatches.map((match) => {
                           const stage = match.stage as KnockoutStage
@@ -1579,7 +1552,7 @@ export default function BracketPage() {
                                                 </span>
                                               </div>
                                             </div>
-                                            <div className="muted small">
+                                            <div className="text-xs text-muted-foreground">
                                               {formatKickoff(match.kickoffUtc)}
                                             </div>
                                           </div>
@@ -1622,8 +1595,8 @@ export default function BracketPage() {
               </>
             )}
           </div>
-        ) : null}
-      </section>
+        </Card>
+      ) : null}
     </div>
   )
 }

@@ -1,8 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
-import type { ThemeId, ThemeMode } from './themes'
-import { DEFAULT_THEME_ID, THEMES } from './themes'
+import type { ThemeMode } from './themes'
 import {
   applyThemeAttributes,
   getStoredThemeState,
@@ -17,31 +16,26 @@ import { saveUserThemePreference } from '../lib/firestoreData'
 import type { ThemePreference } from '../types/members'
 
 type ThemeContextValue = {
-  themeId: ThemeId
   mode: ThemeMode
   isSystemMode: boolean
   syncNotice: string | null
-  setThemeId: (themeId: ThemeId) => void
   setMode: (mode: ThemeMode) => void
   setSystemMode: (isSystemMode: boolean) => void
-  themes: typeof THEMES
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
-const THEME_ID_SET = new Set(THEMES.map((theme) => theme.id))
 
 function normalizeThemePreference(preference: ThemePreference | undefined | null) {
   if (!preference) return null
-  const themeId = THEME_ID_SET.has(preference.id) ? preference.id : DEFAULT_THEME_ID
   const isSystemMode = Boolean(preference.isSystemMode)
   const rawMode = preference.mode === 'light' || preference.mode === 'dark' ? preference.mode : null
   const mode = isSystemMode ? getSystemMode() : rawMode ?? getSystemMode()
-  return { themeId, mode, isSystemMode }
+  return { mode, isSystemMode }
 }
 
 function isThemePreferenceEqual(a: ThemePreference | null, b: ThemePreference) {
   if (!a) return false
-  return a.id === b.id && a.mode === b.mode && a.isSystemMode === b.isSystemMode
+  return a.mode === b.mode && a.isSystemMode === b.isSystemMode
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -50,24 +44,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const simulation = useSimulationState()
   const storedState = useMemo(() => getStoredThemeState(), [])
   const [state, setState] = useState(() => ({
-    themeId: storedState.themeId ?? DEFAULT_THEME_ID,
     mode: storedState.mode,
     isSystemMode: storedState.isSystemMode
   }))
   const [syncNotice, setSyncNotice] = useState<string | null>(null)
   const updateSource = useRef<'user' | 'remote' | 'system' | null>(null)
   const lastSavedRef = useRef<ThemePreference | null>({
-    id: storedState.themeId ?? DEFAULT_THEME_ID,
     mode: storedState.mode,
     isSystemMode: storedState.isSystemMode
   })
   const firestoreEnabled =
-    hasFirebase && authState.status === 'ready' && !!authState.user && !simulation.enabled
-
-  const setThemeId = useCallback((themeId: ThemeId) => {
-    updateSource.current = 'user'
-    setState((current) => ({ ...current, themeId }))
-  }, [])
+    hasFirebase &&
+    authState.status === 'ready' &&
+    !!authState.user &&
+    !simulation.enabled &&
+    user?.isMember
 
   const setMode = useCallback((mode: ThemeMode) => {
     updateSource.current = 'user'
@@ -84,8 +75,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    applyThemeAttributes(state.themeId, state.mode)
-    persistThemeState(state.themeId, state.mode, state.isSystemMode)
+    applyThemeAttributes(state.mode)
+    persistThemeState(state.mode, state.isSystemMode)
   }, [state])
 
   useEffect(() => {
@@ -93,13 +84,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const normalized = normalizeThemePreference(user.theme)
     if (!normalized) return
     lastSavedRef.current = {
-      id: normalized.themeId,
       mode: normalized.mode,
       isSystemMode: normalized.isSystemMode
     }
     setState((current) => {
       if (
-        current.themeId === normalized.themeId &&
         current.mode === normalized.mode &&
         current.isSystemMode === normalized.isSystemMode
       ) {
@@ -116,7 +105,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (source !== 'user') return
     if (!firestoreEnabled || !authState.user) return
     const payload: ThemePreference = {
-      id: state.themeId,
       mode: state.mode,
       isSystemMode: state.isSystemMode
     }
@@ -157,16 +145,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      themeId: state.themeId,
       mode: state.mode,
       isSystemMode: state.isSystemMode,
       syncNotice,
-      setThemeId,
       setMode,
-      setSystemMode,
-      themes: THEMES
+      setSystemMode
     }),
-    [setMode, setSystemMode, setThemeId, state]
+    [setMode, setSystemMode, state, syncNotice]
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

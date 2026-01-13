@@ -7,19 +7,26 @@ import { getUserPicksFromFile, loadLocalPicks, saveLocalPicks } from '../../lib/
 import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 import { useAuthState } from './useAuthState'
+import { useCurrentUser } from './useCurrentUser'
 import { useViewerId } from './useViewerId'
 
 type PicksLoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; matches: Match[] }
+  | { status: 'ready'; matches: Match[]; lastUpdated: string }
 
 export function usePicksData() {
   const authState = useAuthState()
+  const currentUser = useCurrentUser()
   const userId = useViewerId()
   const [state, setState] = useState<PicksLoadState>({ status: 'loading' })
   const [picks, setPicks] = useState<Pick[]>(() => loadLocalPicks(userId))
-  const firestoreEnabled = hasFirebase && authState.status === 'ready' && !!authState.user
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const firestoreEnabled =
+    hasFirebase &&
+    authState.status === 'ready' &&
+    !!authState.user &&
+    currentUser?.isMember === true
 
   useEffect(() => {
     let canceled = false
@@ -47,21 +54,18 @@ export function usePicksData() {
             const picksFile = await fetchPicks()
             nextPicks = getUserPicksFromFile(picksFile, userId)
           }
-          if (firestoreEnabled && nextPicks.length > 0) {
-            try {
-              await saveUserPicksDoc(userId, nextPicks)
-            } catch {
-              // Ignore Firestore write failures for local-only usage.
-            }
-          }
         }
 
         setPicks(nextPicks ?? [])
         if (nextPicks && nextPicks.length > 0) {
           saveLocalPicks(userId, nextPicks)
         }
-
-        setState({ status: 'ready', matches: matchesFile.matches })
+        setSaveStatus('idle')
+        setState({
+          status: 'ready',
+          matches: matchesFile.matches,
+          lastUpdated: matchesFile.lastUpdated
+        })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
         if (!canceled) setState({ status: 'error', message })
@@ -76,10 +80,20 @@ export function usePicksData() {
   function updatePicks(nextPicks: Pick[]) {
     setPicks(nextPicks)
     saveLocalPicks(userId, nextPicks)
-    if (firestoreEnabled) {
-      void saveUserPicksDoc(userId, nextPicks).catch(() => {})
+    setSaveStatus('idle')
+  }
+
+  async function savePicks(nextPicks?: Pick[]) {
+    if (!firestoreEnabled) return
+    const payload = nextPicks ?? picks
+    setSaveStatus('saving')
+    try {
+      await saveUserPicksDoc(userId, payload)
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('error')
     }
   }
 
-  return { state, picks, updatePicks }
+  return { state, picks, updatePicks, savePicks, saveStatus, canSave: firestoreEnabled }
 }

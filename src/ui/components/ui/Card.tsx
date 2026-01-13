@@ -1,5 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 
+import { cn } from '../../lib/utils'
+
 type CardProps = HTMLAttributes<HTMLElement> & {
   children: ReactNode
   as?: 'section' | 'div' | 'article'
@@ -18,7 +20,13 @@ type CardSectionProps = HTMLAttributes<HTMLDivElement> & {
 
 export function Card({ children, className, as: Tag = 'section', ...props }: CardProps) {
   return (
-    <Tag {...props} className={['card uiCard', className].filter(Boolean).join(' ')}>
+    <Tag
+      {...props}
+      className={cn(
+        'rounded-lg border border-border bg-card text-card-foreground shadow-card',
+        className
+      )}
+    >
       {children}
     </Tag>
   )
@@ -26,22 +34,22 @@ export function Card({ children, className, as: Tag = 'section', ...props }: Car
 
 export function CardHeader({ title, subtitle, actions, children }: CardHeaderProps) {
   if (children) {
-    return <div className="uiCardHeader">{children}</div>
+    return <div className="flex items-start justify-between gap-4 border-b border-border/60 p-4">{children}</div>
   }
   return (
-    <div className="uiCardHeader">
-      <div className="uiCardHeaderTitle">
-        {title ? <div className="sectionTitle">{title}</div> : null}
-        {subtitle ? <div className="pageSubtitle">{subtitle}</div> : null}
+    <div className="flex items-start justify-between gap-4 border-b border-border/60 p-4">
+      <div className="space-y-1">
+        {title ? <div className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">{title}</div> : null}
+        {subtitle ? <div className="text-base text-foreground">{subtitle}</div> : null}
       </div>
-      {actions ? <div className="uiCardHeaderActions">{actions}</div> : null}
+      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </div>
   )
 }
 
 export function CardBody({ children, className, ...props }: CardSectionProps) {
   return (
-    <div {...props} className={['uiCardBody', className].filter(Boolean).join(' ')}>
+    <div {...props} className={cn('p-4', className)}>
       {children}
     </div>
   )
@@ -49,7 +57,7 @@ export function CardBody({ children, className, ...props }: CardSectionProps) {
 
 export function CardFooter({ children, className, ...props }: CardSectionProps) {
   return (
-    <div {...props} className={['uiCardFooter', className].filter(Boolean).join(' ')}>
+    <div {...props} className={cn('flex items-center justify-between gap-3 border-t border-border/60 p-4', className)}>
       {children}
     </div>
   )

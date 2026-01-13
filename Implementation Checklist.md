@@ -6,14 +6,13 @@
 - [x] Create repo + Vite React + TypeScript app
 - [x] Add routing/pages:
   - [x] `/` (landing page)
-  - [x] `/upcoming` (all remaining matches)
-  - [x] `/results` (completed matches)
+  - [x] `/picks` (upcoming picks + finished results)
   - [x] `/leaderboard` (placeholder)
   - [x] `/users` (placeholder)
   - [x] `/simulation` (placeholder)
   - [x] `/exports` (placeholder)
 - [x] Add `public/data/matches.json` with mock matches + `lastUpdated`
-- [x] Build results view reading `/data/matches.json`
+- [x] Build picks/results view reading `/data/matches.json`
   - [x] Show teams, kickoff time, status, score (if finished)
 - [x] Set up GitHub Pages deploy workflow and verify site loads
 
@@ -28,10 +27,9 @@
   - [x] `public/data/picks.json` with sample picks
   - [x] `public/data/scoring.json` for group + knockout points
 - [x] Home: landing page with how-to + scoring overview
-- [x] Upcoming page: all remaining matches in ascending order
-  - [x] Uses the main picks board inputs
-- [x] Results page: completed matches (descending)
-  - [x] Show results + your picks (including missing picks)
+- [x] Picks page: upcoming + results in one view
+  - [x] Upcoming matches in ascending order with pick editor
+  - [x] Results matchdays in descending order with pick breakdowns
 - [x] Implement pick entry UI
   - [x] Exact score (home/away)
   - [x] Match outcome (home win/draw/away win)
@@ -44,14 +42,13 @@
   - [x] Separate points for exact, outcome, knockout extras
   - [x] Stage-specific knockout scoring (R32, R16, QF, SF, Third, Final)
   - [x] Render standings from mock members + picks
-- [x] Add admin-only navigation for backstage pages
-- [x] Add multi-theme system (10 themes) with light/dark + system mode persistence
-- [x] Add `/themes` selector page with nav entry
-- [x] Add upcoming lock reminder banner on `/upcoming`
+- [x] Add admin-only navigation for backstage pages (surfaced in Settings shortcuts)
+- [x] Refactor to a single ChatGPT-inspired palette with light/dark/system mode persistence
+- [x] Add `/settings` appearance page and redirect `/themes` → `/settings`
+- [x] Add next-lock reminder banner on `/picks` (upcoming view)
 - [x] Add leaderboard pagination (default 6 per page)
-- [x] Paginate upcoming/results by match day (PST) and add group filters for group stage
-- [x] Hide knockout matches on upcoming/results until group stage completion
-- [x] Remove collapsible matchday sections on upcoming/results
+- [x] Paginate picks/results by match day (PST) and add group filters for group stage
+- [x] Hide knockout matches until group stage completion
 - [x] Add finished-only CSV exports page (picks, brackets, leaderboard)
 
 ---

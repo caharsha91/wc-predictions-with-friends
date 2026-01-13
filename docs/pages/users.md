@@ -8,6 +8,7 @@ src/ui/pages/AdminUsersPage.tsx
 
 ## Purpose
 Manage league members who can access the private league and admin capabilities.
+This page is linked from Settings for admins.
 
 ## Data and state
 - Loads members from Firestore collection leagues/{leagueId}/members.
