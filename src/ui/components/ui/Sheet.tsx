@@ -41,7 +41,7 @@ export function SheetContent({
       <SheetOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed z-50 flex flex-col gap-4 bg-card text-card-foreground shadow-soft',
+          'fixed z-50 flex flex-col gap-4 bg-card text-card-foreground shadow-soft overflow-y-auto max-h-[100vh] max-h-[100dvh]',
           sideClasses[side],
           className
         )}
