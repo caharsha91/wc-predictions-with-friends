@@ -144,7 +144,7 @@ function toBadgeTone(tone: StatusTone) {
   if (tone === 'live') return 'info'
   if (tone === 'final') return 'success'
   if (tone === 'locked') return 'locked'
-  if (tone === 'alert') return 'warning'
+  if (tone === 'alert') return 'secondary'
   return 'default'
 }
 

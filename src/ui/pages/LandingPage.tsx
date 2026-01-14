@@ -182,6 +182,7 @@ export default function LandingPage() {
           label: 'View results',
           to: '/picks?tab=results'
         }
+  const primaryCtaVariant = nextActionable ? 'pillSecondary' : 'pill'
 
   const nextLockPick = nextLock ? findPick(localPicks, nextLock.match.id, userId) : undefined
   const nextLockPicked = nextLock ? isPickComplete(nextLock.match, nextLockPick) : false
@@ -202,7 +203,7 @@ export default function LandingPage() {
             roll up overnight.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
-            <ButtonLink to={primaryCta.to} variant="pill" size="sm">
+            <ButtonLink to={primaryCta.to} variant={primaryCtaVariant} size="sm">
               {primaryCta.label}
             </ButtonLink>
             <ButtonLink to="/picks?tab=results" variant="pill" size="sm">

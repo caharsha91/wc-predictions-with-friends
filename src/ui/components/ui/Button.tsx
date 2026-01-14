@@ -16,7 +16,9 @@ const buttonVariants = cva(
         ghost:
           'border-border/60 bg-transparent text-muted-foreground hover:border-border hover:bg-[var(--surface-muted)]',
         pill:
-          'border-[var(--border-accent)] bg-[var(--button-bg)] text-foreground shadow-[var(--shadow-xs)] hover:border-[var(--accent-strong)] hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow-sm)] data-[active=true]:border-[var(--accent-strong)] data-[active=true]:bg-[var(--accent-soft)] data-[active=true]:shadow-[var(--shadow-sm)] disabled:shadow-none'
+          'border-[var(--border-accent)] bg-[var(--button-bg)] text-foreground shadow-[var(--shadow-xs)] hover:border-[var(--accent-strong)] hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow-sm)] data-[active=true]:border-[var(--accent-strong)] data-[active=true]:bg-[var(--accent-soft)] data-[active=true]:shadow-[var(--shadow-sm)] disabled:shadow-none',
+        pillSecondary:
+          'border-[rgba(var(--color-accent-2-rgb),var(--border-accent-alpha))] bg-[rgba(var(--color-accent-2-rgb),var(--button-bg-alpha))] text-foreground shadow-[var(--shadow-xs)] hover:border-[var(--accent-violet)] hover:bg-[rgba(var(--color-accent-2-rgb),var(--accent-soft-alpha))] hover:shadow-[var(--shadow-sm)] data-[active=true]:border-[var(--accent-violet)] data-[active=true]:bg-[rgba(var(--color-accent-2-rgb),var(--accent-soft-alpha))] data-[active=true]:shadow-[var(--shadow-sm)] disabled:shadow-none'
       },
       size: {
         sm: 'h-9 px-3 text-xs',

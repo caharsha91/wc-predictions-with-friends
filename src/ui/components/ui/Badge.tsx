@@ -13,6 +13,8 @@ const badgeVariants = cva(
         warning: 'border-[var(--border-warning)] bg-[var(--banner-accent)] text-foreground',
         danger: 'border-[var(--border-danger)] bg-[var(--accent-soft)] text-foreground',
         info: 'border-[var(--border-accent)] bg-[var(--accent-soft)] text-foreground',
+        secondary:
+          'border-[rgba(var(--color-accent-2-rgb),var(--border-accent-alpha))] bg-[rgba(var(--color-accent-2-rgb),var(--accent-soft-alpha))] text-foreground',
         locked: 'border-[var(--border-warning)] bg-[var(--banner-accent)] text-foreground'
       }
     },
