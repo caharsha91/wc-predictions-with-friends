@@ -725,6 +725,7 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                   <Button
                     type="button"
                     size="sm"
+                    variant="secondary"
                     onClick={handleExportPicks}
                     disabled={!hasPickExport}
                   >
@@ -745,6 +746,7 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                   <Button
                     type="button"
                     size="sm"
+                    variant="secondary"
                     onClick={handleExportGroup}
                     disabled={!hasGroupExport}
                   >
@@ -768,6 +770,7 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                   <Button
                     type="button"
                     size="sm"
+                    variant="secondary"
                     onClick={handleExportKnockout}
                     disabled={!hasKnockoutExport}
                   >
@@ -790,6 +793,7 @@ export function ExportsPanel({ embedded = false }: { embedded?: boolean }) {
                   <Button
                     type="button"
                     size="sm"
+                    variant="secondary"
                     onClick={handleExportLeaderboard}
                     disabled={!hasLeaderboardExport}
                   >

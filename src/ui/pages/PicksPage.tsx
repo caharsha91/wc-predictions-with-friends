@@ -331,11 +331,16 @@ function PickEditorSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? 'bottom' : 'right'}
+        style={
+          isMobile
+            ? undefined
+            : { top: 'calc(var(--app-header-height, 0px) + 12px)', height: 'auto' }
+        }
         className={cn(
           'overflow-y-auto',
           isMobile
             ? 'max-h-[90vh] rounded-t-2xl'
-            : 'h-[100dvh] max-h-[100dvh] w-[min(96vw,420px)] max-w-[420px] rounded-l-2xl'
+            : 'dialogTopOffset w-[min(96vw,420px)] max-w-[420px] rounded-l-2xl'
         )}
       >
         <SheetHeader>

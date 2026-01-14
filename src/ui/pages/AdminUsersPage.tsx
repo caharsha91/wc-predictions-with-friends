@@ -242,7 +242,13 @@ export default function AdminUsersPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {!canManageMembers ? <Badge tone="warning">Read-only</Badge> : null}
-                <Button type="button" size="sm" onClick={openAddDrawer} disabled={!canManageMembers}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="pill"
+                  onClick={openAddDrawer}
+                  disabled={!canManageMembers}
+                >
                   Add member
                 </Button>
               </div>

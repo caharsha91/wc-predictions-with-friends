@@ -306,7 +306,7 @@
 
 .adminDrawer {
   position: fixed;
-  top: 96px;
+  top: calc(var(--app-header-height, 0px) + 12px);
   right: 24px;
   bottom: 24px;
   width: min(420px, 92vw);
@@ -323,6 +323,11 @@
   transition: transform 0.3s ease;
   z-index: 30;
   pointer-events: none;
+}
+
+.dialogTopOffset {
+  top: calc(var(--app-header-height, 0px) + 12px);
+  height: auto;
 }
 
 .adminDrawer[data-open='true'] {

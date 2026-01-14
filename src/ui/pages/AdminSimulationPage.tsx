@@ -261,7 +261,7 @@ export default function AdminSimulationPage() {
                 <Button
                   type="button"
                   size="sm"
-                  variant="primary"
+                  variant="pill"
                   onClick={handleSimulationNowApply}
                   disabled={simulationBusy || !simNowInput}
                 >
@@ -289,7 +289,7 @@ export default function AdminSimulationPage() {
                 className="simulationReset"
                 type="button"
                 size="sm"
-                variant="primary"
+                variant="pill"
                 onClick={handleResetSimulation}
                 disabled={resetDisabled}
               >
@@ -305,14 +305,36 @@ export default function AdminSimulationPage() {
                 writes while enabled.
               </p>
             </div>
-            <label className="adminCheckbox simulationToggle">
-              <input
-                type="checkbox"
-                checked={simulation.enabled}
-                onChange={(event) => handleSimulationToggle(event.target.checked)}
-              />
-              <span>Simulation: {simulation.enabled ? 'ON' : 'OFF'}</span>
-            </label>
+            <div className="simulationToggle">
+              <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Simulation mode">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="pill"
+                  data-active={!simulation.enabled ? 'true' : 'false'}
+                  aria-pressed={!simulation.enabled}
+                  onClick={() => {
+                    if (!simulation.enabled) return
+                    void handleSimulationToggle(false)
+                  }}
+                >
+                  Live
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="pill"
+                  data-active={simulation.enabled ? 'true' : 'false'}
+                  aria-pressed={simulation.enabled}
+                  onClick={() => {
+                    if (simulation.enabled) return
+                    void handleSimulationToggle(true)
+                  }}
+                >
+                  Simulation
+                </Button>
+              </div>
+            </div>
             <div className="simulationMetaGrid">
               <div className="simulationMetaCard">
                 <span className="simulationMetaLabel">Status</span>

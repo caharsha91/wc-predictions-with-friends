@@ -94,6 +94,7 @@ function LayoutFrame() {
   const toastTimerRef = useRef<number | null>(null)
   const creditsTimerRef = useRef<number | null>(null)
   const skipLogoClickRef = useRef(false)
+  const headerRef = useRef<HTMLElement | null>(null)
   const canAccessAdmin = simulation.enabled || user?.isAdmin
   const location = useLocation()
   const appShell = useAppShell()
@@ -117,6 +118,27 @@ function LayoutFrame() {
         window.clearTimeout(creditsTimerRef.current)
       }
     }
+  }, [])
+
+  useEffect(() => {
+    const header = headerRef.current
+    if (!header) return
+
+    const updateHeaderHeight = () => {
+      const height = header.getBoundingClientRect().height
+      document.documentElement.style.setProperty('--app-header-height', `${height}px`)
+    }
+
+    updateHeaderHeight()
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateHeaderHeight)
+      return () => window.removeEventListener('resize', updateHeaderHeight)
+    }
+
+    const observer = new ResizeObserver(updateHeaderHeight)
+    observer.observe(header)
+    return () => observer.disconnect()
   }, [])
 
   function resetLogoClickTimer() {
@@ -224,7 +246,10 @@ function LayoutFrame() {
           Simulation mode (local only)
         </div>
       ) : null}
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-[var(--header-bg)] backdrop-blur">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-40 border-b border-border/60 bg-[var(--header-bg)] backdrop-blur"
+      >
         <div className="container flex items-center justify-between gap-3 py-3">
           <button
             className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-mark-bg)] text-sm font-semibold uppercase tracking-[0.2em] text-[var(--brand-mark-text)] shadow-soft drop-shadow-[0_2px_6px_rgba(0,0,0,0.35)] font-display"
