@@ -326,8 +326,10 @@
 }
 
 .dialogTopOffset {
-  top: calc(var(--app-header-height, 0px) + 12px);
+  top: calc(var(--app-header-height, 96px) + 12px);
+  bottom: 12px;
   height: auto;
+  max-height: calc(100vh - var(--app-header-height, 96px) - 24px);
 }
 
 .adminDrawer[data-open='true'] {

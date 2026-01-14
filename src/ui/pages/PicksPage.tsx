@@ -334,7 +334,12 @@ function PickEditorSheet({
         style={
           isMobile
             ? undefined
-            : { top: 'calc(var(--app-header-height, 0px) + 12px)', height: 'auto' }
+            : {
+                top: 'calc(var(--app-header-height, 96px) + 12px)',
+                bottom: '12px',
+                height: 'auto',
+                maxHeight: 'calc(100vh - var(--app-header-height, 96px) - 24px)'
+              }
         }
         className={cn(
           'overflow-y-auto',
@@ -908,6 +913,26 @@ export default function PicksPage() {
     )
   }
 
+  const lockBanner =
+    activeTab === 'upcoming' ? (
+      <LockReminderBanner
+        matches={upcomingMatches}
+        picks={picks}
+        userId={userId}
+        onOpenMatch={(matchId) => {
+          const match =
+            state.status === 'ready'
+              ? state.matches.find((item) => item.id === matchId)
+              : null
+          if (match) {
+            setUpcomingTab('matchday')
+            setActiveUpcomingDateKey(getDateKeyInTimeZone(match.kickoffUtc))
+          }
+          setActiveMatchId(matchId)
+        }}
+      />
+    ) : null
+
   return (
     <div className="stack">
       <PageHeader
@@ -928,25 +953,6 @@ export default function PicksPage() {
 
       <div className="grid gap-6 min-[901px]:grid-cols-[320px_minmax(0,1fr)]">
         <div className="flex flex-col gap-5 min-[901px]:sticky min-[901px]:top-24 min-[901px]:self-start">
-          {activeTab === 'upcoming' ? (
-            <LockReminderBanner
-              matches={upcomingMatches}
-              picks={picks}
-              userId={userId}
-              onOpenMatch={(matchId) => {
-                const match =
-                  state.status === 'ready'
-                    ? state.matches.find((item) => item.id === matchId)
-                    : null
-                if (match) {
-                  setUpcomingTab('matchday')
-                  setActiveUpcomingDateKey(getDateKeyInTimeZone(match.kickoffUtc))
-                }
-                setActiveMatchId(matchId)
-              }}
-            />
-          ) : null}
-
           {showUpcomingMatchdayNav ? (
             <Card className="p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Matchday</div>
@@ -1022,6 +1028,7 @@ export default function PicksPage() {
         </div>
 
         <div className="stack">
+          {lockBanner}
           <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-card">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
