@@ -332,6 +332,11 @@
   max-height: calc(100vh - var(--app-header-height, 96px) - 24px);
 }
 
+.pickEditorSheetMobile {
+  max-height: 90vh;
+  max-height: 90dvh;
+}
+
 .adminDrawer[data-open='true'] {
   transform: translateX(0);
   pointer-events: auto;

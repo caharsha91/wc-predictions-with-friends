@@ -303,6 +303,12 @@ function PickEditorSheet({
   isMobile: boolean
 }) {
   const [draft, setDraft] = useState<DraftPick>({})
+  const handleOpenAutoFocus = useCallback((event: Event) => {
+    event.preventDefault()
+    if (event.currentTarget instanceof HTMLElement) {
+      event.currentTarget.focus()
+    }
+  }, [])
 
   useEffect(() => {
     if (!match) return
@@ -331,6 +337,8 @@ function PickEditorSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? 'bottom' : 'right'}
+        onOpenAutoFocus={handleOpenAutoFocus}
+        tabIndex={-1}
         style={
           isMobile
             ? undefined
@@ -344,7 +352,7 @@ function PickEditorSheet({
         className={cn(
           'overflow-y-auto',
           isMobile
-            ? 'max-h-[90vh] rounded-t-2xl'
+            ? 'pickEditorSheetMobile rounded-t-2xl'
             : 'dialogTopOffset w-[min(96vw,420px)] max-w-[420px] rounded-l-2xl'
         )}
       >
