@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Link, type LinkProps } from 'react-router-dom'
 import { cva, type VariantProps } from 'class-variance-authority'
@@ -5,20 +6,20 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-55',
   {
     variants: {
       variant: {
         primary:
-          'border-transparent bg-[var(--accent)] text-[var(--text-inverse)] shadow-soft hover:bg-[var(--accent-strong)]',
+          'border-[var(--primary-cta-border)] [background:var(--primary-cta-bg)] text-primary-foreground shadow-[var(--primary-cta-shadow)] hover:[background:var(--primary-cta-hover-bg)] active:translate-y-[1px]',
         secondary:
-          'border-border/70 bg-[var(--surface-muted)] text-foreground hover:border-[var(--border-strong)]',
+          'border-[var(--secondary-cta-border)] [background:var(--secondary-cta-bg)] text-foreground shadow-[var(--secondary-cta-shadow)] hover:[background:var(--secondary-cta-hover-bg)]',
         ghost:
-          'border-border/60 bg-transparent text-muted-foreground hover:border-border hover:bg-[var(--surface-muted)]',
+          'border-transparent bg-transparent text-fg1 hover:border-border0 hover:bg-bg2 hover:text-foreground',
         pill:
-          'border-[var(--border-accent)] bg-[var(--button-bg)] text-foreground shadow-[var(--shadow-xs)] hover:border-[var(--accent-strong)] hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow-sm)] data-[active=true]:border-[var(--accent-strong)] data-[active=true]:bg-[var(--accent-soft)] data-[active=true]:shadow-[var(--shadow-sm)] disabled:shadow-none',
+          'border-border1 bg-[var(--accent-soft)] text-foreground shadow-[var(--shadow0)] hover:border-primary hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow1)] data-[active=true]:border-[var(--pill-active-border)] data-[active=true]:[background:var(--pill-active-bg)] data-[active=true]:shadow-[var(--pill-active-shadow)] disabled:shadow-none',
         pillSecondary:
-          'border-[rgba(var(--color-accent-2-rgb),var(--border-accent-alpha))] bg-[rgba(var(--color-accent-2-rgb),var(--button-bg-alpha))] text-foreground shadow-[var(--shadow-xs)] hover:border-[var(--accent-violet)] hover:bg-[rgba(var(--color-accent-2-rgb),var(--accent-soft-alpha))] hover:shadow-[var(--shadow-sm)] data-[active=true]:border-[var(--accent-violet)] data-[active=true]:bg-[rgba(var(--color-accent-2-rgb),var(--accent-soft-alpha))] data-[active=true]:shadow-[var(--shadow-sm)] disabled:shadow-none'
+          'border-[rgba(var(--secondary-rgb),0.58)] bg-[rgba(var(--secondary-rgb),0.2)] text-foreground shadow-[var(--shadow0)] hover:border-secondary hover:bg-[rgba(var(--secondary-rgb),0.26)] hover:shadow-[var(--shadow1)] data-[active=true]:border-secondary data-[active=true]:bg-[rgba(var(--secondary-rgb),0.3)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
       },
       size: {
         sm: 'h-9 px-3 text-xs',
@@ -40,20 +41,14 @@ type ButtonProps = VariantProps<typeof buttonVariants> &
 
 type ButtonLinkProps = VariantProps<typeof buttonVariants> & LinkProps & { icon?: ReactNode }
 
-export function Button({
-  variant,
-  size,
-  loading = false,
-  icon,
-  className,
-  type,
-  disabled,
-  children,
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant, size, loading = false, icon, className, type, disabled, children, ...props },
+  ref
+) {
   return (
     <button
       {...props}
+      ref={ref}
       type={type ?? 'button'}
       className={cn(
         buttonVariants({ variant, size }),
@@ -65,7 +60,7 @@ export function Button({
     >
       {loading ? (
         <span
-          className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--accent-soft)] border-t-[var(--primary)]"
+          className="h-4 w-4 animate-spin rounded-full border-2 border-current/40 border-t-current"
           aria-hidden="true"
         />
       ) : null}
@@ -75,7 +70,7 @@ export function Button({
       </span>
     </button>
   )
-}
+})
 
 export function ButtonLink({
   variant,

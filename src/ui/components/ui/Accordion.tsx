@@ -11,7 +11,7 @@ export function AccordionItem({
 }: ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>) {
   return (
     <AccordionPrimitive.Item
-      className={cn('rounded-lg border border-border bg-card', className)}
+      className={cn('rounded-lg border border-border bg-card shadow-[var(--shadow0)]', className)}
       {...props}
     />
   )
@@ -25,7 +25,7 @@ export function AccordionTrigger({
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
         className={cn(
-          'group flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.12em] text-foreground',
+          'group flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.12em] text-foreground transition hover:bg-bg2/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           className
         )}
         {...props}
@@ -41,7 +41,7 @@ export function AccordionContent({
   return (
     <AccordionPrimitive.Content
       className={cn(
-        'overflow-hidden border-t border-border/60 px-4 py-3 text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down',
+        'overflow-hidden border-t border-border px-4 py-3 text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down',
         className
       )}
       {...props}

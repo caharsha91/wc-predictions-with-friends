@@ -19,6 +19,9 @@ type InputFieldProps = FieldBaseProps & InputHTMLAttributes<HTMLInputElement>
 type SelectFieldProps = FieldBaseProps & SelectHTMLAttributes<HTMLSelectElement>
 type TextareaFieldProps = FieldBaseProps & TextareaHTMLAttributes<HTMLTextAreaElement>
 
+const baseFieldControlClass =
+  'w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground placeholder:text-fg2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60'
+
 function useFieldIds(id?: string, helperText?: string, error?: string) {
   const fallbackId = useId()
   const fieldId = id ?? `field-${fallbackId}`
@@ -53,7 +56,7 @@ export function InputField({
       <input
         {...props}
         id={fieldId}
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-60"
+        className={baseFieldControlClass}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={describedBy}
       />
@@ -96,7 +99,7 @@ export function SelectField({
       <select
         {...props}
         id={fieldId}
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-60"
+        className={baseFieldControlClass}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={describedBy}
       >
@@ -140,7 +143,7 @@ export function TextareaField({
       <textarea
         {...props}
         id={fieldId}
-        className="min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-60"
+        className={cn('min-h-[96px]', baseFieldControlClass)}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={describedBy}
       />

@@ -1,20 +1,7 @@
-# Access Denied Page
+# Access Denied
 
 ## Route
-Shown when an admin-only route is accessed without permission (users, exports, simulation).
-
-## Component
-src/ui/pages/AccessDeniedPage.tsx
+`/access-denied`
 
 ## Purpose
-Explain that the viewer lacks access and redirect them back to home.
-
-## Data and state
-- Uses useNavigate from react-router-dom.
-- No external data dependencies.
-
-## Key UI
-- Card with title, brief message, and a button to go home.
-
-## Behavior
-- Auto-redirects to / after 3 seconds.
+Shown when user is authenticated but does not have required access for protected routes.

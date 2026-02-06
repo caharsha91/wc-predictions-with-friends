@@ -23,7 +23,7 @@ export function Card({ children, className, as: Tag = 'section', ...props }: Car
     <Tag
       {...props}
       className={cn(
-        'rounded-lg border border-border bg-card text-card-foreground shadow-card',
+        'rounded-lg border border-border bg-card text-card-foreground shadow-[var(--shadow1)]',
         className
       )}
     >
@@ -34,10 +34,10 @@ export function Card({ children, className, as: Tag = 'section', ...props }: Car
 
 export function CardHeader({ title, subtitle, actions, children }: CardHeaderProps) {
   if (children) {
-    return <div className="flex items-start justify-between gap-4 border-b border-border/60 p-4">{children}</div>
+    return <div className="flex items-start justify-between gap-4 border-b border-border p-4">{children}</div>
   }
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border/60 p-4">
+    <div className="flex items-start justify-between gap-4 border-b border-border p-4">
       <div className="space-y-1">
         {title ? <div className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">{title}</div> : null}
         {subtitle ? <div className="text-base text-foreground">{subtitle}</div> : null}
@@ -57,7 +57,7 @@ export function CardBody({ children, className, ...props }: CardSectionProps) {
 
 export function CardFooter({ children, className, ...props }: CardSectionProps) {
   return (
-    <div {...props} className={cn('flex items-center justify-between gap-3 border-t border-border/60 p-4', className)}>
+    <div {...props} className={cn('flex items-center justify-between gap-3 border-t border-border p-4', className)}>
       {children}
     </div>
   )

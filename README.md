@@ -4,15 +4,17 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 
 ## App Flow (Current)
 
-- `/` home landing page (how to play, scoring, quick CTAs)
-- `/picks` upcoming picks + results in one view (Upcoming/Results tabs, Today/Matchday/All for upcoming, inline stage/group filters)
-- legacy routes: `/upcoming` → `/picks?tab=upcoming`, `/results` → `/picks?tab=results`
-- `/bracket` bracket predictions (group qualifiers + knockout winners, auto-advances by picks, graphical knockout bracket + inline team pick pills)
-- `/leaderboard` category points + standings pagination
-- `/settings` appearance + about + admin shortcuts (light/dark/system; /themes redirects)
-- `/users` members manager (admins only, or simulation enabled; accessible from Settings)
-- `/simulation` local-only simulation sandbox (admins only, or simulation enabled)
-- `/exports` finished-only CSV exports (admins only, or simulation enabled)
+- `/` picks workspace (default member entry)
+- `/picks` alias of picks workspace
+- `/results` finished matches + scoring breakdown + rules summary
+- `/bracket` single-page knockout bracket editor and review
+- `/leaderboard` standings
+- `/players` member manager (admin only)
+- `/settings` account and appearance settings
+- `/login` sign-in guidance
+- `/join/:inviteCode` invite flow
+- `/access-denied` unauthorized state
+- `*` not found
 
 Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-group.json`, `bracket-knockout.json`, `best-third-qualifiers.json`, `leaderboard.json`).
 
@@ -25,9 +27,9 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 
 - Entry + routing: `src/main.tsx` bootstraps the app and applies theme attributes; `src/ui/App.tsx` defines routes; `src/ui/Layout.tsx` owns the shared header/nav shell.
 - Data flow: `src/ui/hooks/*` fetches from Firestore when enabled (see `src/lib/firebase.ts`), otherwise reads mock JSON from `public/data/`. Static JSON fetches use HTTP caching + localStorage TTL to reduce reads. Picks updates flow through `src/lib/picks.ts`.
-- Match grouping: `src/lib/matches.ts` normalizes and groups matches by PST matchday + stage for the picks view.
+- Match grouping/locks: `src/lib/matches.ts` handles lock calculations and stage/date helpers.
 - Scoring: `src/lib/scoring.ts` computes pick + bracket points from `public/data/scoring.json`, surfaced in leaderboard views.
-- Theming: base tokens live in `src/styles/theme.css`, ChatGPT-inspired light/dark palettes in `src/styles/themes.css`, and state in `src/theme/ThemeProvider.tsx` with localStorage persistence + optional Firestore sync (surface controls in `/settings`).
+- Theming: base tokens live in `src/styles/theme.css`, palettes in `src/styles/themes.css`, and state in `src/theme/ThemeProvider.tsx` with localStorage persistence + optional Firestore sync.
 - Styling: Tailwind + shadcn/ui components, with remaining page-specific styles in `src/ui/styles.css`.
 - UI primitives: reusable components are in `src/ui/components/ui/` and app-specific components in `src/ui/components/`.
 
@@ -62,12 +64,9 @@ Mock data lives in `public/data/` (`matches.json`, `members.json`, `picks.json`,
 - Group stage guide highlights group qualifiers + best third-place pick flow.
 - Knockout guide explains inline team-pill picks and champion badge from the Final.
 
-## Backstage
+## Admin
 
-- Backstage pages are available to admins (or when simulation mode is enabled) and are linked from Settings.
-- `/users` includes the members manager (name/email/admin flag).
-- `/simulation` provides local-only simulation controls.
-- `/exports` provides finished-only CSV downloads (picks, brackets, leaderboard).
+- `/players` is admin-only and manages member allowlist + admin role assignment.
 
 ## Firestore Data Model (when enabled)
 

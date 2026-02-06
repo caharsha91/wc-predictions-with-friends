@@ -1,92 +1,43 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { fetchBestThirdQualifiers, fetchBracketPredictions, fetchMatches } from '../../lib/data'
-import { buildGroupStandingsSnapshot, type GroupSummary } from '../../lib/exports'
-import {
-  combineBracketPredictions,
-  hasBracketData,
-  loadLocalBracketPrediction,
-  saveLocalBracketPrediction
-} from '../../lib/bracket'
-import {
-  fetchUserBracketGroupDoc,
-  fetchUserBracketKnockoutDoc,
-  saveUserBracketGroupDoc,
-  saveUserBracketKnockoutDoc
-} from '../../lib/firestoreData'
-import { hasFirebase } from '../../lib/firebase'
-import {
-  getDateKeyInTimeZone,
-  getLockTimePstForDateKey
-} from '../../lib/matches'
-import type { BracketPrediction, GroupPrediction } from '../../types/bracket'
-import type { Match, MatchWinner, Team } from '../../types/matches'
+import { getLockTime, isMatchLocked } from '../../lib/matches'
+import type { Match, MatchWinner } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
-import { useAuthState } from '../hooks/useAuthState'
-import { useCurrentUser } from '../hooks/useCurrentUser'
-import { useMediaQuery } from '../hooks/useMediaQuery'
-import { useNow } from '../hooks/useNow'
-import { useViewerId } from '../hooks/useViewerId'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/Accordion'
 import { Alert } from '../components/ui/Alert'
+import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import PageHeader from '../components/ui/PageHeader'
 import Skeleton from '../components/ui/Skeleton'
+import Table from '../components/ui/Table'
+import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
+import { useNow } from '../hooks/useNow'
+import { useViewerId } from '../hooks/useViewerId'
 
-type LoadState =
-  | { status: 'loading' }
-  | { status: 'error'; message: string }
-  | {
-      status: 'ready'
-      matches: Match[]
-      predictions: BracketPrediction[]
-      bestThirdQualifiers: string[]
-      lastUpdated: string
-    }
-
-const knockoutStageOrder: KnockoutStage[] = ['R32', 'R16', 'QF', 'SF', 'Third', 'Final']
-const TBD_TEAM: Team = { code: 'TBD', name: 'TBD' }
-
-type DisplayMatch = Match & {
-  displayHomeTeam: Team
-  displayAwayTeam: Team
+const STAGE_LABELS: Record<KnockoutStage, string> = {
+  R32: 'Round of 32',
+  R16: 'Round of 16',
+  QF: 'Quarterfinals',
+  SF: 'Semifinals',
+  Third: 'Third Place',
+  Final: 'Final'
 }
 
-type ValidationIssue = {
-  id: string
-  message: string
-  targetId: string
-  step: 'group' | 'third' | 'knockout'
+type WizardMode = 'match' | 'review'
+
+type BracketResumeState = {
+  mode: WizardMode
+  matchId?: string
 }
 
-type PickResult = 'pending' | 'correct' | 'incorrect'
-type ResultSummary = 'pending' | 'partial' | 'correct' | 'incorrect'
-type BracketStep = 'group' | 'third' | 'knockout'
-
-type ResultCounts = {
-  total: number
-  decided: number
-  correct: number
+type BracketEntry = {
+  stage: KnockoutStage
+  match: Match
 }
 
-const emptyQualifiers: string[] = []
-
-const pickResultLabels: Record<PickResult, string> = {
-  pending: 'Pending',
-  correct: 'Correct',
-  incorrect: 'Incorrect'
-}
-
-const summaryResultLabels: Record<ResultSummary, string> = {
-  pending: 'Pending',
-  partial: 'Partial',
-  correct: 'Correct',
-  incorrect: 'Incorrect'
-}
-
-function formatKickoff(utcIso: string) {
-  const date = new Date(utcIso)
-  return date.toLocaleString(undefined, {
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -94,1509 +45,462 @@ function formatKickoff(utcIso: string) {
   })
 }
 
-function formatLockTime(lockTime: Date) {
-  return lockTime.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZoneName: 'short'
-  })
+function resolveWinnerLabel(
+  winner: MatchWinner | undefined,
+  homeCode: string,
+  awayCode: string
+): string {
+  if (winner === 'HOME') return `${homeCode} advances`
+  if (winner === 'AWAY') return `${awayCode} advances`
+  return 'Missing'
 }
 
-function buildGroupTeams(matches: Match[]): Record<string, Team[]> {
-  const groupMap = new Map<string, Map<string, Team>>()
-  for (const match of matches) {
-    if (match.stage !== 'Group' || !match.group) continue
-    const teams = groupMap.get(match.group) ?? new Map<string, Team>()
-    teams.set(match.homeTeam.code, match.homeTeam)
-    teams.set(match.awayTeam.code, match.awayTeam)
-    groupMap.set(match.group, teams)
-  }
-
-  const result: Record<string, Team[]> = {}
-  for (const [groupId, teams] of groupMap.entries()) {
-    result[groupId] = [...teams.values()].sort((a, b) => a.code.localeCompare(b.code))
-  }
-  return result
+function getBracketWizardStorageKey(userId: string): string {
+  return `wc-bracket-wizard:${userId}`
 }
 
-function buildKnockoutMatches(matches: Match[]): Partial<Record<KnockoutStage, Match[]>> {
-  const stageMap: Partial<Record<KnockoutStage, Match[]>> = {}
-  for (const match of matches) {
-    if (match.stage === 'Group') continue
-    const stage = match.stage as KnockoutStage
-    const list = stageMap[stage] ?? []
-    list.push(match)
-    stageMap[stage] = list
-  }
-  for (const stage of Object.keys(stageMap) as KnockoutStage[]) {
-    stageMap[stage]!.sort(
-      (a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime()
-    )
-  }
-  return stageMap
-}
-
-function resolvePickWinner(match: DisplayMatch, winner?: MatchWinner): Team | undefined {
-  if (winner === 'HOME') return match.displayHomeTeam
-  if (winner === 'AWAY') return match.displayAwayTeam
-  return undefined
-}
-
-function resolvePickLoser(match: DisplayMatch, winner?: MatchWinner): Team | undefined {
-  if (winner === 'HOME') return match.displayAwayTeam
-  if (winner === 'AWAY') return match.displayHomeTeam
-  return undefined
-}
-
-function recordResult(status: PickResult, counts: ResultCounts) {
-  counts.total += 1
-  if (status !== 'pending') counts.decided += 1
-  if (status === 'correct') counts.correct += 1
-}
-
-function resolvePickStatus(pick: string | undefined, actualSet: Set<string> | null): PickResult {
-  if (!actualSet || actualSet.size === 0) return 'pending'
-  if (!pick) return 'incorrect'
-  return actualSet.has(pick) ? 'correct' : 'incorrect'
-}
-
-function resolveKnockoutPickStatus(match: Match, pick?: MatchWinner): PickResult {
-  if (match.status !== 'FINISHED' || !match.winner) return 'pending'
-  if (!pick) return 'incorrect'
-  return pick === match.winner ? 'correct' : 'incorrect'
-}
-
-function resolveSummaryStatus(counts: ResultCounts): ResultSummary {
-  if (counts.total === 0 || counts.decided === 0) return 'pending'
-  if (counts.decided < counts.total) return 'partial'
-  if (counts.correct === counts.total) return 'correct'
-  if (counts.correct === 0) return 'incorrect'
-  return 'partial'
-}
-
-function createEmptyPrediction(userId: string, groupIds: string[]): BracketPrediction {
-  const groups: Record<string, GroupPrediction> = {}
-  for (const groupId of groupIds) {
-    groups[groupId] = {}
-  }
-  const now = new Date().toISOString()
-  return {
-    id: `bracket-${userId}`,
-    userId,
-    groups,
-    bestThirds: [],
-    knockout: {},
-    createdAt: now,
-    updatedAt: now
-  }
-}
-
-function ensureGroupEntries(prediction: BracketPrediction, groupIds: string[]): BracketPrediction {
-  const nextGroups = { ...prediction.groups }
-  let changed = false
-  for (const groupId of groupIds) {
-    if (!nextGroups[groupId]) {
-      nextGroups[groupId] = {}
-      changed = true
+function loadBracketResumeState(userId: string): BracketResumeState | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(getBracketWizardStorageKey(userId))
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<BracketResumeState>
+    const mode = parsed.mode === 'match' || parsed.mode === 'review' ? parsed.mode : 'match'
+    return {
+      mode,
+      matchId: typeof parsed.matchId === 'string' ? parsed.matchId : undefined
     }
+  } catch {
+    return null
   }
-  if (!changed) return prediction
-  return { ...prediction, groups: nextGroups }
+}
+
+function saveBracketResumeState(userId: string, value: BracketResumeState): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(getBracketWizardStorageKey(userId), JSON.stringify(value))
 }
 
 export default function BracketPage() {
+  const now = useNow({ tickMs: 60000 })
   const userId = useViewerId()
-  const authState = useAuthState()
-  const currentUser = useCurrentUser()
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
-  const [prediction, setPrediction] = useState<BracketPrediction | null>(null)
-  const canPersistFirestoreRef = useRef(false)
-  const [activeStep, setActiveStep] = useState<BracketStep>('group')
-  const isMobile = useMediaQuery('(max-width: 900px)')
-  const [activeRound, setActiveRound] = useState<KnockoutStage | null>(null)
-  const firestoreEnabled =
-    hasFirebase &&
-    authState.status === 'ready' &&
-    !!authState.user &&
-    currentUser?.isMember === true
+  const {
+    loadState,
+    knockout,
+    setPick,
+    save,
+    saveStatus,
+    canPersistFirestore,
+    stageOrder,
+    totalMatches,
+    completeMatches
+  } = useBracketKnockoutData()
+
+  const [mode, setMode] = useState<WizardMode>('match')
+  const [activeMatchId, setActiveMatchId] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const resumeLoadedRef = useRef(false)
+  const resumeTargetRef = useRef<BracketResumeState | null>(null)
 
   useEffect(() => {
-    let canceled = false
-    async function load() {
-      setState({ status: 'loading' })
-      try {
-        const [matchesFile, bracketFile, bestThirdFile] = await Promise.all([
-          fetchMatches(),
-          fetchBracketPredictions(),
-          fetchBestThirdQualifiers()
-        ])
-        if (canceled) return
-        const predictions = combineBracketPredictions(bracketFile)
-        setState({
-          status: 'ready',
-          matches: matchesFile.matches,
-          predictions,
-          bestThirdQualifiers: bestThirdFile.qualifiers,
-          lastUpdated: matchesFile.lastUpdated
-        })
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
-        if (!canceled) setState({ status: 'error', message })
-      }
-    }
-    void load()
-    return () => {
-      canceled = true
-    }
-  }, [])
+    if (resumeLoadedRef.current) return
+    resumeTargetRef.current = loadBracketResumeState(userId)
+    resumeLoadedRef.current = true
+  }, [userId])
 
-  const groupTeams = useMemo(() => {
-    if (state.status !== 'ready') return {}
-    return buildGroupTeams(state.matches)
-  }, [state])
+  const orderedEntries = useMemo<BracketEntry[]>(() => {
+    if (loadState.status !== 'ready') return []
+    return stageOrder.flatMap((stage) => (loadState.byStage[stage] ?? []).map((match) => ({ stage, match })))
+  }, [loadState, stageOrder])
 
-  const groupStandings = useMemo(() => {
-    if (state.status !== 'ready') return new Map<string, GroupSummary>()
-    return buildGroupStandingsSnapshot(state.matches)
-  }, [state])
-
-  const groupIds = useMemo(() => {
-    return Object.keys(groupTeams).sort()
-  }, [groupTeams])
-
-  const allGroupTeams = useMemo(() => {
-    const teamMap = new Map<string, Team>()
-    for (const teams of Object.values(groupTeams)) {
-      for (const team of teams) {
-        teamMap.set(team.code, team)
-      }
-    }
-    return [...teamMap.values()].sort((a, b) => a.code.localeCompare(b.code))
-  }, [groupTeams])
-
-  const knockoutMatches = useMemo(() => {
-    if (state.status !== 'ready') return {}
-    return buildKnockoutMatches(state.matches)
-  }, [state])
-
-  const knockoutDisplayMatches = useMemo(() => {
-    if (state.status !== 'ready' || !prediction) return {}
-
-    const stageMap: Partial<Record<KnockoutStage, DisplayMatch[]>> = {}
-    let progressionMatches: DisplayMatch[] | null = null
-    let semifinalMatches: DisplayMatch[] | null = null
-
-    for (const stage of knockoutStageOrder) {
-      const baseMatches = knockoutMatches[stage]
-      if (!baseMatches || baseMatches.length === 0) continue
-
-      if (!progressionMatches) {
-        const initial = baseMatches.map((match) => ({
-          ...match,
-          displayHomeTeam: match.homeTeam,
-          displayAwayTeam: match.awayTeam
-        }))
-        stageMap[stage] = initial
-        progressionMatches = initial
-        if (stage === 'SF') semifinalMatches = initial
-        continue
-      }
-
-      if (stage === 'Third') {
-        const source: DisplayMatch[] = (semifinalMatches ?? progressionMatches) ?? []
-        const losers = source.map((match) => {
-          const stage = match.stage as KnockoutStage
-          return resolvePickLoser(match, prediction.knockout?.[stage]?.[match.id])
-        })
-        const display = baseMatches.map((match, index) => {
-          const home = losers[index * 2] ?? TBD_TEAM
-          const away = losers[index * 2 + 1] ?? TBD_TEAM
-          return { ...match, displayHomeTeam: home, displayAwayTeam: away }
-        })
-        stageMap[stage] = display
-        continue
-      }
-
-      const source: DisplayMatch[] =
-        (stage === 'Final' && semifinalMatches ? semifinalMatches : progressionMatches) ?? []
-      const winners = source.map((match) => {
-        const stage = match.stage as KnockoutStage
-        return resolvePickWinner(match, prediction.knockout?.[stage]?.[match.id])
-      })
-      const display = baseMatches.map((match, index) => {
-        const home = winners[index * 2] ?? TBD_TEAM
-        const away = winners[index * 2 + 1] ?? TBD_TEAM
-        return { ...match, displayHomeTeam: home, displayAwayTeam: away }
-      })
-      stageMap[stage] = display
-      progressionMatches = display
-      if (stage === 'SF') semifinalMatches = display
-    }
-
-    return stageMap
-  }, [knockoutMatches, prediction, state])
-
-  const availableRounds = useMemo(() => {
-    return knockoutStageOrder.filter(
-      (stage) => (knockoutDisplayMatches[stage]?.length ?? 0) > 0
-    )
-  }, [knockoutDisplayMatches])
-
-  useEffect(() => {
-    if (availableRounds.length === 0) {
-      setActiveRound(null)
-      return
-    }
-    setActiveRound((current) =>
-      current && availableRounds.includes(current) ? current : availableRounds[0]
-    )
-  }, [availableRounds])
-
-  const knockoutMatchDates = useMemo(() => {
-    if (state.status !== 'ready') return []
-    const dates = new Set<string>()
-    for (const match of state.matches) {
-      if (match.stage === 'Group') continue
-      dates.add(getDateKeyInTimeZone(match.kickoffUtc))
-    }
-    return [...dates].sort()
-  }, [state])
-
-  const groupStageComplete = useMemo(() => {
-    if (state.status !== 'ready') return false
-    const groupMatches = state.matches.filter((match) => match.stage === 'Group')
-    if (groupMatches.length === 0) return false
-    return groupMatches.every((match) => match.status === 'FINISHED')
-  }, [state])
-
-  const bestThirdsReady = useMemo(() => {
-    if (state.status !== 'ready') return false
-    return state.bestThirdQualifiers.length >= 8
-  }, [state])
-
-  const knockoutDrawReady = useMemo(() => {
-    if (state.status !== 'ready') return false
-    for (const stage of knockoutStageOrder) {
-      const stageMatches = state.matches.filter((match) => match.stage === stage)
-      if (stageMatches.length === 0) continue
-      return stageMatches.every(
-        (match) => match.homeTeam.code !== 'TBD' && match.awayTeam.code !== 'TBD'
-      )
-    }
-    return false
-  }, [state])
-
-  const knockoutUnlocked = groupStageComplete && bestThirdsReady && knockoutDrawReady
-
-  const groupMatchDates = useMemo(() => {
-    if (state.status !== 'ready') return []
-    const dates = new Set<string>()
-    for (const match of state.matches) {
-      if (match.stage !== 'Group') continue
-      dates.add(getDateKeyInTimeZone(match.kickoffUtc))
-    }
-    return [...dates].sort()
-  }, [state])
-
-  const groupLockTime = useMemo(() => {
-    if (groupMatchDates.length === 0) return null
-    return getLockTimePstForDateKey(groupMatchDates[0], -1)
-  }, [groupMatchDates])
-
-  const knockoutOpenTime = useMemo(() => {
-    if (groupMatchDates.length === 0) return null
-    return getLockTimePstForDateKey(groupMatchDates[groupMatchDates.length - 1], 0)
-  }, [groupMatchDates])
-
-  const knockoutLockTime = useMemo(() => {
-    if (knockoutMatchDates.length === 0) return null
-    return getLockTimePstForDateKey(knockoutMatchDates[0], -1)
-  }, [knockoutMatchDates])
-
-  const now = useNow()
-  const groupLocked = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
-  const knockoutLocked = knockoutLockTime ? now.getTime() >= knockoutLockTime.getTime() : false
-  const bracketCardHeight = 92
-  const bracketGap = 6
-  const knockoutColumns = useMemo(() => {
-    const columns: Array<{ key: string; title: string; stages: KnockoutStage[] }> = []
-    knockoutStageOrder.forEach((stage) => {
-      if (stage === 'Third' || stage === 'Final') return
-      if ((knockoutDisplayMatches[stage]?.length ?? 0) === 0) return
-      columns.push({ key: stage, title: stage, stages: [stage] })
-    })
-    const finalStages: KnockoutStage[] = []
-    if ((knockoutDisplayMatches.Final?.length ?? 0) > 0) {
-      finalStages.push('Final')
-    }
-    if ((knockoutDisplayMatches.Third?.length ?? 0) > 0) {
-      finalStages.push('Third')
-    }
-    if (finalStages.length > 0) {
-      columns.push({ key: 'finals', title: 'Finals', stages: finalStages })
-    }
-    return columns
-  }, [knockoutDisplayMatches])
-  const semifinalsIndex = useMemo(
-    () => knockoutColumns.findIndex((column) => column.key === 'SF'),
-    [knockoutColumns]
+  const entryById = useMemo(
+    () => new Map(orderedEntries.map((entry) => [entry.match.id, entry] as const)),
+    [orderedEntries]
   )
 
+  const entryWinner = (entry: BracketEntry): MatchWinner | undefined =>
+    knockout[entry.stage]?.[entry.match.id]
+  const entryLocked = (entry: BracketEntry): boolean => isMatchLocked(entry.match.kickoffUtc, now)
+
+  const openIncompleteEntries = useMemo(
+    () => orderedEntries.filter((entry) => !entryWinner(entry) && !entryLocked(entry)),
+    [knockout, now, orderedEntries]
+  )
+
+  const lockedIncompleteEntries = useMemo(
+    () => orderedEntries.filter((entry) => !entryWinner(entry) && entryLocked(entry)),
+    [knockout, now, orderedEntries]
+  )
+
+  const nextOpenIncompleteId = openIncompleteEntries[0]?.match.id ?? null
+
+  const stageSummary = useMemo(
+    () =>
+      stageOrder
+        .map((stage) => {
+          const matches = loadState.status === 'ready' ? loadState.byStage[stage] ?? [] : []
+          if (matches.length === 0) return null
+          const complete = matches.reduce((count, match) => (knockout[stage]?.[match.id] ? count + 1 : count), 0)
+          const openRemaining = matches.reduce((count, match) => {
+            const locked = isMatchLocked(match.kickoffUtc, now)
+            const picked = Boolean(knockout[stage]?.[match.id])
+            return !locked && !picked ? count + 1 : count
+          }, 0)
+          return {
+            stage,
+            total: matches.length,
+            complete,
+            openRemaining
+          }
+        })
+        .filter((value): value is NonNullable<typeof value> => value !== null),
+    [knockout, loadState, now, stageOrder]
+  )
 
   useEffect(() => {
-    if (state.status !== 'ready') return
-    if (hasFirebase && authState.status === 'loading') return
-    const predictions = state.predictions
-    let canceled = false
-    async function resolvePrediction(predictionsSource: BracketPrediction[]) {
-      canPersistFirestoreRef.current = false
-      const local = loadLocalBracketPrediction(userId)
-      const localReady = local ? hasBracketData(local) : false
-      const base =
-        predictionsSource.find((entry: BracketPrediction) => entry.userId === userId) ?? null
-      let initial = ensureGroupEntries(
-        (localReady ? local : base) ?? createEmptyPrediction(userId, groupIds),
-        groupIds
-      )
+    if (loadState.status !== 'ready') return
 
-      if (firestoreEnabled) {
-        const [groupDoc, knockoutDoc] = await Promise.all([
-          fetchUserBracketGroupDoc(userId),
-          fetchUserBracketKnockoutDoc(userId)
-        ])
-        if (canceled) return
-        if (groupDoc || knockoutDoc) {
-          initial = {
-            ...initial,
-            groups: groupDoc?.groups ?? initial.groups,
-            bestThirds: groupDoc?.bestThirds ?? initial.bestThirds,
-            knockout: knockoutDoc ?? initial.knockout,
-            updatedAt: new Date().toISOString()
-          }
-        } else if (localReady) {
-          try {
-            await Promise.all([
-              saveUserBracketGroupDoc(
-                userId,
-                initial.groups ?? {},
-                initial.bestThirds
-              ),
-              saveUserBracketKnockoutDoc(userId, initial.knockout)
-            ])
-          } catch {
-            // Ignore Firestore write failures for local-only usage.
-          }
-        }
-        initial = ensureGroupEntries(initial, groupIds)
-      }
+    const fallbackMatchId =
+      nextOpenIncompleteId ??
+      lockedIncompleteEntries[0]?.match.id ??
+      orderedEntries[0]?.match.id ??
+      null
 
-      if (canceled) return
-      canPersistFirestoreRef.current = firestoreEnabled
-      setPrediction(initial)
+    const resume = resumeTargetRef.current
+    if (resume) {
+      const resumedMatchId = resume.matchId && entryById.has(resume.matchId) ? resume.matchId : fallbackMatchId
+      setActiveMatchId(resumedMatchId)
+      setMode(resume.mode === 'review' || !resumedMatchId ? 'review' : 'match')
+      resumeTargetRef.current = null
+      return
     }
-    void resolvePrediction(predictions)
-    return () => {
-      canceled = true
-    }
-  }, [authState.status, firestoreEnabled, groupIds, state, userId])
+
+    if (activeMatchId && entryById.has(activeMatchId)) return
+    setActiveMatchId(fallbackMatchId)
+    setMode(fallbackMatchId ? 'match' : 'review')
+  }, [activeMatchId, entryById, loadState.status, lockedIncompleteEntries, nextOpenIncompleteId, orderedEntries])
 
   useEffect(() => {
-    if (!prediction) return
-    if (prediction.userId !== userId) return
-    saveLocalBracketPrediction(userId, prediction)
-    if (firestoreEnabled && canPersistFirestoreRef.current) {
-      void saveUserBracketGroupDoc(userId, prediction.groups ?? {}, prediction.bestThirds).catch(
-        () => {}
-      )
-      void saveUserBracketKnockoutDoc(userId, prediction.knockout).catch(() => {})
-    }
-  }, [firestoreEnabled, prediction, userId])
-
-  function handleGroupChange(groupId: string, field: 'first' | 'second', value: string) {
-    setPrediction((current) => {
-      if (!current) return current
-      const group = { ...current.groups[groupId] }
-      const nextValue = value || undefined
-      if (field === 'first') {
-        group.first = nextValue
-        if (group.second === nextValue) group.second = undefined
-      } else {
-        group.second = nextValue
-        if (group.first === nextValue) group.first = undefined
-      }
-      return {
-        ...current,
-        groups: { ...current.groups, [groupId]: group },
-        updatedAt: new Date().toISOString()
-      }
+    if (loadState.status !== 'ready') return
+    saveBracketResumeState(userId, {
+      mode,
+      matchId: activeMatchId ?? undefined
     })
+  }, [activeMatchId, loadState.status, mode, userId])
+
+  const currentEntry = activeMatchId ? entryById.get(activeMatchId) ?? null : null
+  const currentIndex = currentEntry
+    ? orderedEntries.findIndex((entry) => entry.match.id === currentEntry.match.id)
+    : -1
+  const currentWinner = currentEntry ? entryWinner(currentEntry) : undefined
+  const currentLocked = currentEntry ? entryLocked(currentEntry) : false
+
+  const progressPct = totalMatches > 0 ? Math.round((completeMatches / totalMatches) * 100) : 0
+
+  function goToEntryIndex(index: number) {
+    if (index < 0 || index >= orderedEntries.length) return
+    setActiveMatchId(orderedEntries[index].match.id)
+    setMode('match')
+    setNotice(null)
   }
 
-  function handleKnockoutChange(match: Match, value: string) {
-    setPrediction((current) => {
-      if (!current) return current
-      const stage = match.stage as KnockoutStage
-      const winner = value === 'HOME' || value === 'AWAY' ? value : undefined
-      const stagePredictions = { ...(current.knockout?.[stage] ?? {}) }
-      if (winner) {
-        stagePredictions[match.id] = winner
-      } else {
-        delete stagePredictions[match.id]
-      }
-      const knockout = { ...(current.knockout ?? {}) }
-      if (Object.keys(stagePredictions).length === 0) {
-        delete knockout[stage]
-      } else {
-        knockout[stage] = stagePredictions
-      }
-      return {
-        ...current,
-        knockout,
-        updatedAt: new Date().toISOString()
-      }
-    })
+  function goToPreviousMatch() {
+    if (orderedEntries.length === 0) return
+    if (currentIndex <= 0) {
+      goToEntryIndex(orderedEntries.length - 1)
+      return
+    }
+    goToEntryIndex(currentIndex - 1)
   }
 
-  function handleBestThirdChange(index: number, value: string) {
-    setPrediction((current) => {
-      if (!current) return current
-      const nextValue = value || ''
-      const nextBestThirds = [...(current.bestThirds ?? [])]
-      while (nextBestThirds.length < 8) {
-        nextBestThirds.push('')
-      }
-      if (nextValue) {
-        for (let i = 0; i < nextBestThirds.length; i += 1) {
-          if (i !== index && nextBestThirds[i] === nextValue) {
-            nextBestThirds[i] = ''
-          }
-        }
-      }
-      nextBestThirds[index] = nextValue
-      return {
-        ...current,
-        bestThirds: nextBestThirds,
-        updatedAt: new Date().toISOString()
-      }
-    })
+  function goToNextMatch() {
+    if (orderedEntries.length === 0) return
+    if (currentIndex < 0 || currentIndex >= orderedEntries.length - 1) {
+      goToEntryIndex(0)
+      return
+    }
+    goToEntryIndex(currentIndex + 1)
   }
 
-  const missingGroups = useMemo(() => {
-    if (!prediction) return 0
-    return groupIds.filter((groupId) => {
-      const group = prediction.groups[groupId]
-      return !group?.first || !group?.second
-    }).length
-  }, [groupIds, prediction])
-
-  const missingThirds = useMemo(() => {
-    if (!prediction) return 8
-    const filled = (prediction.bestThirds ?? []).filter((code) => Boolean(code)).length
-    return Math.max(0, 8 - filled)
-  }, [prediction])
-
-  const missingKnockout = useMemo(() => {
-    if (!prediction) return 0
-    let missing = 0
-    for (const stage of knockoutStageOrder) {
-      const matches = knockoutMatches[stage]
-      if (!matches) continue
-      const stagePredictions = prediction.knockout?.[stage]
-      for (const match of matches) {
-        if (!stagePredictions?.[match.id]) missing += 1
-      }
+  function findNextOpenIncompleteIndex(fromIndex: number): number {
+    for (let index = fromIndex + 1; index < orderedEntries.length; index += 1) {
+      const entry = orderedEntries[index]
+      if (!entryWinner(entry) && !entryLocked(entry)) return index
     }
-    return missing
-  }, [knockoutMatches, prediction])
-
-  const groupPickResults = useMemo(() => {
-    const results = new Map<string, { first: PickResult; second: PickResult }>()
-    const summary: ResultCounts = { total: 0, decided: 0, correct: 0 }
-    if (!prediction) return { results, summary }
-    for (const groupId of groupIds) {
-      const group = prediction.groups[groupId] ?? {}
-      const summaryData = groupStandings.get(groupId)
-      const actualTopTwo = summaryData?.complete
-        ? summaryData.standings.slice(0, 2).map((entry) => entry.team.code)
-        : []
-      const actualSet = summaryData?.complete ? new Set(actualTopTwo) : null
-      const firstResult = resolvePickStatus(group.first, actualSet)
-      const secondResult = resolvePickStatus(group.second, actualSet)
-      results.set(groupId, { first: firstResult, second: secondResult })
-      recordResult(firstResult, summary)
-      recordResult(secondResult, summary)
+    for (let index = 0; index <= fromIndex; index += 1) {
+      const entry = orderedEntries[index]
+      if (!entryWinner(entry) && !entryLocked(entry)) return index
     }
-    return { results, summary }
-  }, [groupIds, groupStandings, prediction])
-
-  const bestThirdQualifiers =
-    state.status === 'ready' ? state.bestThirdQualifiers : emptyQualifiers
-
-  const thirdPickResults = useMemo(() => {
-    const results: PickResult[] = []
-    const summary: ResultCounts = { total: 0, decided: 0, correct: 0 }
-    if (!prediction) return { results, summary }
-    const qualifiersReady = bestThirdQualifiers.length >= 8
-    const qualifiers = qualifiersReady ? new Set(bestThirdQualifiers) : null
-    for (let index = 0; index < 8; index += 1) {
-      const pick = prediction.bestThirds?.[index] ?? ''
-      const status = resolvePickStatus(pick, qualifiers)
-      results[index] = status
-      recordResult(status, summary)
-    }
-    return { results, summary }
-  }, [prediction, bestThirdQualifiers])
-
-  const knockoutPickResults = useMemo(() => {
-    const results = new Map<string, PickResult>()
-    const summary: ResultCounts = { total: 0, decided: 0, correct: 0 }
-    if (!prediction) return { results, summary }
-    for (const stage of knockoutStageOrder) {
-      const matches = knockoutDisplayMatches[stage] ?? []
-      const stagePredictions = prediction.knockout?.[stage] ?? {}
-      for (const match of matches) {
-        const status = resolveKnockoutPickStatus(match, stagePredictions[match.id])
-        results.set(match.id, status)
-        recordResult(status, summary)
-      }
-    }
-    return { results, summary }
-  }, [knockoutDisplayMatches, prediction])
-
-  const validation = useMemo(() => {
-    const groupErrors: Record<string, { first?: string; second?: string }> = {}
-    const thirdErrors: string[] = []
-    const knockoutErrors: Record<string, string> = {}
-    const issues: ValidationIssue[] = []
-
-    if (!prediction) {
-      return { groupErrors, thirdErrors, knockoutErrors, issues }
-    }
-
-    for (const groupId of groupIds) {
-      const group = prediction.groups[groupId] ?? {}
-      const first = group.first ?? ''
-      const second = group.second ?? ''
-      if (first && second && first === second) {
-        groupErrors[groupId] = {
-          first: 'Pick two different teams.',
-          second: 'Pick two different teams.'
-        }
-        issues.push({
-          id: `group-${groupId}-first`,
-          message: `Group ${groupId}: pick two different teams.`,
-          targetId: `group-${groupId}-first`,
-          step: 'group'
-        })
-        issues.push({
-          id: `group-${groupId}-second`,
-          message: `Group ${groupId}: pick two different teams.`,
-          targetId: `group-${groupId}-second`,
-          step: 'group'
-        })
-        continue
-      }
-      if (!first) {
-        groupErrors[groupId] = { ...groupErrors[groupId], first: 'Select a 1st-place team.' }
-        issues.push({
-          id: `group-${groupId}-first`,
-          message: `Group ${groupId}: select a 1st-place team.`,
-          targetId: `group-${groupId}-first`,
-          step: 'group'
-        })
-      }
-      if (!second) {
-        groupErrors[groupId] = { ...groupErrors[groupId], second: 'Select a 2nd-place team.' }
-        issues.push({
-          id: `group-${groupId}-second`,
-          message: `Group ${groupId}: select a 2nd-place team.`,
-          targetId: `group-${groupId}-second`,
-          step: 'group'
-        })
-      }
-    }
-
-    const thirdSlots = [...(prediction.bestThirds ?? [])]
-    while (thirdSlots.length < 8) thirdSlots.push('')
-    const duplicates = new Map<string, number[]>()
-    thirdSlots.forEach((code, index) => {
-      if (!code) return
-      const list = duplicates.get(code) ?? []
-      list.push(index)
-      duplicates.set(code, list)
-    })
-    const duplicateSlots = new Set<number>()
-    for (const indices of duplicates.values()) {
-      if (indices.length > 1) indices.forEach((index) => duplicateSlots.add(index))
-    }
-    thirdSlots.forEach((code, index) => {
-      if (!code) {
-        thirdErrors[index] = 'Select a team.'
-        issues.push({
-          id: `third-${index}`,
-          message: `Third-place slot ${index + 1}: select a team.`,
-          targetId: `third-${index}`,
-          step: 'third'
-        })
-        return
-      }
-      if (duplicateSlots.has(index)) {
-        thirdErrors[index] = 'Team already used in another slot.'
-        issues.push({
-          id: `third-${index}`,
-          message: `Third-place slot ${index + 1}: team already used.`,
-          targetId: `third-${index}`,
-          step: 'third'
-        })
-      }
-    })
-
-    if (knockoutUnlocked) {
-      for (const stage of knockoutStageOrder) {
-        const matches = knockoutMatches[stage] ?? []
-        const stagePredictions = prediction.knockout?.[stage]
-        for (const match of matches) {
-          if (stagePredictions?.[match.id]) continue
-          knockoutErrors[match.id] = 'Pick a winner.'
-          issues.push({
-            id: `knockout-${match.id}`,
-            message: `${stage}: pick a winner.`,
-            targetId: `knockout-${match.id}`,
-            step: 'knockout'
-          })
-        }
-      }
-    }
-
-    return { groupErrors, thirdErrors, knockoutErrors, issues }
-  }, [groupIds, knockoutMatches, knockoutUnlocked, prediction])
-
-  const issueCount = validation.issues.length
-  const firstIssue = validation.issues[0]
-  const groupComplete = missingGroups === 0
-  const thirdComplete = missingThirds === 0
-  const knockoutComplete = missingKnockout === 0
-
-  function scrollToTarget(targetId: string) {
-    const target = document.getElementById(targetId)
-    if (target) {
-      target.scrollIntoView({ block: 'center' })
-    }
+    return -1
   }
 
-  function handleJumpToIssue(issue: ValidationIssue) {
-    setActiveStep(issue.step)
-    requestAnimationFrame(() => {
-      scrollToTarget(issue.targetId)
-    })
+  function jumpToNextAction() {
+    if (orderedEntries.length === 0) {
+      setMode('review')
+      return
+    }
+    const fromIndex = currentIndex < 0 ? -1 : currentIndex
+    const nextIndex = findNextOpenIncompleteIndex(fromIndex)
+    if (nextIndex >= 0) {
+      goToEntryIndex(nextIndex)
+      return
+    }
+    setMode('review')
+    setNotice('All currently open bracket picks are complete.')
   }
 
-  function handleStepSelect(step: BracketStep) {
-    setActiveStep(step)
-    requestAnimationFrame(() => {
-      scrollToTarget(`bracket-step-${step}`)
-    })
+  function handleSetWinner(winner: MatchWinner) {
+    if (!currentEntry || currentLocked) return
+    setPick(currentEntry.stage, currentEntry.match.id, winner)
+    setNotice(null)
   }
 
-  function handleJumpToRound(roundKey: string, stage?: KnockoutStage) {
-    setActiveStep('knockout')
-    if (stage) setActiveRound(stage)
-    scrollToTarget(`bracket-round-${roundKey}`)
+  function handleClearWinner() {
+    if (!currentEntry || currentLocked) return
+    setPick(currentEntry.stage, currentEntry.match.id, undefined)
+    setNotice(null)
   }
 
-  if (state.status === 'loading') {
+  function handleContinue() {
+    if (!currentEntry) return
+    if (currentLocked) {
+      jumpToNextAction()
+      return
+    }
+    if (!currentWinner) {
+      setNotice('Select who advances before continuing.')
+      return
+    }
+    jumpToNextAction()
+  }
+
+  if (loadState.status === 'loading') {
     return (
-      <div className="stack">
-        <Skeleton height={18} />
-        <Skeleton height={18} width="70%" />
-        <span className="sr-only">Loading...</span>
+      <div className="space-y-4">
+        <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-80 rounded-2xl" />
       </div>
     )
   }
-  if (state.status === 'error') {
+
+  if (loadState.status === 'error') {
     return (
-      <div className="stack">
-        <Alert tone="danger">{state.message}</Alert>
-      </div>
+      <Alert tone="danger" title="Unable to load bracket">
+        {loadState.message}
+      </Alert>
     )
   }
-  if (!prediction) return null
-  const activeRoundMatches =
-    activeRound && knockoutDisplayMatches[activeRound]
-      ? knockoutDisplayMatches[activeRound]
-      : []
-  const groupStatusLabel = groupLocked
-    ? 'Locked'
-    : groupComplete
-      ? 'Complete'
-      : `${missingGroups} missing`
-  const groupResultStatus = resolveSummaryStatus(groupPickResults.summary)
-  const thirdStatusLabel = groupLocked
-    ? 'Locked'
-    : thirdComplete
-      ? 'Complete'
-      : `${missingThirds} missing`
-  const thirdResultStatus = resolveSummaryStatus(thirdPickResults.summary)
-  const knockoutStatusLabel = !knockoutUnlocked
-    ? 'Locked'
-    : knockoutLocked
-      ? 'Locked'
-      : knockoutComplete
-        ? 'Complete'
-        : `${missingKnockout} missing`
-  const knockoutResultStatus = resolveSummaryStatus(knockoutPickResults.summary)
-  const knockoutStatusNote = knockoutLocked
-    ? knockoutLockTime
-      ? `Locked since ${formatLockTime(knockoutLockTime)}`
-      : null
-    : !knockoutUnlocked
-      ? knockoutOpenTime
-        ? `Opens at ${formatLockTime(knockoutOpenTime)}`
-        : null
-      : knockoutLockTime
-        ? `Locks at ${formatLockTime(knockoutLockTime)}`
-        : null
+
+  const summaryRows = orderedEntries.map((entry) => ({
+    stage: entry.stage,
+    matchId: entry.match.id,
+    matchLabel: `${entry.match.homeTeam.code} vs ${entry.match.awayTeam.code}`,
+    kickoff: entry.match.kickoffUtc,
+    winner: entryWinner(entry),
+    homeCode: entry.match.homeTeam.code,
+    awayCode: entry.match.awayTeam.code
+  }))
 
   return (
-    <div className="stack">
+    <div className="space-y-6">
       <PageHeader
-        kicker="Bracket Challenge"
-        title="Bracket Predictions"
-        subtitle={
-          missingGroups === 0 && missingThirds === 0 && missingKnockout === 0
-            ? 'All bracket picks are in.'
-            : `${missingGroups} group${missingGroups === 1 ? '' : 's'}, ${missingThirds} third-place pick${
-                missingThirds === 1 ? '' : 's'
-              }, and ${missingKnockout} knockout pick${missingKnockout === 1 ? '' : 's'} missing.`
-        }
+        kicker="Bracket"
+        title="Knockout Picks Wizard"
+        subtitle="Complete open knockout picks one match at a time, then review and save."
         actions={
-          <div className="flex flex-col items-end gap-1 text-right text-xs text-muted-foreground">
-            <div className="uppercase tracking-[0.2em]">Match data</div>
-            <div className="text-sm font-semibold text-foreground">
-              {formatKickoff(state.lastUpdated)}
-            </div>
+          <div className="text-right text-xs text-muted-foreground">
+            <div className="uppercase tracking-[0.2em]">Last updated</div>
+            <div className="text-sm font-semibold text-foreground">{formatTime(loadState.lastUpdated)}</div>
           </div>
         }
       />
 
-      {issueCount > 0 ? (
-        <Card className="validationBanner p-5" role="status">
-          <div className="validationBannerInfo">
-            <div className="validationBannerTitle">Action needed</div>
-            <div className="validationBannerMeta">
-              {issueCount === 1 ? '1 pick needs attention.' : `${issueCount} picks need attention.`}
+      <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Next action</div>
+              <div className="mt-1 text-lg font-semibold text-foreground">
+                {mode === 'match' && currentEntry
+                  ? `${STAGE_LABELS[currentEntry.stage]} · ${currentEntry.match.homeTeam.code} vs ${currentEntry.match.awayTeam.code}`
+                  : 'Review and save bracket'}
+              </div>
             </div>
-            {firstIssue ? (
-              <div className="validationBannerIssue">{firstIssue.message}</div>
-            ) : null}
+            <div className="text-right text-sm text-muted-foreground">
+              Step {mode === 'match' ? Math.max(1, currentIndex + 1) : orderedEntries.length} of {orderedEntries.length || 1}
+            </div>
           </div>
-          {firstIssue ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => handleJumpToIssue(firstIssue)}
-            >
-              Jump to first pick
+
+          <div className="h-2 rounded-full bg-bg2">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${progressPct}%` }} />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={completeMatches < totalMatches ? 'warning' : 'success'}>
+              Completed {completeMatches}/{totalMatches}
+            </Badge>
+            <Badge tone={openIncompleteEntries.length > 0 ? 'info' : 'success'}>
+              Open remaining {openIncompleteEntries.length}
+            </Badge>
+            <Badge tone={lockedIncompleteEntries.length > 0 ? 'locked' : 'secondary'}>
+              Locked waiting {lockedIncompleteEntries.length}
+            </Badge>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" onClick={jumpToNextAction} disabled={openIncompleteEntries.length === 0}>
+              Resume next action
             </Button>
-          ) : null}
-        </Card>
-      ) : null}
+            <Button variant="ghost" onClick={() => setMode('review')}>
+              Review picks
+            </Button>
+            <Button onClick={() => void save()} loading={saveStatus === 'saving'}>
+              Save bracket
+            </Button>
+            {saveStatus === 'saved' ? (
+              <Badge tone="success">{canPersistFirestore ? 'Synced' : 'Saved in browser'}</Badge>
+            ) : null}
+            {saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
+          </div>
 
-      <div className="bracketStepper" role="list">
-        <button
-          type="button"
-          className="bracketStepNav"
-          role="listitem"
-          data-active={activeStep === 'group' ? 'true' : 'false'}
-          onClick={() => handleStepSelect('group')}
-        >
-          <span className="bracketStepIndex">1</span>
-          <span className="bracketStepNavText">
-            <span className="bracketStepNavTitle">Group qualifiers</span>
-            <span className="bracketStepNavMeta">{groupIds.length} groups</span>
-          </span>
-          <div className="bracketStepBadges">
-            <span
-              className="bracketStepStatus"
-              data-status={groupLocked ? 'locked' : groupComplete ? 'complete' : 'pending'}
-            >
-              {groupStatusLabel}
-            </span>
-            <span className="bracketResultTag" data-status={groupResultStatus}>
-              {summaryResultLabels[groupResultStatus]}
-            </span>
-          </div>
-        </button>
-        <button
-          type="button"
-          className="bracketStepNav"
-          role="listitem"
-          data-active={activeStep === 'third' ? 'true' : 'false'}
-          onClick={() => handleStepSelect('third')}
-        >
-          <span className="bracketStepIndex">2</span>
-          <span className="bracketStepNavText">
-            <span className="bracketStepNavTitle">Third-place flow</span>
-            <span className="bracketStepNavMeta">8 slots</span>
-          </span>
-          <div className="bracketStepBadges">
-            <span
-              className="bracketStepStatus"
-              data-status={groupLocked ? 'locked' : thirdComplete ? 'complete' : 'pending'}
-            >
-              {thirdStatusLabel}
-            </span>
-            <span className="bracketResultTag" data-status={thirdResultStatus}>
-              {summaryResultLabels[thirdResultStatus]}
-            </span>
-          </div>
-        </button>
-        <button
-          type="button"
-          className="bracketStepNav"
-          role="listitem"
-          data-active={activeStep === 'knockout' ? 'true' : 'false'}
-          onClick={() => handleStepSelect('knockout')}
-        >
-          <span className="bracketStepIndex">3</span>
-          <span className="bracketStepNavText">
-            <span className="bracketStepNavTitle">Knockout bracket</span>
-            <span className="bracketStepNavMeta">
-              {availableRounds.length} round{availableRounds.length === 1 ? '' : 's'}
-            </span>
-          </span>
-          <div className="bracketStepBadges">
-            <span
-              className="bracketStepStatus"
-              data-status={
-                !knockoutUnlocked || knockoutLocked
-                  ? 'locked'
-                  : knockoutComplete
-                    ? 'complete'
-                    : 'pending'
-              }
-            >
-              {knockoutStatusLabel}
-            </span>
-            <span className="bracketResultTag" data-status={knockoutResultStatus}>
-              {summaryResultLabels[knockoutResultStatus]}
-            </span>
-          </div>
-        </button>
-      </div>
+          {notice ? <div className="text-xs text-muted-foreground">{notice}</div> : null}
+        </div>
+      </Card>
 
-      {activeStep === 'group' ? (
-        <Card
-          as="section"
-          id="bracket-step-group"
-          className="bracketStep p-5"
-          data-status={groupLocked ? 'locked' : groupComplete ? 'complete' : 'pending'}
-        >
-          <div className="bracketStepHeader">
-            <div className="bracketStepToggle">
-              <span className="bracketStepTitle">Step 1 · Group qualifiers</span>
-            </div>
-            <div className="bracketStepMeta">
-              <span
-                className="bracketStepStatus"
-                data-status={groupLocked ? 'locked' : groupComplete ? 'complete' : 'pending'}
-              >
-                {groupStatusLabel}
-              </span>
-              {groupLockTime ? (
-                <div className="text-xs text-muted-foreground">
-                  {groupLocked
-                    ? `Locked since ${formatLockTime(groupLockTime)}`
-                    : `Locks at ${formatLockTime(groupLockTime)}`}
+      {mode === 'match' && currentEntry ? (
+        <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Bracket step</div>
+                <div className="mt-1 text-lg font-semibold text-foreground">
+                  {currentEntry.match.homeTeam.name} vs {currentEntry.match.awayTeam.name}
                 </div>
+                <div className="text-xs text-muted-foreground">
+                  {STAGE_LABELS[currentEntry.stage]} · Kickoff {formatTime(currentEntry.match.kickoffUtc)} · Locks{' '}
+                  {formatTime(getLockTime(currentEntry.match.kickoffUtc).toISOString())}
+                </div>
+              </div>
+              <Badge tone={currentLocked ? 'locked' : 'info'}>{currentLocked ? 'Locked' : 'Open'}</Badge>
+            </div>
+
+            {currentLocked ? (
+              <Alert tone="warning" title="Locked">
+                This matchup is locked and cannot be edited. Continue to the next open item.
+              </Alert>
+            ) : null}
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button
+                variant="secondary"
+                className={currentWinner === 'HOME' ? 'border-primary' : ''}
+                disabled={currentLocked}
+                onClick={() => handleSetWinner('HOME')}
+              >
+                {currentEntry.match.homeTeam.code} advances
+              </Button>
+              <Button
+                variant="secondary"
+                className={currentWinner === 'AWAY' ? 'border-primary' : ''}
+                disabled={currentLocked}
+                onClick={() => handleSetWinner('AWAY')}
+              >
+                {currentEntry.match.awayTeam.code} advances
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {currentWinner ? <Badge tone="success">{resolveWinnerLabel(currentWinner, currentEntry.match.homeTeam.code, currentEntry.match.awayTeam.code)}</Badge> : <Badge tone="warning">Pick missing</Badge>}
+              {!currentLocked ? (
+                <Button variant="ghost" onClick={handleClearWinner}>
+                  Clear pick
+                </Button>
               ) : null}
             </div>
-          </div>
-          <div className="bracketStepBody">
-            <div className="bracketGuide bracketGuideCompact">
-              <div className="text-lg font-semibold text-foreground">Group stage guide</div>
-              <div className="bracketGuideContent">
-                <p>
-                  Pick the top two teams from each group in the order they will finish. Then select
-                  the best third-place qualifiers. Locked picks stay visible after the deadline.
-                </p>
-                <ul>
-                  <li>Use the group cards to set 1st and 2nd place.</li>
-                  <li>Pick 8 third-place teams once group standings settle.</li>
-                  <li>Saving is automatic; refresh if a lock window has passed.</li>
-                </ul>
-              </div>
-            </div>
-            {groupIds.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                Group data is not available yet. Run the daily sync once group assignments are known.
-              </div>
-            ) : (
-              <div className="bracketGroupGrid">
-                {groupIds.map((groupId) => {
-                  const teams = groupTeams[groupId] ?? []
-                  const group = prediction.groups[groupId] ?? {}
-                  const firstValue = group.first ?? ''
-                  const secondValue = group.second ?? ''
-                  const secondOptions = teams.filter((team) => team.code !== firstValue)
-                  const errors = validation.groupErrors[groupId] ?? {}
-                  const hasError = Boolean(errors.first || errors.second)
-                  const groupResult = groupPickResults.results.get(groupId)
-                  const firstResult = groupResult?.first ?? 'pending'
-                  const secondResult = groupResult?.second ?? 'pending'
 
-                  return (
-                    <div
-                      key={groupId}
-                      className={hasError ? 'bracketGroupCard bracketGroupCardError' : 'bracketGroupCard'}
-                    >
-                      <div className="bracketGroupHeader">Group {groupId}</div>
-                      <label className="pickLabel" data-error={errors.first ? 'true' : 'false'}>
-                        <span className="pickLabelRow">
-                          <span>1st place</span>
-                          <span className="bracketResultTag" data-status={firstResult}>
-                            {pickResultLabels[firstResult]}
-                          </span>
-                        </span>
-                        <select
-                          id={`group-${groupId}-first`}
-                          className="pickSelect"
-                          value={firstValue}
-                          disabled={groupLocked}
-                          aria-invalid={Boolean(errors.first)}
-                          aria-describedby={errors.first ? `group-${groupId}-first-error` : undefined}
-                          onChange={(event) =>
-                            handleGroupChange(groupId, 'first', event.target.value)
-                          }
-                        >
-                          <option value="">Select team</option>
-                          {teams.map((team) => (
-                            <option key={team.code} value={team.code}>
-                              {team.code} - {team.name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.first ? (
-                          <span className="fieldError" id={`group-${groupId}-first-error`}>
-                            {errors.first}
-                          </span>
-                        ) : null}
-                      </label>
-                      <label className="pickLabel" data-error={errors.second ? 'true' : 'false'}>
-                        <span className="pickLabelRow">
-                          <span>2nd place</span>
-                          <span className="bracketResultTag" data-status={secondResult}>
-                            {pickResultLabels[secondResult]}
-                          </span>
-                        </span>
-                        <select
-                          id={`group-${groupId}-second`}
-                          className="pickSelect"
-                          value={secondValue}
-                          disabled={groupLocked}
-                          aria-invalid={Boolean(errors.second)}
-                          aria-describedby={errors.second ? `group-${groupId}-second-error` : undefined}
-                          onChange={(event) =>
-                            handleGroupChange(groupId, 'second', event.target.value)
-                          }
-                        >
-                          <option value="">Select team</option>
-                          {secondOptions.map((team) => (
-                            <option key={team.code} value={team.code}>
-                              {team.code} - {team.name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.second ? (
-                          <span className="fieldError" id={`group-${groupId}-second-error`}>
-                            {errors.second}
-                          </span>
-                        ) : null}
-                      </label>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="ghost" onClick={goToPreviousMatch} disabled={orderedEntries.length === 0}>
+                Previous match
+              </Button>
+              <Button variant="secondary" onClick={goToNextMatch} disabled={orderedEntries.length === 0}>
+                Next match
+              </Button>
+              <Button onClick={handleContinue} disabled={!currentLocked && !currentWinner}>
+                Continue
+              </Button>
+            </div>
           </div>
         </Card>
       ) : null}
 
-      {activeStep === 'third' ? (
-        <Card
-          as="section"
-          id="bracket-step-third"
-          className="bracketStep p-5"
-          data-status={groupLocked ? 'locked' : thirdComplete ? 'complete' : 'pending'}
-        >
-          <div className="bracketStepHeader">
-            <div className="bracketStepToggle">
-              <span className="bracketStepTitle">Step 2 · Third-place flow</span>
+      {mode === 'review' ? (
+        <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+          <div className="space-y-3">
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Review step</div>
+            <div className="text-lg font-semibold text-foreground">Bracket review and completion status</div>
+            <div className="text-sm text-muted-foreground">
+              Open remaining: {openIncompleteEntries.length}. Locked waiting: {lockedIncompleteEntries.length}.
             </div>
-            <div className="bracketStepMeta">
-              <span
-                className="bracketStepStatus"
-                data-status={groupLocked ? 'locked' : thirdComplete ? 'complete' : 'pending'}
-              >
-                {thirdStatusLabel}
-              </span>
-              {groupLockTime ? (
-                <div className="text-xs text-muted-foreground">
-                  {groupLocked
-                    ? `Locked since ${formatLockTime(groupLockTime)}`
-                    : `Locks at ${formatLockTime(groupLockTime)}`}
-                </div>
-              ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={jumpToNextAction} disabled={openIncompleteEntries.length === 0}>
+                Back to next action
+              </Button>
+              <Button variant="secondary" onClick={() => void save()} loading={saveStatus === 'saving'}>
+                Save bracket
+              </Button>
             </div>
           </div>
-          <div className="bracketStepBody">
-            <div className="bracketGuide bracketGuideCompact">
-              <div className="text-lg font-semibold text-foreground">Third-place guide</div>
-              <div className="bracketGuideContent">
-                <p>
-                  Pick eight third-place qualifiers. Duplicate teams are not allowed, so each slot
-                  must be unique.
-                </p>
-              </div>
+        </Card>
+      ) : null}
+
+      <Accordion type="single" collapsible className="space-y-3">
+        <AccordionItem value="stage-summary">
+          <AccordionTrigger>Stage Summary</AccordionTrigger>
+          <AccordionContent>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {stageSummary.map((stage) => (
+                <div key={stage.stage} className="rounded-xl border border-border/70 bg-bg2 p-3">
+                  <div className="text-sm font-semibold text-foreground">{STAGE_LABELS[stage.stage]}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Completed {stage.complete}/{stage.total}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">Open remaining {stage.openRemaining}</div>
+                </div>
+              ))}
             </div>
-            {allGroupTeams.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                Group data is not available yet. Run the daily sync once group assignments are known.
-              </div>
-            ) : (
-              <div className="bracketThirdGrid">
-                {Array.from({ length: 8 }).map((_, index) => {
-                  const selected = prediction.bestThirds?.[index] ?? ''
-                  const taken = new Set(
-                    (prediction.bestThirds ?? []).filter((code) => code && code !== selected)
-                  )
-                  const options = allGroupTeams.filter((team) => !taken.has(team.code))
-                  const error = validation.thirdErrors[index]
-                  const resultStatus = thirdPickResults.results[index] ?? 'pending'
-                  return (
-                    <label key={`third-${index}`} className="pickLabel" data-error={error ? 'true' : 'false'}>
-                      <span className="pickLabelRow">
-                        <span>Slot {index + 1}</span>
-                        <span className="bracketResultTag" data-status={resultStatus}>
-                          {pickResultLabels[resultStatus]}
-                        </span>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="full-review">
+          <AccordionTrigger>Full Bracket Review</AccordionTrigger>
+          <AccordionContent>
+            <Table>
+              <thead>
+                <tr>
+                  <th>Stage</th>
+                  <th>Match</th>
+                  <th>Kickoff</th>
+                  <th>Your pick</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summaryRows.map((row) => (
+                  <tr key={`${row.stage}-${row.matchId}`}>
+                    <td>{STAGE_LABELS[row.stage]}</td>
+                    <td>{row.matchLabel}</td>
+                    <td>{formatTime(row.kickoff)}</td>
+                    <td>
+                      <span className={row.winner ? 'text-foreground' : 'text-muted-foreground'}>
+                        {resolveWinnerLabel(row.winner, row.homeCode, row.awayCode)}
                       </span>
-                      <select
-                        id={`third-${index}`}
-                        className="pickSelect"
-                        value={selected}
-                        disabled={groupLocked}
-                        aria-invalid={Boolean(error)}
-                        aria-describedby={error ? `third-${index}-error` : undefined}
-                        onChange={(event) => handleBestThirdChange(index, event.target.value)}
-                      >
-                        <option value="">Select team</option>
-                        {options.map((team) => (
-                          <option key={team.code} value={team.code}>
-                            {team.code} - {team.name}
-                          </option>
-                        ))}
-                      </select>
-                      {error ? (
-                        <span className="fieldError" id={`third-${index}-error`}>
-                          {error}
-                        </span>
-                      ) : null}
-                    </label>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </Card>
-      ) : null}
-
-      {activeStep === 'knockout' ? (
-        <Card
-          as="section"
-          id="bracket-step-knockout"
-          className="bracketStep p-5"
-          data-status={
-            !knockoutUnlocked || knockoutLocked ? 'locked' : knockoutComplete ? 'complete' : 'pending'
-          }
-        >
-          <div className="bracketStepHeader">
-            <div className="bracketStepToggle">
-              <span className="bracketStepTitle">Step 3 · Knockout bracket</span>
-            </div>
-            <div className="bracketStepMeta">
-              <span
-                className="bracketStepStatus"
-                data-status={
-                  !knockoutUnlocked || knockoutLocked
-                    ? 'locked'
-                    : knockoutComplete
-                      ? 'complete'
-                      : 'pending'
-                }
-              >
-                {knockoutStatusLabel}
-              </span>
-              {knockoutStatusNote ? (
-                <div className="text-xs text-muted-foreground">{knockoutStatusNote}</div>
-              ) : null}
-            </div>
-          </div>
-          <div className="bracketStepBody">
-            {!knockoutUnlocked ? (
-              <div className="bracketLockCallout">
-                Knockout predictions unlock after group stage completion, the best third-place
-                qualifiers are published, and the knockout draw is available.
-              </div>
-            ) : (
-              <>
-                <div className="bracketGuide bracketGuideCompact">
-                  <div className="text-lg font-semibold text-foreground">Knockout guide</div>
-                  <div className="bracketGuideContent">
-                    <p>
-                      Select the winner for each knockout fixture. Picks are made directly on the team
-                      pills. Your final pick drives the champion badge once selected.
-                    </p>
-                  </div>
-                </div>
-                {isMobile ? (
-                  <div className="bracketRoundsMobile">
-                    <div className="bracketRoundTabs" role="tablist" aria-label="Knockout rounds">
-                      {availableRounds.map((stage) => (
-                        <button
-                          key={stage}
-                          type="button"
-                          role="tab"
-                          aria-selected={stage === activeRound}
-                          className={stage === activeRound ? 'bracketRoundTab active' : 'bracketRoundTab'}
-                          onClick={() => setActiveRound(stage)}
-                        >
-                          {stage}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="bracketRoundList">
-                      {activeRoundMatches.length === 0 ? (
-                        <div className="text-sm text-muted-foreground">
-                          No matches available for this round yet.
-                        </div>
-                      ) : (
-                        activeRoundMatches.map((match) => {
-                          const stage = match.stage as KnockoutStage
-                          const stagePredictions = prediction.knockout?.[stage] ?? {}
-                          const value = stagePredictions[match.id] ?? ''
-                          const resultStatus = knockoutPickResults.results.get(match.id) ?? 'pending'
-                          const championTeam =
-                            stage === 'Final'
-                              ? value === 'HOME'
-                                ? match.displayHomeTeam
-                                : value === 'AWAY'
-                                  ? match.displayAwayTeam
-                                  : null
-                              : null
-                          const error = validation.knockoutErrors[match.id]
-                          return (
-                            <div
-                              key={match.id}
-                              className={error ? 'bracketRoundMatch bracketRoundMatchError' : 'bracketRoundMatch'}
-                              id={`knockout-${match.id}`}
-                            >
-                              <div className="bracketRoundMatchHeader">
-                                <span className="bracketRoundMatchTitle">
-                                  <span className="bracketRoundStage">{stage}</span>
-                                  <span className="bracketResultTag" data-status={resultStatus}>
-                                    {pickResultLabels[resultStatus]}
-                                  </span>
-                                </span>
-                                <span className="bracketRoundKickoff">
-                                  {formatKickoff(match.kickoffUtc)}
-                                </span>
-                              </div>
-                              <div className="bracketRoundTeams">
-                                <button
-                                  type="button"
-                                  className={
-                                    value === 'HOME'
-                                      ? 'bracketTeamPick bracketTeamPickLarge active'
-                                      : 'bracketTeamPick bracketTeamPickLarge'
-                                  }
-                                  disabled={knockoutLocked}
-                                  aria-pressed={value === 'HOME'}
-                                  onClick={() => handleKnockoutChange(match, 'HOME')}
-                                >
-                                  {match.displayHomeTeam.code}
-                                </button>
-                                <button
-                                  type="button"
-                                  className={
-                                    value === 'AWAY'
-                                      ? 'bracketTeamPick bracketTeamPickLarge active'
-                                      : 'bracketTeamPick bracketTeamPickLarge'
-                                  }
-                                  disabled={knockoutLocked}
-                                  aria-pressed={value === 'AWAY'}
-                                  onClick={() => handleKnockoutChange(match, 'AWAY')}
-                                >
-                                  {match.displayAwayTeam.code}
-                                </button>
-                              </div>
-                              <div className="bracketRoundTeamsMeta">
-                                <span className="teamName">{match.displayHomeTeam.name}</span>
-                                <span className="vs">vs</span>
-                                <span className="teamName">{match.displayAwayTeam.name}</span>
-                              </div>
-                              {error ? (
-                                <div className="fieldError" id={`knockout-${match.id}-error`}>
-                                  {error}
-                                </div>
-                              ) : null}
-                              {stage === 'Final' ? (
-                                <div className="bracketChampionBadge bracketChampionBadgeInline">
-                                  <span className="bracketChampionIcon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                                      <path
-                                        d="M6 4h12v2a4 4 0 0 0 4 4v2a6 6 0 0 1-6 6h-1.5a4.5 4.5 0 0 1-9 0H4a6 6 0 0 1-6-6V10a4 4 0 0 0 4-4V4zm10 2H8a2 2 0 0 1-2 2v2a4 4 0 0 0 4 4h1.5a4.5 4.5 0 0 1 3 0H16a4 4 0 0 0 4-4V8a2 2 0 0 1-2-2zm-6.5 10a2.5 2.5 0 1 0 5 0h-5z"
-                                        fill="currentColor"
-                                      />
-                                    </svg>
-                                  </span>
-                                  <div className="bracketChampionText">
-                                    <span className="bracketChampionLabel">Champion</span>
-                                    <span className="bracketChampionTeam">
-                                      {championTeam ? championTeam.code : 'TBD'}
-                                    </span>
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          )
-                        })
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bracketRoundsDesktop">
-                    <div className="bracketRoundNav" role="tablist" aria-label="Knockout rounds">
-                      {knockoutColumns.map((column) => (
-                        <button
-                          key={column.key}
-                          type="button"
-                          role="tab"
-                          className={
-                            activeRound && column.stages.includes(activeRound)
-                              ? 'bracketRoundButton active'
-                              : 'bracketRoundButton'
-                          }
-                          aria-selected={activeRound ? column.stages.includes(activeRound) : false}
-                          onClick={() => handleJumpToRound(column.key, column.stages[0])}
-                        >
-                          {column.title}
-                        </button>
-                      ))}
-                    </div>
-                    <div
-                      className="bracketGraph"
-                      role="presentation"
-                      style={{ '--bracket-card-height': `${bracketCardHeight}px` } as CSSProperties}
-                    >
-                      {knockoutColumns.map((column, stageIndex) => {
-                        const stageMatches = column.stages.flatMap((stage) =>
-                          (knockoutDisplayMatches[stage] ?? []).map((match) => ({ match, stage }))
-                        )
-                        if (stageMatches.length === 0) return null
-                        const baseStep = bracketCardHeight + bracketGap
-                        const referenceDepth =
-                          column.key === 'finals' && semifinalsIndex >= 0
-                            ? semifinalsIndex
-                            : stageIndex
-                        let columnGap = baseStep * Math.pow(2, referenceDepth)
-                        let columnOffset = ((Math.pow(2, referenceDepth) - 1) * baseStep) / 2
-                        if (column.key === 'finals' && semifinalsIndex >= 0) {
-                          columnOffset += columnGap / 2
-                          columnGap = baseStep
-                        }
-                        const finalsExtraGap =
-                          column.key === 'finals' && stageMatches.length > 1 ? bracketGap * 3 : 0
-                        const columnHeight =
-                          columnOffset +
-                          (stageMatches.length - 1) * columnGap +
-                          bracketCardHeight +
-                          finalsExtraGap
-                        const hasNext = stageIndex < knockoutColumns.length - 1
-
-                        return (
-                          <div
-                            key={column.key}
-                            className="bracketColumn"
-                            id={`bracket-round-${column.key}`}
-                            style={
-                              {
-                                '--column-gap': `${columnGap}px`,
-                                '--column-offset': `${columnOffset}px`,
-                              } as CSSProperties
-                            }
-                          >
-                            <div className="bracketColumnHeader">
-                              <span className="bracketStageTitle">{column.title}</span>
-                              <span className="toggleMeta">
-                                {stageMatches.length} match{stageMatches.length === 1 ? '' : 'es'}
-                              </span>
-                            </div>
-                            <div
-                              className="bracketColumnMatches"
-                              style={{ '--column-height': `${columnHeight}px` } as CSSProperties}
-                            >
-                              {Array.from({ length: Math.ceil(stageMatches.length / 2) }, (_, pairIndex) =>
-                                stageMatches.slice(pairIndex * 2, pairIndex * 2 + 2)
-                              ).map((pairMatches, pairIndex) => {
-                                const isFinalsColumn = column.key === 'finals' && pairMatches.length === 2
-                                const extraGap = isFinalsColumn ? bracketGap * 3 : 0
-                                const pairTop = columnOffset + pairIndex * 2 * columnGap
-                                const pairHeight =
-                                  pairMatches.length === 1
-                                    ? bracketCardHeight
-                                    : columnGap + bracketCardHeight + extraGap
-                                return (
-                                  <div
-                                    key={`${column.key}-pair-${pairIndex}`}
-                                    className="bracketMatchPair"
-                                    data-has-next={hasNext ? 'true' : 'false'}
-                                    data-count={String(pairMatches.length)}
-                                    style={
-                                      {
-                                        '--pair-step': `${columnGap}px`,
-                                        top: `${pairTop}px`,
-                                        height: `${pairHeight}px`,
-                                      } as CSSProperties
-                                    }
-                                  >
-                                    {pairMatches.map(({ match, stage }, matchIndex) => {
-                                      const stagePredictions = prediction.knockout?.[stage] ?? {}
-                                      const value = stagePredictions[match.id] ?? ''
-                                      const resultStatus = knockoutPickResults.results.get(match.id) ?? 'pending'
-                                      const championTeam =
-                                        stage === 'Final'
-                                          ? value === 'HOME'
-                                            ? match.displayHomeTeam
-                                            : value === 'AWAY'
-                                              ? match.displayAwayTeam
-                                              : null
-                                          : null
-                                      const error = validation.knockoutErrors[match.id]
-                                      return (
-                                        <div
-                                          key={match.id}
-                                          className={
-                                            error
-                                              ? 'bracketMatchCard bracketMatchCardError'
-                                              : 'bracketMatchCard'
-                                          }
-                                          id={`knockout-${match.id}`}
-                                          data-has-prev={stageIndex > 0 ? 'true' : 'false'}
-                                          data-has-next={hasNext ? 'true' : 'false'}
-                                          data-is-final={stage === 'Final' ? 'true' : 'false'}
-                                          style={
-                                            {
-                                              top: `${matchIndex * columnGap + (matchIndex === 1 ? extraGap : 0)}px`,
-                                            } as CSSProperties
-                                          }
-                                        >
-                                          <div className="bracketMatchInfo">
-                                            <div className="bracketMatchMeta">
-                                              {column.stages.length > 1 ? (
-                                                <div className="bracketMatchStageLabel">{stage}</div>
-                                              ) : null}
-                                              <span className="bracketResultTag" data-status={resultStatus}>
-                                                {pickResultLabels[resultStatus]}
-                                              </span>
-                                            </div>
-                                            <div className="matchTeams">
-                                              <div className="team">
-                                                <button
-                                                  type="button"
-                                                  className={
-                                                    value === 'HOME'
-                                                      ? 'bracketTeamPick active'
-                                                      : 'bracketTeamPick'
-                                                  }
-                                                  disabled={knockoutLocked}
-                                                  aria-pressed={value === 'HOME'}
-                                                  onClick={() => handleKnockoutChange(match, 'HOME')}
-                                                >
-                                                  {match.displayHomeTeam.code}
-                                                </button>
-                                                <span className="teamName">
-                                                  {match.displayHomeTeam.name}
-                                                </span>
-                                              </div>
-                                              <div className="vs">vs</div>
-                                              <div className="team">
-                                                <button
-                                                  type="button"
-                                                  className={
-                                                    value === 'AWAY'
-                                                      ? 'bracketTeamPick active'
-                                                      : 'bracketTeamPick'
-                                                  }
-                                                  disabled={knockoutLocked}
-                                                  aria-pressed={value === 'AWAY'}
-                                                  onClick={() => handleKnockoutChange(match, 'AWAY')}
-                                                >
-                                                  {match.displayAwayTeam.code}
-                                                </button>
-                                                <span className="teamName">
-                                                  {match.displayAwayTeam.name}
-                                                </span>
-                                              </div>
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                              {formatKickoff(match.kickoffUtc)}
-                                            </div>
-                                          </div>
-                                          {error ? (
-                                            <div className="bracketMatchError" id={`knockout-${match.id}-error`}>
-                                              {error}
-                                            </div>
-                                          ) : null}
-                                          {stage === 'Final' ? (
-                                            <div className="bracketChampionBadge" aria-label="Champion">
-                                              <span className="bracketChampionIcon" aria-hidden="true">
-                                                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                                                  <path
-                                                    d="M6 4h12v2a4 4 0 0 0 4 4v2a6 6 0 0 1-6 6h-1.5a4.5 4.5 0 0 1-9 0H4a6 6 0 0 1-6-6V10a4 4 0 0 0 4-4V4zm10 2H8a2 2 0 0 1-2 2v2a4 4 0 0 0 4 4h1.5a4.5 4.5 0 0 1 3 0H16a4 4 0 0 0 4-4V8a2 2 0 0 1-2-2zm-6.5 10a2.5 2.5 0 1 0 5 0h-5z"
-                                                    fill="currentColor"
-                                                  />
-                                                </svg>
-                                              </span>
-                                              <div className="bracketChampionText">
-                                                <span className="bracketChampionLabel">Champion</span>
-                                                <span className="bracketChampionTeam">
-                                                  {championTeam ? championTeam.code : 'TBD'}
-                                                </span>
-                                              </div>
-                                            </div>
-                                          ) : null}
-                                        </div>
-                                      )
-                                    })}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </Card>
-      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   )
 }

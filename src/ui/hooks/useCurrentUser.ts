@@ -5,7 +5,6 @@ import { CURRENT_USER_ID } from '../../lib/constants'
 import { fetchMembers } from '../../lib/data'
 import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import { useAuthState } from './useAuthState'
-import { useSimulationState } from './useSimulationState'
 import type { Member } from '../../types/members'
 
 type UserState =
@@ -73,7 +72,6 @@ export function useCurrentUser() {
   const [state, setState] = useState<UserState>({ status: 'loading' })
   const [refreshIndex, setRefreshIndex] = useState(0)
   const authState = useAuthState()
-  const simulation = useSimulationState()
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -89,25 +87,6 @@ export function useCurrentUser() {
     let canceled = false
     async function load() {
       try {
-        if (simulation.enabled) {
-          const simulated =
-            simulation.users.find((user) => user.id === simulation.selectedUserId) ?? null
-          if (!canceled) {
-            setState({
-              status: 'ready',
-              user: simulated
-                ? {
-                    id: simulated.id,
-                    name: simulated.name,
-                    email: simulated.email,
-                    isAdmin: true,
-                    isMember: true
-                  }
-                : null
-            })
-          }
-          return
-        }
         if (hasFirebase) {
           if (authState.status === 'loading') return
           if (!authState.user) {
@@ -210,14 +189,7 @@ export function useCurrentUser() {
     return () => {
       canceled = true
     }
-  }, [
-    authState.status,
-    authState.user,
-    refreshIndex,
-    simulation.enabled,
-    simulation.selectedUserId,
-    simulation.users
-  ])
+  }, [authState.status, authState.user, refreshIndex])
 
   if (state.status === 'ready') return state.user
   return null

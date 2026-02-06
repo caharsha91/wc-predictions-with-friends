@@ -7,7 +7,6 @@ import { ThemeProvider } from './theme/ThemeProvider'
 import { applyInitialTheme } from './theme/themeState'
 import './styles/index.css'
 import './ui/styles.css'
-document.documentElement.dataset.density = 'compact'
 applyInitialTheme()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

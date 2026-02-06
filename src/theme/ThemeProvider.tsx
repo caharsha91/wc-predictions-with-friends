@@ -10,7 +10,6 @@ import {
 } from './themeState'
 import { useAuthState } from '../ui/hooks/useAuthState'
 import { refreshCurrentUser, useCurrentUser } from '../ui/hooks/useCurrentUser'
-import { useSimulationState } from '../ui/hooks/useSimulationState'
 import { hasFirebase } from '../lib/firebase'
 import { saveUserThemePreference } from '../lib/firestoreData'
 import type { ThemePreference } from '../types/members'
@@ -41,7 +40,6 @@ function isThemePreferenceEqual(a: ThemePreference | null, b: ThemePreference) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const authState = useAuthState()
   const user = useCurrentUser()
-  const simulation = useSimulationState()
   const storedState = useMemo(() => getStoredThemeState(), [])
   const [state, setState] = useState(() => ({
     mode: storedState.mode,
@@ -57,7 +55,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     hasFirebase &&
     authState.status === 'ready' &&
     !!authState.user &&
-    !simulation.enabled &&
     user?.isMember
 
   const setMode = useCallback((mode: ThemeMode) => {

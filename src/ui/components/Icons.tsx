@@ -103,24 +103,6 @@ export function UsersIcon(props: IconProps) {
   )
 }
 
-export function SimulationIcon(props: IconProps) {
-  return (
-    <IconBase {...props}>
-      <path d="M12 3l2 4 4 2-4 2-2 4-2-4-4-2 4-2 2-4z" />
-    </IconBase>
-  )
-}
-
-export function ExportIcon(props: IconProps) {
-  return (
-    <IconBase {...props}>
-      <path d="M12 3v12" />
-      <path d="M8 11l4 4 4-4" />
-      <path d="M4 21h16" />
-    </IconBase>
-  )
-}
-
 export function FilterIcon(props: IconProps) {
   return (
     <IconBase {...props}>

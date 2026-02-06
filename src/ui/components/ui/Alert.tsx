@@ -3,13 +3,16 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '../../lib/utils'
 
-const alertVariants = cva('rounded-lg border px-4 py-3 text-sm shadow-soft', {
+const alertVariants = cva('rounded-lg border px-4 py-3 text-sm shadow-[var(--shadow0)]', {
   variants: {
     tone: {
-      info: 'border-[var(--border-accent)] bg-[var(--accent-soft)] text-foreground',
-      success: 'border-[var(--border-accent)] bg-[var(--accent-soft)] text-foreground',
-      warning: 'border-[var(--border-warning)] bg-[var(--banner-accent)] text-foreground',
-      danger: 'border-[var(--border-danger)] bg-[var(--accent-soft)] text-foreground'
+      info: 'border-[rgba(var(--info-rgb),0.48)] bg-[rgba(var(--info-rgb),0.14)] text-foreground',
+      success:
+        'border-[rgba(var(--primary-rgb),0.44)] bg-[rgba(var(--primary-rgb),0.12)] text-foreground',
+      warning:
+        'border-[rgba(var(--warn-rgb),0.46)] bg-[rgba(var(--warn-rgb),0.14)] text-foreground',
+      danger:
+        'border-[rgba(var(--danger-rgb),0.48)] bg-[rgba(var(--danger-rgb),0.14)] text-foreground'
     }
   },
   defaultVariants: {

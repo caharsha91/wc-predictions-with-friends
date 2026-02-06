@@ -13,6 +13,15 @@ const config: Config = {
     },
     extend: {
       colors: {
+        bg0: 'var(--bg0)',
+        bg1: 'var(--bg1)',
+        bg2: 'var(--bg2)',
+        bg3: 'var(--bg3)',
+        fg0: 'var(--fg0)',
+        fg1: 'var(--fg1)',
+        fg2: 'var(--fg2)',
+        border0: 'var(--border0)',
+        border1: 'var(--border1)',
         background: 'var(--background)',
         foreground: 'var(--foreground)',
         card: 'var(--card)',
@@ -27,6 +36,12 @@ const config: Config = {
           DEFAULT: 'var(--secondary)',
           foreground: 'var(--secondary-foreground)'
         },
+        brand: {
+          primary: 'var(--brand-primary)',
+          secondary: 'var(--brand-secondary)',
+          accent: 'var(--brand-accent)',
+          danger: 'var(--status-danger)'
+        },
         muted: {
           DEFAULT: 'var(--muted)',
           foreground: 'var(--muted-foreground)'
@@ -35,10 +50,25 @@ const config: Config = {
           DEFAULT: 'var(--accent)',
           foreground: 'var(--accent-foreground)'
         },
+        on: {
+          primary: 'var(--on-primary)',
+          secondary: 'var(--on-secondary)',
+          accent: 'var(--on-accent)',
+          inverse: 'var(--fg-inverse)'
+        },
         destructive: {
           DEFAULT: 'var(--destructive)',
           foreground: 'var(--destructive-foreground)'
         },
+        status: {
+          success: 'var(--status-success)',
+          warn: 'var(--status-warn)',
+          danger: 'var(--status-danger)',
+          info: 'var(--status-info)'
+        },
+        success: 'var(--status-success)',
+        warn: 'var(--status-warn)',
+        info: 'var(--status-info)',
         border: 'var(--border)',
         input: 'var(--input)',
         ring: 'var(--ring)'
@@ -56,6 +86,9 @@ const config: Config = {
       boxShadow: {
         glow: '0 0 24px var(--glow)',
         soft: '0 12px 30px rgba(0, 0, 0, 0.25)',
+        0: 'var(--shadow0)',
+        1: 'var(--shadow1)',
+        2: 'var(--shadow2)',
         card: 'var(--card-shadow)'
       },
       keyframes: {

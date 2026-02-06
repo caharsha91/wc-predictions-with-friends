@@ -4,6 +4,7 @@
   --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
     'Courier New', monospace;
   --font-numeric: var(--font-mono);
+
   --font-size-h1: 32px;
   --font-size-h2: 24px;
   --font-size-h3: 20px;
@@ -11,12 +12,15 @@
   --font-size-body: 16px;
   --font-size-small: 14px;
   --font-size-caption: 12px;
+
   --line-height-tight: 1.2;
   --line-height-body: 1.5;
+
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -26,10 +30,12 @@
   --space-7: 32px;
   --space-8: 40px;
   --space-9: 48px;
+
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 12px;
   --radius-xl: 16px;
+
   --text-xxs: 11px;
   --text-xs: 12px;
   --text-sm: 14px;
@@ -37,137 +43,202 @@
   --text-base: var(--font-size-body);
   --text-lg: 18px;
   --text-xl: 20px;
-  --app-max-width: 1180px;
+
+  --app-max-width: 1280px;
   --bottom-nav-height: 72px;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
   --radius: var(--radius-md);
-  --shadow: var(--shadow-sm);
-  --surface: var(--panel);
-  --surface-2: var(--surface-muted);
-  --primary: var(--accent);
-  --primary-contrast: var(--text-inverse);
-  --focus: var(--focus-ring);
-  --bg: var(--color-bg);
-  --panel: var(--color-surface);
-  --card: var(--color-surface);
-  --surface-muted: var(--color-surface-2);
-  --border: var(--color-border);
-  --border-strong: var(--color-border-strong);
-  --divider: var(--border);
-  --text: var(--color-text);
-  --text-secondary: var(--color-text-muted);
-  --text-muted: var(--color-text-muted);
-  --accent: var(--color-accent);
-  --accent-strong: var(--color-accent-strong);
-  --accent-violet: var(--color-accent-2);
-  --accent-hover: var(--color-accent-strong);
-  --danger: var(--color-danger);
-  --warning: var(--color-warning);
-  --success: var(--color-success);
-  --info: var(--color-info);
-  --locked: var(--color-locked);
-  --background: var(--color-bg);
-  --foreground: var(--color-text);
-  --card: var(--color-surface);
-  --card-foreground: var(--color-text);
-  --popover: var(--color-surface);
-  --popover-foreground: var(--color-text);
-  --primary-foreground: var(--text-inverse);
-  --secondary: var(--color-surface-2);
-  --secondary-foreground: var(--color-text);
-  --muted: var(--color-surface-2);
-  --muted-foreground: var(--color-text-muted);
-  --accent-foreground: var(--text-inverse);
-  --destructive: var(--color-danger);
-  --destructive-foreground: var(--text-inverse);
-  --input: var(--color-border);
-  --ring: var(--color-accent);
-  --brand-mark-bg: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
-  --brand-mark-text: var(--text-inverse);
-  --status-upcoming: var(--text-secondary);
-  --status-live: var(--accent);
-  --status-final: var(--success);
-  --status-locked: var(--locked);
-  --status-alert: var(--warning);
-  --row-border: var(--border);
-  --focus-ring: rgba(var(--color-accent-rgb), var(--focus-alpha));
-  --glow: rgba(var(--color-accent-rgb), var(--glow-alpha));
-  --border-accent: rgba(var(--color-accent-rgb), var(--border-accent-alpha));
-  --border-warning: rgba(var(--color-warning-rgb), var(--border-warning-alpha));
-  --border-danger: rgba(var(--color-danger-rgb), var(--border-danger-alpha));
-  --accent-soft: rgba(var(--color-accent-rgb), var(--accent-soft-alpha));
-  --accent-violet-soft: rgba(var(--color-accent-2-rgb), var(--accent-violet-soft-alpha));
-  --banner-accent: rgba(var(--color-accent-rgb), var(--banner-accent-alpha));
-  --group-ticker-bg: rgba(var(--color-accent-rgb), var(--group-ticker-bg-alpha));
-  --group-ticker-border: rgba(var(--color-accent-rgb), var(--group-ticker-border-alpha));
-  --button-border: rgba(var(--color-accent-rgb), var(--button-border-alpha));
-  --button-bg: rgba(var(--color-accent-rgb), var(--button-bg-alpha));
-  --row-hover-border: rgba(var(--color-accent-rgb), var(--row-hover-border-alpha));
-  --row-inset: inset 0 0 0 1px rgba(var(--color-text-rgb), var(--row-inset-alpha));
-  --team-border: rgba(var(--color-text-rgb), var(--team-border-alpha));
-  --pill-border: rgba(var(--color-text-rgb), var(--pill-border-alpha));
-  --pill-bg: rgba(var(--color-text-rgb), var(--pill-bg-alpha));
-  --ticker-border: rgba(var(--color-accent-rgb), 0.28);
+
+  /* Semantic tokens */
+  --background: var(--bg0);
+  --foreground: var(--fg0);
+  --card: var(--bg1);
+  --card-foreground: var(--fg0);
+  --popover: var(--bg3);
+  --popover-foreground: var(--fg0);
+  --border: var(--border0);
+  --input: var(--border0);
+
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--on-primary);
+  --secondary: var(--brand-secondary);
+  --secondary-foreground: var(--on-secondary);
+  --muted: var(--bg2);
+  --muted-foreground: var(--fg2);
+
+  /* Compatibility aliases for existing styles */
+  --bg: var(--bg0);
+  --panel: var(--bg1);
+  --surface: var(--bg1);
+  --surface-2: var(--bg2);
+  --surface-muted: var(--bg2);
+  --divider: var(--border0);
+  --border-strong: var(--border1);
+  --text: var(--fg0);
+  --text-secondary: var(--fg1);
+  --text-muted: var(--fg2);
+
+  --accent: var(--brand-accent);
+  --accent-strong: var(--primary-strong);
+  --accent-violet: var(--brand-secondary);
+  --accent-hover: var(--primary-strong);
+  --accent-foreground: var(--on-accent);
+
+  --destructive: var(--danger);
+  --destructive-foreground: var(--fg-inverse);
+
+  --success: var(--status-success);
+  --warning: var(--status-warn);
+  --danger: var(--status-danger);
+  --info: var(--status-info);
+  --locked: var(--status-warn);
+
+  --ring: var(--ring-color);
+  --focus: var(--ring-color);
+
+  --color-bg: var(--bg0);
+  --color-surface: var(--bg1);
+  --color-surface-2: var(--bg2);
+  --color-text: var(--fg0);
+  --color-text-rgb: var(--fg0-rgb);
+  --color-text-muted: var(--fg2);
+  --color-border: var(--border0);
+  --color-border-strong: var(--border1);
+
+  --color-accent: var(--brand-primary);
+  --color-accent-rgb: var(--primary-rgb);
+  --color-accent-strong: var(--primary-strong);
+  --color-accent-2: var(--brand-secondary);
+  --color-accent-2-rgb: var(--secondary-rgb);
+
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warn);
+  --color-warning-rgb: var(--warn-rgb);
+  --color-danger: var(--status-danger);
+  --color-danger-rgb: var(--danger-rgb);
+  --color-info: var(--status-info);
+  --color-locked: var(--status-warn);
+
+  --text-inverse: var(--fg-inverse);
+
+  --brand-mark-bg: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  --brand-mark-text: var(--on-primary);
+
+  --header-bg: var(--shell-header-surface);
+  --sidebar-bg: var(--shell-sidebar-surface);
+  --hero-bg: var(--hero-surface);
+  --hero-foreground: var(--hero-fg);
+  --hero-muted: var(--hero-fg-muted);
+  --shell-bg-overlay: var(--shell-background-overlay);
+  --shell-header-border: var(--shell-header-divider);
+  --shell-sidebar-divider: var(--shell-sidebar-divider-color);
+  --page-header-bg: var(--page-header-surface);
+  --page-header-border: var(--page-header-border-color);
+  --page-header-title: var(--page-header-foreground);
+  --page-header-kicker: var(--page-header-kicker-foreground);
+  --page-header-subtitle: var(--page-header-muted-foreground);
+
+  --primary-cta-bg: var(--cta-primary-bg);
+  --primary-cta-hover-bg: var(--cta-primary-hover-bg);
+  --primary-cta-border: var(--cta-primary-border-color);
+  --primary-cta-shadow: var(--cta-primary-shadow-value);
+  --secondary-cta-bg: var(--cta-secondary-bg);
+  --secondary-cta-hover-bg: var(--cta-secondary-hover-bg);
+  --secondary-cta-border: var(--cta-secondary-border-color);
+  --secondary-cta-shadow: var(--cta-secondary-shadow-value);
+  --pill-active-bg: var(--cta-pill-active-bg);
+  --pill-active-border: var(--cta-pill-active-border-color);
+  --pill-active-shadow: var(--cta-pill-active-shadow-value);
+  --ticker-bg: var(--demo-banner-bg);
+
+  --status-upcoming: var(--fg2);
+  --status-live: var(--status-info);
+  --status-final: var(--status-success);
+  --status-locked: var(--status-warn);
+  --status-alert: var(--status-warn);
+
+  --shadow: var(--shadow0);
+  --shadow-xs: var(--shadow0);
+  --shadow-sm: var(--shadow0);
+  --shadow-md: var(--shadow1);
+  --shadow-lg: var(--shadow2);
+
+  --card-shadow: var(--shadow1);
+  --row-hover-shadow: var(--shadow1);
+  --button-shadow: var(--shadow1);
+  --header-shadow: var(--shadow0);
+
+  --focus-ring: rgba(var(--primary-rgb), var(--focus-alpha));
+  --glow: rgba(var(--primary-rgb), var(--glow-alpha));
+  --border-accent: rgba(var(--primary-rgb), var(--border-accent-alpha));
+  --border-warning: rgba(var(--warn-rgb), var(--border-warning-alpha));
+  --border-danger: rgba(var(--danger-rgb), var(--border-danger-alpha));
+  --accent-soft: rgba(var(--primary-rgb), var(--accent-soft-alpha));
+  --accent-violet-soft: rgba(var(--secondary-rgb), var(--accent-violet-soft-alpha));
+  --banner-accent: rgba(var(--warn-rgb), var(--banner-accent-alpha));
+  --group-ticker-bg: rgba(var(--primary-rgb), var(--group-ticker-bg-alpha));
+  --group-ticker-border: rgba(var(--primary-rgb), var(--group-ticker-border-alpha));
+  --button-border: rgba(var(--primary-rgb), var(--button-border-alpha));
+  --button-bg: rgba(var(--primary-rgb), var(--button-bg-alpha));
+  --row-hover-border: rgba(var(--primary-rgb), var(--row-hover-border-alpha));
+  --row-inset: inset 0 0 0 1px rgba(var(--fg0-rgb), var(--row-inset-alpha));
+  --team-border: rgba(var(--fg0-rgb), var(--team-border-alpha));
+  --pill-border: rgba(var(--fg0-rgb), var(--pill-border-alpha));
+  --pill-bg: rgba(var(--fg0-rgb), var(--pill-bg-alpha));
+  --ticker-border: rgba(var(--primary-rgb), 0.28);
+  --overlay-backdrop: var(--overlay-backdrop-rgba);
+  --overlay-surface: var(--bg3);
+  --overlay-border: var(--overlay-border-color);
+  --overlay-shadow: var(--overlay-shadow-value);
 }
 
 :root[data-mode='light'] {
   color-scheme: light;
-  --focus-alpha: 0.4;
-  --glow-alpha: 0.55;
-  --border-accent-alpha: 0.46;
-  --border-warning-alpha: 0.4;
+
+  --focus-alpha: 0.44;
+  --glow-alpha: 0.42;
+  --border-accent-alpha: 0.42;
+  --border-warning-alpha: 0.42;
   --border-danger-alpha: 0.42;
   --accent-soft-alpha: 0.2;
-  --accent-violet-soft-alpha: 0.14;
-  --banner-accent-alpha: 0.22;
+  --accent-violet-soft-alpha: 0.18;
+  --banner-accent-alpha: 0.18;
   --group-ticker-bg-alpha: 0.14;
-  --group-ticker-border-alpha: 0.36;
-  --button-border-alpha: 0.5;
-  --button-bg-alpha: 0.2;
-  --row-hover-border-alpha: 0.45;
+  --group-ticker-border-alpha: 0.3;
+  --button-border-alpha: 0.48;
+  --button-bg-alpha: 0.18;
+  --row-hover-border-alpha: 0.42;
   --row-inset-alpha: 0.04;
   --team-border-alpha: 0.14;
   --pill-border-alpha: 0.16;
-  --pill-bg-alpha: 0.05;
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 8px 20px rgba(15, 23, 42, 0.12);
-  --shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.16);
-  --card-shadow: var(--shadow-sm);
-  --row-hover-shadow: var(--shadow-md);
-  --button-shadow: var(--shadow-md);
-  --header-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
-  --noise-color: rgba(15, 23, 42, 0.06);
-  --input-bg: var(--color-surface);
+  --pill-bg-alpha: 0.06;
+
+  --noise-color: rgba(15, 23, 42, 0.04);
+  --input-bg: var(--bg1);
 }
 
 :root[data-mode='dark'] {
   color-scheme: dark;
+
   --focus-alpha: 0.62;
-  --glow-alpha: 0.78;
-  --border-accent-alpha: 0.55;
-  --border-warning-alpha: 0.42;
+  --glow-alpha: 0.3;
+  --border-accent-alpha: 0.58;
+  --border-warning-alpha: 0.46;
   --border-danger-alpha: 0.5;
-  --accent-soft-alpha: 0.28;
-  --accent-violet-soft-alpha: 0.18;
-  --banner-accent-alpha: 0.28;
-  --group-ticker-bg-alpha: 0.16;
-  --group-ticker-border-alpha: 0.4;
-  --button-border-alpha: 0.62;
-  --button-bg-alpha: 0.26;
-  --row-hover-border-alpha: 0.52;
-  --row-inset-alpha: 0.04;
+  --accent-soft-alpha: 0.26;
+  --accent-violet-soft-alpha: 0.2;
+  --banner-accent-alpha: 0.22;
+  --group-ticker-bg-alpha: 0.14;
+  --group-ticker-border-alpha: 0.32;
+  --button-border-alpha: 0.58;
+  --button-bg-alpha: 0.24;
+  --row-hover-border-alpha: 0.5;
+  --row-inset-alpha: 0.03;
   --team-border-alpha: 0.2;
   --pill-border-alpha: 0.2;
-  --pill-bg-alpha: 0.06;
-  --shadow-xs: 0 8px 14px rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 10px 22px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 18px 34px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 26px 48px rgba(0, 0, 0, 0.5);
-  --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
-  --row-hover-shadow: 0 18px 36px rgba(0, 0, 0, 0.5);
-  --button-shadow: 0 16px 30px rgba(0, 0, 0, 0.45);
-  --header-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
-  --noise-color: rgba(255, 255, 255, 0.06);
-  --input-bg: var(--color-surface-2);
+  --pill-bg-alpha: 0.07;
+
+  --noise-color: rgba(148, 163, 184, 0.05);
+  --input-bg: var(--bg2);
 }

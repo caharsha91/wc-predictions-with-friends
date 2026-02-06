@@ -5,15 +5,6 @@ import type { BracketGroupFile, BracketKnockoutFile, BracketPredictionsFile } fr
 import type { BestThirdQualifiersFile } from '../types/qualifiers'
 import type { LeaderboardFile } from '../types/leaderboard'
 import type { ScoringConfig } from '../types/scoring'
-import {
-  fetchSimulationBestThirdQualifiers,
-  fetchSimulationBracketPredictions,
-  fetchSimulationLeaderboard,
-  fetchSimulationMatches,
-  fetchSimulationMembers,
-  fetchSimulationPicks,
-  isSimulationMode
-} from './simulation'
 
 type CacheEntry<T> = {
   data: T
@@ -36,6 +27,10 @@ const CACHE_TTL_MS: Record<string, number> = {
 const DEFAULT_TTL_MS = 15 * 60 * 1000
 const STORAGE_PREFIX = 'wc-cache:'
 const memoryCache = new Map<string, CacheEntry<unknown>>()
+const EMPTY_BEST_THIRD_QUALIFIERS: BestThirdQualifiersFile = {
+  updatedAt: '',
+  qualifiers: []
+}
 
 function getStorageKey(path: string) {
   return `${STORAGE_PREFIX}${path}`
@@ -108,23 +103,14 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 export function fetchMatches(): Promise<MatchesFile> {
-  if (isSimulationMode()) {
-    return fetchSimulationMatches()
-  }
   return fetchJson<MatchesFile>('data/matches.json')
 }
 
 export function fetchMembers(): Promise<MembersFile> {
-  if (isSimulationMode()) {
-    return fetchSimulationMembers()
-  }
   return fetchJson<MembersFile>('data/members.json')
 }
 
 export function fetchPicks(): Promise<PicksFile> {
-  if (isSimulationMode()) {
-    return fetchSimulationPicks()
-  }
   return fetchJson<PicksFile>('data/picks.json')
 }
 
@@ -133,9 +119,6 @@ export function fetchScoring(): Promise<ScoringConfig> {
 }
 
 export async function fetchBracketPredictions(): Promise<BracketPredictionsFile> {
-  if (isSimulationMode()) {
-    return fetchSimulationBracketPredictions()
-  }
   const [groupFile, knockoutFile] = await Promise.all([
     fetchJson<BracketGroupFile>('data/bracket-group.json'),
     fetchJson<BracketKnockoutFile>('data/bracket-knockout.json')
@@ -146,16 +129,17 @@ export async function fetchBracketPredictions(): Promise<BracketPredictionsFile>
   }
 }
 
-export function fetchBestThirdQualifiers(): Promise<BestThirdQualifiersFile> {
-  if (isSimulationMode()) {
-    return fetchSimulationBestThirdQualifiers()
+export async function fetchBestThirdQualifiers(): Promise<BestThirdQualifiersFile> {
+  try {
+    return await fetchJson<BestThirdQualifiersFile>('data/best-third-qualifiers.json')
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('(404)')) {
+      return EMPTY_BEST_THIRD_QUALIFIERS
+    }
+    throw error
   }
-  return fetchJson<BestThirdQualifiersFile>('data/best-third-qualifiers.json')
 }
 
 export function fetchLeaderboard(): Promise<LeaderboardFile> {
-  if (isSimulationMode()) {
-    return fetchSimulationLeaderboard()
-  }
   return fetchJson<LeaderboardFile>('data/leaderboard.json')
 }

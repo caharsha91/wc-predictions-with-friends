@@ -1,25 +1,15 @@
-# Users Page
+# Players Page
 
 ## Route
-/users
+`/players`
 
-## Component
-src/ui/pages/AdminUsersPage.tsx
+## Access
+Admin-only.
 
 ## Purpose
-Manage league members who can access the private league and admin capabilities.
-This page is linked from Settings for admins.
+Manage league players and admin rights.
 
-## Data and state
-- Loads members from Firestore collection leagues/{leagueId}/members.
-- Falls back to simulation users when simulation mode is enabled.
-- Tracks pagination and add/edit drawer state locally.
-
-## Key UI
-- Members table with name, email, and role badges.
-- Add/Edit member drawer with name, email, and admin toggle.
-- Pagination controls for the member list.
-
-## Behavior
-- Member updates are disabled when simulation is enabled or Firebase is not configured.
-- Editing an existing user locks the email field; updates merge into Firestore with setDoc.
+## Key behavior
+- List members from Firestore (`leagues/{leagueId}/members`) when available.
+- Add/edit player name, email, and admin role.
+- Read-only fallback from static members JSON if Firebase is unavailable.

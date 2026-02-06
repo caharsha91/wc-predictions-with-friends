@@ -17,6 +17,7 @@ export type MatchGroup = {
 }
 
 export const PACIFIC_TIME_ZONE = 'America/Los_Angeles'
+export const GROUP_OUTCOMES_LOCK_OFFSET_MINUTES = 30
 
 type DateParts = {
   year: number
@@ -132,6 +133,20 @@ export function getLockTimePstForDateKey(dateKey: string, offsetDays: number): D
 export function getLockTime(kickoffUtc: string): Date {
   const kickoffTime = new Date(kickoffUtc).getTime()
   return new Date(kickoffTime - 30 * 60 * 1000)
+}
+
+export function getGroupOutcomesLockTime(
+  matches: Match[],
+  offsetMinutes: number = GROUP_OUTCOMES_LOCK_OFFSET_MINUTES
+): Date | null {
+  const groupKickoffs = matches
+    .filter((match) => match.stage === 'Group')
+    .map((match) => new Date(match.kickoffUtc).getTime())
+    .filter((value) => Number.isFinite(value))
+
+  if (groupKickoffs.length === 0) return null
+  const firstKickoff = Math.min(...groupKickoffs)
+  return new Date(firstKickoff - offsetMinutes * 60 * 1000)
 }
 
 export function isMatchLocked(kickoffUtc: string, now: Date = new Date()): boolean {

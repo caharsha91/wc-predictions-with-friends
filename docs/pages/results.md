@@ -1,14 +1,12 @@
-# Results (Legacy Route)
+# Results Page
 
 ## Route
-/results → redirects to /picks?tab=results
-
-## Component
-src/ui/pages/PicksPage.tsx
+`/results`
 
 ## Purpose
-Legacy alias for the Picks page's Results tab.
+Review finished matches, your picks, and scoring breakdown.
 
-## Notes
-- Results view shows finished matches with pick breakdowns and points.
-- Use /picks for all primary navigation.
+## Key behavior
+- Finished matches table with stage filtering.
+- Per-match point breakdown (exact/outcome/knockout).
+- Embedded rules/scoring summary from `scoring.json`.

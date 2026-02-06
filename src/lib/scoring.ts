@@ -4,7 +4,7 @@ import type { Member } from '../types/members'
 import type { Pick } from '../types/picks'
 import type { BracketPrediction } from '../types/bracket'
 import type { KnockoutStage, ScoringConfig, StageScoring } from '../types/scoring'
-import { getPredictedWinner, isPickComplete } from './picks'
+import { getOutcomeFromScores, getPickOutcome, getPredictedWinner, isPickComplete } from './picks'
 
 type Outcome = 'WIN' | 'DRAW' | 'LOSS'
 
@@ -35,9 +35,11 @@ function scoreExact(match: Match, pick: Pick, config: StageScoring) {
 }
 
 function scoreResult(match: Match, pick: Pick, config: StageScoring) {
-  if (!match.score || !pick.outcome) return 0
+  if (!match.score) return 0
+  const predictedOutcome = getPickOutcome(pick) ?? getOutcomeFromScores(pick.homeScore, pick.awayScore)
+  if (!predictedOutcome) return 0
   const actualOutcome = getOutcomeFromScore(match.score)
-  if (pick.outcome === actualOutcome) return config.result
+  if (predictedOutcome === actualOutcome) return config.result
   return 0
 }
 
