@@ -26,6 +26,7 @@ import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import DetailsDisclosure from '../components/ui/DetailsDisclosure'
 import { SelectField } from '../components/ui/Field'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Skeleton from '../components/ui/Skeleton'
@@ -1349,7 +1350,7 @@ export default function AdminExportsPage() {
 
       {mode === 'USER_ALL_MATCHDAYS' ? (
         <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <div className="grid gap-4">
             <SelectField
               label="User"
               value={selectedUserId}
@@ -1362,7 +1363,10 @@ export default function AdminExportsPage() {
               ))}
             </SelectField>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs text-muted-foreground">
+                Primary action exports Picks + GroupOutcomes + Bracket + Metadata for the selected user.
+              </div>
               <Button
                 size="sm"
                 loading={exportStatus === 'exporting'}
@@ -1370,20 +1374,28 @@ export default function AdminExportsPage() {
               >
                 Download User Picks Export
               </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                loading={exportStatus === 'exporting'}
-                onClick={() => void handleExport('USER_RESULTS')}
-              >
-                Download User Results Export
-              </Button>
             </div>
+
+            <DetailsDisclosure title="Additional downloads">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs text-muted-foreground">
+                  Optional secondary export with user results snapshots across all matchdays.
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  loading={exportStatus === 'exporting'}
+                  onClick={() => void handleExport('USER_RESULTS')}
+                >
+                  Download User Results Export
+                </Button>
+              </div>
+            </DetailsDisclosure>
           </div>
         </Card>
       ) : (
         <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <div className="grid gap-4">
             <SelectField
               label="Matchday"
               value={selectedMatchday}
@@ -1396,7 +1408,10 @@ export default function AdminExportsPage() {
               ))}
             </SelectField>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs text-muted-foreground">
+                Primary action exports all users picks for the selected matchday.
+              </div>
               <Button
                 size="sm"
                 loading={exportStatus === 'exporting'}
@@ -1404,15 +1419,23 @@ export default function AdminExportsPage() {
               >
                 Download Matchday Picks Export
               </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                loading={exportStatus === 'exporting'}
-                onClick={() => void handleExport('MATCHDAY_LEADERBOARD')}
-              >
-                Download Matchday Leaderboard Snapshot
-              </Button>
             </div>
+
+            <DetailsDisclosure title="Additional downloads">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs text-muted-foreground">
+                  Optional secondary export with leaderboard snapshot for the selected matchday.
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  loading={exportStatus === 'exporting'}
+                  onClick={() => void handleExport('MATCHDAY_LEADERBOARD')}
+                >
+                  Download Matchday Leaderboard Snapshot
+                </Button>
+              </div>
+            </DetailsDisclosure>
           </div>
         </Card>
       )}

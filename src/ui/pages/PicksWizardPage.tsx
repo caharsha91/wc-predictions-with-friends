@@ -176,6 +176,7 @@ export default function PicksWizardPage() {
   const resumeRef = useRef(false)
   const initialStepRef = useRef(false)
   const resumeTargetRef = useRef<{ kind: WizardStepKind; matchId?: string } | null>(null)
+  const previousLockedStateRef = useRef<boolean | null>(null)
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
 
   useEffect(() => {
@@ -337,6 +338,20 @@ export default function PicksWizardPage() {
     parsedHome !== undefined &&
     parsedAway !== undefined &&
     (!requiresAdvances || activeMatchDraft.advances === 'HOME' || activeMatchDraft.advances === 'AWAY')
+
+  useEffect(() => {
+    if (!currentMatch) {
+      previousLockedStateRef.current = null
+      return
+    }
+    const wasLocked = previousLockedStateRef.current
+    if (wasLocked === false && matchLocked) {
+      setNotice(
+        `Locked at ${formatKickoff(getLockTime(currentMatch.kickoffUtc).toISOString())}; draft kept locally. Go to next action.`
+      )
+    }
+    previousLockedStateRef.current = matchLocked
+  }, [currentMatch, matchLocked])
 
   const progressDone = useMemo(
     () =>
@@ -705,7 +720,7 @@ export default function PicksWizardPage() {
                 Save
               </Button>
               <Button onClick={() => void handleMatchContinue()} loading={savingMatch}>
-                Save & continue
+                {matchLocked ? 'Go to next action' : 'Save & continue'}
               </Button>
             </div>
           </div>

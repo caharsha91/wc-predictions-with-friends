@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { fetchMatches, fetchScoring } from '../../lib/data'
 import { getDateKeyInTimeZone } from '../../lib/matches'
@@ -95,6 +96,7 @@ function scorePick(match: Match, pick: Pick | undefined, scoring: ScoringConfig)
 }
 
 export default function ResultsPage() {
+  const navigate = useNavigate()
   const userId = useViewerId()
   const picksState = usePicksData()
   const [activeTab, setActiveTab] = useState<ViewTab>('CURRENT')
@@ -196,6 +198,14 @@ export default function ResultsPage() {
     return sum + scorePick(match, pick, state.scoring).total
   }, 0)
 
+  function openCurrentResults() {
+    setActiveTab('CURRENT')
+  }
+
+  function openPastMatchdays() {
+    setActiveTab('HISTORY')
+  }
+
   return (
     <div className="space-y-6">
       <PageHeroPanel
@@ -222,6 +232,15 @@ export default function ResultsPage() {
             <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Total finished points</div>
             <div className="mt-2 text-lg font-semibold text-foreground">{totalPoints}</div>
           </Card>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button onClick={openCurrentResults}>Review latest results</Button>
+          <Button variant="secondary" onClick={openPastMatchdays}>
+            Open past matchdays
+          </Button>
+          <Button variant="ghost" onClick={() => navigate('/play/picks')}>
+            Improve next round
+          </Button>
         </div>
       </PageHeroPanel>
 

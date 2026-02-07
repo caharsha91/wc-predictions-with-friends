@@ -101,6 +101,7 @@ export default function BracketPage() {
 
   const resumeLoadedRef = useRef(false)
   const resumeTargetRef = useRef<BracketResumeState | null>(null)
+  const previousLockedStateRef = useRef<boolean | null>(null)
 
   useEffect(() => {
     if (resumeLoadedRef.current) return
@@ -194,6 +195,20 @@ export default function BracketPage() {
     : -1
   const currentWinner = currentEntry ? entryWinner(currentEntry) : undefined
   const currentLocked = currentEntry ? entryLocked(currentEntry) : false
+
+  useEffect(() => {
+    if (!currentEntry) {
+      previousLockedStateRef.current = null
+      return
+    }
+    const wasLocked = previousLockedStateRef.current
+    if (wasLocked === false && currentLocked) {
+      setNotice(
+        `Locked at ${formatTime(getLockTime(currentEntry.match.kickoffUtc).toISOString())}; moved to next action.`
+      )
+    }
+    previousLockedStateRef.current = currentLocked
+  }, [currentEntry, currentLocked])
 
   const progressPct = totalMatches > 0 ? Math.round((completeMatches / totalMatches) * 100) : 0
 
@@ -346,13 +361,13 @@ export default function BracketPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" onClick={jumpToNextAction} disabled={openIncompleteEntries.length === 0}>
+            <Button onClick={jumpToNextAction}>
               Resume next action
             </Button>
             <Button variant="ghost" onClick={() => setMode('review')}>
               Review picks
             </Button>
-            <Button onClick={() => void save()} loading={saveStatus === 'saving'}>
+            <Button variant="secondary" onClick={() => void save()} loading={saveStatus === 'saving'}>
               Save bracket
             </Button>
             {saveStatus === 'saved' ? (
@@ -424,7 +439,7 @@ export default function BracketPage() {
                 Next match
               </Button>
               <Button onClick={handleContinue} disabled={!currentLocked && !currentWinner}>
-                Continue
+                {currentLocked ? 'Go to next action' : 'Continue'}
               </Button>
             </div>
           </div>

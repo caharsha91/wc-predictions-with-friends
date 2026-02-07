@@ -7,7 +7,7 @@ vi.mock('./hooks/useAuthState', () => ({
 }))
 
 vi.mock('./hooks/useCurrentUser', () => ({
-  useCurrentUser: () => ({ id: 'user-1', name: 'Demo Player', isMember: true, isAdmin: false })
+  useCurrentUser: () => ({ id: 'user-1', name: 'Demo Player', isMember: true, isAdmin: true })
 }))
 
 vi.mock('../lib/firebase', () => ({
@@ -30,6 +30,8 @@ vi.mock('./hooks/useEasterEggs', () => ({
 }))
 
 vi.mock('./pages/PicksPage', () => ({ default: () => <div>Picks route</div> }))
+vi.mock('./pages/PicksWizardPage', () => ({ default: () => <div>Picks wizard route</div> }))
+vi.mock('./pages/play/PlayPage', () => ({ default: () => <div>Play route</div> }))
 vi.mock('./pages/ResultsPage', () => ({ default: () => <div>Results route</div> }))
 vi.mock('./pages/BracketPage', () => ({ default: () => <div>Bracket route</div> }))
 vi.mock('./pages/LeaderboardPage', () => ({ default: () => <div>Leaderboard route</div> }))
@@ -56,7 +58,7 @@ describe('App routing', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByText('Picks route')).toBeInTheDocument()
+    expect(screen.getByText('Play route')).toBeInTheDocument()
     expect(screen.getByTestId('location-probe')).toHaveTextContent('/play')
 
     const resultsLink = screen.getAllByRole('link', { name: /results/i })[0]
@@ -66,15 +68,23 @@ describe('App routing', () => {
     expect(screen.getByTestId('location-probe')).toHaveTextContent('/play/results')
   })
 
-  it('redirects legacy routes to play/admin paths', () => {
+  it.each([
+    ['/picks', '/play/picks', 'Picks route'],
+    ['/picks/wizard', '/play/picks/wizard', 'Picks wizard route'],
+    ['/results', '/play/results', 'Results route'],
+    ['/bracket', '/play/bracket', 'Bracket route'],
+    ['/leaderboard', '/play/league', 'Leaderboard route'],
+    ['/players', '/admin/players', 'Players route'],
+    ['/exports', '/admin/exports', 'Exports route']
+  ])('redirects %s to %s', (legacyPath, expectedPath, expectedText) => {
     render(
-      <MemoryRouter initialEntries={['/leaderboard']}>
+      <MemoryRouter initialEntries={[legacyPath]}>
         <LocationProbe />
         <App />
       </MemoryRouter>
     )
 
-    expect(screen.getByText('Leaderboard route')).toBeInTheDocument()
-    expect(screen.getByTestId('location-probe')).toHaveTextContent('/play/league')
+    expect(screen.getByText(expectedText)).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe')).toHaveTextContent(expectedPath)
   })
 })

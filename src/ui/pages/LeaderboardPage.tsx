@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { fetchLeaderboard } from '../../lib/data'
 import type { LeaderboardEntry } from '../../types/leaderboard'
@@ -33,9 +34,11 @@ function formatTime(iso: string): string {
 }
 
 export default function LeaderboardPage() {
+  const navigate = useNavigate()
   const userId = useViewerId()
   const authState = useAuthState()
   const [page, setPage] = useState(1)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [state, setState] = useState<LoadState>({ status: 'loading' })
 
   const viewerKeys = useMemo(() => {
@@ -117,18 +120,25 @@ export default function LeaderboardPage() {
       if (below) gaps.push(Math.abs(current.totalPoints - below.totalPoints))
       nearestRivalGap = gaps.length > 0 ? Math.min(...gaps) : 0
     }
-    const actionableInsight =
+    const actionableInsightTitle =
       scoringPlayers === 0
-        ? 'No scoring yet. Submit picks for the next lock window.'
+        ? 'No scoring yet'
         : current
-          ? `Gap to leader ${gapToLeader ?? 0} pts · Nearest rival gap ${nearestRivalGap ?? 0} pts`
-          : 'No rank yet. Complete your first picks to enter standings.'
+          ? 'Race update'
+          : 'No rank yet'
+    const actionableInsightDetail =
+      scoringPlayers === 0
+        ? 'Submit picks for the next lock window.'
+        : current
+          ? `Gap to leader: ${gapToLeader ?? 0} pts · Nearest rival gap: ${nearestRivalGap ?? 0} pts`
+          : 'Complete your first picks to enter standings.'
     return {
       players: state.entries.length,
       leader,
       current,
       currentRank: currentRank > 0 ? currentRank : null,
-      actionableInsight,
+      actionableInsightTitle,
+      actionableInsightDetail,
       nearestRivalGap,
       averages: {
         total: avg(sumTotal),
@@ -149,6 +159,13 @@ export default function LeaderboardPage() {
       gapToLeader
     }
   }, [state, viewerKeys])
+
+  function openAdvancedMetrics() {
+    setAdvancedOpen(true)
+    if (typeof document === 'undefined') return
+    const node = document.getElementById('league-advanced-metrics')
+    node?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     setPage(1)
@@ -242,18 +259,17 @@ export default function LeaderboardPage() {
 
             <Card className="rounded-2xl border-border/60 p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Actionable insight</div>
-              <div className="mt-2 text-sm text-foreground">{summary.actionableInsight}</div>
-              {summary.current ? (
-                <>
-                  <div className="mt-2 text-sm text-foreground">Gap to leader: {summary.gapToLeader ?? 0} pts</div>
-                  <div className="mt-1 text-sm text-foreground">
-                    Nearest rival gap: {summary.nearestRivalGap ?? 0} pts
-                  </div>
-                </>
-              ) : null}
+              <div className="mt-2 text-sm font-semibold text-foreground">{summary.actionableInsightTitle}</div>
+              <div className="mt-1 text-sm text-foreground">{summary.actionableInsightDetail}</div>
             </Card>
           </div>
         ) : null}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button onClick={() => navigate('/play/picks')}>Improve next round</Button>
+          <Button variant="secondary" onClick={openAdvancedMetrics}>
+            Open advanced metrics
+          </Button>
+        </div>
       </PageHeroPanel>
 
       <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
@@ -325,7 +341,8 @@ export default function LeaderboardPage() {
       </Card>
 
       {summary ? (
-        <DetailsDisclosure title="League distribution details">
+        <div id="league-advanced-metrics">
+          <DetailsDisclosure title="League distribution details" className="scroll-mt-5" defaultOpen={advancedOpen}>
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="rounded-2xl border-border/60 p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Section averages</div>
@@ -354,7 +371,8 @@ export default function LeaderboardPage() {
               </div>
             </Card>
           </div>
-        </DetailsDisclosure>
+          </DetailsDisclosure>
+        </div>
       ) : null}
     </div>
   )

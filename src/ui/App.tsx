@@ -16,6 +16,7 @@ import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import PicksPage from './pages/PicksPage'
 import PicksWizardPage from './pages/PicksWizardPage'
+import PlayPage from './pages/play/PlayPage'
 import ResultsPage from './pages/ResultsPage'
 
 function GateCard({
@@ -135,7 +136,7 @@ export default function App() {
 
         <Route element={<MemberGate />}>
           <Route path="play">
-            <Route index element={<PicksPage />} />
+            <Route index element={<PlayPage />} />
             <Route path="picks" element={<PicksPage />} />
             <Route path="picks/wizard" element={<PicksWizardPage />} />
             <Route path="results" element={<ResultsPage />} />

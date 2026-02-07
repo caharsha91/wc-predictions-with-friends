@@ -22,7 +22,7 @@ export type ActionSummaryAction = {
   loading?: boolean
 }
 
-type ActionSummaryStripProps = {
+export type ActionSummaryStripProps = {
   headline: string
   subline?: ReactNode
   progress?: {

@@ -4,6 +4,7 @@ import {
   AdminIcon,
   BracketIcon,
   CalendarIcon,
+  HomeIcon,
   ResultsIcon,
   TrophyIcon,
   UsersIcon
@@ -17,6 +18,7 @@ export type NavItem = {
 }
 
 export const MAIN_NAV: NavItem[] = [
+  { to: '/play', label: 'Play', icon: HomeIcon, end: true },
   { to: '/play/picks', label: 'Picks', icon: CalendarIcon },
   { to: '/play/results', label: 'Results', icon: ResultsIcon },
   { to: '/play/bracket', label: 'Bracket', icon: BracketIcon },
