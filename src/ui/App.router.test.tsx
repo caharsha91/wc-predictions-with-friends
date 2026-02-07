@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 
 vi.mock('./hooks/useAuthState', () => ({
   useAuthState: () => ({ status: 'disabled', user: null })
@@ -36,24 +36,45 @@ vi.mock('./pages/LeaderboardPage', () => ({ default: () => <div>Leaderboard rout
 vi.mock('./pages/LoginPage', () => ({ default: () => <div>Login route</div> }))
 vi.mock('./pages/JoinLeaguePage', () => ({ default: () => <div>Join route</div> }))
 vi.mock('./pages/AdminUsersPage', () => ({ default: () => <div>Players route</div> }))
+vi.mock('./pages/AdminExportsPage', () => ({ default: () => <div>Exports route</div> }))
 vi.mock('./pages/AccessDeniedPage', () => ({ default: () => <div>Access denied</div> }))
 vi.mock('./pages/NotFoundPage', () => ({ default: () => <div>Not found</div> }))
 
 import App from './App'
 
+function LocationProbe() {
+  const location = useLocation()
+  return <div data-testid="location-probe">{location.pathname}</div>
+}
+
 describe('App routing', () => {
   it('renders picks by default and navigates to results', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
+        <LocationProbe />
         <App />
       </MemoryRouter>
     )
 
     expect(screen.getByText('Picks route')).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/play')
 
     const resultsLink = screen.getAllByRole('link', { name: /results/i })[0]
     fireEvent.click(resultsLink)
 
     expect(screen.getByText('Results route')).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/play/results')
+  })
+
+  it('redirects legacy routes to play/admin paths', () => {
+    render(
+      <MemoryRouter initialEntries={['/leaderboard']}>
+        <LocationProbe />
+        <App />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Leaderboard route')).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/play/league')
   })
 })

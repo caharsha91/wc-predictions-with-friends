@@ -17,14 +17,13 @@ export type NavItem = {
 }
 
 export const MAIN_NAV: NavItem[] = [
-  { to: '/', label: 'Picks', icon: CalendarIcon, end: true },
-  { to: '/results', label: 'Results', icon: ResultsIcon },
-  { to: '/bracket', label: 'Bracket', icon: BracketIcon },
-  { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon }
+  { to: '/play/picks', label: 'Picks', icon: CalendarIcon },
+  { to: '/play/results', label: 'Results', icon: ResultsIcon },
+  { to: '/play/bracket', label: 'Bracket', icon: BracketIcon },
+  { to: '/play/league', label: 'League', icon: TrophyIcon }
 ]
 
 export const ADMIN_NAV: NavItem[] = [
-  { to: '/players', label: 'Players', icon: UsersIcon },
-  { to: '/exports', label: 'Exports', icon: AdminIcon }
+  { to: '/admin/players', label: 'Players', icon: UsersIcon },
+  { to: '/admin/exports', label: 'Exports', icon: AdminIcon }
 ]
-

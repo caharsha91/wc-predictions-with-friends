@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
 import { hasFirebase } from '../lib/firebase'
 import { Card } from './components/ui/Card'
@@ -120,21 +120,32 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
+        <Route index element={<Navigate to="/play" replace />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="join/:inviteCode" element={<JoinLeaguePage />} />
         <Route path="access-denied" element={<AccessDeniedPage />} />
 
+        <Route path="picks" element={<Navigate to="/play/picks" replace />} />
+        <Route path="picks/wizard" element={<Navigate to="/play/picks/wizard" replace />} />
+        <Route path="results" element={<Navigate to="/play/results" replace />} />
+        <Route path="bracket" element={<Navigate to="/play/bracket" replace />} />
+        <Route path="leaderboard" element={<Navigate to="/play/league" replace />} />
+        <Route path="players" element={<Navigate to="/admin/players" replace />} />
+        <Route path="exports" element={<Navigate to="/admin/exports" replace />} />
+
         <Route element={<MemberGate />}>
-          <Route index element={<PicksPage />} />
-          <Route path="picks" element={<PicksPage />} />
-          <Route path="picks/wizard" element={<PicksWizardPage />} />
-          <Route path="results" element={<ResultsPage />} />
-          <Route path="bracket" element={<BracketPage />} />
-          <Route path="leaderboard" element={<LeaderboardPage />} />
+          <Route path="play">
+            <Route index element={<PicksPage />} />
+            <Route path="picks" element={<PicksPage />} />
+            <Route path="picks/wizard" element={<PicksWizardPage />} />
+            <Route path="results" element={<ResultsPage />} />
+            <Route path="bracket" element={<BracketPage />} />
+            <Route path="league" element={<LeaderboardPage />} />
+          </Route>
 
           <Route element={<AdminGate />}>
-            <Route path="players" element={<AdminUsersPage />} />
-            <Route path="exports" element={<AdminExportsPage />} />
+            <Route path="admin/players" element={<AdminUsersPage />} />
+            <Route path="admin/exports" element={<AdminExportsPage />} />
           </Route>
         </Route>
 

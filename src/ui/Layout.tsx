@@ -18,7 +18,7 @@ import { useEasterEggs } from './hooks/useEasterEggs'
 import { cn } from './lib/utils'
 import { ADMIN_NAV, MAIN_NAV, type NavItem } from './nav'
 
-const APP_ROUTE_PREFIXES = ['/picks', '/results', '/bracket', '/leaderboard', '/players', '/exports']
+const APP_ROUTE_PREFIXES = ['/play', '/admin', '/settings']
 
 function getInitials(name?: string | null, email?: string | null) {
   const base = name || email || ''

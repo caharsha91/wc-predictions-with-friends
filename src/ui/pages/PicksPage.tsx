@@ -584,15 +584,15 @@ export default function PicksPage() {
   }
 
   function openWizard() {
-    navigate('/picks/wizard')
+    navigate('/play/picks/wizard')
   }
 
   function openBracketWizard() {
-    navigate('/bracket')
+    navigate('/play/bracket')
   }
 
   function openResults() {
-    navigate('/results')
+    navigate('/play/results')
   }
 
   function runPrimaryNextAction() {
@@ -612,11 +612,11 @@ export default function PicksPage() {
       if (quickEditTarget) {
         openNextActionEditor()
       } else {
-        navigate('/results')
+        navigate('/play/results')
       }
       return
     }
-    navigate('/leaderboard')
+    navigate('/play/league')
   }
 
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])

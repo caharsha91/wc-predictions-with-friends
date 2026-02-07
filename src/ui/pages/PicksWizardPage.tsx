@@ -571,7 +571,7 @@ export default function PicksWizardPage() {
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <ButtonLink to="/picks" variant="ghost">
+            <ButtonLink to="/play/picks" variant="ghost">
               Exit wizard
             </ButtonLink>
             <Button
@@ -940,7 +940,7 @@ export default function PicksWizardPage() {
               >
                 Confirm & submit
               </Button>
-              <ButtonLink to="/picks" variant="secondary">
+              <ButtonLink to="/play/picks" variant="secondary">
                 Back to My Picks Hub
               </ButtonLink>
             </div>
