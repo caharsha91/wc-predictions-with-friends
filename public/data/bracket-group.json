@@ -1,10 +1,97 @@
 {
   "group": [
     {
-      "userId": "user-1",
-      "groups": {},
+      "userId": "FdMKd2JeMqchgK3ssU8Q6a6mytW2",
+      "groups": {
+        "C": {},
+        "E": {},
+        "F": {},
+        "G": {},
+        "H": {},
+        "I": {},
+        "J": {},
+        "K": {},
+        "L": {},
+        "B": {
+          "first": "SUI",
+          "second": "QAT"
+        },
+        "A": {
+          "first": "KOR",
+          "second": "TBD"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "USA"
+        }
+      },
+      "bestThirds": [
+        "ALG",
+        "AUS",
+        "QAT",
+        "HAI",
+        "JOR",
+        "CRO",
+        "CIV",
+        "UZB"
+      ],
+      "updatedAt": "2026-01-08T21:42:34.549Z"
+    },
+    {
+      "userId": "J3ZaltgprdPUyd7gAQdbEv1jbs83",
+      "groups": {
+        "I": {},
+        "J": {},
+        "K": {},
+        "L": {},
+        "D": {},
+        "E": {},
+        "F": {},
+        "G": {},
+        "H": {},
+        "A": {
+          "first": "KOR",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "QAT"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "SCO"
+        }
+      },
+      "bestThirds": [
+        "",
+        "",
+        "SEN",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "updatedAt": "2026-02-06T06:28:59.799Z"
+    },
+    {
+      "userId": "Q0s3xIIu8aVkEx8JT3VVz3mOOGl1",
+      "groups": {
+        "A": {},
+        "B": {},
+        "C": {},
+        "D": {},
+        "E": {},
+        "F": {},
+        "G": {},
+        "H": {},
+        "I": {},
+        "J": {},
+        "K": {},
+        "L": {}
+      },
       "bestThirds": [],
-      "updatedAt": "2025-12-20T05:00:00.000Z"
+      "updatedAt": "2026-01-02T05:00:56.096Z"
     }
   ]
 }

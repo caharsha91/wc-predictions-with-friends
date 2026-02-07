@@ -15,11 +15,11 @@ const buttonVariants = cva(
         secondary:
           'border-[var(--secondary-cta-border)] [background:var(--secondary-cta-bg)] text-foreground shadow-[var(--secondary-cta-shadow)] hover:[background:var(--secondary-cta-hover-bg)]',
         ghost:
-          'border-transparent bg-transparent text-fg1 hover:border-border0 hover:bg-bg2 hover:text-foreground',
+          'border-transparent bg-transparent text-fg1 hover:border-border0 hover:bg-[var(--accent-soft)] hover:text-foreground',
         pill:
           'border-border1 bg-[var(--accent-soft)] text-foreground shadow-[var(--shadow0)] hover:border-primary hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow1)] data-[active=true]:border-[var(--pill-active-border)] data-[active=true]:[background:var(--pill-active-bg)] data-[active=true]:shadow-[var(--pill-active-shadow)] disabled:shadow-none',
         pillSecondary:
-          'border-[rgba(var(--secondary-rgb),0.58)] bg-[rgba(var(--secondary-rgb),0.2)] text-foreground shadow-[var(--shadow0)] hover:border-secondary hover:bg-[rgba(var(--secondary-rgb),0.26)] hover:shadow-[var(--shadow1)] data-[active=true]:border-secondary data-[active=true]:bg-[rgba(var(--secondary-rgb),0.3)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
+          'border-[rgba(var(--secondary-rgb),0.46)] bg-[rgba(var(--secondary-rgb),0.12)] text-foreground shadow-[var(--shadow0)] hover:border-secondary hover:bg-[rgba(var(--secondary-rgb),0.2)] hover:shadow-[var(--shadow1)] data-[active=true]:border-secondary data-[active=true]:bg-[rgba(var(--secondary-rgb),0.26)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
       },
       size: {
         sm: 'h-9 px-3 text-xs',
@@ -51,6 +51,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type={type ?? 'button'}
       className={cn(
+        'egg-pop-target',
         buttonVariants({ variant, size }),
         loading && 'cursor-wait',
         className
@@ -81,7 +82,7 @@ export function ButtonLink({
   ...props
 }: ButtonLinkProps) {
   return (
-    <Link {...props} className={cn(buttonVariants({ variant, size }), className)}>
+    <Link {...props} className={cn('egg-pop-target', buttonVariants({ variant, size }), className)}>
       <span className="inline-flex items-center gap-2">
         {icon ? <span aria-hidden="true">{icon}</span> : null}
         {children}

@@ -1,42 +1,31 @@
 {
   "picks": [
     {
-      "userId": "user-1",
-      "updatedAt": "2026-06-20T12:00:00.000Z",
+      "userId": "FdMKd2JeMqchgK3ssU8Q6a6mytW2",
       "picks": [
         {
-          "id": "pick-user-1-grp-a-02",
-          "matchId": "grp-a-02",
-          "userId": "user-1",
+          "id": "pick-FdMKd2JeMqchgK3ssU8Q6a6mytW2-537327",
+          "matchId": "537327",
+          "userId": "FdMKd2JeMqchgK3ssU8Q6a6mytW2",
+          "createdAt": "2026-01-08T21:40:17.203Z",
+          "updatedAt": "2026-01-08T21:40:21.912Z",
           "homeScore": 1,
-          "awayScore": 1,
-          "outcome": "DRAW",
-          "createdAt": "2026-06-10T09:00:00.000Z",
-          "updatedAt": "2026-06-10T09:00:00.000Z"
+          "awayScore": 2,
+          "outcome": "WIN"
         },
         {
-          "id": "pick-user-1-grp-b-01",
-          "matchId": "grp-b-01",
-          "userId": "user-1",
-          "homeScore": 2,
-          "awayScore": 1,
-          "outcome": "WIN",
-          "createdAt": "2026-06-11T08:00:00.000Z",
-          "updatedAt": "2026-06-11T08:00:00.000Z"
-        },
-        {
-          "id": "pick-user-1-r16-01",
-          "matchId": "r16-01",
-          "userId": "user-1",
-          "homeScore": 1,
-          "awayScore": 1,
-          "outcome": "DRAW",
-          "winner": "HOME",
-          "decidedBy": "PENS",
-          "createdAt": "2026-06-20T12:00:00.000Z",
-          "updatedAt": "2026-06-20T12:00:00.000Z"
+          "id": "pick-FdMKd2JeMqchgK3ssU8Q6a6mytW2-537328",
+          "matchId": "537328",
+          "userId": "FdMKd2JeMqchgK3ssU8Q6a6mytW2",
+          "createdAt": "2026-01-08T21:40:40.991Z",
+          "updatedAt": "2026-01-08T21:40:46.448Z",
+          "homeScore": 0,
+          "awayScore": 10,
+          "outcome": "WIN"
         }
-      ]
+      ],
+      "updatedAt": "2026-01-08T21:40:46.451Z"
     }
   ]
 }
+    

@@ -7,6 +7,7 @@ export type ThemePreference = {
 
 export type Member = {
   id: string
+  uid?: string
   name: string
   handle?: string
   email?: string

@@ -23,7 +23,7 @@ vi.mock('../theme/ThemeProvider', () => ({
 import Layout from './Layout'
 
 describe('AppShell layout', () => {
-  it('renders sidebar and topbar shell', () => {
+  it('keeps desktop shell viewport-locked and app routes full-width', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <Routes>
@@ -34,9 +34,33 @@ describe('AppShell layout', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByText(/world cup predictions/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/wc predictions/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/picks screen/i)).toBeInTheDocument()
-    expect(screen.getAllByText(/picks/i).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/leaderboard/i).length).toBeGreaterThan(0)
+
+    const grid = screen.getByTestId('app-shell-grid')
+    const sidebar = screen.getByTestId('app-shell-sidebar')
+    const main = screen.getByTestId('app-shell-main')
+
+    expect(grid.className).toContain('md:h-screen')
+    expect(grid.className).toContain('md:overflow-hidden')
+    expect(sidebar.className).toContain('md:h-screen')
+    expect(main.className).toContain('overflow-y-auto')
+    expect(main.className).not.toContain('container')
+  })
+
+  it('keeps utility routes centered with container width', () => {
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route path="login" element={<div>Login screen</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    )
+
+    const main = screen.getByTestId('app-shell-main')
+    expect(main.className).toContain('container')
+    expect(screen.getByText(/login screen/i)).toBeInTheDocument()
   })
 })

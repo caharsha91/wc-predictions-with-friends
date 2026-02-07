@@ -15,11 +15,24 @@ vi.mock('../lib/firebase', () => ({
   firebaseAuth: null
 }))
 
+vi.mock('./hooks/useEasterEggs', () => ({
+  useEasterEggs: () => ({
+    sidebarCompact: false,
+    notice: null,
+    popHighlightActive: false,
+    onLogoClick: vi.fn(),
+    onLogoPointerDown: vi.fn(),
+    onLogoPointerUp: vi.fn(),
+    onLogoPointerLeave: vi.fn(),
+    onLogoPointerCancel: vi.fn(),
+    onLastUpdatedTap: vi.fn()
+  })
+}))
+
 vi.mock('./pages/PicksPage', () => ({ default: () => <div>Picks route</div> }))
 vi.mock('./pages/ResultsPage', () => ({ default: () => <div>Results route</div> }))
 vi.mock('./pages/BracketPage', () => ({ default: () => <div>Bracket route</div> }))
 vi.mock('./pages/LeaderboardPage', () => ({ default: () => <div>Leaderboard route</div> }))
-vi.mock('./pages/ThemeSelectorPage', () => ({ default: () => <div>Settings route</div> }))
 vi.mock('./pages/LoginPage', () => ({ default: () => <div>Login route</div> }))
 vi.mock('./pages/JoinLeaguePage', () => ({ default: () => <div>Join route</div> }))
 vi.mock('./pages/AdminUsersPage', () => ({ default: () => <div>Players route</div> }))

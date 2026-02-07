@@ -59,6 +59,7 @@
   --popover-foreground: var(--fg0);
   --border: var(--border0);
   --input: var(--border0);
+  --border-soft: var(--border0);
 
   --primary: var(--brand-primary);
   --primary-foreground: var(--on-primary);
@@ -111,6 +112,8 @@
   --color-accent-strong: var(--primary-strong);
   --color-accent-2: var(--brand-secondary);
   --color-accent-2-rgb: var(--secondary-rgb);
+  --color-pop: var(--status-info);
+  --color-pop-rgb: var(--info-rgb);
 
   --color-success: var(--status-success);
   --color-warning: var(--status-warn);
@@ -196,49 +199,49 @@
 :root[data-mode='light'] {
   color-scheme: light;
 
-  --focus-alpha: 0.44;
-  --glow-alpha: 0.42;
-  --border-accent-alpha: 0.42;
+  --focus-alpha: 0.38;
+  --glow-alpha: 0.24;
+  --border-accent-alpha: 0.36;
   --border-warning-alpha: 0.42;
   --border-danger-alpha: 0.42;
-  --accent-soft-alpha: 0.2;
-  --accent-violet-soft-alpha: 0.18;
+  --accent-soft-alpha: 0.14;
+  --accent-violet-soft-alpha: 0.14;
   --banner-accent-alpha: 0.18;
   --group-ticker-bg-alpha: 0.14;
-  --group-ticker-border-alpha: 0.3;
-  --button-border-alpha: 0.48;
-  --button-bg-alpha: 0.18;
-  --row-hover-border-alpha: 0.42;
+  --group-ticker-border-alpha: 0.26;
+  --button-border-alpha: 0.42;
+  --button-bg-alpha: 0.14;
+  --row-hover-border-alpha: 0.3;
   --row-inset-alpha: 0.04;
   --team-border-alpha: 0.14;
   --pill-border-alpha: 0.16;
-  --pill-bg-alpha: 0.06;
+  --pill-bg-alpha: 0.05;
 
-  --noise-color: rgba(15, 23, 42, 0.04);
+  --noise-color: rgba(110, 106, 210, 0.03);
   --input-bg: var(--bg1);
 }
 
 :root[data-mode='dark'] {
   color-scheme: dark;
 
-  --focus-alpha: 0.62;
-  --glow-alpha: 0.3;
-  --border-accent-alpha: 0.58;
+  --focus-alpha: 0.56;
+  --glow-alpha: 0.34;
+  --border-accent-alpha: 0.52;
   --border-warning-alpha: 0.46;
   --border-danger-alpha: 0.5;
-  --accent-soft-alpha: 0.26;
-  --accent-violet-soft-alpha: 0.2;
+  --accent-soft-alpha: 0.22;
+  --accent-violet-soft-alpha: 0.22;
   --banner-accent-alpha: 0.22;
-  --group-ticker-bg-alpha: 0.14;
-  --group-ticker-border-alpha: 0.32;
-  --button-border-alpha: 0.58;
-  --button-bg-alpha: 0.24;
-  --row-hover-border-alpha: 0.5;
+  --group-ticker-bg-alpha: 0.2;
+  --group-ticker-border-alpha: 0.36;
+  --button-border-alpha: 0.52;
+  --button-bg-alpha: 0.22;
+  --row-hover-border-alpha: 0.42;
   --row-inset-alpha: 0.03;
-  --team-border-alpha: 0.2;
-  --pill-border-alpha: 0.2;
-  --pill-bg-alpha: 0.07;
+  --team-border-alpha: 0.22;
+  --pill-border-alpha: 0.24;
+  --pill-bg-alpha: 0.1;
 
-  --noise-color: rgba(148, 163, 184, 0.05);
+  --noise-color: rgba(110, 106, 210, 0.05);
   --input-bg: var(--bg2);
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { fetchScoring } from '../../lib/data'
@@ -7,6 +7,8 @@ import { findPick, isPickComplete, upsertPick } from '../../lib/picks'
 import type { GroupPrediction } from '../../types/bracket'
 import type { Match } from '../../types/matches'
 import type { Pick, PickAdvances } from '../../types/picks'
+import { CORE_LIST_PAGE_SIZE, HISTORY_LIST_PAGE_SIZE } from '../constants/pagination'
+import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
 import { Alert } from '../components/ui/Alert'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/Accordion'
 import { Badge } from '../components/ui/Badge'
@@ -14,7 +16,8 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import LockReminderBanner from '../components/LockReminderBanner'
-import PageHeader from '../components/ui/PageHeader'
+import ActionSummaryStrip from '../components/ui/ActionSummaryStrip'
+import PageHeroPanel from '../components/ui/PageHeroPanel'
 import {
   Sheet,
   SheetContent,
@@ -30,6 +33,10 @@ import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
 import { useViewerId } from '../hooks/useViewerId'
+import {
+  getPlayCenterStateFromAction,
+  resolveNextAction
+} from '../lib/nextActionResolver'
 import { cn } from '../lib/utils'
 
 type DraftPick = {
@@ -39,8 +46,7 @@ type DraftPick = {
 }
 
 const DEFAULT_BEST_THIRD_SLOTS = 8
-const LIST_PAGE_SIZE = 10
-const HISTORY_PAGE_SIZE = 16
+const EMPTY_MATCHES: Match[] = []
 
 function formatKickoff(utcIso: string): string {
   return new Date(utcIso).toLocaleString(undefined, {
@@ -49,6 +55,10 @@ function formatKickoff(utcIso: string): string {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+function formatChipDateTime(utcIso?: string): string {
+  return utcIso ? formatKickoff(utcIso) : '—'
 }
 
 function parseScore(value: string): number | undefined {
@@ -121,7 +131,7 @@ function MatchList({
   emptyMessage,
   onOpenEditor,
   actionLabel,
-  pageSize = LIST_PAGE_SIZE
+  pageSize = CORE_LIST_PAGE_SIZE
 }: {
   matches: Match[]
   picks: Pick[]
@@ -344,6 +354,7 @@ export default function PicksPage() {
   const userId = useViewerId()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const picksState = usePicksData()
+  const bracketData = useBracketKnockoutData()
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
   const [draft, setDraft] = useState<DraftPick>({ homeScore: '', awayScore: '', advances: '' })
   const [editorOpen, setEditorOpen] = useState(false)
@@ -351,6 +362,12 @@ export default function PicksPage() {
   const [showBestThirds, setShowBestThirds] = useState(false)
   const [historyMatchday, setHistoryMatchday] = useState<'ALL' | string>('ALL')
   const [historyPage, setHistoryPage] = useState(1)
+  const [lockTransitionNotice, setLockTransitionNotice] = useState<string | null>(null)
+  const previousActionKindRef = useRef<string | null>(null)
+  const [seenResultsUpdatedUtc, setSeenResultsUpdatedUtc] = useState<string | undefined>(() => {
+    if (typeof window === 'undefined') return undefined
+    return window.sessionStorage.getItem(`wc-results-seen:${userId}`) ?? undefined
+  })
 
   useEffect(() => {
     let canceled = false
@@ -368,7 +385,24 @@ export default function PicksPage() {
     }
   }, [])
 
-  const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const storageKey = `wc-results-seen:${userId}`
+
+    function syncSeenResults() {
+      setSeenResultsUpdatedUtc(window.sessionStorage.getItem(storageKey) ?? undefined)
+    }
+
+    syncSeenResults()
+    window.addEventListener('wc-results-seen-updated', syncSeenResults as EventListener)
+    window.addEventListener('storage', syncSeenResults)
+    return () => {
+      window.removeEventListener('wc-results-seen-updated', syncSeenResults as EventListener)
+      window.removeEventListener('storage', syncSeenResults)
+    }
+  }, [userId])
+
+  const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
   const groupOutcomes = useGroupOutcomesData(matches)
 
   const upcomingMatches = useMemo(
@@ -406,6 +440,36 @@ export default function PicksPage() {
     () => upcomingMatches.filter((match) => isMatchLocked(match.kickoffUtc, now)),
     [now, upcomingMatches]
   )
+
+  const openBracketCandidates = useMemo(() => {
+    if (bracketData.loadState.status !== 'ready') return []
+    const stageIndex = new Map(bracketData.stageOrder.map((stage, index) => [stage, index]))
+    const candidates: Array<{
+      id: string
+      label: string
+      deadlineUtc: string
+      kickoffUtc: string
+      stageOrder: number
+    }> = []
+
+    for (const stage of bracketData.stageOrder) {
+      const stageMatches = bracketData.loadState.byStage[stage] ?? []
+      const stagePicks = bracketData.knockout[stage] ?? {}
+      for (const match of stageMatches) {
+        if (isMatchLocked(match.kickoffUtc, now)) continue
+        if (stagePicks[match.id]) continue
+        candidates.push({
+          id: match.id,
+          label: `${stage} · ${match.homeTeam.code} vs ${match.awayTeam.code}`,
+          deadlineUtc: getLockTime(match.kickoffUtc).toISOString(),
+          kickoffUtc: match.kickoffUtc,
+          stageOrder: stageIndex.get(stage) ?? Number.POSITIVE_INFINITY
+        })
+      }
+    }
+
+    return candidates
+  }, [bracketData.knockout, bracketData.loadState, bracketData.stageOrder, now])
 
   const historyMatches = useMemo(
     () =>
@@ -503,6 +567,12 @@ export default function PicksPage() {
     userId
   ])
 
+  useEffect(() => {
+    if (!editorOpen || !selectedMatch) return
+    if (!isMatchLocked(selectedMatch.kickoffUtc, now)) return
+    setLockTransitionNotice(`Match locked at ${formatKickoff(getLockTime(selectedMatch.kickoffUtc).toISOString())}. Moved to next action.`)
+  }, [editorOpen, now, selectedMatch])
+
   function openEditor(matchId: string) {
     setSelectedMatchId(matchId)
     setEditorOpen(true)
@@ -515,6 +585,38 @@ export default function PicksPage() {
 
   function openWizard() {
     navigate('/picks/wizard')
+  }
+
+  function openBracketWizard() {
+    navigate('/bracket')
+  }
+
+  function openResults() {
+    navigate('/results')
+  }
+
+  function runPrimaryNextAction() {
+    if (nextAction.kind === 'OPEN_PICKS') {
+      openWizard()
+      return
+    }
+    if (nextAction.kind === 'OPEN_BRACKET') {
+      openBracketWizard()
+      return
+    }
+    if (nextAction.kind === 'VIEW_RESULTS') {
+      openResults()
+      return
+    }
+    if (nextAction.kind === 'LOCKED_WAITING') {
+      if (quickEditTarget) {
+        openNextActionEditor()
+      } else {
+        navigate('/results')
+      }
+      return
+    }
+    navigate('/leaderboard')
   }
 
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
@@ -543,14 +645,97 @@ export default function PicksPage() {
             ? 'warning'
             : 'success'
 
+  const lastSubmittedUtc = useMemo(() => {
+    let latest = ''
+    for (const pick of picksState.picks) {
+      if (!pick.updatedAt) continue
+      if (!latest || new Date(pick.updatedAt).getTime() > new Date(latest).getTime()) {
+        latest = pick.updatedAt
+      }
+    }
+    return latest || undefined
+  }, [picksState.picks])
+
+  const pendingOpenDeadlines = useMemo(
+    () => pendingOpenMatches.map((match) => getLockTime(match.kickoffUtc).toISOString()),
+    [pendingOpenMatches]
+  )
+  const nextOpenDeadlineUtc = [...pendingOpenDeadlines].sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0]
+  const nextLockedKickoffUtc = lockedMatches
+    .map((match) => match.kickoffUtc)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0]
+  const latestResultsUpdatedUtc =
+    historyMatches.length > 0 && picksState.state.status === 'ready'
+      ? picksState.state.lastUpdated
+      : undefined
+
+  const nextAction = useMemo(
+    () =>
+      resolveNextAction({
+        openPickCandidates: pendingOpenMatches.map((match) => ({
+          id: match.id,
+          label: `${match.homeTeam.code} vs ${match.awayTeam.code}`,
+          deadlineUtc: getLockTime(match.kickoffUtc).toISOString(),
+          kickoffUtc: match.kickoffUtc,
+          stageOrder: 0
+        })),
+        openBracketCandidates,
+        latestResultsUpdatedUtc,
+        seenResultsUpdatedUtc,
+        lockedWaitingDeadlineUtc: nextLockedKickoffUtc,
+        lastSubmittedUtc
+      }),
+    [
+      lastSubmittedUtc,
+      latestResultsUpdatedUtc,
+      nextLockedKickoffUtc,
+      openBracketCandidates,
+      pendingOpenMatches,
+      seenResultsUpdatedUtc
+    ]
+  )
+  const playCenterState = getPlayCenterStateFromAction(nextAction.kind)
+
+  useEffect(() => {
+    if (previousActionKindRef.current !== nextAction.kind && previousActionKindRef.current === 'OPEN_PICKS') {
+      setLockTransitionNotice('Open picks changed due to lock transitions. Next action has been updated.')
+    }
+    previousActionKindRef.current = nextAction.kind
+  }, [nextAction.kind])
+
   const progressTotal = openMatches.length
   const progressDone = completedOpenMatches.length
-  const progressPct = progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 0
   const wizardLabel = pendingOpenMatches.length > 0 ? 'Continue picks wizard' : 'Start picks wizard'
-  const historyTotalPages = Math.max(1, Math.ceil(filteredHistory.length / HISTORY_PAGE_SIZE))
+  const historyTotalPages = Math.max(1, Math.ceil(filteredHistory.length / HISTORY_LIST_PAGE_SIZE))
   const safeHistoryPage = Math.min(historyPage, historyTotalPages)
-  const historyStartIndex = (safeHistoryPage - 1) * HISTORY_PAGE_SIZE
-  const visibleHistory = filteredHistory.slice(historyStartIndex, historyStartIndex + HISTORY_PAGE_SIZE)
+  const historyStartIndex = (safeHistoryPage - 1) * HISTORY_LIST_PAGE_SIZE
+  const visibleHistory = filteredHistory.slice(historyStartIndex, historyStartIndex + HISTORY_LIST_PAGE_SIZE)
+  const latestCompletedOpenSubmissionUtc = completedOpenMatches
+    .map((match) => findPick(picksState.picks, match.id, userId)?.updatedAt)
+    .filter((value): value is string => Boolean(value))
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+
+  const nextActionHeadline =
+    nextAction.kind === 'OPEN_PICKS'
+      ? `${pendingOpenMatches.length} open picks need submission`
+      : nextAction.kind === 'OPEN_BRACKET'
+        ? `${openBracketCandidates.length} bracket picks need submission`
+        : nextAction.kind === 'VIEW_RESULTS'
+          ? 'Review latest finished matches'
+          : nextAction.kind === 'LOCKED_WAITING'
+            ? 'Waiting for the next action window'
+            : 'You are all caught up'
+
+  const primaryActionLabel =
+    nextAction.kind === 'OPEN_PICKS'
+      ? wizardLabel
+      : nextAction.kind === 'OPEN_BRACKET'
+        ? 'Continue bracket wizard'
+        : nextAction.kind === 'VIEW_RESULTS'
+          ? 'View latest results'
+          : nextAction.kind === 'LOCKED_WAITING'
+            ? 'Check lock status'
+            : 'View standings'
 
   if (picksState.state.status === 'loading') {
     return (
@@ -571,87 +756,52 @@ export default function PicksPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeroPanel
         title="My Picks Hub"
         subtitle="Default view shows only what needs action now. Locked, completed, and history stay behind tabs."
         kicker="Action-first"
-        actions={
-          <div className="text-right text-xs text-muted-foreground">
+        meta={
+          <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
             <div className="uppercase tracking-[0.2em]">Last updated</div>
             <div className="text-sm font-semibold text-foreground">
               {formatKickoff(picksState.state.lastUpdated)}
             </div>
           </div>
         }
-      />
-
-      <LockReminderBanner
-        matches={matches}
-        picks={picksState.picks}
-        userId={userId}
-        onOpenMatch={(matchId) => openEditor(matchId)}
-      />
-
-      <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+      >
         <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-4">
-            <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Next action</div>
-              <div className="mt-1 text-xl font-semibold text-foreground">
-                {pendingOpenMatches.length > 0
-                  ? `${pendingOpenMatches.length} open picks need submission`
-                  : openMatches.length > 0
-                    ? 'Open picks complete for now'
-                    : 'No open picks yet'}
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                Use the wizard flow for step-by-step picks. Quick edit remains available for one-off fixes.
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Open picks progress</span>
-                <span>
-                  {progressDone}/{progressTotal}
-                </span>
-              </div>
-              <div className="h-2 rounded-full bg-bg2">
-                <div className="h-full rounded-full bg-primary" style={{ width: `${progressPct}%` }} />
-              </div>
-              <div className="text-xs text-muted-foreground">{progressPct}% complete</div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge tone={pendingOpenMatches.length > 0 ? 'warning' : 'success'}>
-                Needs action {pendingOpenMatches.length}
-              </Badge>
-              <Badge tone="secondary">Open now {openMatches.length}</Badge>
-              <Badge tone="secondary">Locked {lockedMatches.length}</Badge>
-              <Badge tone={groupSummaryTone}>
-                Group outcomes{' '}
-                {groupOutcomes.loadState.status === 'loading'
-                  ? 'Loading'
-                  : groupOutcomes.loadState.status === 'error'
-                    ? 'Error'
-                    : groupLocked
-                      ? 'Locked'
-                      : groupHasErrors
-                        ? `Missing ${groupErrorCount}`
-                        : 'Ready'}
-              </Badge>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={openWizard}>{wizardLabel}</Button>
-              <Button variant="secondary" onClick={openNextActionEditor} disabled={!quickEditTarget}>
-                Quick edit next match
-              </Button>
-            </div>
-          </div>
+          <ActionSummaryStrip
+            headline={nextActionHeadline}
+            subline="Use the wizard flow for step-by-step picks. Quick edit remains available for one-off fixes."
+            progress={{ label: 'Open picks progress', current: progressDone, total: progressTotal }}
+            metrics={[
+              { label: 'Needs action', value: pendingOpenMatches.length, tone: pendingOpenMatches.length > 0 ? 'warning' : 'success' },
+              { label: 'Open now', value: openMatches.length, tone: 'secondary' },
+              { label: 'Locked', value: lockedMatches.length, tone: 'secondary' },
+              { label: 'Bracket open', value: openBracketCandidates.length, tone: openBracketCandidates.length > 0 ? 'info' : 'secondary' },
+              {
+                label: 'Group outcomes',
+                value: groupOutcomes.loadState.status === 'ready' && !groupLocked && !groupHasErrors ? 0 : groupErrorCount,
+                tone: groupSummaryTone
+              }
+            ]}
+            statusChip={{
+              type: nextAction.statusChip.type,
+              text: nextAction.statusChip.atUtc ? formatChipDateTime(nextAction.statusChip.atUtc) : nextAction.statusChip.label
+            }}
+            primaryAction={{ label: primaryActionLabel, onClick: runPrimaryNextAction }}
+            secondaryAction={{
+              label: 'Quick edit next match',
+              onClick: openNextActionEditor,
+              disabled: !quickEditTarget
+            }}
+          />
 
           <div className="rounded-2xl border border-border/70 bg-bg2 p-4">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Rules</div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Rules</div>
+              <Badge tone="secondary">{playCenterState.replace('READY_', '').replace('_', ' ')}</Badge>
+            </div>
             <div className="mt-2 space-y-2 text-sm text-foreground">
               <div>Picks lock 30 minutes before kickoff.</div>
               <div>Knockout ties require selecting who advances.</div>
@@ -663,7 +813,20 @@ export default function PicksPage() {
             </div>
           </div>
         </div>
-      </Card>
+      </PageHeroPanel>
+
+      {lockTransitionNotice ? (
+        <Alert tone="warning" title="Action window changed">
+          {lockTransitionNotice}
+        </Alert>
+      ) : null}
+
+      <LockReminderBanner
+        matches={matches}
+        picks={picksState.picks}
+        userId={userId}
+        onOpenMatch={(matchId) => openEditor(matchId)}
+      />
 
       <Tabs defaultValue="current">
         <TabsList>
@@ -675,11 +838,12 @@ export default function PicksPage() {
           <Accordion type="multiple" className="space-y-3">
             <AccordionItem value="open-now">
               <AccordionTrigger>
-                <span className="flex items-center gap-2">
+                <span className="flex flex-wrap items-center gap-2">
                   Open now
                   <Badge tone={pendingOpenMatches.length > 0 ? 'warning' : 'secondary'}>
                     {pendingOpenMatches.length}
                   </Badge>
+                  <Badge tone="warning">Deadline {formatChipDateTime(nextOpenDeadlineUtc)}</Badge>
                 </span>
               </AccordionTrigger>
               <AccordionContent>
@@ -705,9 +869,10 @@ export default function PicksPage() {
 
             <AccordionItem value="completed">
               <AccordionTrigger>
-                <span className="flex items-center gap-2">
+                <span className="flex flex-wrap items-center gap-2">
                   Completed (open)
                   <Badge tone="success">{completedOpenMatches.length}</Badge>
+                  <Badge tone="secondary">Last submitted {formatChipDateTime(latestCompletedOpenSubmissionUtc)}</Badge>
                 </span>
               </AccordionTrigger>
               <AccordionContent>
@@ -725,9 +890,10 @@ export default function PicksPage() {
 
             <AccordionItem value="locked">
               <AccordionTrigger>
-                <span className="flex items-center gap-2">
+                <span className="flex flex-wrap items-center gap-2">
                   Locked / waiting
                   <Badge tone="locked">{lockedMatches.length}</Badge>
+                  <Badge tone="locked">Next kickoff {formatChipDateTime(nextLockedKickoffUtc)}</Badge>
                 </span>
               </AccordionTrigger>
               <AccordionContent>
@@ -809,7 +975,7 @@ export default function PicksPage() {
             {filteredHistory.length > 0 ? (
               <div className="mt-3 flex items-center justify-between gap-2">
                 <div className="text-xs text-muted-foreground">
-                  Showing {historyStartIndex + 1}-{Math.min(historyStartIndex + HISTORY_PAGE_SIZE, filteredHistory.length)} of{' '}
+                  Showing {historyStartIndex + 1}-{Math.min(historyStartIndex + HISTORY_LIST_PAGE_SIZE, filteredHistory.length)} of{' '}
                   {filteredHistory.length}
                 </div>
                 <div className="flex items-center gap-2">

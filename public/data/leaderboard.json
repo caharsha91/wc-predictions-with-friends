@@ -3,12 +3,10 @@
   "entries": [
     {
       "member": {
-        "id": "user-2",
-        "name": "Chicken",
-        "handle": "chicken-panda",
-        "email": "chicken.panda.558@example.com",
-        "isAdmin": true,
-        "createdAt": "2025-12-22T05:00:00.000Z"
+        "id": "cpasokan.cpa@gmail.com",
+        "name": "Ashok",
+        "email": "cpasokan.cpa@gmail.com",
+        "isAdmin": true
       },
       "totalPoints": 0,
       "exactPoints": 0,
@@ -20,12 +18,86 @@
     },
     {
       "member": {
-        "id": "user-1",
+        "id": "aswin.copparam@gmail.com",
+        "name": "Aswin",
+        "email": "aswin.copparam@gmail.com",
+        "isAdmin": false
+      },
+      "totalPoints": 0,
+      "exactPoints": 0,
+      "resultPoints": 0,
+      "knockoutPoints": 0,
+      "bracketPoints": 0,
+      "exactCount": 0,
+      "picksCount": 0
+    },
+    {
+      "member": {
+        "id": "caharsha2025@gmail.com",
         "name": "Harsha",
         "handle": "harsha",
         "email": "caharsha2025@gmail.com",
-        "isAdmin": true,
-        "createdAt": "2025-12-20T05:00:00.000Z"
+        "isAdmin": true
+      },
+      "totalPoints": 0,
+      "exactPoints": 0,
+      "resultPoints": 0,
+      "knockoutPoints": 0,
+      "bracketPoints": 0,
+      "exactCount": 0,
+      "picksCount": 0
+    },
+    {
+      "member": {
+        "id": "ka.drakomensah@gmail.com",
+        "name": "Kwame",
+        "email": "ka.drakomensah@gmail.com",
+        "isAdmin": true
+      },
+      "totalPoints": 0,
+      "exactPoints": 0,
+      "resultPoints": 0,
+      "knockoutPoints": 0,
+      "bracketPoints": 0,
+      "exactCount": 0,
+      "picksCount": 0
+    },
+    {
+      "member": {
+        "id": "mnorman0801@gmail.com",
+        "name": "Michael",
+        "email": "mnorman0801@gmail.com",
+        "isAdmin": true
+      },
+      "totalPoints": 0,
+      "exactPoints": 0,
+      "resultPoints": 0,
+      "knockoutPoints": 0,
+      "bracketPoints": 0,
+      "exactCount": 0,
+      "picksCount": 0
+    },
+    {
+      "member": {
+        "id": "venkatj@gmail.com",
+        "name": "Venkat",
+        "email": "venkatj@gmail.com",
+        "isAdmin": true
+      },
+      "totalPoints": 0,
+      "exactPoints": 0,
+      "resultPoints": 0,
+      "knockoutPoints": 0,
+      "bracketPoints": 0,
+      "exactCount": 0,
+      "picksCount": 0
+    },
+    {
+      "member": {
+        "id": "vikrsri@gmail.com",
+        "name": "Vikram",
+        "email": "vikrsri@gmail.com",
+        "isAdmin": true
       },
       "totalPoints": 0,
       "exactPoints": 0,

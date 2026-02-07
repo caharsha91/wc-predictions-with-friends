@@ -19,11 +19,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Update matches.json
-        run: node scripts/updateMatches.js
+        run: npm run update-matches
         env:
           FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
       - name: Build leaderboard.json
-        run: npx tsx scripts/updateLeaderboard.ts
+        run: npm run update-leaderboard
       - name: Commit matches.json
         run: |
           if git diff --quiet; then

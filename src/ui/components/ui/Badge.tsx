@@ -9,12 +9,12 @@ const badgeVariants = cva(
     variants: {
       tone: {
         default: 'border-border bg-bg2 text-fg1',
-        success: 'border-[rgba(var(--primary-rgb),0.48)] bg-[rgba(var(--primary-rgb),0.14)] text-foreground',
+        success: 'border-[rgba(var(--primary-rgb),0.5)] bg-[rgba(var(--primary-rgb),0.16)] text-foreground',
         warning: 'border-[rgba(var(--warn-rgb),0.46)] bg-[rgba(var(--warn-rgb),0.14)] text-foreground',
         danger: 'border-[rgba(var(--danger-rgb),0.48)] bg-[rgba(var(--danger-rgb),0.14)] text-foreground',
-        info: 'border-[rgba(var(--info-rgb),0.46)] bg-[rgba(var(--info-rgb),0.14)] text-foreground',
+        info: 'border-[rgba(var(--info-rgb),0.54)] bg-[rgba(var(--info-rgb),0.16)] text-foreground',
         secondary:
-          'border-[rgba(var(--secondary-rgb),0.52)] bg-[rgba(var(--secondary-rgb),0.16)] text-foreground',
+          'border-[rgba(var(--secondary-rgb),0.52)] bg-[rgba(var(--secondary-rgb),0.14)] text-foreground',
         locked: 'border-[rgba(var(--warn-rgb),0.46)] bg-[rgba(var(--warn-rgb),0.14)] text-foreground'
       }
     },

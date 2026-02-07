@@ -71,21 +71,24 @@ service cloud.firestore {
       }
 
       match /picks/{userId} {
-        allow get: if isAllowlisted(leagueId) && isSelf(userId);
+        allow get: if (isAllowlisted(leagueId) && isSelf(userId)) || isAdmin(leagueId);
+        allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
           && isSelf(userId)
           && request.resource.data.userId == request.auth.uid;
       }
 
       match /bracket-group/{userId} {
-        allow get: if isAllowlisted(leagueId) && isSelf(userId);
+        allow get: if (isAllowlisted(leagueId) && isSelf(userId)) || isAdmin(leagueId);
+        allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
           && isSelf(userId)
           && request.resource.data.userId == request.auth.uid;
       }
 
       match /bracket-knockout/{userId} {
-        allow get: if isAllowlisted(leagueId) && isSelf(userId);
+        allow get: if (isAllowlisted(leagueId) && isSelf(userId)) || isAdmin(leagueId);
+        allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
           && isSelf(userId)
           && request.resource.data.userId == request.auth.uid;

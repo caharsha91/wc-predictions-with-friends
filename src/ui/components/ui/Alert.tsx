@@ -6,9 +6,9 @@ import { cn } from '../../lib/utils'
 const alertVariants = cva('rounded-lg border px-4 py-3 text-sm shadow-[var(--shadow0)]', {
   variants: {
     tone: {
-      info: 'border-[rgba(var(--info-rgb),0.48)] bg-[rgba(var(--info-rgb),0.14)] text-foreground',
+      info: 'border-[rgba(var(--info-rgb),0.52)] bg-[rgba(var(--info-rgb),0.14)] text-foreground',
       success:
-        'border-[rgba(var(--primary-rgb),0.44)] bg-[rgba(var(--primary-rgb),0.12)] text-foreground',
+        'border-[rgba(var(--primary-rgb),0.5)] bg-[rgba(var(--primary-rgb),0.14)] text-foreground',
       warning:
         'border-[rgba(var(--warn-rgb),0.46)] bg-[rgba(var(--warn-rgb),0.14)] text-foreground',
       danger:

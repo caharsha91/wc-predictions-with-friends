@@ -1,42 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 
 import { firebaseAuth, hasFirebase } from '../lib/firebase'
 import { useTheme } from '../theme/ThemeProvider'
-import { AppShellProvider, useAppShell } from './components/AppShellContext'
-import { BracketIcon, CalendarIcon, ResultsIcon, SettingsIcon, TrophyIcon, UsersIcon } from './components/Icons'
-import { Badge } from './components/ui/Badge'
-import { Button, ButtonLink } from './components/ui/Button'
+import BrandLogo from './components/BrandLogo'
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from './components/ui/Sheet'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from './components/ui/DropdownMenu'
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
+import { useEasterEggs } from './hooks/useEasterEggs'
 import { cn } from './lib/utils'
+import { ADMIN_NAV, MAIN_NAV, type NavItem } from './nav'
 
-type NavItem = {
-  to: string
-  label: string
-  icon: (props: { size?: number }) => JSX.Element
-  end?: boolean
-}
-
-const MAIN_NAV: NavItem[] = [
-  { to: '/', label: 'Picks', icon: CalendarIcon, end: true },
-  { to: '/results', label: 'Results', icon: ResultsIcon },
-  { to: '/bracket', label: 'Bracket', icon: BracketIcon },
-  { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon }
-]
-
-const SETTINGS_NAV: NavItem[] = [{ to: '/settings', label: 'Settings', icon: SettingsIcon }]
+const APP_ROUTE_PREFIXES = ['/picks', '/results', '/bracket', '/leaderboard', '/players', '/exports']
 
 function getInitials(name?: string | null, email?: string | null) {
   const base = name || email || ''
@@ -50,24 +32,29 @@ function getInitials(name?: string | null, email?: string | null) {
     .toUpperCase()
 }
 
-function getPageTitle(pathname: string) {
-  if (pathname.startsWith('/picks/wizard')) return 'Picks Wizard'
-  if (pathname === '/' || pathname.startsWith('/picks')) return 'Picks'
-  if (pathname.startsWith('/results')) return 'Results'
-  if (pathname.startsWith('/bracket')) return 'Bracket'
-  if (pathname.startsWith('/leaderboard')) return 'Leaderboard'
-  if (pathname.startsWith('/players')) return 'Players'
-  if (pathname.startsWith('/settings')) return 'Settings'
-  if (pathname.startsWith('/login')) return 'Login'
-  if (pathname.startsWith('/join/')) return 'Join League'
-  if (pathname.startsWith('/access-denied')) return 'Access Denied'
-  return 'World Cup Predictions'
+function isAppContentRoute(pathname: string) {
+  if (pathname === '/') return true
+  return APP_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
-function SidebarNavSection({ title, items }: { title: string; items: NavItem[] }) {
+function SidebarNavSection({
+  title,
+  items,
+  compact,
+  hideTitle = false
+}: {
+  title: string
+  items: NavItem[]
+  compact: boolean
+  hideTitle?: boolean
+}) {
   return (
-    <div className="space-y-2">
-      <div className="px-2 text-[11px] uppercase tracking-[0.28em] text-[var(--sidebar-nav-muted)]">{title}</div>
+    <div className="space-y-2" aria-label={title}>
+      {compact || hideTitle ? null : (
+        <div className="px-2 text-[11px] uppercase tracking-[0.28em] text-[var(--sidebar-nav-muted)]">
+          {title}
+        </div>
+      )}
       <div className="grid gap-1">
         {items.map((item) => {
           const Icon = item.icon
@@ -78,15 +65,17 @@ function SidebarNavSection({ title, items }: { title: string; items: NavItem[] }
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-xl border px-3 py-2 text-sm font-semibold transition',
+                  'flex items-center gap-3 rounded-xl border text-sm font-semibold transition',
+                  compact ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
                   isActive
                     ? 'border-[var(--sidebar-border)] bg-[var(--sidebar-nav-active-bg)] text-[var(--sidebar-nav-foreground)]'
                     : 'border-transparent text-[var(--sidebar-nav-muted)] hover:border-[var(--sidebar-border)] hover:bg-[var(--sidebar-nav-hover-bg)] hover:text-[var(--sidebar-nav-foreground)]'
                 )
               }
+              aria-label={item.label}
             >
               <Icon size={16} />
-              <span>{item.label}</span>
+              <span className={compact ? 'sr-only' : undefined}>{item.label}</span>
             </NavLink>
           )
         })}
@@ -95,226 +84,89 @@ function SidebarNavSection({ title, items }: { title: string; items: NavItem[] }
   )
 }
 
-function MobileNav({ canAccessAdmin }: { canAccessAdmin: boolean }) {
-  return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="secondary" size="sm" aria-label="Open navigation">
-          Menu
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-[88vw] max-w-[320px] border-r-0">
-        <SheetHeader>
-          <SheetTitle>Navigation</SheetTitle>
-          <SheetDescription>Move between picks, results, standings, and players.</SheetDescription>
-        </SheetHeader>
-
-        <div className="grid gap-2 px-4 py-4">
-          {MAIN_NAV.map((item) => {
-            const Icon = item.icon
-            return (
-              <SheetClose asChild key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-3 rounded-xl border px-3 py-2 text-sm font-semibold transition',
-                      isActive ? 'border-border1 bg-bg2 text-foreground' : 'border-border/70 text-muted-foreground hover:text-foreground'
-                    )
-                  }
-                >
-                  <Icon size={16} />
-                  <span>{item.label}</span>
-                </NavLink>
-              </SheetClose>
-            )
-          })}
-
-          {canAccessAdmin ? (
-            <SheetClose asChild>
-              <NavLink
-                to="/players"
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 rounded-xl border px-3 py-2 text-sm font-semibold transition',
-                    isActive ? 'border-border1 bg-bg2 text-foreground' : 'border-border/70 text-muted-foreground hover:text-foreground'
-                  )
-                }
-              >
-                <UsersIcon size={16} />
-                <span>Players</span>
-              </NavLink>
-            </SheetClose>
-          ) : null}
-
-          {SETTINGS_NAV.map((item) => {
-            const Icon = item.icon
-            return (
-              <SheetClose asChild key={item.to}>
-                <NavLink
-                  to={item.to}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-3 rounded-xl border px-3 py-2 text-sm font-semibold transition',
-                      isActive ? 'border-border1 bg-bg2 text-foreground' : 'border-border/70 text-muted-foreground hover:text-foreground'
-                    )
-                  }
-                >
-                  <Icon size={16} />
-                  <span>{item.label}</span>
-                </NavLink>
-              </SheetClose>
-            )
-          })}
-        </div>
-
-        <SheetFooter>
-          <div className="text-xs text-muted-foreground">Browser only. Install not supported in this version.</div>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  )
-}
-
-function AccountPanel({
+function SidebarAccountMenu({
   initials,
-  canAccessAdmin,
+  name,
   onSignOut,
-  authError
+  authError,
+  compact
 }: {
   initials: string
-  canAccessAdmin: boolean
+  name: string
   onSignOut: () => Promise<void>
   authError: string | null
+  compact: boolean
 }) {
-  const user = useCurrentUser()
-  const authState = useAuthState()
   const { mode, isSystemMode, setMode, setSystemMode } = useTheme()
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-[var(--surface-muted)] text-xs font-semibold uppercase text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className={cn(
+            'rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-nav-hover-bg)] text-left transition hover:border-[var(--sidebar-border)] hover:bg-[var(--sidebar-nav-active-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            compact
+              ? 'flex h-12 w-full items-center justify-center px-2'
+              : 'flex min-h-14 w-full items-center gap-3 p-3'
+          )}
           type="button"
-          aria-label="Open account panel"
+          aria-label="Open account menu"
         >
-          {initials}
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-[var(--surface-muted)] text-xs font-semibold uppercase text-foreground">
+            {initials}
+          </div>
+          {compact ? null : (
+            <>
+              <div className="flex-1 pr-2">
+                <div className="break-words text-sm font-semibold leading-snug text-[var(--sidebar-nav-foreground)]">
+                  {name}
+                </div>
+              </div>
+              <div className="text-xs text-[var(--sidebar-nav-muted)]">•••</div>
+            </>
+          )}
         </button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-[92vw] max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Account</SheetTitle>
-          <SheetDescription>Profile, appearance, and session controls.</SheetDescription>
-        </SheetHeader>
-
-        <div className="space-y-4 px-4 py-1">
-          <div className="rounded-lg border border-border/60 bg-[var(--surface-muted)] p-3">
-            <div className="text-sm font-semibold text-foreground">
-              {user?.name || authState.user?.displayName || 'Signed in'}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {user?.email || authState.user?.email || 'No email on file'}
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {user?.isAdmin ? <Badge tone="info">Admin</Badge> : null}
-              {user?.isMember ? <Badge>Member</Badge> : <Badge tone="warning">No league access</Badge>}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-border/60 bg-[var(--surface-muted)] p-3">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Theme</div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="pill"
-                size="sm"
-                data-active={!isSystemMode && mode === 'light' ? 'true' : 'false'}
-                aria-pressed={!isSystemMode && mode === 'light'}
-                onClick={() => setMode('light')}
-              >
-                Light
-              </Button>
-              <Button
-                type="button"
-                variant="pill"
-                size="sm"
-                data-active={!isSystemMode && mode === 'dark' ? 'true' : 'false'}
-                aria-pressed={!isSystemMode && mode === 'dark'}
-                onClick={() => setMode('dark')}
-              >
-                Dark
-              </Button>
-              <Button
-                type="button"
-                variant="pill"
-                size="sm"
-                data-active={isSystemMode ? 'true' : 'false'}
-                aria-pressed={isSystemMode}
-                onClick={() => setSystemMode(true)}
-              >
-                System
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <ButtonLink to="/settings" variant="secondary" size="sm">
-              Open settings
-            </ButtonLink>
-            {canAccessAdmin ? (
-              <ButtonLink to="/players" variant="secondary" size="sm">
-                Open players
-              </ButtonLink>
-            ) : null}
-          </div>
-
-          {authError ? <div className="text-xs text-destructive">{authError}</div> : null}
-        </div>
-
-        <SheetFooter className="flex items-center justify-between gap-2">
-          <div className="text-xs text-muted-foreground">Browser only.</div>
-          <Button variant="ghost" onClick={() => void onSignOut()}>
-            Sign out
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" side="top" className="min-w-[220px]">
+        <DropdownMenuItem onSelect={() => setMode('light')}>
+          Theme: Light {!isSystemMode && mode === 'light' ? '✓' : ''}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setMode('dark')}>
+          Theme: Dark {!isSystemMode && mode === 'dark' ? '✓' : ''}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setSystemMode(true)}>
+          Theme: System {isSystemMode ? '✓' : ''}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive hover:text-destructive focus-visible:text-destructive"
+          onSelect={() => void onSignOut()}
+        >
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+      {authError ? <div className="px-1 pt-2 text-[11px] text-destructive">{authError}</div> : null}
+    </DropdownMenu>
   )
 }
 
 function LayoutFrame() {
+  const location = useLocation()
   const user = useCurrentUser()
   const authState = useAuthState()
   const [authError, setAuthError] = useState<string | null>(null)
-  const location = useLocation()
-  const headerRef = useRef<HTMLElement | null>(null)
-  const appShell = useAppShell()
-  const topBarAction = appShell?.topBarAction ?? null
-  const pageTitle = getPageTitle(location.pathname)
   const canAccessAdmin = user?.isAdmin === true
-
-  useEffect(() => {
-    const header = headerRef.current
-    if (!header) return
-
-    const updateHeaderHeight = () => {
-      const height = header.getBoundingClientRect().height
-      document.documentElement.style.setProperty('--app-header-height', `${height}px`)
-    }
-
-    updateHeaderHeight()
-
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', updateHeaderHeight)
-      return () => window.removeEventListener('resize', updateHeaderHeight)
-    }
-
-    const observer = new ResizeObserver(updateHeaderHeight)
-    observer.observe(header)
-    return () => observer.disconnect()
-  }, [])
+  const {
+    sidebarCompact,
+    notice,
+    popHighlightActive,
+    onLogoClick,
+    onLogoPointerDown,
+    onLogoPointerUp,
+    onLogoPointerLeave,
+    onLogoPointerCancel,
+    onLastUpdatedTap
+  } = useEasterEggs()
 
   async function handleSignIn() {
     if (!firebaseAuth) return
@@ -339,107 +191,115 @@ function LayoutFrame() {
     }
   }
 
+  function handleMainClickCapture(event: MouseEvent<HTMLElement>) {
+    const target = event.target
+    if (!(target instanceof HTMLElement)) return
+    const lastUpdatedEl = target.closest('[data-last-updated]')
+    if (!lastUpdatedEl) return
+    onLastUpdatedTap()
+  }
+
   const initials = getInitials(user?.name, user?.email)
+  const appContentRoute = isAppContentRoute(location.pathname)
 
   return (
-    <div className="min-h-screen bg-background bg-[var(--shell-bg-overlay)] bg-no-repeat">
-      <div className="min-h-screen md:grid md:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="hidden min-h-screen flex-col border-r border-[var(--shell-sidebar-divider)] bg-[var(--sidebar-bg)] px-4 py-5 shadow-[var(--shadow1)] md:flex">
-          <div className="flex items-center gap-3 px-2 pb-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-mark-bg)] text-sm font-semibold uppercase tracking-[0.2em] text-[var(--brand-mark-text)] shadow-soft font-display">
-              WC
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold uppercase tracking-[0.16em] text-[var(--sidebar-nav-foreground)]">
-                WC Predictions
+    <div
+      className="min-h-screen bg-background bg-[var(--shell-bg-overlay)] bg-no-repeat"
+      data-pop-highlight={popHighlightActive ? 'true' : 'false'}
+    >
+      <div
+        data-testid="app-shell-grid"
+        className={cn(
+          'min-h-screen md:grid md:h-screen md:overflow-hidden',
+          sidebarCompact ? 'md:grid-cols-[96px_minmax(0,1fr)]' : 'md:grid-cols-[320px_minmax(0,1fr)]'
+        )}
+      >
+        <aside
+          data-testid="app-shell-sidebar"
+          className="hidden min-h-screen flex-col border-r border-[var(--shell-sidebar-divider)] bg-[var(--sidebar-bg)] px-3 py-4 shadow-[var(--shadow1)] md:flex md:h-screen"
+        >
+          <div className="space-y-3 px-1 pb-4">
+            <BrandLogo
+              size={sidebarCompact ? 'sm' : 'md'}
+              variant={sidebarCompact ? 'mark' : 'full'}
+              tone="inverse"
+              markButtonProps={{
+                className: 'egg-pop-target',
+                onClick: onLogoClick,
+                onPointerDown: onLogoPointerDown,
+                onPointerUp: onLogoPointerUp,
+                onPointerLeave: onLogoPointerLeave,
+                onPointerCancel: onLogoPointerCancel
+              }}
+            />
+            {notice ? (
+              <div
+                className={cn(
+                  'rounded-lg border border-[var(--sidebar-border)] bg-[var(--sidebar-nav-hover-bg)] px-2 py-1 text-[11px] text-[var(--sidebar-nav-foreground)]',
+                  sidebarCompact && 'text-center'
+                )}
+              >
+                {notice}
               </div>
-              <div className="text-[11px] uppercase tracking-[0.2em] text-[var(--sidebar-nav-muted)]">
-                Private league
-              </div>
-            </div>
+            ) : null}
           </div>
 
           <div className="flex-1 space-y-6 overflow-y-auto pr-1" aria-label="Primary">
-            <SidebarNavSection title="Main" items={MAIN_NAV} />
+            <SidebarNavSection title="Main" items={MAIN_NAV} compact={sidebarCompact} />
             {canAccessAdmin ? (
-              <SidebarNavSection
-                title="Admin"
-                items={[{ to: '/players', label: 'Players', icon: UsersIcon }]}
-              />
+              <div className="space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-4">
+                {sidebarCompact ? null : (
+                  <div className="px-2 text-[10px] uppercase tracking-[0.3em] text-[var(--sidebar-nav-muted)]/80">
+                    Admin tools
+                  </div>
+                )}
+                <SidebarNavSection
+                  title="Admin"
+                  items={ADMIN_NAV}
+                  compact={sidebarCompact}
+                  hideTitle
+                />
+              </div>
             ) : null}
-            <SidebarNavSection title="Account" items={SETTINGS_NAV} />
           </div>
 
-          <div className="mt-6 space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-4">
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-nav-hover-bg)] p-2">
-              <div className="min-w-0">
-                <div className="truncate text-xs font-semibold text-[var(--sidebar-nav-foreground)]">
-                  {user?.name || authState.user?.displayName || 'Guest'}
-                </div>
-                <div className="truncate text-[11px] text-[var(--sidebar-nav-muted)]">
-                  {user?.email || authState.user?.email || 'Signed out'}
-                </div>
+          <div className="mt-4 shrink-0 space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-3">
+            {authState.user ? (
+              <SidebarAccountMenu
+                initials={initials}
+                name={user?.name || authState.user.displayName || authState.user.email || 'Signed in'}
+                onSignOut={handleSignOut}
+                authError={authError}
+                compact={sidebarCompact}
+              />
+            ) : hasFirebase ? (
+              <button
+                className="egg-pop-target inline-flex h-9 w-full items-center justify-center rounded-full border border-[var(--primary-cta-border)] [background:var(--primary-cta-bg)] px-3 text-xs font-semibold text-primary-foreground shadow-[var(--primary-cta-shadow)] transition hover:[background:var(--primary-cta-hover-bg)] active:translate-y-[1px]"
+                type="button"
+                onClick={() => void handleSignIn()}
+              >
+                Sign in
+              </button>
+            ) : (
+              <div className="rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-nav-hover-bg)] px-3 py-2 text-sm text-[var(--sidebar-nav-foreground)]">
+                Guest
               </div>
-              {authState.user ? (
-                <AccountPanel
-                  initials={initials}
-                  canAccessAdmin={canAccessAdmin}
-                  onSignOut={handleSignOut}
-                  authError={authError}
-                />
-              ) : null}
-            </div>
-            <div className="px-1 text-[11px] text-[var(--sidebar-nav-muted)]">
-              Browser only. Install not supported in this version.
-            </div>
+            )}
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-col">
-          <header
-            ref={headerRef}
-            className="sticky top-0 z-40 border-b border-[var(--shell-header-border)] bg-[var(--header-bg)] shadow-[var(--shadow0)] backdrop-blur"
+        <div className="flex min-w-0 flex-col md:h-screen md:overflow-hidden">
+          <main
+            data-testid="app-shell-main"
+            className={cn(
+              'relative z-10 flex-1 overflow-y-auto',
+              appContentRoute ? 'px-4 py-5 md:px-6 lg:px-8 xl:px-10' : 'container py-5'
+            )}
+            onClickCapture={handleMainClickCapture}
           >
-            <div className="container flex items-center justify-between gap-3 py-3">
-              <div className="flex items-center gap-2 md:hidden">
-                <MobileNav canAccessAdmin={canAccessAdmin} />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">{pageTitle}</div>
-                <div className="truncate text-sm font-semibold uppercase tracking-[0.16em] text-foreground">
-                  World Cup Predictions
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {topBarAction ? <div>{topBarAction}</div> : null}
-                {hasFirebase && !authState.user ? (
-                  <Button size="sm" type="button" onClick={handleSignIn}>
-                    Sign in
-                  </Button>
-                ) : null}
-                {authState.user ? (
-                  <AccountPanel
-                    initials={initials}
-                    canAccessAdmin={canAccessAdmin}
-                    onSignOut={handleSignOut}
-                    authError={authError}
-                  />
-                ) : null}
-              </div>
-            </div>
-
-            {authError ? <div className="container pb-3 text-xs text-destructive">{authError}</div> : null}
-          </header>
-
-          <main className="container relative z-10 flex-1 py-5">
+            {authError ? <div className="mb-4 text-xs text-destructive">{authError}</div> : null}
             <Outlet />
           </main>
-
-          <div className="container pb-4 text-center text-xs text-muted-foreground md:hidden">
-            Browser only. Install not supported in this version.
-          </div>
         </div>
       </div>
     </div>
@@ -447,9 +307,5 @@ function LayoutFrame() {
 }
 
 export default function Layout() {
-  return (
-    <AppShellProvider>
-      <LayoutFrame />
-    </AppShellProvider>
-  )
+  return <LayoutFrame />
 }

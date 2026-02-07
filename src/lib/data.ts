@@ -15,7 +15,7 @@ type CacheEntry<T> = {
 
 const CACHE_TTL_MS: Record<string, number> = {
   'data/matches.json': 15 * 60 * 1000,
-  'data/leaderboard.json': 15 * 60 * 1000,
+  'data/leaderboard.json': 0,
   'data/scoring.json': 12 * 60 * 60 * 1000,
   'data/picks.json': 30 * 60 * 1000,
   'data/members.json': 30 * 60 * 1000,

@@ -1,0 +1,3 @@
+export const CORE_LIST_PAGE_SIZE = 10
+export const HISTORY_LIST_PAGE_SIZE = 15
+export const LEADERBOARD_LIST_PAGE_SIZE = 10

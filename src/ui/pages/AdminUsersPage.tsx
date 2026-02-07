@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { InputField } from '../components/ui/Field'
-import PageHeader from '../components/ui/PageHeader'
+import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Table from '../components/ui/Table'
 
 type MemberEntry = {
@@ -171,11 +171,18 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeroPanel
         kicker="Admin"
         title="Players"
         subtitle="Manage member allowlist and admin access."
-      />
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          {canManageMembers ? <Badge tone="success">Writable</Badge> : <Badge tone="warning">Read-only</Badge>}
+          <Badge tone="secondary">Total {entries.length}</Badge>
+          <Badge tone="secondary">Admins {adminCount}</Badge>
+          <Badge tone="secondary">Members {memberCount}</Badge>
+        </div>
+      </PageHeroPanel>
 
       {!hasFirebase ? (
         <Alert tone="warning" title="Firebase not configured">

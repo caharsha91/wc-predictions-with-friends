@@ -11,7 +11,7 @@ import { Badge } from '../components/ui/Badge'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
-import PageHeader from '../components/ui/PageHeader'
+import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Skeleton from '../components/ui/Skeleton'
 import { useGroupOutcomesData } from '../hooks/useGroupOutcomesData'
 import { useNow } from '../hooks/useNow'
@@ -361,6 +361,8 @@ export default function PicksWizardPage() {
   const reviewReady =
     missingMatches.length === 0 &&
     (!includeGroupStep || groupLocked || (groupOutcomes.loadState.status === 'ready' && !groupHasErrors))
+  const showReviewSubmitCta =
+    reviewReady || currentStep?.kind === 'review' || currentStep?.kind === 'confirm'
 
   const saveCurrentMatch = useCallback(async () => {
     if (!currentMatch || !matchCanSave || parsedHome === undefined || parsedAway === undefined) return false
@@ -456,6 +458,13 @@ export default function PicksWizardPage() {
     }
   }
 
+  function jumpToReviewStep() {
+    const reviewIndex = findStepIndex('review')
+    if (reviewIndex >= 0) {
+      setCurrentStepIndex(reviewIndex)
+    }
+  }
+
   async function handleMatchContinue() {
     if (!currentMatch) return
     if (matchLocked) {
@@ -534,13 +543,11 @@ export default function PicksWizardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeroPanel
         kicker="Picks wizard"
         title="Guided Picks Entry"
         subtitle="Edit all open picks one-by-one, resume any time, then review and confirm."
-      />
-
-      <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+      >
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-sm font-semibold text-foreground">
@@ -574,10 +581,15 @@ export default function PicksWizardPage() {
             >
               Go to next incomplete
             </Button>
+            {showReviewSubmitCta ? (
+              <Button variant="secondary" onClick={jumpToReviewStep}>
+                Review & submit
+              </Button>
+            ) : null}
           </div>
           {notice ? <div className="text-xs text-muted-foreground">{notice}</div> : null}
         </div>
-      </Card>
+      </PageHeroPanel>
 
       {openMatches.length === 0 ? (
         <Alert tone="info" title="No open matches">

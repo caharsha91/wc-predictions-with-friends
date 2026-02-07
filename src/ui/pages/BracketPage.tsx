@@ -8,7 +8,7 @@ import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import PageHeader from '../components/ui/PageHeader'
+import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
@@ -303,19 +303,17 @@ export default function BracketPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeroPanel
         kicker="Bracket"
         title="Knockout Picks Wizard"
         subtitle="Complete open knockout picks one match at a time, then review and save."
-        actions={
-          <div className="text-right text-xs text-muted-foreground">
+        meta={
+          <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
             <div className="uppercase tracking-[0.2em]">Last updated</div>
             <div className="text-sm font-semibold text-foreground">{formatTime(loadState.lastUpdated)}</div>
           </div>
         }
-      />
-
-      <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+      >
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -365,7 +363,7 @@ export default function BracketPage() {
 
           {notice ? <div className="text-xs text-muted-foreground">{notice}</div> : null}
         </div>
-      </Card>
+      </PageHeroPanel>
 
       {mode === 'match' && currentEntry ? (
         <Card className="rounded-2xl border-border/60 p-4 sm:p-5">

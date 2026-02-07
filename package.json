@@ -5,12 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "test": "vitest run",
+    "lint:tokens": "node scripts/checkThemeTokens.mjs",
+    "lint:contrast": "node scripts/checkContrast.mjs",
+    "build": "npm run lint:tokens && npm run lint:contrast && tsc -b && vite build",
+    "test": "npm run lint:tokens && npm run lint:contrast && vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "preview": "vite preview",
     "update-matches": "node scripts/updateMatches.js",
+    "update-leaderboard": "node --import tsx scripts/updateLeaderboard.ts",
+    "backfill-member-uids": "node --import tsx scripts/backfillMemberUids.ts",
+    "update-snapshots": "npm run update-matches && npm run update-leaderboard",
     "seed:prod": "tsx scripts/seedProd.ts"
   },
   "dependencies": {
@@ -26,15 +31,16 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "tailwind-merge": "^2.5.5"
+    "tailwind-merge": "^2.5.5",
+    "write-excel-file": "^2.3.10"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
     "autoprefixer": "^10.4.20",
     "firebase-admin": "^13.6.0",
     "jsdom": "^25.0.1",

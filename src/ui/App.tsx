@@ -7,6 +7,7 @@ import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import Layout from './Layout'
 import AccessDeniedPage from './pages/AccessDeniedPage'
+import AdminExportsPage from './pages/AdminExportsPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import BracketPage from './pages/BracketPage'
 import JoinLeaguePage from './pages/JoinLeaguePage'
@@ -16,7 +17,6 @@ import NotFoundPage from './pages/NotFoundPage'
 import PicksPage from './pages/PicksPage'
 import PicksWizardPage from './pages/PicksWizardPage'
 import ResultsPage from './pages/ResultsPage'
-import ThemeSelectorPage from './pages/ThemeSelectorPage'
 
 function GateCard({
   kicker,
@@ -71,7 +71,7 @@ function MemberGate() {
         kicker="Private league"
         title="Sign in required"
         subtitle="Sign in with Google to access this league."
-        note="Use the Sign in button in the top bar to continue."
+        note="Open Login and use Sign in with Google to continue."
       />
     )
   }
@@ -131,10 +131,10 @@ export default function App() {
           <Route path="results" element={<ResultsPage />} />
           <Route path="bracket" element={<BracketPage />} />
           <Route path="leaderboard" element={<LeaderboardPage />} />
-          <Route path="settings" element={<ThemeSelectorPage />} />
 
           <Route element={<AdminGate />}>
             <Route path="players" element={<AdminUsersPage />} />
+            <Route path="exports" element={<AdminExportsPage />} />
           </Route>
         </Route>
 
