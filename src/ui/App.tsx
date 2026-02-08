@@ -10,7 +10,6 @@ import AccessDeniedPage from './pages/AccessDeniedPage'
 import AdminExportsPage from './pages/AdminExportsPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import BracketPage from './pages/BracketPage'
-import JoinLeaguePage from './pages/JoinLeaguePage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -116,13 +115,40 @@ function AdminGate() {
   return <AccessDeniedPage />
 }
 
+function DemoAdminGate() {
+  const authState = useAuthState()
+  const user = useCurrentUser()
+
+  if (hasFirebase && authState.status === 'loading') {
+    return (
+      <GateCard
+        kicker="Demo"
+        title="Checking access"
+        subtitle="Verifying demo access..."
+      />
+    )
+  }
+
+  if (!user) {
+    return (
+      <GateCard
+        kicker="Demo"
+        title="Checking access"
+        subtitle="Loading your permissions..."
+      />
+    )
+  }
+
+  if (user.isAdmin) return <Outlet />
+  return <Navigate to="/play" replace />
+}
+
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/play" replace />} />
         <Route path="login" element={<LoginPage />} />
-        <Route path="join/:inviteCode" element={<JoinLeaguePage />} />
         <Route path="access-denied" element={<AccessDeniedPage />} />
 
         <Route element={<MemberGate />}>
@@ -137,6 +163,20 @@ export default function App() {
           <Route element={<AdminGate />}>
             <Route path="admin/players" element={<AdminUsersPage />} />
             <Route path="admin/exports" element={<AdminExportsPage />} />
+          </Route>
+        </Route>
+
+        <Route path="demo" element={<DemoAdminGate />}>
+          <Route path="play">
+            <Route index element={<PlayPage />} />
+            <Route path="picks" element={<PicksPage />} />
+            <Route path="group-stage" element={<GroupStagePage />} />
+            <Route path="bracket" element={<BracketPage />} />
+            <Route path="league" element={<LeaderboardPage />} />
+          </Route>
+          <Route path="admin">
+            <Route path="players" element={<AdminUsersPage />} />
+            <Route path="exports" element={<AdminExportsPage />} />
           </Route>
         </Route>
 

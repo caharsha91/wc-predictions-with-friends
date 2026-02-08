@@ -10,11 +10,17 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/play/group-stage` group stage predictions
 - `/play/bracket` knockout bracket editor and review
 - `/play/league` standings
+- `/demo/play` demo play center (admin only)
+- `/demo/play/picks` demo picks workspace (admin only)
+- `/demo/play/group-stage` demo group stage predictions (admin only)
+- `/demo/play/bracket` demo knockout workspace (admin only)
+- `/demo/play/league` demo standings (admin only)
+- `/demo/admin/players` demo member manager (admin only)
+- `/demo/admin/exports` demo export tools (admin only)
 - `/admin/players` member manager (admin only)
 - `/admin/exports` export tools (admin only)
 - `/settings` account and appearance settings
 - `/login` sign-in guidance
-- `/join/:inviteCode` invite flow
 - `/access-denied` unauthorized state
 - `*` not found
 
