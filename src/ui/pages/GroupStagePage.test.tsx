@@ -97,13 +97,13 @@ function renderPage() {
 }
 
 describe('GroupStagePage read-only detail', () => {
-  it('renders read-only detail layout with quick menu', () => {
+  it('renders read-only detail layout with header picks link', () => {
     fixtures.now = new Date('2026-06-01T12:00:00.000Z')
 
     renderPage()
 
     expect(screen.getByRole('heading', { name: /group stage detail/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /back to play center/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to picks/i })).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
@@ -116,11 +116,11 @@ describe('GroupStagePage read-only detail', () => {
     expect(screen.getByText(/detail view only/i)).toBeInTheDocument()
   })
 
-  it('renders in-progress results status when groups are not fully finished', () => {
+  it('renders incomplete status when groups are not fully finished', () => {
     fixtures.now = new Date('2026-06-01T12:00:00.000Z')
 
     renderPage()
 
-    expect(screen.getAllByText(/in progress/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/incomplete/i).length).toBeGreaterThan(0)
   })
 })

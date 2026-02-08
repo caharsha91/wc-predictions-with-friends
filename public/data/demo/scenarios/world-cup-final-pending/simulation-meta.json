@@ -1,8 +1,8 @@
 {
   "scenario": "world-cup-final-pending",
   "scenarioLabel": "World Cup final pending",
-  "seed": 42,
+  "seed": 505,
   "users": 50,
-  "generatedAt": "2026-02-08T20:45:37.387Z",
+  "generatedAt": "2026-02-08T21:57:27.575Z",
   "timezone": "America/Los_Angeles"
 }

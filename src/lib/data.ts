@@ -28,6 +28,14 @@ const CACHE_TTL_MS: Record<string, number> = {
 const DEFAULT_TTL_MS = 15 * 60 * 1000
 const STORAGE_PREFIX = 'wc-cache:'
 const memoryCache = new Map<string, CacheEntry<unknown>>()
+const DEMO_SCENARIO_STORAGE_KEY = 'wc-demo-scenario'
+const DEMO_SCENARIOS = new Set([
+  'pre-group',
+  'mid-group',
+  'end-group-draw-confirmed',
+  'mid-knockout',
+  'world-cup-final-pending'
+])
 const EMPTY_BEST_THIRD_QUALIFIERS: BestThirdQualifiersFile = {
   updatedAt: '',
   qualifiers: []
@@ -37,14 +45,23 @@ function getStorageKey(path: string) {
   return `${STORAGE_PREFIX}${path}`
 }
 
+function readDemoScenarioId(): string {
+  if (typeof window === 'undefined') return 'pre-group'
+  const raw = window.localStorage.getItem(DEMO_SCENARIO_STORAGE_KEY)?.trim() ?? ''
+  return DEMO_SCENARIOS.has(raw) ? raw : 'pre-group'
+}
+
 function buildDatasetPath(path: string, mode: DataMode): string {
   if (mode === 'default') return path
-  if (path.startsWith('data/')) return `data/demo/${path.slice('data/'.length)}`
-  return path
+  if (!path.startsWith('data/')) return path
+  const relative = path.slice('data/'.length)
+  const scenarioId = readDemoScenarioId()
+  return `data/demo/scenarios/${scenarioId}/${relative}`
 }
 
 function buildCacheKey(path: string, mode: DataMode): string {
-  return mode === 'default' ? path : `${mode}:${path}`
+  if (mode === 'default') return path
+  return `${mode}:${readDemoScenarioId()}:${path}`
 }
 
 function readCachedEntry<T>(cacheKey: string): CacheEntry<T> | null {
@@ -79,9 +96,9 @@ type FetchOptions = {
 
 async function fetchJson<T>(path: string, options?: FetchOptions): Promise<T> {
   const mode = options?.mode ?? 'default'
-  const resolvedPath = buildDatasetPath(path, mode)
+  const primaryPath = buildDatasetPath(path, mode)
   const cacheKey = buildCacheKey(path, mode)
-  const url = `${import.meta.env.BASE_URL}${resolvedPath}`
+  const url = `${import.meta.env.BASE_URL}${primaryPath}`
   const ttl = CACHE_TTL_MS[path] ?? DEFAULT_TTL_MS
   const cached = readCachedEntry<T>(cacheKey)
 

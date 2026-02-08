@@ -207,14 +207,16 @@ async function ensureDemoDefaults(): Promise<void> {
   }
 
   const scenario = readDemoScenario()
-  if (!readDemoViewerId()) {
-    try {
-      const membersFile = await fetchMembers({ mode: 'demo' })
-      const first = membersFile.members[0]
-      if (first?.id) writeDemoViewerId(first.id)
-    } catch {
-      // no-op: keep fallback behavior
-    }
+  try {
+    const membersFile = await fetchMembers({ mode: 'demo' })
+    const first = membersFile.members[0]
+    const currentViewerId = readDemoViewerId()
+    const hasCurrentViewer = currentViewerId
+      ? membersFile.members.some((member) => member.id === currentViewerId)
+      : false
+    if (!hasCurrentViewer && first?.id) writeDemoViewerId(first.id)
+  } catch {
+    // no-op: keep fallback behavior
   }
 
   if (!readDemoNowOverride() && scenario === 'pre-group') {

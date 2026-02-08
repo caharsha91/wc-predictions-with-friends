@@ -6,6 +6,9 @@ import { findPick, isPickComplete } from '../../../lib/picks'
 import type { Match } from '../../../types/matches'
 import type { Pick } from '../../../types/picks'
 import type { KnockoutStage } from '../../../types/scoring'
+import { readDemoScenario } from '../../lib/demoControls'
+import { resolveKnockoutActivation } from '../../lib/knockoutActivation'
+import { Alert } from '../../components/ui/Alert'
 import PicksWizardFlow from '../../components/play/PicksWizardFlow'
 import DeadlineQueuePanel, { type DeadlineQueueItem } from '../../components/ui/DeadlineQueuePanel'
 import PlayCenterHero from '../../components/ui/PlayCenterHero'
@@ -108,6 +111,8 @@ export default function PlayPage() {
   const location = useLocation()
   const userId = useViewerId()
   const mode = useRouteDataMode()
+  const isDemoRoute = location.pathname.startsWith('/demo/')
+  const demoScenario = isDemoRoute ? readDemoScenario() : null
   const now = useNow({ tickMs: 30_000 })
   const picksState = usePicksData()
   const editorRef = useRef<HTMLDivElement | null>(null)
@@ -241,7 +246,18 @@ export default function PlayPage() {
     return now.getTime() >= new Date(firstKnockoutKickoffUtc).getTime()
   }, [firstKnockoutKickoffUtc, knockoutMatches, now])
   const groupComplete = groupCompleteFromMatches || groupClosed
-  const knockoutActive = groupComplete && knockoutDrawReady && !knockoutStarted
+  const knockoutActivation = useMemo(
+    () =>
+      resolveKnockoutActivation({
+        mode: isDemoRoute ? 'demo' : 'default',
+        demoScenario,
+        groupComplete,
+        drawReady: knockoutDrawReady,
+        knockoutStarted
+      }),
+    [demoScenario, groupComplete, isDemoRoute, knockoutDrawReady, knockoutStarted]
+  )
+  const knockoutActive = knockoutActivation.active
   const groupCompletion = useMemo(() => {
     let groupsDone = 0
     for (const groupId of groupStage.groupIds) {
@@ -654,6 +670,14 @@ export default function PlayPage() {
                             Continue Knockout
                           </Button>
                         </div>
+                        {knockoutActivation.mismatchWarning ? (
+                          <Alert tone="warning" title="Knockout activation override">
+                            <div>{knockoutActivation.mismatchWarning}</div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Source of truth: {knockoutActivation.sourceOfTruthLabel}
+                            </div>
+                          </Alert>
+                        ) : null}
                         {knockoutData.loadState.status === 'loading' ? (
                           <div className="text-xs text-muted-foreground">Loading knockout wizard…</div>
                         ) : null}

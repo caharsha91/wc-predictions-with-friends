@@ -163,6 +163,7 @@ function renderPage() {
 
 describe('PlayPage action center', () => {
   beforeEach(() => {
+    window.localStorage.removeItem('wc-demo-scenario')
     fixtures.state.mode = 'pending'
     fixtures.state.nowIso = '2026-06-12T12:00:00.000Z'
     fixtures.matches[0].status = 'SCHEDULED'
@@ -276,5 +277,20 @@ describe('PlayPage action center', () => {
     expect(knockoutHeading.compareDocumentPosition(groupHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /save knockout picks/i })).toBeInTheDocument()
+  })
+
+  it('forces knockout active for demo mid-knockout and shows inference warning when fixtures disagree', () => {
+    window.localStorage.setItem('wc-demo-scenario', 'mid-knockout')
+
+    render(
+      <MemoryRouter initialEntries={['/demo/play']}>
+        <PlayPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
+    expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
+    expect(screen.getByText(/demo scenario override keeps knockout active/i)).toBeInTheDocument()
+    expect(screen.getByText(/source of truth: demo scenario override/i)).toBeInTheDocument()
   })
 })

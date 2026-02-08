@@ -16,6 +16,7 @@
     "update-matches": "node scripts/updateMatches.js",
     "update-leaderboard": "node --import tsx scripts/updateLeaderboard.ts",
     "demo:simulate": "node --import tsx scripts/simulateDemoUsers.ts",
+    "demo:simulate:all": "for s in pre-group mid-group end-group-draw-confirmed mid-knockout world-cup-final-pending; do node --import tsx scripts/simulateDemoUsers.ts --scenario=$s --users=50; done",
     "backfill-member-uids": "node --import tsx scripts/backfillMemberUids.ts",
     "update-snapshots": "npm run update-matches && npm run update-leaderboard",
     "seed:prod": "tsx scripts/seedProd.ts"

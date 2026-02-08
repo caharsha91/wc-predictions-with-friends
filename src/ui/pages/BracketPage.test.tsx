@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 
 import type { Match } from '../../types/matches'
@@ -84,6 +84,10 @@ vi.mock('../hooks/useBracketKnockoutData', () => ({
 import BracketPage from './BracketPage'
 
 describe('BracketPage read-only detail', () => {
+  beforeEach(() => {
+    window.localStorage.removeItem('wc-demo-scenario')
+  })
+
   it('shows inactive state before unlock conditions are met', () => {
     fixtures.state.unlocked = false
 
@@ -107,7 +111,22 @@ describe('BracketPage read-only detail', () => {
     )
 
     expect(screen.getByRole('columnheader', { name: /actual winner/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /back to play center/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to picks/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /save bracket/i })).not.toBeInTheDocument()
+  })
+
+  it('forces detail active in demo mid-knockout and shows override warning if inference disagrees', () => {
+    fixtures.state.unlocked = false
+    window.localStorage.setItem('wc-demo-scenario', 'mid-knockout')
+
+    render(
+      <MemoryRouter initialEntries={['/demo/play/bracket']}>
+        <BracketPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole('columnheader', { name: /actual winner/i })).toBeInTheDocument()
+    expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
+    expect(screen.getByText(/source: demo scenario override/i)).toBeInTheDocument()
   })
 })

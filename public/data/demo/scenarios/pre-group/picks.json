@@ -1,0 +1,2584 @@
+{
+  "picks": [
+    {
+      "userId": "user-1",
+      "picks": [
+        {
+          "id": "pick-user-1-537358",
+          "matchId": "537358",
+          "userId": "user-1",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.224Z",
+          "updatedAt": "2026-02-08T21:48:24.224Z"
+        },
+        {
+          "id": "pick-user-1-537370",
+          "matchId": "537370",
+          "userId": "user-1",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.224Z",
+          "updatedAt": "2026-02-08T21:48:24.224Z"
+        },
+        {
+          "id": "pick-user-1-537409",
+          "matchId": "537409",
+          "userId": "user-1",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.224Z",
+          "updatedAt": "2026-02-08T21:48:24.224Z"
+        },
+        {
+          "id": "pick-user-1-537329",
+          "matchId": "537329",
+          "userId": "user-1",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.224Z",
+          "updatedAt": "2026-02-08T21:48:24.224Z"
+        },
+        {
+          "id": "pick-user-1-537337",
+          "matchId": "537337",
+          "userId": "user-1",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-1-537344",
+          "matchId": "537344",
+          "userId": "user-1",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-1-537407",
+          "matchId": "537407",
+          "userId": "user-1",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-1-537402",
+          "matchId": "537402",
+          "userId": "user-1",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-2",
+      "picks": [
+        {
+          "id": "pick-user-2-537345",
+          "matchId": "537345",
+          "userId": "user-2",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-2-537370",
+          "matchId": "537370",
+          "userId": "user-2",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-2-537354",
+          "matchId": "537354",
+          "userId": "user-2",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-2-537411",
+          "matchId": "537411",
+          "userId": "user-2",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-2-537343",
+          "matchId": "537343",
+          "userId": "user-2",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-2-537350",
+          "matchId": "537350",
+          "userId": "user-2",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-2-537395",
+          "matchId": "537395",
+          "userId": "user-2",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-2-537417",
+          "matchId": "537417",
+          "userId": "user-2",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-3",
+      "picks": [
+        {
+          "id": "pick-user-3-537369",
+          "matchId": "537369",
+          "userId": "user-3",
+          "homeScore": 0,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-3-537355",
+          "matchId": "537355",
+          "userId": "user-3",
+          "homeScore": 2,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-3-537414",
+          "matchId": "537414",
+          "userId": "user-3",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-3-537429",
+          "matchId": "537429",
+          "userId": "user-3",
+          "homeScore": 2,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-4",
+      "picks": [
+        {
+          "id": "pick-user-4-537333",
+          "matchId": "537333",
+          "userId": "user-4",
+          "homeScore": 1,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-4-537345",
+          "matchId": "537345",
+          "userId": "user-4",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-4-537369",
+          "matchId": "537369",
+          "userId": "user-4",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-4-537409",
+          "matchId": "537409",
+          "userId": "user-4",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-4-537336",
+          "matchId": "537336",
+          "userId": "user-4",
+          "homeScore": 1,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-4-537330",
+          "matchId": "537330",
+          "userId": "user-4",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-4-537395",
+          "matchId": "537395",
+          "userId": "user-4",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-5",
+      "picks": [
+        {
+          "id": "pick-user-5-537403",
+          "matchId": "537403",
+          "userId": "user-5",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-5-537410",
+          "matchId": "537410",
+          "userId": "user-5",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-5-537335",
+          "matchId": "537335",
+          "userId": "user-5",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-5-537354",
+          "matchId": "537354",
+          "userId": "user-5",
+          "homeScore": 0,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-5-537372",
+          "matchId": "537372",
+          "userId": "user-5",
+          "homeScore": 0,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-5-537362",
+          "matchId": "537362",
+          "userId": "user-5",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-6",
+      "picks": [
+        {
+          "id": "pick-user-6-537351",
+          "matchId": "537351",
+          "userId": "user-6",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-6-537371",
+          "matchId": "537371",
+          "userId": "user-6",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-6-537399",
+          "matchId": "537399",
+          "userId": "user-6",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-6-537414",
+          "matchId": "537414",
+          "userId": "user-6",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-7",
+      "picks": [
+        {
+          "id": "pick-user-7-537406",
+          "matchId": "537406",
+          "userId": "user-7",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-8",
+      "picks": [
+        {
+          "id": "pick-user-8-537334",
+          "matchId": "537334",
+          "userId": "user-8",
+          "homeScore": 2,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-8-537358",
+          "matchId": "537358",
+          "userId": "user-8",
+          "homeScore": 3,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-8-537399",
+          "matchId": "537399",
+          "userId": "user-8",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-8-537400",
+          "matchId": "537400",
+          "userId": "user-8",
+          "homeScore": 3,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-8-537382",
+          "matchId": "537382",
+          "userId": "user-8",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-9",
+      "picks": [
+        {
+          "id": "pick-user-9-537369",
+          "matchId": "537369",
+          "userId": "user-9",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-9-537399",
+          "matchId": "537399",
+          "userId": "user-9",
+          "homeScore": 2,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-9-537387",
+          "matchId": "537387",
+          "userId": "user-9",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-10",
+      "picks": [
+        {
+          "id": "pick-user-10-537346",
+          "matchId": "537346",
+          "userId": "user-10",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-10-537410",
+          "matchId": "537410",
+          "userId": "user-10",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-10-537404",
+          "matchId": "537404",
+          "userId": "user-10",
+          "homeScore": 0,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-10-537332",
+          "matchId": "537332",
+          "userId": "user-10",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-10-537355",
+          "matchId": "537355",
+          "userId": "user-10",
+          "homeScore": 3,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-11",
+      "picks": [
+        {
+          "id": "pick-user-11-537363",
+          "matchId": "537363",
+          "userId": "user-11",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-11-537405",
+          "matchId": "537405",
+          "userId": "user-11",
+          "homeScore": 4,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-11-537406",
+          "matchId": "537406",
+          "userId": "user-11",
+          "homeScore": 1,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-11-537350",
+          "matchId": "537350",
+          "userId": "user-11",
+          "homeScore": 1,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-11-537407",
+          "matchId": "537407",
+          "userId": "user-11",
+          "homeScore": 3,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-11-537408",
+          "matchId": "537408",
+          "userId": "user-11",
+          "homeScore": 0,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-12",
+      "picks": [
+        {
+          "id": "pick-user-12-537345",
+          "matchId": "537345",
+          "userId": "user-12",
+          "homeScore": 3,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-12-537358",
+          "matchId": "537358",
+          "userId": "user-12",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-12-537391",
+          "matchId": "537391",
+          "userId": "user-12",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-12-537398",
+          "matchId": "537398",
+          "userId": "user-12",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-12-537404",
+          "matchId": "537404",
+          "userId": "user-12",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-12-537342",
+          "matchId": "537342",
+          "userId": "user-12",
+          "homeScore": 0,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-12-537405",
+          "matchId": "537405",
+          "userId": "user-12",
+          "homeScore": 0,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-12-537411",
+          "matchId": "537411",
+          "userId": "user-12",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-12-537344",
+          "matchId": "537344",
+          "userId": "user-12",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-12-537380",
+          "matchId": "537380",
+          "userId": "user-12",
+          "homeScore": 3,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-13",
+      "picks": [
+        {
+          "id": "pick-user-13-537366",
+          "matchId": "537366",
+          "userId": "user-13",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-13-537338",
+          "matchId": "537338",
+          "userId": "user-13",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-14",
+      "picks": [
+        {
+          "id": "pick-user-14-537347",
+          "matchId": "537347",
+          "userId": "user-14",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-14-537348",
+          "matchId": "537348",
+          "userId": "user-14",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-14-537344",
+          "matchId": "537344",
+          "userId": "user-14",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-14-537356",
+          "matchId": "537356",
+          "userId": "user-14",
+          "homeScore": 3,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-14-537374",
+          "matchId": "537374",
+          "userId": "user-14",
+          "homeScore": 1,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-14-537376",
+          "matchId": "537376",
+          "userId": "user-14",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-15",
+      "picks": [
+        {
+          "id": "pick-user-15-537353",
+          "matchId": "537353",
+          "userId": "user-15",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-15-537372",
+          "matchId": "537372",
+          "userId": "user-15",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-15-537405",
+          "matchId": "537405",
+          "userId": "user-15",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-15-537338",
+          "matchId": "537338",
+          "userId": "user-15",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-15-537350",
+          "matchId": "537350",
+          "userId": "user-15",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-15-537396",
+          "matchId": "537396",
+          "userId": "user-15",
+          "homeScore": 1,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-15-537424",
+          "matchId": "537424",
+          "userId": "user-15",
+          "homeScore": 4,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-16",
+      "picks": [
+        {
+          "id": "pick-user-16-537338",
+          "matchId": "537338",
+          "userId": "user-16",
+          "homeScore": 3,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-16-537332",
+          "matchId": "537332",
+          "userId": "user-16",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-16-537388",
+          "matchId": "537388",
+          "userId": "user-16",
+          "homeScore": 2,
+          "awayScore": 2,
+          "advances": "AWAY",
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-17",
+      "picks": [
+        {
+          "id": "pick-user-17-537398",
+          "matchId": "537398",
+          "userId": "user-17",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-17-537400",
+          "matchId": "537400",
+          "userId": "user-17",
+          "homeScore": 3,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-17-537407",
+          "matchId": "537407",
+          "userId": "user-17",
+          "homeScore": 4,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-17-537387",
+          "matchId": "537387",
+          "userId": "user-17",
+          "homeScore": 0,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-18",
+      "picks": [
+        {
+          "id": "pick-user-18-537328",
+          "matchId": "537328",
+          "userId": "user-18",
+          "homeScore": 0,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-18-537400",
+          "matchId": "537400",
+          "userId": "user-18",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-18-537412",
+          "matchId": "537412",
+          "userId": "user-18",
+          "homeScore": 3,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-18-537396",
+          "matchId": "537396",
+          "userId": "user-18",
+          "homeScore": 1,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-19",
+      "picks": [
+        {
+          "id": "pick-user-19-537346",
+          "matchId": "537346",
+          "userId": "user-19",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-19-537342",
+          "matchId": "537342",
+          "userId": "user-19",
+          "homeScore": 0,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-19-537396",
+          "matchId": "537396",
+          "userId": "user-19",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-20",
+      "picks": [
+        {
+          "id": "pick-user-20-537398",
+          "matchId": "537398",
+          "userId": "user-20",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-20-537335",
+          "matchId": "537335",
+          "userId": "user-20",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-20-537331",
+          "matchId": "537331",
+          "userId": "user-20",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-20-537361",
+          "matchId": "537361",
+          "userId": "user-20",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-20-537374",
+          "matchId": "537374",
+          "userId": "user-20",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-21",
+      "picks": [
+        {
+          "id": "pick-user-21-537357",
+          "matchId": "537357",
+          "userId": "user-21",
+          "homeScore": 3,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-21-537352",
+          "matchId": "537352",
+          "userId": "user-21",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-21-537341",
+          "matchId": "537341",
+          "userId": "user-21",
+          "homeScore": 0,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-21-537359",
+          "matchId": "537359",
+          "userId": "user-21",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-21-537343",
+          "matchId": "537343",
+          "userId": "user-21",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-21-537355",
+          "matchId": "537355",
+          "userId": "user-21",
+          "homeScore": 1,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-21-537374",
+          "matchId": "537374",
+          "userId": "user-21",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-22",
+      "picks": [
+        {
+          "id": "pick-user-22-537392",
+          "matchId": "537392",
+          "userId": "user-22",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-22-537398",
+          "matchId": "537398",
+          "userId": "user-22",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-22-537412",
+          "matchId": "537412",
+          "userId": "user-22",
+          "homeScore": 2,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.225Z"
+    },
+    {
+      "userId": "user-23",
+      "picks": [
+        {
+          "id": "pick-user-23-537334",
+          "matchId": "537334",
+          "userId": "user-23",
+          "homeScore": 2,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-23-537392",
+          "matchId": "537392",
+          "userId": "user-23",
+          "homeScore": 1,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-23-537398",
+          "matchId": "537398",
+          "userId": "user-23",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-23-537341",
+          "matchId": "537341",
+          "userId": "user-23",
+          "homeScore": 3,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-23-537372",
+          "matchId": "537372",
+          "userId": "user-23",
+          "homeScore": 3,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-23-537395",
+          "matchId": "537395",
+          "userId": "user-23",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        },
+        {
+          "id": "pick-user-23-537407",
+          "matchId": "537407",
+          "userId": "user-23",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.225Z",
+          "updatedAt": "2026-02-08T21:48:24.225Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-24",
+      "picks": [
+        {
+          "id": "pick-user-24-537364",
+          "matchId": "537364",
+          "userId": "user-24",
+          "homeScore": 3,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-24-537397",
+          "matchId": "537397",
+          "userId": "user-24",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-24-537406",
+          "matchId": "537406",
+          "userId": "user-24",
+          "homeScore": 0,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-24-537344",
+          "matchId": "537344",
+          "userId": "user-24",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-24-537332",
+          "matchId": "537332",
+          "userId": "user-24",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-24-537355",
+          "matchId": "537355",
+          "userId": "user-24",
+          "homeScore": 1,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-24-537373",
+          "matchId": "537373",
+          "userId": "user-24",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-25",
+      "picks": [
+        {
+          "id": "pick-user-25-537357",
+          "matchId": "537357",
+          "userId": "user-25",
+          "homeScore": 3,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-25-537392",
+          "matchId": "537392",
+          "userId": "user-25",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-25-537366",
+          "matchId": "537366",
+          "userId": "user-25",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-25-537338",
+          "matchId": "537338",
+          "userId": "user-25",
+          "homeScore": 2,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-25-537402",
+          "matchId": "537402",
+          "userId": "user-25",
+          "homeScore": 1,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-26",
+      "picks": [
+        {
+          "id": "pick-user-26-537346",
+          "matchId": "537346",
+          "userId": "user-26",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-26-537410",
+          "matchId": "537410",
+          "userId": "user-26",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-26-537404",
+          "matchId": "537404",
+          "userId": "user-26",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-26-537341",
+          "matchId": "537341",
+          "userId": "user-26",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-26-537360",
+          "matchId": "537360",
+          "userId": "user-26",
+          "homeScore": 2,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-26-537350",
+          "matchId": "537350",
+          "userId": "user-26",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-26-537396",
+          "matchId": "537396",
+          "userId": "user-26",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-26-537367",
+          "matchId": "537367",
+          "userId": "user-26",
+          "homeScore": 3,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-27",
+      "picks": [
+        {
+          "id": "pick-user-27-537361",
+          "matchId": "537361",
+          "userId": "user-27",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-27-537367",
+          "matchId": "537367",
+          "userId": "user-27",
+          "homeScore": 3,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-27-537408",
+          "matchId": "537408",
+          "userId": "user-27",
+          "homeScore": 2,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-28",
+      "picks": [
+        {
+          "id": "pick-user-28-537337",
+          "matchId": "537337",
+          "userId": "user-28",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-28-537349",
+          "matchId": "537349",
+          "userId": "user-28",
+          "homeScore": 1,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-28-537413",
+          "matchId": "537413",
+          "userId": "user-28",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-28-537387",
+          "matchId": "537387",
+          "userId": "user-28",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-29",
+      "picks": [
+        {
+          "id": "pick-user-29-537357",
+          "matchId": "537357",
+          "userId": "user-29",
+          "homeScore": 1,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-29-537352",
+          "matchId": "537352",
+          "userId": "user-29",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-29-537403",
+          "matchId": "537403",
+          "userId": "user-29",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-29-537400",
+          "matchId": "537400",
+          "userId": "user-29",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-29-537337",
+          "matchId": "537337",
+          "userId": "user-29",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-29-537338",
+          "matchId": "537338",
+          "userId": "user-29",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-29-537344",
+          "matchId": "537344",
+          "userId": "user-29",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-30",
+      "picks": [
+        {
+          "id": "pick-user-30-537346",
+          "matchId": "537346",
+          "userId": "user-30",
+          "homeScore": 0,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-30-537369",
+          "matchId": "537369",
+          "userId": "user-30",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-30-537365",
+          "matchId": "537365",
+          "userId": "user-30",
+          "homeScore": 0,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-30-537393",
+          "matchId": "537393",
+          "userId": "user-30",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-30-537368",
+          "matchId": "537368",
+          "userId": "user-30",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-31",
+      "picks": [
+        {
+          "id": "pick-user-31-537394",
+          "matchId": "537394",
+          "userId": "user-31",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-31-537343",
+          "matchId": "537343",
+          "userId": "user-31",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-31-537368",
+          "matchId": "537368",
+          "userId": "user-31",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-32",
+      "picks": [
+        {
+          "id": "pick-user-32-537360",
+          "matchId": "537360",
+          "userId": "user-32",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-32-537331",
+          "matchId": "537331",
+          "userId": "user-32",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-32-537407",
+          "matchId": "537407",
+          "userId": "user-32",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-32-537420",
+          "matchId": "537420",
+          "userId": "user-32",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-33",
+      "picks": [
+        {
+          "id": "pick-user-33-537404",
+          "matchId": "537404",
+          "userId": "user-33",
+          "homeScore": 0,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-33-537329",
+          "matchId": "537329",
+          "userId": "user-33",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-33-537371",
+          "matchId": "537371",
+          "userId": "user-33",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-33-537337",
+          "matchId": "537337",
+          "userId": "user-33",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-34",
+      "picks": [
+        {
+          "id": "pick-user-34-537364",
+          "matchId": "537364",
+          "userId": "user-34",
+          "homeScore": 4,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-34-537410",
+          "matchId": "537410",
+          "userId": "user-34",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-34-537360",
+          "matchId": "537360",
+          "userId": "user-34",
+          "homeScore": 2,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-34-537361",
+          "matchId": "537361",
+          "userId": "user-34",
+          "homeScore": 0,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-34-537368",
+          "matchId": "537368",
+          "userId": "user-34",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-35",
+      "picks": [
+        {
+          "id": "pick-user-35-537340",
+          "matchId": "537340",
+          "userId": "user-35",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-35-537351",
+          "matchId": "537351",
+          "userId": "user-35",
+          "homeScore": 3,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-35-537372",
+          "matchId": "537372",
+          "userId": "user-35",
+          "homeScore": 4,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-35-537355",
+          "matchId": "537355",
+          "userId": "user-35",
+          "homeScore": 0,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-35-537396",
+          "matchId": "537396",
+          "userId": "user-35",
+          "homeScore": 3,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-36",
+      "picks": [
+        {
+          "id": "pick-user-36-537351",
+          "matchId": "537351",
+          "userId": "user-36",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-36-537341",
+          "matchId": "537341",
+          "userId": "user-36",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-36-537411",
+          "matchId": "537411",
+          "userId": "user-36",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-36-537406",
+          "matchId": "537406",
+          "userId": "user-36",
+          "homeScore": 0,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-36-537373",
+          "matchId": "537373",
+          "userId": "user-36",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-36-537368",
+          "matchId": "537368",
+          "userId": "user-36",
+          "homeScore": 1,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-37",
+      "picks": [
+        {
+          "id": "pick-user-37-537351",
+          "matchId": "537351",
+          "userId": "user-37",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-37-537352",
+          "matchId": "537352",
+          "userId": "user-37",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-37-537410",
+          "matchId": "537410",
+          "userId": "user-37",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-37-537404",
+          "matchId": "537404",
+          "userId": "user-37",
+          "homeScore": 0,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-37-537330",
+          "matchId": "537330",
+          "userId": "user-37",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-37-537356",
+          "matchId": "537356",
+          "userId": "user-37",
+          "homeScore": 2,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-37-537373",
+          "matchId": "537373",
+          "userId": "user-37",
+          "homeScore": 1,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-37-537413",
+          "matchId": "537413",
+          "userId": "user-37",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-37-537428",
+          "matchId": "537428",
+          "userId": "user-37",
+          "homeScore": 0,
+          "awayScore": 0,
+          "advances": "AWAY",
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-38",
+      "picks": [
+        {
+          "id": "pick-user-38-537371",
+          "matchId": "537371",
+          "userId": "user-38",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-38-537338",
+          "matchId": "537338",
+          "userId": "user-38",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-38-537332",
+          "matchId": "537332",
+          "userId": "user-38",
+          "homeScore": 3,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-38-537408",
+          "matchId": "537408",
+          "userId": "user-38",
+          "homeScore": 2,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-39",
+      "picks": [
+        {
+          "id": "pick-user-39-537360",
+          "matchId": "537360",
+          "userId": "user-39",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-39-537399",
+          "matchId": "537399",
+          "userId": "user-39",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-39-537344",
+          "matchId": "537344",
+          "userId": "user-39",
+          "homeScore": 1,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-39-537420",
+          "matchId": "537420",
+          "userId": "user-39",
+          "homeScore": 0,
+          "awayScore": 0,
+          "advances": "AWAY",
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-40",
+      "picks": [
+        {
+          "id": "pick-user-40-537358",
+          "matchId": "537358",
+          "userId": "user-40",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-40-537404",
+          "matchId": "537404",
+          "userId": "user-40",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-40-537342",
+          "matchId": "537342",
+          "userId": "user-40",
+          "homeScore": 4,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-40-537354",
+          "matchId": "537354",
+          "userId": "user-40",
+          "homeScore": 0,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-40-537413",
+          "matchId": "537413",
+          "userId": "user-40",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-41",
+      "picks": [
+        {
+          "id": "pick-user-41-537357",
+          "matchId": "537357",
+          "userId": "user-41",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-41-537347",
+          "matchId": "537347",
+          "userId": "user-41",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-41-537394",
+          "matchId": "537394",
+          "userId": "user-41",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-42",
+      "picks": [
+        {
+          "id": "pick-user-42-537353",
+          "matchId": "537353",
+          "userId": "user-42",
+          "homeScore": 1,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-42-537354",
+          "matchId": "537354",
+          "userId": "user-42",
+          "homeScore": 1,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-42-537365",
+          "matchId": "537365",
+          "userId": "user-42",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-42-537393",
+          "matchId": "537393",
+          "userId": "user-42",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-42-537426",
+          "matchId": "537426",
+          "userId": "user-42",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-43",
+      "picks": [
+        {
+          "id": "pick-user-43-537327",
+          "matchId": "537327",
+          "userId": "user-43",
+          "homeScore": 0,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-43-537403",
+          "matchId": "537403",
+          "userId": "user-43",
+          "homeScore": 0,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-43-537410",
+          "matchId": "537410",
+          "userId": "user-43",
+          "homeScore": 0,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-43-537344",
+          "matchId": "537344",
+          "userId": "user-43",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-43-537424",
+          "matchId": "537424",
+          "userId": "user-43",
+          "homeScore": 4,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-44",
+      "picks": [
+        {
+          "id": "pick-user-44-537398",
+          "matchId": "537398",
+          "userId": "user-44",
+          "homeScore": 3,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-44-537342",
+          "matchId": "537342",
+          "userId": "user-44",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-44-537356",
+          "matchId": "537356",
+          "userId": "user-44",
+          "homeScore": 0,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-45",
+      "picks": [
+        {
+          "id": "pick-user-45-537328",
+          "matchId": "537328",
+          "userId": "user-45",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-45-537411",
+          "matchId": "537411",
+          "userId": "user-45",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-45-537373",
+          "matchId": "537373",
+          "userId": "user-45",
+          "homeScore": 2,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-46",
+      "picks": [
+        {
+          "id": "pick-user-46-537345",
+          "matchId": "537345",
+          "userId": "user-46",
+          "homeScore": 2,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-46-537369",
+          "matchId": "537369",
+          "userId": "user-46",
+          "homeScore": 0,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-46-537398",
+          "matchId": "537398",
+          "userId": "user-46",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-46-537336",
+          "matchId": "537336",
+          "userId": "user-46",
+          "homeScore": 4,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-46-537399",
+          "matchId": "537399",
+          "userId": "user-46",
+          "homeScore": 4,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-46-537393",
+          "matchId": "537393",
+          "userId": "user-46",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-46-537395",
+          "matchId": "537395",
+          "userId": "user-46",
+          "homeScore": 3,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-47",
+      "picks": [
+        {
+          "id": "pick-user-47-537340",
+          "matchId": "537340",
+          "userId": "user-47",
+          "homeScore": 4,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-47-537397",
+          "matchId": "537397",
+          "userId": "user-47",
+          "homeScore": 3,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-47-537336",
+          "matchId": "537336",
+          "userId": "user-47",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-48",
+      "picks": [
+        {
+          "id": "pick-user-48-537409",
+          "matchId": "537409",
+          "userId": "user-48",
+          "homeScore": 1,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-48-537410",
+          "matchId": "537410",
+          "userId": "user-48",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-48-537354",
+          "matchId": "537354",
+          "userId": "user-48",
+          "homeScore": 1,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-48-537412",
+          "matchId": "537412",
+          "userId": "user-48",
+          "homeScore": 3,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-48-537406",
+          "matchId": "537406",
+          "userId": "user-48",
+          "homeScore": 0,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-48-537332",
+          "matchId": "537332",
+          "userId": "user-48",
+          "homeScore": 2,
+          "awayScore": 4,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-48-537413",
+          "matchId": "537413",
+          "userId": "user-48",
+          "homeScore": 4,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-49",
+      "picks": [
+        {
+          "id": "pick-user-49-537398",
+          "matchId": "537398",
+          "userId": "user-49",
+          "homeScore": 0,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-49-537342",
+          "matchId": "537342",
+          "userId": "user-49",
+          "homeScore": 4,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-49-537343",
+          "matchId": "537343",
+          "userId": "user-49",
+          "homeScore": 2,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-49-537368",
+          "matchId": "537368",
+          "userId": "user-49",
+          "homeScore": 3,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    },
+    {
+      "userId": "user-50",
+      "picks": [
+        {
+          "id": "pick-user-50-537333",
+          "matchId": "537333",
+          "userId": "user-50",
+          "homeScore": 1,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-50-537340",
+          "matchId": "537340",
+          "userId": "user-50",
+          "homeScore": 0,
+          "awayScore": 0,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-50-537347",
+          "matchId": "537347",
+          "userId": "user-50",
+          "homeScore": 2,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-50-537412",
+          "matchId": "537412",
+          "userId": "user-50",
+          "homeScore": 3,
+          "awayScore": 3,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-50-537361",
+          "matchId": "537361",
+          "userId": "user-50",
+          "homeScore": 2,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-50-537396",
+          "matchId": "537396",
+          "userId": "user-50",
+          "homeScore": 3,
+          "awayScore": 2,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        },
+        {
+          "id": "pick-user-50-537407",
+          "matchId": "537407",
+          "userId": "user-50",
+          "homeScore": 0,
+          "awayScore": 1,
+          "createdAt": "2026-02-08T21:48:24.226Z",
+          "updatedAt": "2026-02-08T21:48:24.226Z"
+        }
+      ],
+      "updatedAt": "2026-02-08T21:48:24.226Z"
+    }
+  ]
+}

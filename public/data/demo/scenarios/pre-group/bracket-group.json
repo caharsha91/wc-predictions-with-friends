@@ -1,0 +1,3204 @@
+{
+  "group": [
+    {
+      "userId": "user-1",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "D1"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "BRA"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "F1",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "URU"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "I1",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "K1"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "GER",
+        "CPV",
+        "ALG",
+        "NED",
+        "AUS",
+        "COL",
+        "FRA",
+        "B1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-2",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "B1"
+        },
+        "D": {
+          "first": "USA",
+          "second": "D1"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "F1",
+          "second": "NED"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "NZL",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "I1"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "POR",
+          "second": "COL"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "MEX",
+        "FRA",
+        "CRO",
+        "BEL",
+        "TUN",
+        "PAR",
+        "CPV",
+        "UZB"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-3",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "USA",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "SCO"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "NED",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "JOR"
+        },
+        "K": {
+          "first": "POR",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "AUS",
+        "ALG",
+        "HAI",
+        "A1",
+        "IRN",
+        "B1",
+        "FRA",
+        "ESP"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-4",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "D1",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "SCO"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "F1",
+          "second": "NED"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "POR"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "TUN",
+        "MEX",
+        "URU",
+        "K1",
+        "CAN",
+        "I1",
+        "BEL",
+        "USA"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-5",
+      "groups": {
+        "A": {
+          "first": "KOR",
+          "second": "A1"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "B1"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "SCO"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "GER"
+        },
+        "F": {
+          "first": "NED",
+          "second": "F1"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "CPV"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "I1"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "JOR"
+        },
+        "K": {
+          "first": "POR",
+          "second": "COL"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "ARG",
+        "USA",
+        "TUN",
+        "SUI",
+        "NOR",
+        "ENG",
+        "CIV",
+        "ESP"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-6",
+      "groups": {
+        "A": {
+          "first": "KOR",
+          "second": "A1"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "NED",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "URU"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "I1"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "COL",
+          "second": "K1"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "SCO",
+        "SEN",
+        "ESP",
+        "F1",
+        "ARG",
+        "POR",
+        "USA",
+        "CAN"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-7",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "MAR",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "I1"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "K1"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "ECU",
+        "USA",
+        "URU",
+        "MEX",
+        "GHA",
+        "IRN",
+        "JPN",
+        "COL"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-8",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "B1",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "MAR",
+          "second": "BRA"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CIV"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "URU",
+          "second": "CPV"
+        },
+        "G": {
+          "first": "NZL",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "POR",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "CRO",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "CUR",
+        "D1",
+        "HAI",
+        "SUI",
+        "K1",
+        "ESP",
+        "ENG",
+        "I1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-9",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "B1"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "D1"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "CUR",
+          "second": "GER"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "URU",
+          "second": "CPV"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "BEL"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "COL"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "BRA",
+        "F1",
+        "SUI",
+        "SEN",
+        "AUS",
+        "NZL",
+        "ESP",
+        "KOR"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-10",
+      "groups": {
+        "A": {
+          "first": "KOR",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "SUI"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "CUR",
+          "second": "GER"
+        },
+        "F": {
+          "first": "F1",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "I1",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "K1",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "NOR",
+        "ALG",
+        "KSA",
+        "MEX",
+        "PAN",
+        "COL",
+        "BRA",
+        "B1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-11",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "B1",
+          "second": "SUI"
+        },
+        "D": {
+          "first": "D1",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "BRA"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "CPV"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "I1"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "JOR"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "POR"
+        },
+        "L": {
+          "first": "CRO",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "EGY",
+        "ARG",
+        "URU",
+        "MAR",
+        "COL",
+        "CAN",
+        "GHA",
+        "ECU"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-12",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "A1"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "SUI"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "NED",
+          "second": "F1"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "URU"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "I1"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "COL",
+          "second": "POR"
+        },
+        "L": {
+          "first": "CRO",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "B1",
+        "KOR",
+        "CPV",
+        "UZB",
+        "CIV",
+        "EGY",
+        "D1",
+        "ENG"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-13",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "A1"
+        },
+        "B": {
+          "first": "B1",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "D1",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "F1",
+          "second": "NED"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "JOR"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "K1"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "USA",
+        "ECU",
+        "AUT",
+        "IRN",
+        "JPN",
+        "PAN",
+        "COL",
+        "I1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-14",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "B1",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "CPV"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "I1"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "K1",
+          "second": "POR"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "RSA",
+        "D1",
+        "SEN",
+        "ALG",
+        "BEL",
+        "UZB",
+        "CUR",
+        "F1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-15",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "D1",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "BRA"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CIV"
+        },
+        "F": {
+          "first": "NED",
+          "second": "F1"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "BEL"
+        },
+        "I": {
+          "first": "I1",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "COL"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "JOR",
+        "SEN",
+        "AUS",
+        "CPV",
+        "JPN",
+        "CAN",
+        "MAR",
+        "GER"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-16",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "USA",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "NED",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "URU"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "FRA"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "POR"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "B1",
+        "COL",
+        "HAI",
+        "F1",
+        "MEX",
+        "JOR",
+        "ENG",
+        "AUS"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-17",
+      "groups": {
+        "A": {
+          "first": "KOR",
+          "second": "A1"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "USA"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "GER",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "URU"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "BEL"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "FRA"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "POR",
+          "second": "COL"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "D1",
+        "MAR",
+        "MEX",
+        "SEN",
+        "B1",
+        "JPN",
+        "CUR",
+        "ESP"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-18",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "USA",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "BRA"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "GER"
+        },
+        "F": {
+          "first": "F1",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "I1",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "POR",
+          "second": "K1"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "UZB",
+        "JOR",
+        "SCO",
+        "IRN",
+        "AUS",
+        "NED",
+        "PAN",
+        "URU"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-19",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "SUI"
+        },
+        "D": {
+          "first": "USA",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "BRA"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "CPV"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "I1"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "POR"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "ECU",
+        "CRO",
+        "HAI",
+        "ESP",
+        "KOR",
+        "B1",
+        "FRA",
+        "ARG"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-20",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "B1"
+        },
+        "D": {
+          "first": "USA",
+          "second": "D1"
+        },
+        "C": {
+          "first": "MAR",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "NED",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "URU"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "I1",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "K1"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "JPN",
+        "KSA",
+        "SUI",
+        "JOR",
+        "ECU",
+        "ENG",
+        "KOR",
+        "AUS"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-21",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "B1"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "USA"
+        },
+        "C": {
+          "first": "MAR",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "GER",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "NED",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "FRA"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "K1",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "CRO",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "COL",
+        "ENG",
+        "SCO",
+        "URU",
+        "IRN",
+        "SEN",
+        "CIV",
+        "ARG"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-22",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "A1"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "USA"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "GER"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "BEL"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "I1"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "K1"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "BRA",
+        "QAT",
+        "ARG",
+        "POR",
+        "CUR",
+        "NOR",
+        "ESP",
+        "AUS"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-23",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "SUI"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "D1"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CIV"
+        },
+        "F": {
+          "first": "F1",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "I1"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "JOR"
+        },
+        "K": {
+          "first": "POR",
+          "second": "K1"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "BEL",
+        "NED",
+        "UZB",
+        "NOR",
+        "ENG",
+        "SCO",
+        "A1",
+        "AUT"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-24",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "A1"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "SUI"
+        },
+        "D": {
+          "first": "USA",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "URU"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "JOR"
+        },
+        "K": {
+          "first": "K1",
+          "second": "POR"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "KOR",
+        "F1",
+        "CAN",
+        "UZB",
+        "PAR",
+        "BRA",
+        "AUT",
+        "ECU"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-25",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "A1"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "B1"
+        },
+        "D": {
+          "first": "D1",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "MAR",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "CUR",
+          "second": "GER"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "F1"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "BEL"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "K1",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "CIV",
+        "COL",
+        "CPV",
+        "NOR",
+        "GHA",
+        "SCO",
+        "AUT",
+        "IRN"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-26",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "USA"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "CUR",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "F1",
+          "second": "NED"
+        },
+        "H": {
+          "first": "URU",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "COL",
+          "second": "K1"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "ARG",
+        "BEL",
+        "CRO",
+        "CIV",
+        "A1",
+        "B1",
+        "BRA",
+        "CPV"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-27",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "SUI"
+        },
+        "D": {
+          "first": "D1",
+          "second": "USA"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "GER",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "CPV"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "I1",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "POR",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "COL",
+        "ALG",
+        "EGY",
+        "MEX",
+        "URU",
+        "ENG",
+        "PAR",
+        "CIV"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-28",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "A1"
+        },
+        "B": {
+          "first": "B1",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "USA"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "CUR",
+          "second": "GER"
+        },
+        "F": {
+          "first": "F1",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "FRA"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "COL"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "I1",
+        "SCO",
+        "ALG",
+        "SUI",
+        "NZL",
+        "CRO",
+        "NED",
+        "POR"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-29",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "A1"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "D1"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CIV"
+        },
+        "F": {
+          "first": "F1",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "FRA"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "POR",
+          "second": "K1"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "COL",
+        "NED",
+        "SUI",
+        "AUS",
+        "BRA",
+        "ENG",
+        "GER",
+        "MEX"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-30",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "D1",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "CUR",
+          "second": "GER"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "URU"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "FRA"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "COL"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "NZL",
+        "I1",
+        "KOR",
+        "PAN",
+        "ECU",
+        "JOR",
+        "MAR",
+        "F1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-31",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "A1"
+        },
+        "B": {
+          "first": "B1",
+          "second": "SUI"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "D1"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "URU",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "NZL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "I1"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "POR"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "BRA",
+        "EGY",
+        "GER",
+        "K1",
+        "SEN",
+        "QAT",
+        "CPV",
+        "KOR"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-32",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "USA",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "SCO"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CIV"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "URU",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "POR",
+          "second": "COL"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "KOR",
+        "CUR",
+        "K1",
+        "I1",
+        "D1",
+        "NZL",
+        "CRO",
+        "NED"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-33",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "USA"
+        },
+        "C": {
+          "first": "MAR",
+          "second": "SCO"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "F1",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "URU",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "BEL"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "I1"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "COL",
+          "second": "POR"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "EGY",
+        "BRA",
+        "SUI",
+        "PAR",
+        "GHA",
+        "UZB",
+        "NED",
+        "A1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-34",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "D1",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "GER"
+        },
+        "F": {
+          "first": "NED",
+          "second": "F1"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "FRA"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "POR"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "ARG",
+        "NZL",
+        "K1",
+        "B1",
+        "GHA",
+        "A1",
+        "PAR",
+        "JPN"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-35",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "B1",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "USA",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "F1",
+          "second": "NED"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "FRA"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "JOR"
+        },
+        "K": {
+          "first": "K1",
+          "second": "POR"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "ARG",
+        "CRO",
+        "BEL",
+        "SUI",
+        "CPV",
+        "TUN",
+        "COL",
+        "AUS"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-36",
+      "groups": {
+        "A": {
+          "first": "KOR",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "D1",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "SCO"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "NED",
+          "second": "F1"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "COL",
+          "second": "POR"
+        },
+        "L": {
+          "first": "CRO",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "BEL",
+        "CAN",
+        "UZB",
+        "A1",
+        "URU",
+        "GER",
+        "AUS",
+        "PAN"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-37",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "D1",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "F1",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "I1",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "COL",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "EGY",
+        "PAR",
+        "KSA",
+        "SEN",
+        "POR",
+        "BRA",
+        "CAN",
+        "TUN"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-38",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "B1",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "USA",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "HAI",
+          "second": "SCO"
+        },
+        "E": {
+          "first": "CUR",
+          "second": "CIV"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "POR",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "NOR",
+        "CPV",
+        "SUI",
+        "BRA",
+        "F1",
+        "JOR",
+        "GER",
+        "A1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-39",
+      "groups": {
+        "A": {
+          "first": "KOR",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "B1"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "PAR"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "CUR",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "POR",
+          "second": "K1"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "ALG",
+        "KSA",
+        "USA",
+        "MAR",
+        "BEL",
+        "CRO",
+        "SUI",
+        "CIV"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-40",
+      "groups": {
+        "A": {
+          "first": "KOR",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "D1",
+          "second": "USA"
+        },
+        "C": {
+          "first": "MAR",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "CUR",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "URU"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "I1",
+          "second": "FRA"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "COL",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "CRO",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "CIV",
+        "A1",
+        "F1",
+        "PAN",
+        "NOR",
+        "K1",
+        "BRA",
+        "SUI"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-41",
+      "groups": {
+        "A": {
+          "first": "KOR",
+          "second": "A1"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "B1"
+        },
+        "D": {
+          "first": "USA",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "GER"
+        },
+        "F": {
+          "first": "NED",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "URU"
+        },
+        "G": {
+          "first": "NZL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "POR",
+          "second": "COL"
+        },
+        "L": {
+          "first": "CRO",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "ARG",
+        "SEN",
+        "QAT",
+        "GHA",
+        "ESP",
+        "K1",
+        "EGY",
+        "F1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-42",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "B1"
+        },
+        "D": {
+          "first": "D1",
+          "second": "AUS"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "I1",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "POR",
+          "second": "UZB"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "CIV",
+        "COL",
+        "NED",
+        "SEN",
+        "GHA",
+        "ESP",
+        "QAT",
+        "NZL"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-43",
+      "groups": {
+        "A": {
+          "first": "MEX",
+          "second": "A1"
+        },
+        "B": {
+          "first": "B1",
+          "second": "QAT"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "USA"
+        },
+        "C": {
+          "first": "MAR",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "NED",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "URU",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "I1",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "COL"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "JPN",
+        "FRA",
+        "BEL",
+        "CRO",
+        "CUR",
+        "JOR",
+        "KSA",
+        "SUI"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-44",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "USA"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "BRA"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "TUN",
+          "second": "F1"
+        },
+        "H": {
+          "first": "ESP",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "I1",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "POR",
+          "second": "COL"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "KOR",
+        "FRA",
+        "PAR",
+        "MAR",
+        "BEL",
+        "GHA",
+        "JOR",
+        "ECU"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-45",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "B1"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "USA"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "F1",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "URU",
+          "second": "KSA"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "NOR"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "COL",
+          "second": "K1"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "D1",
+        "GER",
+        "GHA",
+        "CPV",
+        "NED",
+        "HAI",
+        "ALG",
+        "RSA"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-46",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "CAN",
+          "second": "SUI"
+        },
+        "D": {
+          "first": "AUS",
+          "second": "USA"
+        },
+        "C": {
+          "first": "MAR",
+          "second": "BRA"
+        },
+        "E": {
+          "first": "CIV",
+          "second": "ECU"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "NOR",
+          "second": "I1"
+        },
+        "J": {
+          "first": "ARG",
+          "second": "JOR"
+        },
+        "K": {
+          "first": "POR",
+          "second": "COL"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "PAN"
+        }
+      },
+      "bestThirds": [
+        "FRA",
+        "MEX",
+        "B1",
+        "AUT",
+        "D1",
+        "URU",
+        "ENG",
+        "GER"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-47",
+      "groups": {
+        "A": {
+          "first": "KOR",
+          "second": "A1"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "USA"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "F1",
+          "second": "JPN"
+        },
+        "H": {
+          "first": "CPV",
+          "second": "URU"
+        },
+        "G": {
+          "first": "BEL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "I1",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "COL",
+          "second": "K1"
+        },
+        "L": {
+          "first": "PAN",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "ENG",
+        "SUI",
+        "FRA",
+        "CIV",
+        "POR",
+        "KSA",
+        "NZL",
+        "D1"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-48",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "KOR"
+        },
+        "B": {
+          "first": "SUI",
+          "second": "B1"
+        },
+        "D": {
+          "first": "USA",
+          "second": "D1"
+        },
+        "C": {
+          "first": "BRA",
+          "second": "SCO"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CUR"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "F1"
+        },
+        "H": {
+          "first": "KSA",
+          "second": "CPV"
+        },
+        "G": {
+          "first": "EGY",
+          "second": "NZL"
+        },
+        "I": {
+          "first": "SEN",
+          "second": "I1"
+        },
+        "J": {
+          "first": "AUT",
+          "second": "ALG"
+        },
+        "K": {
+          "first": "UZB",
+          "second": "POR"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "ENG"
+        }
+      },
+      "bestThirds": [
+        "AUS",
+        "PAN",
+        "NED",
+        "ARG",
+        "URU",
+        "QAT",
+        "MAR",
+        "FRA"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-49",
+      "groups": {
+        "A": {
+          "first": "RSA",
+          "second": "MEX"
+        },
+        "B": {
+          "first": "B1",
+          "second": "CAN"
+        },
+        "D": {
+          "first": "USA",
+          "second": "D1"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "HAI"
+        },
+        "E": {
+          "first": "ECU",
+          "second": "CIV"
+        },
+        "F": {
+          "first": "JPN",
+          "second": "NED"
+        },
+        "H": {
+          "first": "URU",
+          "second": "ESP"
+        },
+        "G": {
+          "first": "IRN",
+          "second": "EGY"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "SEN"
+        },
+        "J": {
+          "first": "JOR",
+          "second": "ARG"
+        },
+        "K": {
+          "first": "COL",
+          "second": "K1"
+        },
+        "L": {
+          "first": "ENG",
+          "second": "GHA"
+        }
+      },
+      "bestThirds": [
+        "KSA",
+        "KOR",
+        "UZB",
+        "PAR",
+        "GER",
+        "NZL",
+        "MAR",
+        "AUT"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    },
+    {
+      "userId": "user-50",
+      "groups": {
+        "A": {
+          "first": "A1",
+          "second": "RSA"
+        },
+        "B": {
+          "first": "QAT",
+          "second": "B1"
+        },
+        "D": {
+          "first": "PAR",
+          "second": "USA"
+        },
+        "C": {
+          "first": "SCO",
+          "second": "MAR"
+        },
+        "E": {
+          "first": "GER",
+          "second": "CIV"
+        },
+        "F": {
+          "first": "F1",
+          "second": "TUN"
+        },
+        "H": {
+          "first": "URU",
+          "second": "CPV"
+        },
+        "G": {
+          "first": "NZL",
+          "second": "IRN"
+        },
+        "I": {
+          "first": "FRA",
+          "second": "I1"
+        },
+        "J": {
+          "first": "ALG",
+          "second": "AUT"
+        },
+        "K": {
+          "first": "POR",
+          "second": "K1"
+        },
+        "L": {
+          "first": "GHA",
+          "second": "CRO"
+        }
+      },
+      "bestThirds": [
+        "NOR",
+        "ECU",
+        "ENG",
+        "MEX",
+        "JOR",
+        "HAI",
+        "ESP",
+        "UZB"
+      ],
+      "updatedAt": "2026-02-08T21:48:24.195Z"
+    }
+  ]
+}

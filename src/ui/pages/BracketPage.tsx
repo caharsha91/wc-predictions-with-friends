@@ -7,14 +7,16 @@ import type { Match } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
+import { ButtonLink } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import DetailQuickMenu from '../components/ui/DetailQuickMenu'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
+import { readDemoScenario } from '../lib/demoControls'
+import { resolveKnockoutActivation } from '../lib/knockoutActivation'
 
 const STAGE_LABELS: Record<KnockoutStage, string> = {
   R32: 'Round of 32',
@@ -29,6 +31,8 @@ type BracketEntry = {
   stage: KnockoutStage
   match: Match
 }
+
+type PredictionResult = 'correct' | 'wrong' | 'pending'
 
 function formatTime(iso?: string): string {
   if (!iso) return '—'
@@ -45,19 +49,45 @@ function winnerLabel(winner: 'HOME' | 'AWAY' | undefined, match: Match): string 
   return winner === 'HOME' ? match.homeTeam.code : match.awayTeam.code
 }
 
+function resultTone(status: PredictionResult): 'success' | 'danger' | 'secondary' {
+  if (status === 'correct') return 'success'
+  if (status === 'wrong') return 'danger'
+  return 'secondary'
+}
+
+function resultLabel(status: PredictionResult): string {
+  if (status === 'correct') return 'Correct'
+  if (status === 'wrong') return 'Wrong'
+  return 'Pending'
+}
+
+function resultSurfaceClass(status: PredictionResult): string {
+  if (status === 'correct') return 'bg-[rgba(var(--primary-rgb),0.08)]'
+  if (status === 'wrong') return 'bg-[rgba(var(--danger-rgb),0.08)]'
+  return ''
+}
+
+function actualResultLabel(match: Match): string {
+  if (!match.score) return '—'
+  const winner = winnerLabel(match.winner, match)
+  return `${match.score.home}-${match.score.away}${winner !== '—' ? ` (${winner})` : ''}`
+}
+
 function resolvedTeamCode(code?: string): boolean {
   return /^[A-Z]{3}$/.test((code ?? '').trim().toUpperCase())
 }
 
 export default function BracketPage() {
   const location = useLocation()
+  const isDemoRoute = location.pathname.startsWith('/demo/')
+  const demoScenario = isDemoRoute ? readDemoScenario() : null
   const now = useNow({ tickMs: 30_000 })
   const picksState = usePicksData()
   const bracket = useBracketKnockoutData()
   const readyBracketState = bracket.loadState.status === 'ready' ? bracket.loadState : null
 
   const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
-  const toPlayPath = (segment?: 'picks' | 'group-stage' | 'bracket' | 'league') =>
+  const toPlayPath = (segment?: 'picks') =>
     segment ? `${playRoot}/${segment}` : playRoot
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
@@ -83,7 +113,18 @@ export default function BracketPage() {
     [roundOf32Matches]
   )
 
-  const unlocked = groupClosed && drawReady
+  const knockoutActivation = useMemo(
+    () =>
+      resolveKnockoutActivation({
+        mode: isDemoRoute ? 'demo' : 'default',
+        demoScenario,
+        groupComplete: groupClosed,
+        drawReady,
+        knockoutStarted: false
+      }),
+    [demoScenario, drawReady, groupClosed, isDemoRoute]
+  )
+  const unlocked = knockoutActivation.active
 
   const entries = useMemo<BracketEntry[]>(() => {
     if (!readyBracketState) return []
@@ -141,53 +182,46 @@ export default function BracketPage() {
         title="Knockout Detail"
         subtitle="Read-only bracket picks and results. Use Play Center for guided edits."
         meta={
-          <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
-            <div className="uppercase tracking-[0.2em]">Last updated</div>
-            <div className="text-sm font-semibold text-foreground">{formatTime(latestUpdated)}</div>
+          <div className="flex items-start gap-3 text-right">
+            <ButtonLink to={toPlayPath('picks')} size="sm" variant="primary">
+              Back to Picks
+            </ButtonLink>
+            <div className="text-xs text-muted-foreground" data-last-updated="true">
+              <div className="uppercase tracking-[0.2em]">Last updated</div>
+              <div className="text-sm font-semibold text-foreground">{formatTime(latestUpdated)}</div>
+            </div>
           </div>
         }
       >
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={groupClosed ? 'success' : 'warning'}>
-                  Group lock {groupClosed ? 'closed' : 'open'}
-                </Badge>
-                <Badge tone={drawReady ? 'success' : 'warning'}>
-                  Draw {drawReady ? 'confirmed' : 'pending'}
-                </Badge>
-                <Badge tone={unlocked ? 'info' : 'locked'}>{unlocked ? 'Detail active' : 'Detail inactive'}</Badge>
-              </div>
-
-              {!unlocked ? (
-                <Alert tone="info" title="Knockout detail is inactive">
-                  Unlocks after group-stage closes and knockout draw confirmation from fixture completeness.
-                </Alert>
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  Read-only bracket picks and results are shown below.
-                </div>
-              )}
+        <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={groupClosed ? 'success' : 'warning'}>
+                Group lock {groupClosed ? 'closed' : 'open'}
+              </Badge>
+              <Badge tone={drawReady ? 'success' : 'warning'}>
+                Draw {drawReady ? 'confirmed' : 'pending'}
+              </Badge>
+              <Badge tone={unlocked ? 'info' : 'locked'}>{unlocked ? 'Detail active' : 'Detail inactive'}</Badge>
+              <Badge tone="secondary">Source: {knockoutActivation.sourceOfTruthLabel}</Badge>
             </div>
-          </Card>
 
-          <DetailQuickMenu
-            stats={[
-              { label: 'Picked', value: `${bracket.completeMatches}/${bracket.totalMatches}` },
-              { label: 'Stages', value: stageSummary.length },
-              { label: 'Group lock', value: groupClosed ? 'Closed' : 'Open' },
-              { label: 'Draw', value: drawReady ? 'Ready' : 'Pending' }
-            ]}
-            links={[
-              { label: 'Back to Play Center', to: toPlayPath() },
-              { label: 'Picks Detail', to: toPlayPath('picks') },
-              { label: 'Group Stage Detail', to: toPlayPath('group-stage') },
-              { label: 'Knockout Detail', to: toPlayPath('bracket') },
-              { label: 'League', to: toPlayPath('league') }
-            ]}
-          />
-        </div>
+            {knockoutActivation.mismatchWarning ? (
+              <Alert tone="warning" title="Knockout activation override">
+                {knockoutActivation.mismatchWarning}
+              </Alert>
+            ) : null}
+            {!unlocked ? (
+              <Alert tone="info" title="Knockout detail is inactive">
+                Unlocks after group-stage closes and knockout draw confirmation from fixture completeness.
+              </Alert>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Read-only bracket picks and results are shown below.
+              </div>
+            )}
+          </div>
+        </Card>
       </PageHeroPanel>
 
       {unlocked ? (
@@ -220,18 +254,34 @@ export default function BracketPage() {
                 <tbody>
                   {entries.map((entry) => {
                     const pickedWinner = bracket.knockout[entry.stage]?.[entry.match.id]
+                    const result: PredictionResult =
+                      entry.match.status !== 'FINISHED' || !entry.match.winner
+                        ? 'pending'
+                        : pickedWinner && pickedWinner === entry.match.winner
+                          ? 'correct'
+                          : 'wrong'
                     return (
-                      <tr key={`${entry.stage}-${entry.match.id}`}>
+                      <tr key={`${entry.stage}-${entry.match.id}`} className={resultSurfaceClass(result)}>
                         <td>{STAGE_LABELS[entry.stage]}</td>
                         <td>
                           <div className="font-semibold text-foreground">
                             {entry.match.homeTeam.code} vs {entry.match.awayTeam.code}
                           </div>
                           <div className="text-xs text-muted-foreground">{formatTime(entry.match.kickoffUtc)}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            Actual: <span className="font-semibold text-foreground">{actualResultLabel(entry.match)}</span>
+                          </div>
                         </td>
                         <td>{winnerLabel(pickedWinner, entry.match)}</td>
                         <td>{winnerLabel(entry.match.winner, entry.match)}</td>
-                        <td>{isMatchLocked(entry.match.kickoffUtc, now) ? 'Locked' : 'Open'}</td>
+                        <td>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge tone={resultTone(result)}>{resultLabel(result)}</Badge>
+                            <Badge tone={isMatchLocked(entry.match.kickoffUtc, now) ? 'locked' : 'secondary'}>
+                              {isMatchLocked(entry.match.kickoffUtc, now) ? 'Locked' : 'Open'}
+                            </Badge>
+                          </div>
+                        </td>
                       </tr>
                     )
                   })}

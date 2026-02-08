@@ -145,11 +145,11 @@ function renderAt(path: string) {
 }
 
 describe('PicksPage inline finished matches', () => {
-  it('renders read-only detail shell with quick menu and embedded lists', () => {
+  it('renders read-only detail shell with header picks link and embedded lists', () => {
     renderAt('/play/picks')
 
-    expect(screen.getByText('Next lock')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /back to play center/i })).toBeInTheDocument()
+    expect(screen.queryByText('Next lock')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to picks/i })).toBeInTheDocument()
     expect(screen.getByText('Open now')).toBeInTheDocument()
     expect(screen.getByText('Finished matches')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /wizard/i })).not.toBeInTheDocument()
@@ -189,12 +189,49 @@ describe('PicksPage inline finished matches', () => {
     dispatchSpy.mockRestore()
   })
 
-  it('routes to play center from quick menu CTA', () => {
+  it('keeps a header picks link available', () => {
     renderAt('/play/picks')
 
-    fireEvent.click(screen.getByRole('link', { name: /back to play center/i }))
+    const picksLink = screen.getByRole('link', { name: /back to picks/i })
+    expect(picksLink).toHaveAttribute('href', '/play/picks')
+  })
 
-    expect(screen.getByText('Play Center Route')).toBeInTheDocument()
-    expect(screen.getByTestId('location-probe')).toHaveTextContent('/play')
+  it('renders classic page-number controls for finished matches', async () => {
+    const originalMatches = fixtures.matches
+    const originalPicks = fixtures.picks
+    fixtures.matches = Array.from({ length: 12 }, (_, index) => ({
+      id: `m-finished-${index}`,
+      stage: 'Group',
+      group: 'A',
+      kickoffUtc: `2026-06-${String(10 + index).padStart(2, '0')}T18:00:00.000Z`,
+      status: 'FINISHED',
+      homeTeam: { code: `H${index}`, name: `Home ${index}` },
+      awayTeam: { code: `A${index}`, name: `Away ${index}` },
+      score: { home: 1, away: 0 },
+      winner: 'HOME',
+      decidedBy: 'REG'
+    }))
+    fixtures.picks = fixtures.matches.map((match) => ({
+      id: `pick-${match.id}`,
+      matchId: match.id,
+      userId: 'user-1',
+      homeScore: 1,
+      awayScore: 0,
+      createdAt: '2026-06-01T00:00:00.000Z',
+      updatedAt: '2026-06-01T00:00:00.000Z'
+    }))
+
+    renderAt('/play/picks')
+    fireEvent.click(screen.getByRole('button', { name: /finished matches/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /finished page 2/i })).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /finished page 2/i }))
+    expect(screen.getByText(/showing 11-12 of 12/i)).toBeInTheDocument()
+
+    fixtures.matches = originalMatches
+    fixtures.picks = originalPicks
   })
 })

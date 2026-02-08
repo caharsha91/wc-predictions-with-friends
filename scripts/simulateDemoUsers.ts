@@ -49,6 +49,7 @@ type DateParts = {
 const ROOT = process.cwd()
 const DATA_DIR = path.join(ROOT, 'public', 'data')
 const DEMO_DIR = path.join(DATA_DIR, 'demo')
+const DEMO_SCENARIOS_DIR = path.join(DEMO_DIR, 'scenarios')
 const MATCH_TIME_SLOTS: Array<{ hour: number; minute: number }> = [
   { hour: 9, minute: 30 },
   { hour: 12, minute: 0 },
@@ -629,15 +630,27 @@ function setTeam(match: Match, side: 'home' | 'away', code: string, names: Map<s
 }
 
 function winnerCode(match: Match): string | null {
+  if (match.status !== 'FINISHED') return null
   if (!match.winner) return null
   if (match.winner === 'HOME') return match.homeTeam.code !== 'TBD' ? match.homeTeam.code : null
   return match.awayTeam.code !== 'TBD' ? match.awayTeam.code : null
 }
 
 function loserCode(match: Match): string | null {
+  if (match.status !== 'FINISHED') return null
   if (!match.winner) return null
   if (match.winner === 'HOME') return match.awayTeam.code !== 'TBD' ? match.awayTeam.code : null
   return match.homeTeam.code !== 'TBD' ? match.homeTeam.code : null
+}
+
+function hasResolvedKnockoutTeams(match: Match): boolean {
+  return match.homeTeam.code !== 'TBD' && match.awayTeam.code !== 'TBD'
+}
+
+function clearKnockoutResult(match: Match): void {
+  delete match.score
+  delete match.winner
+  delete match.decidedBy
 }
 
 function applyKnockoutDrawAndProgression(
@@ -699,6 +712,23 @@ function applyKnockoutDrawAndProgression(
   if (final[0]) {
     setTeam(final[0], 'home', sf[0] ? (winnerCode(sf[0]) ?? 'TBD') : 'TBD', names)
     setTeam(final[0], 'away', sf[1] ? (winnerCode(sf[1]) ?? 'TBD') : 'TBD', names)
+  }
+
+  for (const stage of ['R32', 'R16', 'QF', 'SF', 'Third', 'Final'] as const) {
+    const stageMatches = byStage.get(stage) ?? []
+    for (const match of stageMatches) {
+      if (!hasResolvedKnockoutTeams(match)) {
+        match.status = 'SCHEDULED'
+        clearKnockoutResult(match)
+        continue
+      }
+
+      if (match.status === 'IN_PLAY') {
+        // Keep live score, but winner/decider should not be finalized mid-match.
+        delete match.winner
+        delete match.decidedBy
+      }
+    }
   }
 
   return matches
@@ -810,26 +840,39 @@ function generatePicksForUser(
   random: () => number,
   userId: string,
   matches: Match[],
-  scenario: ScenarioConfig
+  scenario: ScenarioConfig,
+  scenarioNowUtc: string
 ): PicksFile['picks'][number] {
   const picks: Pick[] = []
-  const now = Date.now()
+  const now = new Date(scenarioNowUtc).getTime()
 
   for (const match of matches) {
     const lockTime = new Date(match.kickoffUtc).getTime() - 30 * 60 * 1000
     const isLocked = now >= lockTime
-    let pickChance = 0.8
+    let pickChance = 0.9
 
     if (scenario.id === 'pre-group') {
-      pickChance = match.stage === 'Group' ? 0.95 : 0.8
+      pickChance = match.stage === 'Group' ? (isLocked ? 0.2 : 0.06) : 0.01
     } else if (scenario.id === 'mid-group') {
-      pickChance = match.stage === 'Group' ? (isLocked ? 0.99 : 0.95) : 0.8
+      if (match.stage === 'Group') {
+        if (match.status === 'FINISHED') pickChance = 0.98
+        else if (match.status === 'IN_PLAY') pickChance = 0.96
+        else pickChance = isLocked ? 0.92 : 0.55
+      } else {
+        pickChance = 0.1
+      }
     } else if (scenario.id === 'end-group-draw-confirmed') {
       pickChance = match.stage === 'Group' ? 0.99 : 0.88
     } else if (scenario.id === 'mid-knockout') {
-      pickChance = match.stage === 'Group' ? 0.99 : 0.95
+      if (match.stage === 'Group') {
+        pickChance = 0.99
+      } else if (match.status === 'FINISHED' || match.status === 'IN_PLAY') {
+        pickChance = 0.97
+      } else {
+        pickChance = 0.92
+      }
     } else if (scenario.id === 'world-cup-final-pending') {
-      pickChance = 0.99
+      pickChance = match.status === 'SCHEDULED' ? 0.96 : 0.99
     }
 
     if (random() > pickChance) continue
@@ -905,7 +948,7 @@ async function run() {
 
   const picksFile: PicksFile = {
     picks: membersFile.members.map((member) =>
-      generatePicksForUser(random, member.id, matchesFile.matches, scenario)
+      generatePicksForUser(random, member.id, matchesFile.matches, scenario, scenarioNowUtc)
     )
   }
 
@@ -934,24 +977,29 @@ async function run() {
     entries: leaderboardEntries
   }
 
-  await fs.mkdir(DEMO_DIR, { recursive: true })
-  await Promise.all([
-    writeJson(DEMO_DIR, 'matches.json', matchesFile),
-    writeJson(DEMO_DIR, 'members.json', membersFile),
-    writeJson(DEMO_DIR, 'picks.json', picksFile),
-    writeJson(DEMO_DIR, 'bracket-group.json', { group: groupDocs }),
-    writeJson(DEMO_DIR, 'bracket-knockout.json', { knockout: knockoutDocs }),
-    writeJson(DEMO_DIR, 'leaderboard.json', leaderboardFile),
-    writeJson(DEMO_DIR, 'best-third-qualifiers.json', bestThirdFile),
-    writeJson(DEMO_DIR, 'scoring.json', scoring),
-    writeJson(DEMO_DIR, 'simulation-meta.json', {
+  const scenarioDir = path.join(DEMO_SCENARIOS_DIR, scenario.id)
+  await fs.mkdir(scenarioDir, { recursive: true })
+  const snapshotFiles: Array<[string, unknown]> = [
+    ['matches.json', matchesFile],
+    ['members.json', membersFile],
+    ['picks.json', picksFile],
+    ['bracket-group.json', { group: groupDocs }],
+    ['bracket-knockout.json', { knockout: knockoutDocs }],
+    ['leaderboard.json', leaderboardFile],
+    ['best-third-qualifiers.json', bestThirdFile],
+    ['scoring.json', scoring],
+    ['simulation-meta.json', {
       scenario: scenario.id,
       scenarioLabel: scenario.label,
       seed: args.seed,
       users: args.users,
       generatedAt: new Date().toISOString(),
       timezone: PACIFIC_TIME_ZONE
-    })
+    }]
+  ]
+
+  await Promise.all([
+    ...snapshotFiles.map(([file, value]) => writeJson(scenarioDir, file, value))
   ])
 
   console.log(
