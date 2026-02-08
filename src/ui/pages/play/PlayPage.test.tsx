@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import type { Match } from '../../../types/matches'
 import type { Pick } from '../../../types/picks'
@@ -76,6 +76,22 @@ vi.mock('../../hooks/usePicksData', () => ({
   })
 }))
 
+vi.mock('../../hooks/useGroupStageData', () => ({
+  useGroupStageData: () => ({
+    loadState: { status: 'ready' },
+    data: {
+      groups: {
+        A: { first: 'BRA', second: 'NED' },
+        B: {}
+      },
+      bestThirds: ['CIV', '', '', '', '', '', '', ''],
+      updatedAt: '2026-06-12T12:00:00.000Z'
+    },
+    groupIds: ['A', 'B'],
+    saveStatus: 'idle'
+  })
+}))
+
 vi.mock('../../components/play/PicksWizardFlow', () => ({
   default: ({
     activeMatchId,
@@ -105,6 +121,32 @@ function renderPage() {
 }
 
 describe('PlayPage action center', () => {
+  it('renders compact group stage section above picks action center', () => {
+    fixtures.state.mode = 'pending'
+
+    renderPage()
+
+    expect(screen.getByText(/^Group stage$/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /continue group stage/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /play center/i })).toBeInTheDocument()
+  })
+
+  it('routes group stage CTA to /play/group-stage', () => {
+    fixtures.state.mode = 'pending'
+
+    render(
+      <MemoryRouter initialEntries={['/play']}>
+        <Routes>
+          <Route path="/play" element={<PlayPage />} />
+          <Route path="/play/group-stage" element={<div>Group Stage Route</div>} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /continue group stage|open group stage|view group stage/i }))
+    expect(screen.getByText('Group Stage Route')).toBeInTheDocument()
+  })
+
   it('renders queue and editor inline in one section for pending picks', () => {
     fixtures.state.mode = 'pending'
 

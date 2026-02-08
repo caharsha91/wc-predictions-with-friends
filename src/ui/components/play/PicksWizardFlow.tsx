@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { fetchScoring } from '../../../lib/data'
-import { getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../../lib/matches'
+import { getLockTime, isMatchLocked } from '../../../lib/matches'
 import { findPick, isPickComplete, upsertPick } from '../../../lib/picks'
-import type { GroupPrediction } from '../../../types/bracket'
-import type { Match, Team } from '../../../types/matches'
+import type { Match } from '../../../types/matches'
 import type { Pick, PickAdvances } from '../../../types/picks'
-import { useGroupOutcomesData } from '../../hooks/useGroupOutcomesData'
 import { useNow } from '../../hooks/useNow'
 import { usePicksData } from '../../hooks/usePicksData'
 import { useViewerId } from '../../hooks/useViewerId'
@@ -24,20 +21,17 @@ type DraftPick = {
   advances: '' | PickAdvances
 }
 
+type WizardStepKind = 'match' | 'review' | 'confirm'
+
 type ResumeState = {
   stepKind: WizardStepKind
   matchId?: string
 }
 
-type WizardStepKind = 'match' | 'group' | 'review' | 'confirm'
-
 type WizardStep =
   | { kind: 'match'; matchId: string }
-  | { kind: 'group' }
   | { kind: 'review' }
   | { kind: 'confirm' }
-
-const DEFAULT_BEST_THIRD_SLOTS = 8
 
 type PicksWizardFlowProps = {
   layout?: 'standalone' | 'compact-inline'
@@ -70,70 +64,6 @@ function toDraft(pick?: Pick): DraftPick {
   }
 }
 
-function buildGroupTeams(matches: Match[]): Record<string, Team[]> {
-  const groups = new Map<string, Map<string, Team>>()
-  for (const match of matches) {
-    if (match.stage !== 'Group' || !match.group) continue
-    const existing = groups.get(match.group) ?? new Map<string, Team>()
-    existing.set(match.homeTeam.code, match.homeTeam)
-    existing.set(match.awayTeam.code, match.awayTeam)
-    groups.set(match.group, existing)
-  }
-
-  const next: Record<string, Team[]> = {}
-  for (const [groupId, teamMap] of groups.entries()) {
-    next[groupId] = [...teamMap.values()].sort((a, b) => a.code.localeCompare(b.code))
-  }
-  return next
-}
-
-function getGroupValidationErrors(
-  groups: Record<string, GroupPrediction>,
-  groupIds: string[]
-): Record<string, { first?: string; second?: string }> {
-  const errors: Record<string, { first?: string; second?: string }> = {}
-  for (const groupId of groupIds) {
-    const group = groups[groupId] ?? {}
-    if (!group.first) {
-      errors[groupId] = { ...(errors[groupId] ?? {}), first: 'Required' }
-    }
-    if (!group.second) {
-      errors[groupId] = { ...(errors[groupId] ?? {}), second: 'Required' }
-    }
-    if (group.first && group.second && group.first === group.second) {
-      errors[groupId] = {
-        first: 'Pick two different teams',
-        second: 'Pick two different teams'
-      }
-    }
-  }
-  return errors
-}
-
-function getBestThirdErrors(bestThirds: string[], slots: number): string[] {
-  const errors: string[] = []
-  const normalized = [...bestThirds]
-  while (normalized.length < slots) normalized.push('')
-
-  const seen = new Map<string, number[]>()
-  normalized.forEach((code, index) => {
-    if (!code) {
-      errors[index] = 'Required'
-      return
-    }
-    const list = seen.get(code) ?? []
-    list.push(index)
-    seen.set(code, list)
-  })
-  for (const indexes of seen.values()) {
-    if (indexes.length <= 1) continue
-    for (const index of indexes) {
-      errors[index] = 'Duplicate team'
-    }
-  }
-  return errors
-}
-
 function getWizardStorageKey(userId: string) {
   return `wc-picks-wizard:${userId}`
 }
@@ -145,10 +75,7 @@ function loadResumeState(userId: string): ResumeState | null {
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<ResumeState>
     const stepKind =
-      parsed.stepKind === 'match' ||
-      parsed.stepKind === 'group' ||
-      parsed.stepKind === 'review' ||
-      parsed.stepKind === 'confirm'
+      parsed.stepKind === 'match' || parsed.stepKind === 'review' || parsed.stepKind === 'confirm'
         ? parsed.stepKind
         : 'match'
     return {
@@ -172,6 +99,10 @@ export default function PicksWizardFlow({
   onActiveMatchChange
 }: PicksWizardFlowProps) {
   const navigate = useNavigate()
+  const now = useNow({ tickMs: 30_000 })
+  const userId = useViewerId()
+  const picksState = usePicksData()
+
   const isCompactInline = layout === 'compact-inline'
   const openReferencePage = useCallback(() => {
     if (onOpenReferencePage) {
@@ -180,9 +111,7 @@ export default function PicksWizardFlow({
     }
     navigate('/play/picks')
   }, [navigate, onOpenReferencePage])
-  const now = useNow()
-  const userId = useViewerId()
-  const picksState = usePicksData()
+
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [activeMatchDraft, setActiveMatchDraft] = useState<DraftPick>({
     homeScore: '',
@@ -192,30 +121,15 @@ export default function PicksWizardFlow({
   const [savingMatch, setSavingMatch] = useState(false)
   const [savingFinal, setSavingFinal] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const [showBestThirds, setShowBestThirds] = useState(false)
   const [finalSaved, setFinalSaved] = useState(false)
-  const resumeRef = useRef(false)
-  const initialStepRef = useRef(false)
+
+  const resumeLoadedRef = useRef(false)
   const resumeTargetRef = useRef<{ kind: WizardStepKind; matchId?: string } | null>(null)
+  const initialStepRef = useRef(false)
   const previousLockedStateRef = useRef<boolean | null>(null)
   const syncingExternalFocusRef = useRef<string | null>(null)
-  const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
 
-  useEffect(() => {
-    let canceled = false
-    async function loadScoring() {
-      try {
-        const scoring = await fetchScoring()
-        if (!canceled) setShowBestThirds((scoring.bracket?.thirdPlaceQualifiers ?? 0) > 0)
-      } catch {
-        if (!canceled) setShowBestThirds(false)
-      }
-    }
-    void loadScoring()
-    return () => {
-      canceled = true
-    }
-  }, [])
+  const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
 
   const upcomingMatches = useMemo(
     () =>
@@ -231,67 +145,38 @@ export default function PicksWizardFlow({
   )
 
   useEffect(() => {
-    if (resumeRef.current) return
+    if (resumeLoadedRef.current) return
     const resume = loadResumeState(userId)
-    if (!resume) {
-      resumeRef.current = true
-      return
+    if (resume) {
+      resumeTargetRef.current = { kind: resume.stepKind, matchId: resume.matchId }
     }
-    resumeTargetRef.current = { kind: resume.stepKind, matchId: resume.matchId }
-    resumeRef.current = true
+    resumeLoadedRef.current = true
   }, [userId])
-
-  const groupOutcomes = useGroupOutcomesData(matches)
-  const includeGroupStep = groupOutcomes.groupIds.length > 0
-  const groupTeams = useMemo(() => buildGroupTeams(matches), [matches])
-  const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
-  const groupLocked = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
-  const bestThirdSlots = Math.max(DEFAULT_BEST_THIRD_SLOTS, groupOutcomes.data.bestThirds.length)
-
-  const allGroupTeams = useMemo(() => {
-    const teamMap = new Map<string, Team>()
-    for (const teams of Object.values(groupTeams)) {
-      for (const team of teams) {
-        teamMap.set(team.code, team)
-      }
-    }
-    return [...teamMap.values()].sort((a, b) => a.code.localeCompare(b.code))
-  }, [groupTeams])
-
-  const groupErrors = useMemo(
-    () => getGroupValidationErrors(groupOutcomes.data.groups, groupOutcomes.groupIds),
-    [groupOutcomes.data.groups, groupOutcomes.groupIds]
-  )
-
-  const bestThirdErrors = useMemo(
-    () => (showBestThirds ? getBestThirdErrors(groupOutcomes.data.bestThirds, bestThirdSlots) : []),
-    [bestThirdSlots, groupOutcomes.data.bestThirds, showBestThirds]
-  )
-
-  const groupHasErrors =
-    Object.keys(groupErrors).length > 0 || (showBestThirds && bestThirdErrors.some(Boolean))
 
   const steps = useMemo<WizardStep[]>(() => {
     const nextSteps: WizardStep[] = []
     for (const match of openMatches) {
       nextSteps.push({ kind: 'match', matchId: match.id })
     }
-    if (includeGroupStep) nextSteps.push({ kind: 'group' })
     nextSteps.push({ kind: 'review' })
     nextSteps.push({ kind: 'confirm' })
     return nextSteps
-  }, [includeGroupStep, openMatches])
+  }, [openMatches])
 
   const openMatchById = useMemo(
     () => new Map(openMatches.map((match) => [match.id, match] as const)),
     [openMatches]
   )
-  const isMatchStepComplete = useCallback((matchId: string) => {
-    const match = openMatchById.get(matchId)
-    if (!match) return true
-    const pick = findPick(picksState.picks, matchId, userId)
-    return isPickComplete(match, pick)
-  }, [openMatchById, picksState.picks, userId])
+
+  const isMatchStepComplete = useCallback(
+    (matchId: string) => {
+      const match = openMatchById.get(matchId)
+      if (!match) return true
+      const pick = findPick(picksState.picks, matchId, userId)
+      return isPickComplete(match, pick)
+    },
+    [openMatchById, picksState.picks, userId]
+  )
 
   useEffect(() => {
     setCurrentStepIndex((current) => Math.min(current, Math.max(steps.length - 1, 0)))
@@ -299,12 +184,13 @@ export default function PicksWizardFlow({
 
   useEffect(() => {
     if (steps.length === 0) return
-    const target = resumeTargetRef.current
-    if (target) {
+
+    const resume = resumeTargetRef.current
+    if (resume) {
       const index = steps.findIndex((step) => {
-        if (step.kind !== target.kind) return false
+        if (step.kind !== resume.kind) return false
         if (step.kind !== 'match') return true
-        return step.matchId === target.matchId
+        return step.matchId === resume.matchId
       })
       setCurrentStepIndex(index >= 0 ? index : 0)
       resumeTargetRef.current = null
@@ -313,6 +199,7 @@ export default function PicksWizardFlow({
     }
 
     if (initialStepRef.current) return
+
     const nextIncompleteIndex = steps.findIndex((step) => {
       if (step.kind !== 'match') return false
       return !isMatchStepComplete(step.matchId)
@@ -330,18 +217,17 @@ export default function PicksWizardFlow({
 
   useEffect(() => {
     if (!activeMatchId) return
-    const focusIndex = steps.findIndex(
-      (step) => step.kind === 'match' && step.matchId === activeMatchId
-    )
+    const focusIndex = steps.findIndex((step) => step.kind === 'match' && step.matchId === activeMatchId)
     if (focusIndex < 0) return
     syncingExternalFocusRef.current = activeMatchId
     setCurrentStepIndex((current) => (current === focusIndex ? current : focusIndex))
   }, [activeMatchId, steps])
 
-  const currentStep = steps[Math.min(currentStepIndex, Math.max(0, steps.length - 1))]
-  const currentMatch = currentStep?.kind === 'match'
-    ? openMatches.find((match) => match.id === currentStep.matchId) ?? null
-    : null
+  const currentStep = steps[Math.min(currentStepIndex, Math.max(steps.length - 1, 0))]
+  const currentMatch =
+    currentStep?.kind === 'match'
+      ? openMatches.find((match) => match.id === currentStep.matchId) ?? null
+      : null
 
   useEffect(() => {
     if (!onActiveMatchChange) return
@@ -378,6 +264,7 @@ export default function PicksWizardFlow({
   const parsedAway = parseScore(activeMatchDraft.awayScore)
   const tieInput = parsedHome !== undefined && parsedAway !== undefined && parsedHome === parsedAway
   const requiresAdvances = currentMatch ? currentMatch.stage !== 'Group' && tieInput : false
+
   const matchLocked = currentMatch ? isMatchLocked(currentMatch.kickoffUtc, now) : false
   const matchCanSave =
     !!currentMatch &&
@@ -393,9 +280,7 @@ export default function PicksWizardFlow({
     }
     const wasLocked = previousLockedStateRef.current
     if (wasLocked === false && matchLocked) {
-      setNotice(
-        "Time's up — this one closed. We'll move you along."
-      )
+      setNotice("Time's up — this one closed. We'll move you along.")
     }
     previousLockedStateRef.current = matchLocked
   }, [currentMatch, matchLocked])
@@ -408,6 +293,7 @@ export default function PicksWizardFlow({
       }).length,
     [openMatches, picksState.picks, userId]
   )
+
   const progressTotal = openMatches.length
   const progressPct = progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 0
 
@@ -420,14 +306,12 @@ export default function PicksWizardFlow({
     [openMatches, picksState.picks, userId]
   )
 
-  const reviewReady =
-    missingMatches.length === 0 &&
-    (!includeGroupStep || groupLocked || (groupOutcomes.loadState.status === 'ready' && !groupHasErrors))
-  const showReviewSubmitCta =
-    reviewReady || currentStep?.kind === 'review' || currentStep?.kind === 'confirm'
+  const reviewReady = missingMatches.length === 0
+  const showReviewSubmitCta = reviewReady || currentStep?.kind === 'review' || currentStep?.kind === 'confirm'
 
   const saveCurrentMatch = useCallback(async () => {
     if (!currentMatch || !matchCanSave || parsedHome === undefined || parsedAway === undefined) return false
+
     setSavingMatch(true)
     try {
       const next = upsertPick(picksState.picks, {
@@ -482,21 +366,19 @@ export default function PicksWizardFlow({
       setCurrentStepIndex(nextIncompleteIndex)
       return
     }
-    const groupIndex = findStepIndex('group')
-    if (groupIndex > fromIndex) {
-      setCurrentStepIndex(groupIndex)
-      return
-    }
+
     const reviewIndex = findStepIndex('review')
     if (reviewIndex > fromIndex) {
       setCurrentStepIndex(reviewIndex)
       return
     }
+
     const confirmIndex = findStepIndex('confirm')
     if (confirmIndex > fromIndex) {
       setCurrentStepIndex(confirmIndex)
       return
     }
+
     setCurrentStepIndex(Math.min(fromIndex + 1, steps.length - 1))
   }
 
@@ -506,6 +388,7 @@ export default function PicksWizardFlow({
       setCurrentStepIndex(nextIncompleteIndex)
       return
     }
+
     const firstIncompleteIndex = steps.findIndex((step) => {
       if (step.kind !== 'match') return false
       return !isMatchStepComplete(step.matchId)
@@ -514,6 +397,7 @@ export default function PicksWizardFlow({
       setCurrentStepIndex(firstIncompleteIndex)
       return
     }
+
     const reviewIndex = findStepIndex('review')
     if (reviewIndex >= 0) {
       setCurrentStepIndex(reviewIndex)
@@ -529,55 +413,40 @@ export default function PicksWizardFlow({
 
   async function handleMatchContinue() {
     if (!currentMatch) return
+
     if (matchLocked) {
       setNotice("Time's up — this one closed. We'll move you along.")
       goToNextActionStep(currentStepIndex)
       return
     }
+
     if (isPickComplete(currentMatch, currentPick)) {
       goToNextActionStep(currentStepIndex)
       return
     }
+
     if (matchCanSave) {
       const saved = await saveCurrentMatch()
       if (saved) goToNextActionStep(currentStepIndex)
       return
     }
+
     if (requiresAdvances && !(activeMatchDraft.advances === 'HOME' || activeMatchDraft.advances === 'AWAY')) {
       setNotice('Knockout ties require selecting who advances before continuing.')
       return
     }
-    setNotice('Enter both scores before continuing.')
-  }
 
-  async function handleGroupContinue() {
-    if (groupOutcomes.loadState.status !== 'ready') {
-      goNextStep()
-      return
-    }
-    if (groupLocked) {
-      setNotice('Group outcomes are closed. Continuing.')
-      goNextStep()
-      return
-    }
-    if (groupHasErrors) {
-      setNotice('Complete all group outcomes fields before continuing.')
-      return
-    }
-    await groupOutcomes.save()
-    goNextStep()
+    setNotice('Enter both scores before continuing.')
   }
 
   async function handleSubmitAll() {
     if (!reviewReady) {
-      setNotice('Resolve missing picks or group outcomes before submitting.')
+      setNotice('Resolve missing picks before submitting.')
       return
     }
+
     setSavingFinal(true)
     try {
-      if (includeGroupStep && !groupLocked) {
-        await groupOutcomes.save()
-      }
       await picksState.savePicks(picksState.picks)
       setFinalSaved(true)
       setNotice('All wizard picks submitted')
@@ -628,21 +497,12 @@ export default function PicksWizardFlow({
               <Badge tone={progressDone < progressTotal ? 'warning' : 'success'}>
                 Pending {Math.max(0, progressTotal - progressDone)}
               </Badge>
-              {includeGroupStep ? (
-                <Badge tone={groupLocked ? 'locked' : groupHasErrors ? 'warning' : 'secondary'}>
-                  Group outcomes {groupLocked ? 'Locked' : groupHasErrors ? 'Incomplete' : 'Ready'}
-                </Badge>
-              ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" onClick={openReferencePage}>
                 Open picks reference
               </Button>
-              <Button
-                variant="secondary"
-                onClick={goToNextIncompleteMatch}
-                disabled={missingMatches.length === 0}
-              >
+              <Button variant="secondary" onClick={goToNextIncompleteMatch} disabled={missingMatches.length === 0}>
                 Go to next incomplete
               </Button>
               {showReviewSubmitCta ? (
@@ -682,9 +542,7 @@ export default function PicksWizardFlow({
                   {formatKickoff(getLockTime(currentMatch.kickoffUtc).toISOString())}
                 </div>
               </div>
-              <Badge tone={matchLocked ? 'locked' : 'info'}>
-                {matchLocked ? 'Closed' : 'Live'}
-              </Badge>
+              <Badge tone={matchLocked ? 'locked' : 'info'}>{matchLocked ? 'Closed' : 'Live'}</Badge>
             </div>
 
             {matchLocked ? (
@@ -729,18 +587,14 @@ export default function PicksWizardFlow({
             {currentMatch.stage !== 'Group' ? (
               <div className="rounded-xl border border-border/70 bg-bg2 p-3">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Knockout tie rule</div>
-                <div className="mt-1 text-sm text-foreground">
-                  Tie game — pick who advances.
-                </div>
+                <div className="mt-1 text-sm text-foreground">Tie game — pick who advances.</div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <Button
                     variant="secondary"
                     data-active={activeMatchDraft.advances === 'HOME' ? 'true' : 'false'}
                     className={activeMatchDraft.advances === 'HOME' ? 'border-primary' : ''}
                     disabled={matchLocked || !requiresAdvances}
-                    onClick={() =>
-                      setActiveMatchDraft((current) => ({ ...current, advances: 'HOME' }))
-                    }
+                    onClick={() => setActiveMatchDraft((current) => ({ ...current, advances: 'HOME' }))}
                   >
                     {currentMatch.homeTeam.code} advances
                   </Button>
@@ -749,9 +603,7 @@ export default function PicksWizardFlow({
                     data-active={activeMatchDraft.advances === 'AWAY' ? 'true' : 'false'}
                     className={activeMatchDraft.advances === 'AWAY' ? 'border-primary' : ''}
                     disabled={matchLocked || !requiresAdvances}
-                    onClick={() =>
-                      setActiveMatchDraft((current) => ({ ...current, advances: 'AWAY' }))
-                    }
+                    onClick={() => setActiveMatchDraft((current) => ({ ...current, advances: 'AWAY' }))}
                   >
                     {currentMatch.awayTeam.code} advances
                   </Button>
@@ -783,150 +635,6 @@ export default function PicksWizardFlow({
         </Card>
       ) : null}
 
-      {currentStep?.kind === 'group' ? (
-        <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Group outcomes step</div>
-                <div className="mt-1 text-lg font-semibold text-foreground">Group winners and runners-up</div>
-                {groupLockTime ? (
-                  <div className="text-xs text-muted-foreground">
-                    Closes {formatKickoff(groupLockTime.toISOString())}
-                  </div>
-                ) : null}
-              </div>
-              <Badge tone={groupLocked ? 'locked' : 'info'}>
-                {groupLocked ? 'Closed' : 'Live'}
-              </Badge>
-            </div>
-
-            {groupOutcomes.loadState.status === 'loading' ? <Skeleton className="h-40 rounded-2xl" /> : null}
-            {groupOutcomes.loadState.status === 'error' ? (
-              <Alert tone="danger" title="Unable to load group outcomes">
-                {groupOutcomes.loadState.message}
-              </Alert>
-            ) : null}
-
-            {groupOutcomes.loadState.status === 'ready' ? (
-              <>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {groupOutcomes.groupIds.map((groupId) => {
-                    const teams = groupTeams[groupId] ?? []
-                    const prediction = groupOutcomes.data.groups[groupId] ?? {}
-                    const errors = groupErrors[groupId]
-                    const secondOptions = teams.filter((team) => team.code !== prediction.first)
-                    return (
-                      <div key={groupId} className="rounded-xl border border-border/70 bg-bg2 p-3">
-                        <div className="mb-2 text-sm font-semibold text-foreground">Group {groupId}</div>
-                        <div className="grid gap-2">
-                          <div>
-                            <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">1st place</div>
-                            <select
-                              value={prediction.first ?? ''}
-                              disabled={groupLocked}
-                              onChange={(event) =>
-                                groupOutcomes.setGroupPick(groupId, 'first', event.target.value)
-                              }
-                              className="w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground"
-                            >
-                              <option value="">Select team</option>
-                              {teams.map((team) => (
-                                <option key={`${groupId}-first-${team.code}`} value={team.code}>
-                                  {team.code} · {team.name}
-                                </option>
-                              ))}
-                            </select>
-                            {errors?.first ? <div className="mt-1 text-xs text-destructive">{errors.first}</div> : null}
-                          </div>
-
-                          <div>
-                            <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">2nd place</div>
-                            <select
-                              value={prediction.second ?? ''}
-                              disabled={groupLocked}
-                              onChange={(event) =>
-                                groupOutcomes.setGroupPick(groupId, 'second', event.target.value)
-                              }
-                              className="w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground"
-                            >
-                              <option value="">Select team</option>
-                              {secondOptions.map((team) => (
-                                <option key={`${groupId}-second-${team.code}`} value={team.code}>
-                                  {team.code} · {team.name}
-                                </option>
-                              ))}
-                            </select>
-                            {errors?.second ? <div className="mt-1 text-xs text-destructive">{errors.second}</div> : null}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {showBestThirds ? (
-                  <div className="space-y-2">
-                    <div className="text-sm font-semibold uppercase tracking-[0.12em] text-foreground">
-                      Best-third qualifiers
-                    </div>
-                    <div className="grid gap-2 md:grid-cols-2">
-                      {Array.from({ length: bestThirdSlots }).map((_, index) => {
-                        const selected = groupOutcomes.data.bestThirds[index] ?? ''
-                        const usedElsewhere = groupOutcomes.data.bestThirds.filter(
-                          (code, codeIndex) => code && codeIndex !== index
-                        )
-                        return (
-                          <div key={`best-third-${index}`} className="rounded-xl border border-border/70 bg-bg2 p-3">
-                            <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">Slot {index + 1}</div>
-                            <select
-                              value={selected}
-                              disabled={groupLocked}
-                              onChange={(event) => groupOutcomes.setBestThird(index, event.target.value)}
-                              className="w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground"
-                            >
-                              <option value="">Select team</option>
-                              {allGroupTeams.map((team) => {
-                                const disabled = team.code !== selected && usedElsewhere.includes(team.code)
-                                return (
-                                  <option key={`best-third-opt-${index}-${team.code}`} value={team.code} disabled={disabled}>
-                                    {team.code} · {team.name}
-                                  </option>
-                                )
-                              })}
-                            </select>
-                            {bestThirdErrors[index] ? (
-                              <div className="mt-1 text-xs text-destructive">{bestThirdErrors[index]}</div>
-                            ) : null}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-              </>
-            ) : null}
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="ghost" onClick={goPrevStep}>
-                Previous step
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => void groupOutcomes.save()}
-                disabled={groupLocked || groupHasErrors || groupOutcomes.loadState.status !== 'ready'}
-                loading={groupOutcomes.saveStatus === 'saving'}
-              >
-                Save group outcomes
-              </Button>
-              <Button onClick={() => void handleGroupContinue()}>
-                Continue
-              </Button>
-            </div>
-          </div>
-        </Card>
-      ) : null}
-
       {currentStep?.kind === 'review' ? (
         <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
           <div className="space-y-4">
@@ -935,44 +643,29 @@ export default function PicksWizardFlow({
               <div className="mt-1 text-lg font-semibold text-foreground">Check before confirm</div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl border border-border/70 bg-bg2 p-3">
-                <div className="text-sm font-semibold text-foreground">Match picks</div>
-                <div className="mt-2 text-sm text-muted-foreground">
-                  Completed {progressDone} of {progressTotal}
+            <div className="rounded-xl border border-border/70 bg-bg2 p-3">
+              <div className="text-sm font-semibold text-foreground">Match picks</div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                Completed {progressDone} of {progressTotal}
+              </div>
+              {missingMatches.length > 0 ? (
+                <div className="mt-2 text-xs text-destructive">
+                  Missing: {missingMatches.map((match) => `${match.homeTeam.code}-${match.awayTeam.code}`).join(', ')}
                 </div>
-                {missingMatches.length > 0 ? (
-                  <div className="mt-2 text-xs text-destructive">
-                    Missing: {missingMatches.map((match) => `${match.homeTeam.code}-${match.awayTeam.code}`).join(', ')}
-                  </div>
-                ) : (
-                  <div className="mt-2 text-xs text-foreground">All open matches complete.</div>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-border/70 bg-bg2 p-3">
-                <div className="text-sm font-semibold text-foreground">Group outcomes</div>
-                {!includeGroupStep ? (
-                  <div className="mt-2 text-sm text-muted-foreground">Not applicable for this dataset.</div>
-                ) : groupLocked ? (
-                  <div className="mt-2 text-sm text-muted-foreground">Closed. Existing values are preserved.</div>
-                ) : groupHasErrors ? (
-                  <div className="mt-2 text-xs text-destructive">Group outcomes still have validation errors.</div>
-                ) : (
-                  <div className="mt-2 text-sm text-foreground">Ready for confirm.</div>
-                )}
-              </div>
+              ) : (
+                <div className="mt-2 text-xs text-foreground">All open matches complete.</div>
+              )}
             </div>
 
             {!reviewReady ? (
               <Alert tone="warning" title="Action required">
-                Complete missing picks or group outcomes before confirming.
+                Complete missing picks before confirming.
               </Alert>
             ) : null}
 
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" onClick={goPrevStep}>
-                Previous step
+                Back
               </Button>
               <Button onClick={goNextStep} disabled={!reviewReady}>
                 Continue to confirm
@@ -989,7 +682,7 @@ export default function PicksWizardFlow({
               <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Confirm step</div>
               <div className="mt-1 text-lg font-semibold text-foreground">Submit picks</div>
               <div className="mt-1 text-sm text-muted-foreground">
-                This syncs your wizard selections and keeps resume data for future updates.
+                This syncs your picks and keeps resume state for future updates.
               </div>
             </div>
 
@@ -1002,13 +695,9 @@ export default function PicksWizardFlow({
 
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" onClick={goPrevStep}>
-                Previous step
+                Back
               </Button>
-              <Button
-                onClick={() => void handleSubmitAll()}
-                disabled={!reviewReady}
-                loading={savingFinal}
-              >
+              <Button onClick={() => void handleSubmitAll()} disabled={!reviewReady} loading={savingFinal}>
                 Confirm & submit
               </Button>
               <Button variant="secondary" onClick={openReferencePage}>

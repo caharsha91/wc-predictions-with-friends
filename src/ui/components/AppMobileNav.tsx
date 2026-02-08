@@ -35,7 +35,7 @@ export default function AppMobileNav({ triggerLabel = 'Menu' }: AppMobileNavProp
           <SheetTitle className="text-left">
             <BrandLogo size="sm" variant="full" />
           </SheetTitle>
-          <SheetDescription>Move between play center, picks, bracket, standings, and players.</SheetDescription>
+          <SheetDescription>Move between play center, group stage, picks, bracket, standings, and players.</SheetDescription>
         </SheetHeader>
 
         <div className="grid gap-2 px-4 py-4">

@@ -30,6 +30,7 @@ vi.mock('./hooks/useEasterEggs', () => ({
 }))
 
 vi.mock('./pages/PicksPage', () => ({ default: () => <div>Picks route</div> }))
+vi.mock('./pages/GroupStagePage', () => ({ default: () => <div>Group stage route</div> }))
 vi.mock('./pages/play/PlayPage', () => ({ default: () => <div>Play route</div> }))
 vi.mock('./pages/BracketPage', () => ({ default: () => <div>Bracket route</div> }))
 vi.mock('./pages/LeaderboardPage', () => ({ default: () => <div>Leaderboard route</div> }))
@@ -66,24 +67,34 @@ describe('App routing', () => {
     expect(screen.getByTestId('location-probe')).toHaveTextContent('/play/picks')
   })
 
-  it.each([
-    ['/picks', '/play/picks', 'Picks route'],
-    ['/picks/wizard', '/play', 'Play route'],
-    ['/play/picks/wizard', '/play', 'Play route'],
-    ['/results', '/play/picks', 'Picks route'],
-    ['/bracket', '/play/bracket', 'Bracket route'],
-    ['/leaderboard', '/play/league', 'Leaderboard route'],
-    ['/players', '/admin/players', 'Players route'],
-    ['/exports', '/admin/exports', 'Exports route']
-  ])('redirects %s to %s', (legacyPath, expectedPath, expectedText) => {
+  it.each(['/missing', '/legacy', '/v1/route'])('treats %s as not found', (missingPath) => {
     render(
-      <MemoryRouter initialEntries={[legacyPath]}>
+      <MemoryRouter initialEntries={[missingPath]}>
+        <LocationProbe />
+        <App />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Not found')).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe')).toHaveTextContent(missingPath)
+  })
+
+  it.each([
+    ['/play/picks', 'Picks route'],
+    ['/play/group-stage', 'Group stage route'],
+    ['/play/bracket', 'Bracket route'],
+    ['/play/league', 'Leaderboard route'],
+    ['/admin/players', 'Players route'],
+    ['/admin/exports', 'Exports route']
+  ])('keeps canonical route %s', (path, expectedText) => {
+    render(
+      <MemoryRouter initialEntries={[path]}>
         <LocationProbe />
         <App />
       </MemoryRouter>
     )
 
     expect(screen.getByText(expectedText)).toBeInTheDocument()
-    expect(screen.getByTestId('location-probe')).toHaveTextContent(expectedPath)
+    expect(screen.getByTestId('location-probe')).toHaveTextContent(path)
   })
 })

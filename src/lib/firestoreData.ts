@@ -72,6 +72,12 @@ export async function saveUserPicksDoc(userId: string, picks: Pick[]): Promise<v
 export async function fetchUserBracketGroupDoc(
   userId: string
 ): Promise<{ groups: Record<string, GroupPrediction>; bestThirds?: string[] } | null> {
+  return fetchUserGroupStageDoc(userId)
+}
+
+export async function fetchUserGroupStageDoc(
+  userId: string
+): Promise<{ groups: Record<string, GroupPrediction>; bestThirds?: string[] } | null> {
   const ref = getUserDocRef('bracket-group', userId)
   if (!ref) return null
   const snapshot = await getDoc(ref)
@@ -84,6 +90,14 @@ export async function fetchUserBracketGroupDoc(
 }
 
 export async function saveUserBracketGroupDoc(
+  userId: string,
+  groups: Record<string, GroupPrediction>,
+  bestThirds?: string[]
+): Promise<void> {
+  return saveUserGroupStageDoc(userId, groups, bestThirds)
+}
+
+export async function saveUserGroupStageDoc(
   userId: string,
   groups: Record<string, GroupPrediction>,
   bestThirds?: string[]

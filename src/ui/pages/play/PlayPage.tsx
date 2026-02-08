@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { getDateKeyInTimeZone, getLockTime, isMatchLocked } from '../../../lib/matches'
+import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../../lib/matches'
 import { findPick, isPickComplete } from '../../../lib/picks'
 import type { Match } from '../../../types/matches'
 import type { Pick } from '../../../types/picks'
 import PicksWizardFlow from '../../components/play/PicksWizardFlow'
 import DeadlineQueuePanel, { type DeadlineQueueItem } from '../../components/ui/DeadlineQueuePanel'
 import PlayCenterHero from '../../components/ui/PlayCenterHero'
+import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import Skeleton from '../../components/ui/Skeleton'
+import { useGroupStageData } from '../../hooks/useGroupStageData'
 import { useNow } from '../../hooks/useNow'
 import { usePicksData } from '../../hooks/usePicksData'
 import { useViewerId } from '../../hooks/useViewerId'
@@ -109,6 +111,7 @@ export default function PlayPage() {
   }, [])
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
+  const groupStage = useGroupStageData(matches)
 
   const upcomingMatches = useMemo(
     () =>
@@ -176,6 +179,32 @@ export default function PlayPage() {
     if (nextLockUtc) return { type: 'deadline' as const, text: formatClosesChip(nextLockUtc, now) }
     return { type: 'deadline' as const, text: '—' }
   }, [nextLockUtc, now])
+
+  const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
+  const groupClosed = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
+  const groupCompletion = useMemo(() => {
+    let groupsDone = 0
+    for (const groupId of groupStage.groupIds) {
+      const selection = groupStage.data.groups[groupId] ?? {}
+      if (selection.first && selection.second && selection.first !== selection.second) {
+        groupsDone += 1
+      }
+    }
+    const bestThirdDone = groupStage.data.bestThirds.filter(Boolean).length
+    return {
+      groupsDone,
+      groupsTotal: groupStage.groupIds.length,
+      bestThirdDone: Math.min(8, bestThirdDone)
+    }
+  }, [groupStage.data.bestThirds, groupStage.data.groups, groupStage.groupIds])
+
+  const groupStageCtaLabel = useMemo(() => {
+    if (groupCompletion.groupsTotal === 0) return 'Open Group Stage'
+    if (groupClosed) return 'View Group Stage'
+    const complete =
+      groupCompletion.groupsDone === groupCompletion.groupsTotal && groupCompletion.bestThirdDone === 8
+    return complete ? 'Open Group Stage' : 'Continue Group Stage'
+  }, [groupClosed, groupCompletion.bestThirdDone, groupCompletion.groupsDone, groupCompletion.groupsTotal])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -334,100 +363,134 @@ export default function PlayPage() {
   }
 
   return (
-    <PlayCenterHero
-      title="Play Center"
-      subtitle="Your move."
-      lastUpdatedUtc={latestResultsUpdatedUtc}
-      state={playState}
-      summary={{
-        headline: 'Up next',
-        subline:
-          pendingOpenMatches.length > 0
-            ? 'Tap, pick, profit (emotional profit)'
-            : "You're chill.",
-        progress: {
-          label: 'Progress',
-          current: completedOpenMatches.length,
-          total: openMatches.length,
-          valueSuffix: 'in'
-        },
-        metrics: [
-          { label: 'To pick', value: Math.max(0, metricCounts.todo), tone: 'warning' },
-          { label: 'In play', value: metricCounts.inProgress, tone: 'info' },
-          { label: 'Closed', value: metricCounts.locked, tone: 'locked' },
-          { label: 'Done', value: metricCounts.finished, tone: 'secondary' }
-        ],
-        statusChip,
-        primaryAction: {
-          label: 'Continue',
-          onClick: handleContinueCurrentMatch,
-          disabled: queueMatches.length === 0
-        },
-        secondaryAction: {
-          label: 'Next one',
-          onClick: handleNextIncompletePick,
-          disabled: !nextIncompleteEntry
-        },
-        detail: (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button size="sm" variant="secondary" onClick={() => navigate('/play/picks')}>
-                Schedule
-              </Button>
-            </div>
+    <div className="space-y-4">
+      <Card className="rounded-2xl border-border/60 bg-bg2 p-4 sm:p-5">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Group stage</div>
+            <Button size="sm" variant="secondary" onClick={() => navigate('/play/group-stage')}>
+              {groupStageCtaLabel}
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={groupCompletion.groupsDone === groupCompletion.groupsTotal ? 'success' : 'warning'}>
+              Groups {groupCompletion.groupsDone}/{groupCompletion.groupsTotal}
+            </Badge>
+            <Badge tone={groupCompletion.bestThirdDone === 8 ? 'success' : 'warning'}>
+              Best thirds {groupCompletion.bestThirdDone}/8
+            </Badge>
+            <Badge tone={groupClosed ? 'locked' : 'info'}>
+              {groupLockTime
+                ? `${groupClosed ? 'Closed' : 'Closes'} ${formatDateTime(groupLockTime.toISOString())}`
+                : 'No close window'}
+            </Badge>
+            {groupStage.loadState.status === 'error' ? (
+              <Badge tone="danger">Unavailable</Badge>
+            ) : null}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {groupClosed
+              ? 'Group stage is read-only.'
+              : 'Pick 1st, 2nd, and best 8 third-place qualifiers.'}
+          </div>
+        </div>
+      </Card>
 
-            <div className="text-sm text-muted-foreground">Press buttons. Earn glory. ✨</div>
-            {inlineNotice ? <div className="text-xs text-muted-foreground">{inlineNotice}</div> : null}
+      <PlayCenterHero
+        title="Play Center"
+        subtitle="Your move."
+        lastUpdatedUtc={latestResultsUpdatedUtc}
+        state={playState}
+        summary={{
+          headline: 'Up next',
+          subline:
+            pendingOpenMatches.length > 0
+              ? 'Tap, pick, profit*'
+              : "You're chill.",
+          progress: {
+            label: 'Progress',
+            current: completedOpenMatches.length,
+            total: openMatches.length,
+            valueSuffix: 'in'
+          },
+          metrics: [
+            { label: 'To pick', value: Math.max(0, metricCounts.todo), tone: 'warning' },
+            { label: 'In play', value: metricCounts.inProgress, tone: 'info' },
+            { label: 'Closed', value: metricCounts.locked, tone: 'locked' },
+            { label: 'Done', value: metricCounts.finished, tone: 'secondary' }
+          ],
+          statusChip,
+          primaryAction: {
+            label: 'Continue',
+            onClick: handleContinueCurrentMatch,
+            disabled: queueMatches.length === 0
+          },
+          secondaryAction: {
+            label: 'Next one',
+            onClick: handleNextIncompletePick,
+            disabled: !nextIncompleteEntry
+          },
+          detail: (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Button size="sm" variant="secondary" onClick={() => navigate('/play/picks')}>
+                  Schedule
+                </Button>
+              </div>
 
-            <div className="grid gap-4 xl:grid-cols-[0.46fr_1.54fr]">
-              <Card className="rounded-2xl border-border/60 bg-bg2 p-4 sm:p-5">
-                <DeadlineQueuePanel
-                  items={nextMatchdayQueueItems}
-                  pageSize={nextMatchdayQueueItems.length || 1}
-                  onSelectItem={handleSelectQueueItem}
-                  selectedItemId={activeMatchId ?? undefined}
-                  heading="Closing soon"
-                  description="Tap a match to jump in."
-                  emptyMessage="Nothing closing soon. Enjoy the calm."
-                  container="inline"
-                />
-              </Card>
+              <div className="text-sm text-muted-foreground">Press buttons. Earn glory. ✨</div>
+              {inlineNotice ? <div className="text-xs text-muted-foreground">{inlineNotice}</div> : null}
 
-              <div ref={editorRef}>
-                {queueMatches.length > 0 ? (
-                  <PicksWizardFlow
-                    layout="compact-inline"
-                    activeMatchId={activeMatchId}
-                    onActiveMatchChange={(matchId) => {
-                      if (!matchId) return
-                      setActiveMatchId(matchId)
-                      setLastFocusedMatchId(matchId)
-                    }}
-                    onOpenReferencePage={() => navigate('/play/picks')}
+              <div className="grid gap-4 xl:grid-cols-[0.46fr_1.54fr]">
+                <Card className="rounded-2xl border-border/60 bg-bg2 p-4 sm:p-5">
+                  <DeadlineQueuePanel
+                    items={nextMatchdayQueueItems}
+                    pageSize={nextMatchdayQueueItems.length || 1}
+                    onSelectItem={handleSelectQueueItem}
+                    selectedItemId={activeMatchId ?? undefined}
+                    heading="Closing soon"
+                    description="Tap a match to jump in."
+                    emptyMessage="Nothing closing soon. Enjoy the calm."
+                    container="inline"
                   />
-                ) : (
-                  <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-                    <div className="space-y-3">
-                      <div className="text-sm font-semibold text-foreground">You're chill.</div>
-                      <div className="text-sm text-muted-foreground">
-                        Nothing open right now. Check results or the league.
+                </Card>
+
+                <div ref={editorRef}>
+                  {queueMatches.length > 0 ? (
+                    <PicksWizardFlow
+                      layout="compact-inline"
+                      activeMatchId={activeMatchId}
+                      onActiveMatchChange={(matchId) => {
+                        if (!matchId) return
+                        setActiveMatchId(matchId)
+                        setLastFocusedMatchId(matchId)
+                      }}
+                      onOpenReferencePage={() => navigate('/play/picks')}
+                    />
+                  ) : (
+                    <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+                      <div className="space-y-3">
+                        <div className="text-sm font-semibold text-foreground">You're chill.</div>
+                        <div className="text-sm text-muted-foreground">
+                          Nothing open right now. Check results or the league.
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" onClick={() => navigate('/play/league')}>
+                            View league
+                          </Button>
+                          <Button size="sm" variant="secondary" onClick={() => navigate('/play/picks')}>
+                            See results
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button size="sm" onClick={() => navigate('/play/league')}>
-                          View league
-                        </Button>
-                        <Button size="sm" variant="secondary" onClick={() => navigate('/play/picks')}>
-                          See results
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                )}
+                    </Card>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )
-      }}
-    />
+          )
+        }}
+      />
+    </div>
   )
 }

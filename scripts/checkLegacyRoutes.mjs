@@ -3,12 +3,8 @@ import path from 'node:path'
 
 const ROOT = process.cwd()
 const SRC_UI_DIR = path.join(ROOT, 'src', 'ui')
-const ALLOWED_FILES = new Set([
-  path.join('src', 'ui', 'App.tsx'),
-  path.join('src', 'ui', 'App.router.test.tsx')
-])
-
-const LEGACY_ROUTE_REGEX = /(["'`])(\/(?:picks(?:\/wizard)?|results|bracket|leaderboard|players|exports))\1/g
+const LEGACY_ROUTE_REGEX =
+  /(["'`])(\/(?:picks(?:\/wizard)?|group-stage|results|bracket|leaderboard|players|exports))\1/g
 
 async function listFiles(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true })
@@ -38,7 +34,6 @@ async function main() {
 
   for (const filePath of files) {
     const rel = relative(filePath)
-    if (ALLOWED_FILES.has(rel)) continue
 
     const content = await fs.readFile(filePath, 'utf8')
     const lines = content.split('\n')
@@ -60,7 +55,7 @@ async function main() {
     return
   }
 
-  console.log('Route guard passed: no legacy route literals found outside redirects/tests.')
+  console.log('Route guard passed: no legacy route literals found.')
 }
 
 await main()

@@ -14,6 +14,7 @@ import JoinLeaguePage from './pages/JoinLeaguePage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
+import GroupStagePage from './pages/GroupStagePage'
 import PicksPage from './pages/PicksPage'
 import PlayPage from './pages/play/PlayPage'
 
@@ -124,19 +125,11 @@ export default function App() {
         <Route path="join/:inviteCode" element={<JoinLeaguePage />} />
         <Route path="access-denied" element={<AccessDeniedPage />} />
 
-        <Route path="picks" element={<Navigate to="/play/picks" replace />} />
-        <Route path="picks/wizard" element={<Navigate to="/play" replace />} />
-        <Route path="results" element={<Navigate to="/play/picks" replace />} />
-        <Route path="bracket" element={<Navigate to="/play/bracket" replace />} />
-        <Route path="leaderboard" element={<Navigate to="/play/league" replace />} />
-        <Route path="players" element={<Navigate to="/admin/players" replace />} />
-        <Route path="exports" element={<Navigate to="/admin/exports" replace />} />
-
         <Route element={<MemberGate />}>
           <Route path="play">
             <Route index element={<PlayPage />} />
             <Route path="picks" element={<PicksPage />} />
-            <Route path="picks/wizard" element={<Navigate to="/play" replace />} />
+            <Route path="group-stage" element={<GroupStagePage />} />
             <Route path="bracket" element={<BracketPage />} />
             <Route path="league" element={<LeaderboardPage />} />
           </Route>

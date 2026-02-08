@@ -4,12 +4,14 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 
 ## App Flow (Current)
 
-- `/` picks workspace (default member entry)
-- `/picks` alias of picks workspace
-- `/results` finished matches + scoring breakdown + rules summary
-- `/bracket` single-page knockout bracket editor and review
-- `/leaderboard` standings
-- `/players` member manager (admin only)
+- `/` redirects to `/play`
+- `/play` play center workspace (default member entry)
+- `/play/picks` picks workspace
+- `/play/group-stage` group stage predictions
+- `/play/bracket` knockout bracket editor and review
+- `/play/league` standings
+- `/admin/players` member manager (admin only)
+- `/admin/exports` export tools (admin only)
 - `/settings` account and appearance settings
 - `/login` sign-in guidance
 - `/join/:inviteCode` invite flow
@@ -67,7 +69,7 @@ Snapshot data lives in `public/data/` (`matches.json`, `members.json`, `picks.js
 
 ## Admin
 
-- `/players` is admin-only and manages member allowlist + admin role assignment.
+- `/admin/players` is admin-only and manages member allowlist + admin role assignment.
 
 ## Firestore Data Model (when enabled)
 
