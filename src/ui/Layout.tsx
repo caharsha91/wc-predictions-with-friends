@@ -1,7 +1,9 @@
-import { useState, type MouseEvent } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useState, type MouseEvent } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 
+import { fetchMatches, fetchMembers } from '../lib/data'
+import { isDemoPath } from '../lib/dataMode'
 import { firebaseAuth, hasFirebase } from '../lib/firebase'
 import { useTheme } from '../theme/ThemeProvider'
 import BrandLogo from './components/BrandLogo'
@@ -15,10 +17,20 @@ import {
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useEasterEggs } from './hooks/useEasterEggs'
+import {
+  DEMO_SCENARIO_STORAGE_KEY,
+  readDemoNowOverride,
+  readDemoScenario,
+  readDemoViewerId,
+  writeDemoNowOverride,
+  writeDemoScenario,
+  writeDemoViewerId
+} from './lib/demoControls'
+import { clearDemoLocalStorage } from './lib/demoStorage'
 import { cn } from './lib/utils'
-import { ADMIN_NAV, MAIN_NAV, type NavItem } from './nav'
+import { ADMIN_NAV, DEMO_ADMIN_NAV, DEMO_MAIN_NAV, MAIN_NAV, type NavItem } from './nav'
 
-const APP_ROUTE_PREFIXES = ['/play', '/admin', '/settings']
+const APP_ROUTE_PREFIXES = ['/play', '/admin', '/settings', '/demo/play', '/demo/admin']
 
 function getInitials(name?: string | null, email?: string | null) {
   const base = name || email || ''
@@ -88,12 +100,18 @@ function SidebarAccountMenu({
   initials,
   name,
   onSignOut,
+  onToggleDemoMode,
+  canToggleDemoMode,
+  isDemoMode,
   authError,
   compact
 }: {
   initials: string
   name: string
   onSignOut: () => Promise<void>
+  onToggleDemoMode: () => Promise<void>
+  canToggleDemoMode: boolean
+  isDemoMode: boolean
   authError: string | null
   compact: boolean
 }) {
@@ -121,6 +139,11 @@ function SidebarAccountMenu({
                 <div className="break-words text-sm font-semibold leading-snug text-[var(--sidebar-nav-foreground)]">
                   {name}
                 </div>
+                {isDemoMode ? (
+                  <div className="mt-1 inline-flex rounded-full border border-border bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-foreground">
+                    Demo
+                  </div>
+                ) : null}
               </div>
               <div className="text-xs text-[var(--sidebar-nav-muted)]">•••</div>
             </>
@@ -137,6 +160,11 @@ function SidebarAccountMenu({
         <DropdownMenuItem onSelect={() => setSystemMode(true)}>
           Theme: System {isSystemMode ? '✓' : ''}
         </DropdownMenuItem>
+        {canToggleDemoMode ? (
+          <DropdownMenuItem onSelect={() => void onToggleDemoMode()}>
+            {isDemoMode ? 'Exit Demo Mode' : 'Enter Demo Mode'}
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="text-destructive hover:text-destructive focus-visible:text-destructive"
@@ -150,7 +178,63 @@ function SidebarAccountMenu({
   )
 }
 
+function toDemoPath(pathname: string): string {
+  if (pathname.startsWith('/demo/')) return pathname
+  if (pathname === '/play') return '/demo/play'
+  if (pathname.startsWith('/play/')) return pathname.replace('/play/', '/demo/play/')
+  if (pathname === '/admin') return '/demo/admin/players'
+  if (pathname === '/admin/players') return '/demo/admin/players'
+  if (pathname === '/admin/exports') return '/demo/admin/exports'
+  if (pathname.startsWith('/admin/')) return '/demo/admin/players'
+  return '/demo/play'
+}
+
+function toDefaultPath(pathname: string): string {
+  if (!pathname.startsWith('/demo/')) return pathname
+  if (pathname === '/demo/play') return '/play'
+  if (pathname.startsWith('/demo/play/')) return pathname.replace('/demo/play/', '/play/')
+  if (pathname === '/demo/admin') return '/admin/players'
+  if (pathname === '/demo/admin/players') return '/admin/players'
+  if (pathname === '/demo/admin/exports') return '/admin/exports'
+  if (pathname.startsWith('/demo/admin/')) return '/admin/players'
+  return '/play'
+}
+
+async function ensureDemoDefaults(): Promise<void> {
+  if (typeof window === 'undefined') return
+  if (!window.localStorage.getItem(DEMO_SCENARIO_STORAGE_KEY)) {
+    writeDemoScenario('pre-group')
+  }
+
+  const scenario = readDemoScenario()
+  if (!readDemoViewerId()) {
+    try {
+      const membersFile = await fetchMembers({ mode: 'demo' })
+      const first = membersFile.members[0]
+      if (first?.id) writeDemoViewerId(first.id)
+    } catch {
+      // no-op: keep fallback behavior
+    }
+  }
+
+  if (!readDemoNowOverride() && scenario === 'pre-group') {
+    try {
+      const matchesFile = await fetchMatches({ mode: 'demo' })
+      const firstGroup = matchesFile.matches
+        .filter((match) => match.stage === 'Group')
+        .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())[0]
+      if (firstGroup) {
+        const nowOverride = new Date(new Date(firstGroup.kickoffUtc).getTime() - 2 * 60 * 60 * 1000)
+        writeDemoNowOverride(nowOverride.toISOString())
+      }
+    } catch {
+      writeDemoNowOverride(new Date().toISOString())
+    }
+  }
+}
+
 function LayoutFrame() {
+  const navigate = useNavigate()
   const location = useLocation()
   const user = useCurrentUser()
   const authState = useAuthState()
@@ -184,10 +268,30 @@ function LayoutFrame() {
     if (!firebaseAuth) return
     setAuthError(null)
     try {
+      clearDemoLocalStorage()
       await signOut(firebaseAuth)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign out.'
       setAuthError(message)
+    }
+  }
+
+  async function handleToggleDemoMode() {
+    if (!canAccessAdmin) return
+    if (isDemoRoute) {
+      const nextPath = `${toDefaultPath(location.pathname)}${location.search}${location.hash}`
+      navigate(nextPath, { replace: true })
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('wc-demo-controls-changed'))
+      }
+      return
+    }
+
+    await ensureDemoDefaults()
+    const nextPath = `${toDemoPath(location.pathname)}${location.search}${location.hash}`
+    navigate(nextPath, { replace: true })
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('wc-demo-controls-changed'))
     }
   }
 
@@ -201,6 +305,24 @@ function LayoutFrame() {
 
   const initials = getInitials(user?.name, user?.email)
   const appContentRoute = isAppContentRoute(location.pathname)
+  const isDemoRoute = isDemoPath(location.pathname)
+  const mainNavItems = isDemoRoute ? DEMO_MAIN_NAV : MAIN_NAV
+  const adminNavItems = isDemoRoute ? DEMO_ADMIN_NAV : ADMIN_NAV
+
+  useEffect(() => {
+    if (!isDemoRoute || typeof window === 'undefined') return
+
+    const handleExit = () => {
+      clearDemoLocalStorage()
+    }
+
+    window.addEventListener('beforeunload', handleExit)
+    window.addEventListener('pagehide', handleExit)
+    return () => {
+      window.removeEventListener('beforeunload', handleExit)
+      window.removeEventListener('pagehide', handleExit)
+    }
+  }, [isDemoRoute])
 
   return (
     <div
@@ -245,7 +367,7 @@ function LayoutFrame() {
           </div>
 
           <div className="flex-1 space-y-6 overflow-y-auto pr-1" aria-label="Primary">
-            <SidebarNavSection title="Main" items={MAIN_NAV} compact={sidebarCompact} />
+            <SidebarNavSection title="Main" items={mainNavItems} compact={sidebarCompact} />
             {canAccessAdmin ? (
               <div className="space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-4">
                 {sidebarCompact ? null : (
@@ -255,7 +377,7 @@ function LayoutFrame() {
                 )}
                 <SidebarNavSection
                   title="Admin"
-                  items={ADMIN_NAV}
+                  items={adminNavItems}
                   compact={sidebarCompact}
                   hideTitle
                 />
@@ -269,6 +391,9 @@ function LayoutFrame() {
                 initials={initials}
                 name={user?.name || authState.user.displayName || authState.user.email || 'Signed in'}
                 onSignOut={handleSignOut}
+                onToggleDemoMode={handleToggleDemoMode}
+                canToggleDemoMode={canAccessAdmin}
+                isDemoMode={isDemoRoute}
                 authError={authError}
                 compact={sidebarCompact}
               />

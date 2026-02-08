@@ -7,6 +7,7 @@ import type { Match } from '../../../types/matches'
 import type { Pick, PickAdvances } from '../../../types/picks'
 import { useNow } from '../../hooks/useNow'
 import { usePicksData } from '../../hooks/usePicksData'
+import { useRouteDataMode } from '../../hooks/useRouteDataMode'
 import { useViewerId } from '../../hooks/useViewerId'
 import { Alert } from '../ui/Alert'
 import { Badge } from '../ui/Badge'
@@ -64,14 +65,14 @@ function toDraft(pick?: Pick): DraftPick {
   }
 }
 
-function getWizardStorageKey(userId: string) {
-  return `wc-picks-wizard:${userId}`
+function getWizardStorageKey(userId: string, mode: 'default' | 'demo') {
+  return `wc-picks-wizard:${mode}:${userId}`
 }
 
-function loadResumeState(userId: string): ResumeState | null {
+function loadResumeState(userId: string, mode: 'default' | 'demo'): ResumeState | null {
   if (typeof window === 'undefined') return null
   try {
-    const raw = window.localStorage.getItem(getWizardStorageKey(userId))
+    const raw = window.localStorage.getItem(getWizardStorageKey(userId, mode))
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<ResumeState>
     const stepKind =
@@ -87,9 +88,9 @@ function loadResumeState(userId: string): ResumeState | null {
   }
 }
 
-function saveResumeState(userId: string, value: ResumeState): void {
+function saveResumeState(userId: string, value: ResumeState, mode: 'default' | 'demo'): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(getWizardStorageKey(userId), JSON.stringify(value))
+  window.localStorage.setItem(getWizardStorageKey(userId, mode), JSON.stringify(value))
 }
 
 export default function PicksWizardFlow({
@@ -101,6 +102,7 @@ export default function PicksWizardFlow({
   const navigate = useNavigate()
   const now = useNow({ tickMs: 30_000 })
   const userId = useViewerId()
+  const mode = useRouteDataMode()
   const picksState = usePicksData()
 
   const isCompactInline = layout === 'compact-inline'
@@ -146,12 +148,12 @@ export default function PicksWizardFlow({
 
   useEffect(() => {
     if (resumeLoadedRef.current) return
-    const resume = loadResumeState(userId)
+    const resume = loadResumeState(userId, mode)
     if (resume) {
       resumeTargetRef.current = { kind: resume.stepKind, matchId: resume.matchId }
     }
     resumeLoadedRef.current = true
-  }, [userId])
+  }, [mode, userId])
 
   const steps = useMemo<WizardStep[]>(() => {
     const nextSteps: WizardStep[] = []
@@ -257,8 +259,8 @@ export default function PicksWizardFlow({
     saveResumeState(userId, {
       stepKind: currentStep.kind,
       matchId: currentStep.kind === 'match' ? currentStep.matchId : undefined
-    })
-  }, [currentStep, userId])
+    }, mode)
+  }, [currentStep, mode, userId])
 
   const parsedHome = parseScore(activeMatchDraft.homeScore)
   const parsedAway = parseScore(activeMatchDraft.awayScore)

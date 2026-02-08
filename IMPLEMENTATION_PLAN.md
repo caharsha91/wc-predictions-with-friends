@@ -109,7 +109,41 @@ This document tracks the agreed implementation plan and completion status for de
 
 ### Status
 
-- `pending`
+- `completed` (2026-02-08)
+
+### Completion Notes
+
+1. Added full demo dataset files under `public/data/demo/`:
+   - `matches.json`, `members.json`, `picks.json`, `scoring.json`, `bracket-group.json`,
+     `bracket-knockout.json`, `best-third-qualifiers.json`, `leaderboard.json`.
+2. Added dataset-mode plumbing:
+   - `src/lib/dataMode.ts`
+   - `src/ui/hooks/useRouteDataMode.ts`
+   - `src/lib/data.ts` now resolves `default` vs `demo` dataset paths and cache namespaces.
+3. Namespaced localStorage for demo mode:
+   - Picks keys (`src/lib/picks.ts`)
+   - Bracket keys (`src/lib/bracket.ts`)
+   - Picks wizard resume (`src/ui/components/play/PicksWizardFlow.tsx`)
+   - Bracket wizard resume (`src/ui/pages/BracketPage.tsx`)
+   - Play center last-focus (`src/ui/pages/play/PlayPage.tsx`)
+   - Member cache (`src/ui/hooks/useCurrentUser.ts`)
+4. Added explicit demo storage cleanup utility:
+   - `src/ui/lib/demoStorage.ts`
+   - Integrated in logout and page exit handling in `src/ui/Layout.tsx`.
+5. Wired demo dataset reads + no-Firestore-write behavior in demo mode across:
+   - `src/ui/hooks/usePicksData.ts`
+   - `src/ui/hooks/useGroupStageData.ts`
+   - `src/ui/hooks/useBracketKnockoutData.ts`
+   - `src/ui/pages/PicksPage.tsx`
+   - `src/ui/pages/LeaderboardPage.tsx`
+   - `src/ui/pages/AdminUsersPage.tsx`
+   - `src/ui/pages/AdminExportsPage.tsx`
+   - `src/theme/ThemeProvider.tsx`
+
+### Verification
+
+1. `npm run build` passed.
+2. `npm test` passed.
 
 ## Increment 3: Demo Simulation CLI (50 Users + Time Presets)
 
@@ -146,7 +180,41 @@ This document tracks the agreed implementation plan and completion status for de
 
 ### Status
 
-- `pending`
+- `completed` (2026-02-08)
+
+### Completion Notes
+
+1. Added demo simulation CLI script:
+   - `scripts/simulateDemoUsers.ts`
+2. Added npm command:
+   - `npm run demo:simulate -- --scenario=<scenario> --users=50 --seed=<seed>`
+3. Implemented scenario presets:
+   - `pre-group`
+   - `mid-group`
+   - `end-group-draw-confirmed`
+   - `mid-knockout`
+   - `world-cup-final-pending`
+4. Script now generates randomized demo data for 50 users across:
+   - picks (`public/data/demo/picks.json`)
+   - group-stage bracket picks (`public/data/demo/bracket-group.json`)
+   - knockout bracket picks (`public/data/demo/bracket-knockout.json`)
+5. Script regenerates demo snapshots and derived leaderboard:
+   - `public/data/demo/matches.json`
+   - `public/data/demo/members.json`
+   - `public/data/demo/leaderboard.json`
+   - `public/data/demo/best-third-qualifiers.json`
+   - `public/data/demo/scoring.json`
+   - `public/data/demo/simulation-meta.json`
+6. Timestamp generation uses exact Pacific time slots (`America/Los_Angeles`) for lock-behavior validation.
+7. Simulator now generates scenario-dependent:
+   - best-third qualifiers data,
+   - knockout draw team assignments,
+   - knockout winners progression based on match status per scenario.
+
+### Verification
+
+1. `npm run build` passed.
+2. `npm test` passed.
 
 ## Increment 4: Demo Admin Controls Page
 
@@ -183,7 +251,33 @@ This document tracks the agreed implementation plan and completion status for de
 
 ### Status
 
-- `pending`
+- `completed` (2026-02-08)
+
+### Completion Notes
+
+1. Added demo controls route:
+   - `/demo/admin/controls`
+   - page component: `src/ui/pages/DemoControlsPage.tsx`
+2. Added demo controls capabilities:
+   - scenario selection with preset timestamp application,
+   - viewer user selection for demo context,
+   - demo snapshot reload (cache clear + page reload),
+   - explicit demo session clear.
+3. Added demo controls state utilities:
+   - `src/ui/lib/demoControls.ts`
+4. Wired controls into runtime behavior:
+   - `src/ui/hooks/useNow.ts` now supports demo now override updates.
+   - `src/ui/hooks/useViewerId.ts` now supports demo viewer override updates.
+5. Updated nav behavior on demo routes to stay within `/demo/*`:
+   - `src/ui/nav.ts` added demo main/admin nav sets.
+   - `src/ui/Layout.tsx` now selects demo nav when on demo paths.
+6. Added route-test coverage:
+   - `src/ui/App.router.test.tsx` now validates `/demo/admin/controls`.
+
+### Verification
+
+1. `npm run build` passed.
+2. `npm test` passed.
 
 ## Increment 5: Play Center Rework (Compact + Phase-Oriented)
 
@@ -268,3 +362,43 @@ This document tracks the agreed implementation plan and completion status for de
 ### Status
 
 - `pending`
+
+## Increment 7: Global Toast Confirmations (Planned Only)
+
+### Planned Changes
+
+1. Replace inline confirmation/success/error messages and non-blocking user notices with toast notifications.
+2. Render toasts in a global stack anchored to the bottom-right corner of the viewport.
+3. Auto-dismiss each toast after 5 seconds.
+4. Allow manual dismiss by clicking the toast.
+5. Keep existing blocking/error-page patterns (for example fatal load failure pages) unchanged unless explicitly converted.
+
+### UX / Logic Checks
+
+1. All confirmation/success/error notices that are currently transient are shown as toasts.
+2. Toasts appear consistently in the same bottom-right position across all routes.
+3. Toasts dismiss automatically after 5 seconds and can be dismissed manually.
+4. Multiple toasts stack without covering critical interactive controls.
+5. Keyboard and screen-reader behavior remains accessible.
+
+### Risks / Mitigations
+
+1. Important messages may disappear too quickly.
+   - Mitigation: keep 5-second timeout and add manual dismiss plus clear wording.
+2. Duplicate messages from repeated actions.
+   - Mitigation: de-duplicate by message+type within a short time window.
+3. Visual overlap with mobile controls.
+   - Mitigation: responsive offsets and max stack height.
+4. Regression from converting many message callsites.
+   - Mitigation: central toast API and incremental conversion with tests.
+5. Accessibility regressions.
+   - Mitigation: ARIA live-region + dismiss focus behavior tests.
+
+### Documentation Updates This Increment
+
+1. Update README user-notification behavior section.
+2. Update `IMPLEMENTATION_PLAN.md` completion notes and migration checklist.
+
+### Status
+
+- `pending` (not implemented per current instruction)

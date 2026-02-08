@@ -15,6 +15,7 @@ import Skeleton from '../../components/ui/Skeleton'
 import { useGroupStageData } from '../../hooks/useGroupStageData'
 import { useNow } from '../../hooks/useNow'
 import { usePicksData } from '../../hooks/usePicksData'
+import { useRouteDataMode } from '../../hooks/useRouteDataMode'
 import { useViewerId } from '../../hooks/useViewerId'
 import type { PlayCenterState } from '../../lib/nextActionResolver'
 
@@ -91,12 +92,13 @@ function toQueueMatch(match: Match, pick: Pick | undefined, now: Date): QueueMat
 export default function PlayPage() {
   const navigate = useNavigate()
   const userId = useViewerId()
+  const mode = useRouteDataMode()
   const now = useNow({ tickMs: 30_000 })
   const picksState = usePicksData()
   const editorRef = useRef<HTMLDivElement | null>(null)
   const [lastFocusedMatchId, setLastFocusedMatchId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null
-    return window.localStorage.getItem(`wc-play-last-focus:${userId}`)
+    return window.localStorage.getItem(`wc-play-last-focus:${mode}:${userId}`)
   })
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null)
   const [inlineNotice, setInlineNotice] = useState<string | null>(null)
@@ -209,8 +211,8 @@ export default function PlayPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!lastFocusedMatchId) return
-    window.localStorage.setItem(`wc-play-last-focus:${userId}`, lastFocusedMatchId)
-  }, [lastFocusedMatchId, userId])
+    window.localStorage.setItem(`wc-play-last-focus:${mode}:${userId}`, lastFocusedMatchId)
+  }, [lastFocusedMatchId, mode, userId])
 
   useEffect(() => {
     if (queueMatches.length === 0) {

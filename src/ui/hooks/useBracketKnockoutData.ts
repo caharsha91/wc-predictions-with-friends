@@ -15,6 +15,7 @@ import type { Match, MatchWinner } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 import { useAuthState } from './useAuthState'
 import { useCurrentUser } from './useCurrentUser'
+import { useRouteDataMode } from './useRouteDataMode'
 import { useViewerId } from './useViewerId'
 
 export const KNOCKOUT_STAGE_ORDER: KnockoutStage[] = [
@@ -55,8 +56,8 @@ function buildStageMap(matches: Match[]): Partial<Record<KnockoutStage, Match[]>
   return stageMap
 }
 
-function persistLocalKnockout(userId: string, knockout: KnockoutState): void {
-  const existing = loadLocalBracketPrediction(userId)
+function persistLocalKnockout(userId: string, knockout: KnockoutState, mode: 'default' | 'demo'): void {
+  const existing = loadLocalBracketPrediction(userId, mode)
   const now = new Date().toISOString()
   saveLocalBracketPrediction(userId, {
     id: existing?.id ?? `bracket-${userId}`,
@@ -66,12 +67,14 @@ function persistLocalKnockout(userId: string, knockout: KnockoutState): void {
     knockout,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now
-  })
+  }, mode)
 }
 
 export function useBracketKnockoutData() {
   const authState = useAuthState()
   const currentUser = useCurrentUser()
+  const mode = useRouteDataMode()
+  const isDemoMode = mode === 'demo'
   const userId = useViewerId()
 
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' })
@@ -79,6 +82,7 @@ export function useBracketKnockoutData() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   const firestoreEnabled =
+    !isDemoMode &&
     hasFirebase &&
     authState.status === 'ready' &&
     !!authState.user &&
@@ -91,7 +95,7 @@ export function useBracketKnockoutData() {
       if (hasFirebase && authState.status === 'loading') return
       setLoadState({ status: 'loading' })
       try {
-        const matchesFile = await fetchMatches()
+        const matchesFile = await fetchMatches({ mode })
         if (canceled) return
 
         let nextKnockout: KnockoutState | null = null
@@ -101,21 +105,21 @@ export function useBracketKnockoutData() {
         }
 
         if (!nextKnockout) {
-          const local = loadLocalBracketPrediction(userId)
+          const local = loadLocalBracketPrediction(userId, mode)
           if (local?.knockout && Object.keys(local.knockout).length > 0) {
             nextKnockout = local.knockout
           }
         }
 
         if (!nextKnockout) {
-          const seed = await fetchBracketPredictions()
+          const seed = await fetchBracketPredictions({ mode })
           const combined = combineBracketPredictions(seed)
           const fallback = combined.find((entry) => entry.userId === userId) ?? combined[0]
           nextKnockout = fallback?.knockout ?? {}
         }
 
         const resolved = nextKnockout ?? {}
-        persistLocalKnockout(userId, resolved)
+        persistLocalKnockout(userId, resolved, mode)
         if (canceled) return
         setKnockout(resolved)
         setSaveStatus('idle')
@@ -135,7 +139,7 @@ export function useBracketKnockoutData() {
     return () => {
       canceled = true
     }
-  }, [authState.status, firestoreEnabled, userId])
+  }, [authState.status, firestoreEnabled, mode, userId])
 
   const totalMatches = useMemo(() => {
     if (loadState.status !== 'ready') return 0
@@ -168,18 +172,18 @@ export function useBracketKnockoutData() {
         } else {
           next[stage] = stagePicks
         }
-        persistLocalKnockout(userId, next)
+        persistLocalKnockout(userId, next, mode)
         return next
       })
       setSaveStatus('idle')
     },
-    [userId]
+    [mode, userId]
   )
 
   const save = useCallback(async () => {
     setSaveStatus('saving')
     try {
-      persistLocalKnockout(userId, knockout)
+      persistLocalKnockout(userId, knockout, mode)
       if (firestoreEnabled) {
         await saveUserBracketKnockoutDoc(userId, knockout)
       }
@@ -187,7 +191,7 @@ export function useBracketKnockoutData() {
     } catch {
       setSaveStatus('error')
     }
-  }, [firestoreEnabled, knockout, userId])
+  }, [firestoreEnabled, knockout, mode, userId])
 
   return {
     loadState,

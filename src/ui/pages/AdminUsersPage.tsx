@@ -11,6 +11,7 @@ import { Card } from '../components/ui/Card'
 import { InputField } from '../components/ui/Field'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Table from '../components/ui/Table'
+import { useRouteDataMode } from '../hooks/useRouteDataMode'
 
 type MemberEntry = {
   id: string
@@ -52,8 +53,10 @@ export default function AdminUsersPage() {
   const [email, setEmail] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const leagueId = useMemo(() => getLeagueId(), [])
+  const mode = useRouteDataMode()
+  const isDemoMode = mode === 'demo'
 
-  const firestoreEnabled = hasFirebase && !!firebaseDb
+  const firestoreEnabled = hasFirebase && !!firebaseDb && !isDemoMode
   const canManageMembers = firestoreEnabled
 
   useEffect(() => {
@@ -78,7 +81,7 @@ export default function AdminUsersPage() {
           return
         }
 
-        const membersFile = await fetchMembers()
+        const membersFile = await fetchMembers({ mode })
         if (canceled) return
         const entries = membersFile.members.map(mapMemberToEntry)
         setState({ status: 'ready', entries: sortEntries(entries) })
@@ -91,7 +94,7 @@ export default function AdminUsersPage() {
     return () => {
       canceled = true
     }
-  }, [firestoreEnabled, leagueId])
+  }, [firestoreEnabled, leagueId, mode])
 
   function startCreate() {
     setEditing(null)

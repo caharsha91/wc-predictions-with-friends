@@ -15,6 +15,7 @@
     "preview": "vite preview",
     "update-matches": "node scripts/updateMatches.js",
     "update-leaderboard": "node --import tsx scripts/updateLeaderboard.ts",
+    "demo:simulate": "node --import tsx scripts/simulateDemoUsers.ts",
     "backfill-member-uids": "node --import tsx scripts/backfillMemberUids.ts",
     "update-snapshots": "npm run update-matches && npm run update-leaderboard",
     "seed:prod": "tsx scripts/seedProd.ts"

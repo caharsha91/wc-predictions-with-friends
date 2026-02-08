@@ -13,6 +13,7 @@ import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
 import { useNow } from '../hooks/useNow'
+import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
 
 const STAGE_LABELS: Record<KnockoutStage, string> = {
@@ -55,19 +56,19 @@ function resolveWinnerLabel(
   return 'Missing'
 }
 
-function getBracketWizardStorageKey(userId: string): string {
-  return `wc-bracket-wizard:${userId}`
+function getBracketWizardStorageKey(userId: string, mode: 'default' | 'demo'): string {
+  return `wc-bracket-wizard:${mode}:${userId}`
 }
 
-function loadBracketResumeState(userId: string): BracketResumeState | null {
+function loadBracketResumeState(userId: string, mode: 'default' | 'demo'): BracketResumeState | null {
   if (typeof window === 'undefined') return null
   try {
-    const raw = window.localStorage.getItem(getBracketWizardStorageKey(userId))
+    const raw = window.localStorage.getItem(getBracketWizardStorageKey(userId, mode))
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<BracketResumeState>
-    const mode = parsed.mode === 'match' || parsed.mode === 'review' ? parsed.mode : 'match'
+    const parsedMode = parsed.mode === 'match' || parsed.mode === 'review' ? parsed.mode : 'match'
     return {
-      mode,
+      mode: parsedMode,
       matchId: typeof parsed.matchId === 'string' ? parsed.matchId : undefined
     }
   } catch {
@@ -75,14 +76,19 @@ function loadBracketResumeState(userId: string): BracketResumeState | null {
   }
 }
 
-function saveBracketResumeState(userId: string, value: BracketResumeState): void {
+function saveBracketResumeState(
+  userId: string,
+  value: BracketResumeState,
+  mode: 'default' | 'demo'
+): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(getBracketWizardStorageKey(userId), JSON.stringify(value))
+  window.localStorage.setItem(getBracketWizardStorageKey(userId, mode), JSON.stringify(value))
 }
 
 export default function BracketPage() {
   const now = useNow({ tickMs: 60000 })
   const userId = useViewerId()
+  const dataMode = useRouteDataMode()
   const {
     loadState,
     knockout,
@@ -105,9 +111,9 @@ export default function BracketPage() {
 
   useEffect(() => {
     if (resumeLoadedRef.current) return
-    resumeTargetRef.current = loadBracketResumeState(userId)
+    resumeTargetRef.current = loadBracketResumeState(userId, dataMode)
     resumeLoadedRef.current = true
-  }, [userId])
+  }, [dataMode, userId])
 
   const orderedEntries = useMemo<BracketEntry[]>(() => {
     if (loadState.status !== 'ready') return []
@@ -186,8 +192,8 @@ export default function BracketPage() {
     saveBracketResumeState(userId, {
       mode,
       matchId: activeMatchId ?? undefined
-    })
-  }, [activeMatchId, loadState.status, mode, userId])
+    }, dataMode)
+  }, [activeMatchId, dataMode, loadState.status, mode, userId])
 
   const currentEntry = activeMatchId ? entryById.get(activeMatchId) ?? null : null
   const currentIndex = currentEntry

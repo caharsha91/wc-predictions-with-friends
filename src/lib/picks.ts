@@ -7,16 +7,17 @@ import type {
   PicksFile
 } from '../types/picks'
 import type { Match } from '../types/matches'
+import type { DataMode } from './dataMode'
 
 const STORAGE_PREFIX = 'wc-picks'
 
-export function getLocalStorageKey(userId: string): string {
-  return `${STORAGE_PREFIX}:${userId}`
+export function getLocalStorageKey(userId: string, mode: DataMode = 'default'): string {
+  return `${STORAGE_PREFIX}:${mode}:${userId}`
 }
 
-export function loadLocalPicks(userId: string): Pick[] {
+export function loadLocalPicks(userId: string, mode: DataMode = 'default'): Pick[] {
   if (typeof window === 'undefined') return []
-  const raw = window.localStorage.getItem(getLocalStorageKey(userId))
+  const raw = window.localStorage.getItem(getLocalStorageKey(userId, mode))
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw) as { picks?: Pick[] }
@@ -26,10 +27,10 @@ export function loadLocalPicks(userId: string): Pick[] {
   }
 }
 
-export function saveLocalPicks(userId: string, picks: Pick[]): void {
+export function saveLocalPicks(userId: string, picks: Pick[], mode: DataMode = 'default'): void {
   if (typeof window === 'undefined') return
   const payload = JSON.stringify({ picks })
-  window.localStorage.setItem(getLocalStorageKey(userId), payload)
+  window.localStorage.setItem(getLocalStorageKey(userId, mode), payload)
 }
 
 export function getOutcomeFromScores(

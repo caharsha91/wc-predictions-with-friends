@@ -5,6 +5,7 @@ import type { BracketGroupFile, BracketKnockoutFile, BracketPredictionsFile } fr
 import type { BestThirdQualifiersFile } from '../types/qualifiers'
 import type { LeaderboardFile } from '../types/leaderboard'
 import type { ScoringConfig } from '../types/scoring'
+import type { DataMode } from './dataMode'
 
 type CacheEntry<T> = {
   data: T
@@ -36,25 +37,35 @@ function getStorageKey(path: string) {
   return `${STORAGE_PREFIX}${path}`
 }
 
-function readCachedEntry<T>(path: string): CacheEntry<T> | null {
-  const memory = memoryCache.get(path) as CacheEntry<T> | undefined
+function buildDatasetPath(path: string, mode: DataMode): string {
+  if (mode === 'default') return path
+  if (path.startsWith('data/')) return `data/demo/${path.slice('data/'.length)}`
+  return path
+}
+
+function buildCacheKey(path: string, mode: DataMode): string {
+  return mode === 'default' ? path : `${mode}:${path}`
+}
+
+function readCachedEntry<T>(cacheKey: string): CacheEntry<T> | null {
+  const memory = memoryCache.get(cacheKey) as CacheEntry<T> | undefined
   if (memory) return memory
   if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(getStorageKey(path))
+  const raw = window.localStorage.getItem(getStorageKey(cacheKey))
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as CacheEntry<T>
-    memoryCache.set(path, parsed)
+    memoryCache.set(cacheKey, parsed)
     return parsed
   } catch {
     return null
   }
 }
 
-function writeCachedEntry<T>(path: string, entry: CacheEntry<T>) {
-  memoryCache.set(path, entry as CacheEntry<unknown>)
+function writeCachedEntry<T>(cacheKey: string, entry: CacheEntry<T>) {
+  memoryCache.set(cacheKey, entry as CacheEntry<unknown>)
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(getStorageKey(path), JSON.stringify(entry))
+  window.localStorage.setItem(getStorageKey(cacheKey), JSON.stringify(entry))
 }
 
 function isFresh(entry: CacheEntry<unknown> | null, ttlMs: number) {
@@ -62,10 +73,17 @@ function isFresh(entry: CacheEntry<unknown> | null, ttlMs: number) {
   return Date.now() - entry.savedAt < ttlMs
 }
 
-async function fetchJson<T>(path: string): Promise<T> {
-  const url = `${import.meta.env.BASE_URL}${path}`
+type FetchOptions = {
+  mode?: DataMode
+}
+
+async function fetchJson<T>(path: string, options?: FetchOptions): Promise<T> {
+  const mode = options?.mode ?? 'default'
+  const resolvedPath = buildDatasetPath(path, mode)
+  const cacheKey = buildCacheKey(path, mode)
+  const url = `${import.meta.env.BASE_URL}${resolvedPath}`
   const ttl = CACHE_TTL_MS[path] ?? DEFAULT_TTL_MS
-  const cached = readCachedEntry<T>(path)
+  const cached = readCachedEntry<T>(cacheKey)
 
   if (isFresh(cached, ttl)) {
     return cached!.data
@@ -82,7 +100,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 
   if (response.status === 304 && cached) {
     const refreshed = { ...cached, savedAt: Date.now() }
-    writeCachedEntry(path, refreshed)
+    writeCachedEntry(cacheKey, refreshed)
     return cached.data
   }
 
@@ -98,30 +116,30 @@ async function fetchJson<T>(path: string): Promise<T> {
     etag: response.headers.get('ETag') ?? cached?.etag,
     lastModified: response.headers.get('Last-Modified') ?? cached?.lastModified
   }
-  writeCachedEntry(path, entry)
+  writeCachedEntry(cacheKey, entry)
   return data
 }
 
-export function fetchMatches(): Promise<MatchesFile> {
-  return fetchJson<MatchesFile>('data/matches.json')
+export function fetchMatches(options?: FetchOptions): Promise<MatchesFile> {
+  return fetchJson<MatchesFile>('data/matches.json', options)
 }
 
-export function fetchMembers(): Promise<MembersFile> {
-  return fetchJson<MembersFile>('data/members.json')
+export function fetchMembers(options?: FetchOptions): Promise<MembersFile> {
+  return fetchJson<MembersFile>('data/members.json', options)
 }
 
-export function fetchPicks(): Promise<PicksFile> {
-  return fetchJson<PicksFile>('data/picks.json')
+export function fetchPicks(options?: FetchOptions): Promise<PicksFile> {
+  return fetchJson<PicksFile>('data/picks.json', options)
 }
 
-export function fetchScoring(): Promise<ScoringConfig> {
-  return fetchJson<ScoringConfig>('data/scoring.json')
+export function fetchScoring(options?: FetchOptions): Promise<ScoringConfig> {
+  return fetchJson<ScoringConfig>('data/scoring.json', options)
 }
 
-export async function fetchBracketPredictions(): Promise<BracketPredictionsFile> {
+export async function fetchBracketPredictions(options?: FetchOptions): Promise<BracketPredictionsFile> {
   const [groupFile, knockoutFile] = await Promise.all([
-    fetchJson<BracketGroupFile>('data/bracket-group.json'),
-    fetchJson<BracketKnockoutFile>('data/bracket-knockout.json')
+    fetchJson<BracketGroupFile>('data/bracket-group.json', options),
+    fetchJson<BracketKnockoutFile>('data/bracket-knockout.json', options)
   ])
   return {
     group: groupFile.group ?? [],
@@ -129,9 +147,9 @@ export async function fetchBracketPredictions(): Promise<BracketPredictionsFile>
   }
 }
 
-export async function fetchBestThirdQualifiers(): Promise<BestThirdQualifiersFile> {
+export async function fetchBestThirdQualifiers(options?: FetchOptions): Promise<BestThirdQualifiersFile> {
   try {
-    return await fetchJson<BestThirdQualifiersFile>('data/best-third-qualifiers.json')
+    return await fetchJson<BestThirdQualifiersFile>('data/best-third-qualifiers.json', options)
   } catch (error) {
     if (error instanceof Error && error.message.includes('(404)')) {
       return EMPTY_BEST_THIRD_QUALIFIERS
@@ -140,6 +158,6 @@ export async function fetchBestThirdQualifiers(): Promise<BestThirdQualifiersFil
   }
 }
 
-export function fetchLeaderboard(): Promise<LeaderboardFile> {
-  return fetchJson<LeaderboardFile>('data/leaderboard.json')
+export function fetchLeaderboard(options?: FetchOptions): Promise<LeaderboardFile> {
+  return fetchJson<LeaderboardFile>('data/leaderboard.json', options)
 }

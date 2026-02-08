@@ -5,6 +5,7 @@ import { fetchLeaderboard } from '../../lib/data'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import { LEADERBOARD_LIST_PAGE_SIZE } from '../constants/pagination'
 import { useAuthState } from '../hooks/useAuthState'
+import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
@@ -37,6 +38,7 @@ export default function LeaderboardPage() {
   const navigate = useNavigate()
   const userId = useViewerId()
   const authState = useAuthState()
+  const mode = useRouteDataMode()
   const [page, setPage] = useState(1)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [state, setState] = useState<LoadState>({ status: 'loading' })
@@ -65,7 +67,7 @@ export default function LeaderboardPage() {
     async function load() {
       setState({ status: 'loading' })
       try {
-        const file = await fetchLeaderboard()
+        const file = await fetchLeaderboard({ mode })
         if (canceled) return
         const sorted = [...file.entries].sort((a, b) => b.totalPoints - a.totalPoints)
         setState({
@@ -82,7 +84,7 @@ export default function LeaderboardPage() {
     return () => {
       canceled = true
     }
-  }, [])
+  }, [mode])
 
   const summary = useMemo(() => {
     if (state.status !== 'ready') return null

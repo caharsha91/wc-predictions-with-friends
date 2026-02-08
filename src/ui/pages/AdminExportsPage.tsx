@@ -4,11 +4,15 @@ import writeXlsxFile, { type Cell, type Columns, type SheetData } from 'write-ex
 
 import { combineBracketPredictions } from '../../lib/bracket'
 import {
+  fetchBracketPredictions,
+  fetchMembers,
   fetchBestThirdQualifiers,
   fetchLeaderboard,
   fetchMatches,
+  fetchPicks,
   fetchScoring
 } from '../../lib/data'
+import type { DataMode } from '../../lib/dataMode'
 import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import { getDateKeyInTimeZone, getLockTime } from '../../lib/matches'
 import { flattenPicksFile, getPickOutcome, getPredictedWinner } from '../../lib/picks'
@@ -30,6 +34,7 @@ import DetailsDisclosure from '../components/ui/DetailsDisclosure'
 import { SelectField } from '../components/ui/Field'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Skeleton from '../components/ui/Skeleton'
+import { useRouteDataMode } from '../hooks/useRouteDataMode'
 
 type ExportMode = 'USER_ALL_MATCHDAYS' | 'MATCHDAY_ALL_USERS'
 type ExportIntent =
@@ -901,6 +906,23 @@ async function loadExportPicksAndBracketData(): Promise<{
   picksFile: PicksFile
   bracketFile: BracketPredictionsFile
 }> {
+  return loadExportPicksAndBracketDataForMode('default')
+}
+
+async function loadExportPicksAndBracketDataForMode(
+  dataMode: DataMode
+): Promise<{
+  picksFile: PicksFile
+  bracketFile: BracketPredictionsFile
+}> {
+  if (dataMode === 'demo') {
+    const [picksFile, bracketFile] = await Promise.all([
+      fetchPicks({ mode: 'demo' }),
+      fetchBracketPredictions({ mode: 'demo' })
+    ])
+    return { picksFile, bracketFile }
+  }
+
   if (!hasFirebase || !firebaseDb) {
     throw new Error(
       'Admin exports require Firebase configuration. Set VITE_FIREBASE_* env vars and sign in as an admin.'
@@ -971,6 +993,19 @@ async function loadExportPicksAndBracketData(): Promise<{
 }
 
 async function loadMembers(): Promise<ExportMember[]> {
+  return loadMembersForMode('default')
+}
+
+async function loadMembersForMode(dataMode: DataMode): Promise<ExportMember[]> {
+  if (dataMode === 'demo') {
+    const membersFile = await fetchMembers({ mode: 'demo' })
+    return membersFile.members.map((member) => ({
+      ...member,
+      id: member.id,
+      docId: member.email?.toLowerCase()
+    }))
+  }
+
   if (!hasFirebase || !firebaseDb) {
     throw new Error(
       'Admin exports require Firebase configuration. Set VITE_FIREBASE_* env vars and sign in as an admin.'
@@ -1040,8 +1075,10 @@ function inferUidCandidate(
 async function autoBackfillMemberUids(
   members: ExportMember[],
   picksFile: PicksFile,
-  bracketFile: BracketPredictionsFile
+  bracketFile: BracketPredictionsFile,
+  dataMode: DataMode
 ): Promise<{ members: ExportMember[]; updated: number; unresolved: number }> {
+  if (dataMode === 'demo') return { members, updated: 0, unresolved: 0 }
   if (!hasFirebase || !firebaseDb) return { members, updated: 0, unresolved: 0 }
 
   const leagueId = getLeagueId()
@@ -1093,17 +1130,21 @@ async function autoBackfillMemberUids(
 }
 
 async function loadBundle(): Promise<SnapshotBundle> {
+  return loadBundleForMode('default')
+}
+
+async function loadBundleForMode(dataMode: DataMode): Promise<SnapshotBundle> {
   const [matchesFile, scoring, picksAndBracket, leaderboardFile, bestThirdFile, members] =
     await Promise.all([
-      fetchMatches(),
-      fetchScoring(),
-      loadExportPicksAndBracketData(),
-      fetchLeaderboard(),
-      fetchBestThirdQualifiers(),
-      loadMembers()
+      fetchMatches({ mode: dataMode }),
+      fetchScoring({ mode: dataMode }),
+      loadExportPicksAndBracketDataForMode(dataMode),
+      fetchLeaderboard({ mode: dataMode }),
+      fetchBestThirdQualifiers({ mode: dataMode }),
+      loadMembersForMode(dataMode)
     ])
   const { picksFile, bracketFile } = picksAndBracket
-  const uidBackfill = await autoBackfillMemberUids(members, picksFile, bracketFile)
+  const uidBackfill = await autoBackfillMemberUids(members, picksFile, bracketFile, dataMode)
 
   const picksUpdates = picksFile.picks.map((entry) => entry.updatedAt)
   const groupUpdates = bracketFile.group.map((entry) => entry.updatedAt)
@@ -1134,6 +1175,7 @@ async function loadBundle(): Promise<SnapshotBundle> {
 }
 
 export default function AdminExportsPage() {
+  const dataMode = useRouteDataMode()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [mode, setMode] = useState<ExportMode>('USER_ALL_MATCHDAYS')
   const [selectedUserId, setSelectedUserId] = useState('')
@@ -1146,7 +1188,7 @@ export default function AdminExportsPage() {
     async function run() {
       setState({ status: 'loading' })
       try {
-        const bundle = await loadBundle()
+        const bundle = await loadBundleForMode(dataMode)
         if (canceled) return
         setState({ status: 'ready', bundle })
       } catch (error) {
@@ -1159,7 +1201,7 @@ export default function AdminExportsPage() {
     return () => {
       canceled = true
     }
-  }, [])
+  }, [dataMode])
 
   const users = useMemo(() => {
     if (state.status !== 'ready') return []

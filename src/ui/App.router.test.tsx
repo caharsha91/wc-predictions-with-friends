@@ -39,6 +39,7 @@ vi.mock('./pages/play/PlayPage', () => ({ default: () => <div>Play route</div> }
 vi.mock('./pages/BracketPage', () => ({ default: () => <div>Bracket route</div> }))
 vi.mock('./pages/LeaderboardPage', () => ({ default: () => <div>Leaderboard route</div> }))
 vi.mock('./pages/LoginPage', () => ({ default: () => <div>Login route</div> }))
+vi.mock('./pages/DemoControlsPage', () => ({ default: () => <div>Demo controls route</div> }))
 vi.mock('./pages/AdminUsersPage', () => ({ default: () => <div>Players route</div> }))
 vi.mock('./pages/AdminExportsPage', () => ({ default: () => <div>Exports route</div> }))
 vi.mock('./pages/AccessDeniedPage', () => ({ default: () => <div>Access denied</div> }))
@@ -110,6 +111,7 @@ describe('App routing', () => {
     ['/demo/play/league', 'Leaderboard route'],
     ['/admin/players', 'Players route'],
     ['/admin/exports', 'Exports route'],
+    ['/demo/admin/controls', 'Demo controls route'],
     ['/demo/admin/players', 'Players route'],
     ['/demo/admin/exports', 'Exports route']
   ])('keeps canonical route %s', (path, expectedText) => {

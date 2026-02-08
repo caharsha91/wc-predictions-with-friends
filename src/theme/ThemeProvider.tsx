@@ -10,6 +10,7 @@ import {
 } from './themeState'
 import { useAuthState } from '../ui/hooks/useAuthState'
 import { refreshCurrentUser, useCurrentUser } from '../ui/hooks/useCurrentUser'
+import { getCurrentAppPathname, isDemoPath } from '../lib/dataMode'
 import { hasFirebase } from '../lib/firebase'
 import { saveUserThemePreference } from '../lib/firestoreData'
 import type { ThemePreference } from '../types/members'
@@ -100,6 +101,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const source = updateSource.current
     updateSource.current = null
     if (source !== 'user') return
+    if (typeof window !== 'undefined' && isDemoPath(getCurrentAppPathname())) return
     if (!firestoreEnabled || !authState.user) return
     const payload: ThemePreference = {
       mode: state.mode,

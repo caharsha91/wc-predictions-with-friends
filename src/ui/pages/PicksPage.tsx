@@ -27,6 +27,7 @@ import Table from '../components/ui/Table'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
+import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
 import { cn } from '../lib/utils'
 
@@ -372,6 +373,7 @@ export default function PicksPage() {
   const now = useNow()
   const lockNow = useNow({ tickMs: 1000 })
   const userId = useViewerId()
+  const mode = useRouteDataMode()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const picksState = usePicksData()
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
@@ -386,7 +388,7 @@ export default function PicksPage() {
     let canceled = false
     async function loadScoring() {
       try {
-        const scoring = await fetchScoring()
+        const scoring = await fetchScoring({ mode })
         if (!canceled) setScoringState({ status: 'ready', scoring })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
@@ -397,7 +399,7 @@ export default function PicksPage() {
     return () => {
       canceled = true
     }
-  }, [])
+  }, [mode])
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
 

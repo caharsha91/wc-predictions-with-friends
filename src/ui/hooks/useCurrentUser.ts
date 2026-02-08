@@ -3,8 +3,10 @@ import { doc, getDoc } from 'firebase/firestore'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
 import { fetchMembers } from '../../lib/data'
+import type { DataMode } from '../../lib/dataMode'
 import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import { useAuthState } from './useAuthState'
+import { useRouteDataMode } from './useRouteDataMode'
 import type { Member } from '../../types/members'
 
 type UserState =
@@ -15,7 +17,6 @@ type UserState =
 type RefreshListener = () => void
 
 const refreshListeners = new Set<RefreshListener>()
-const MEMBER_CACHE_KEY = 'wc-member-cache'
 const MEMBER_CACHE_TTL_MS = 30 * 60 * 1000
 
 type MemberCache = {
@@ -26,34 +27,56 @@ type MemberCache = {
   savedAt: number
 }
 
-let inMemoryCache: MemberCache | null = null
-let inflightPromise: Promise<MemberCache | null> | null = null
+const inMemoryCache = new Map<string, MemberCache>()
+const inflightPromises = new Map<string, Promise<MemberCache | null>>()
 
-function readCache(): MemberCache | null {
-  if (inMemoryCache) return inMemoryCache
+function getMemberCacheKey(mode: DataMode): string {
+  return `wc-member-cache:${mode}`
+}
+
+function readCache(cacheKey: string): MemberCache | null {
+  const memory = inMemoryCache.get(cacheKey)
+  if (memory) return memory
   if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(MEMBER_CACHE_KEY)
+  const raw = window.localStorage.getItem(cacheKey)
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as MemberCache
-    inMemoryCache = parsed
+    inMemoryCache.set(cacheKey, parsed)
     return parsed
   } catch {
     return null
   }
 }
 
-function writeCache(payload: MemberCache) {
-  inMemoryCache = payload
+function writeCache(cacheKey: string, payload: MemberCache) {
+  inMemoryCache.set(cacheKey, payload)
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(MEMBER_CACHE_KEY, JSON.stringify(payload))
+  window.localStorage.setItem(cacheKey, JSON.stringify(payload))
 }
 
-function clearCache() {
-  inMemoryCache = null
-  inflightPromise = null
+function clearCache(cacheKey?: string) {
+  if (cacheKey) {
+    inMemoryCache.delete(cacheKey)
+    inflightPromises.delete(cacheKey)
+  } else {
+    inMemoryCache.clear()
+    inflightPromises.clear()
+  }
   if (typeof window === 'undefined') return
-  window.localStorage.removeItem(MEMBER_CACHE_KEY)
+  if (cacheKey) {
+    window.localStorage.removeItem(cacheKey)
+    return
+  }
+  const keysToRemove: string[] = []
+  for (let index = 0; index < window.localStorage.length; index += 1) {
+    const key = window.localStorage.key(index)
+    if (!key || !key.startsWith('wc-member-cache:')) continue
+    keysToRemove.push(key)
+  }
+  for (const key of keysToRemove) {
+    window.localStorage.removeItem(key)
+  }
 }
 
 function isCacheValid(cache: MemberCache | null, uid: string | null, email: string | null) {
@@ -72,6 +95,8 @@ export function useCurrentUser() {
   const [state, setState] = useState<UserState>({ status: 'loading' })
   const [refreshIndex, setRefreshIndex] = useState(0)
   const authState = useAuthState()
+  const mode = useRouteDataMode()
+  const cacheKey = getMemberCacheKey(mode)
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -90,13 +115,13 @@ export function useCurrentUser() {
         if (hasFirebase) {
           if (authState.status === 'loading') return
           if (!authState.user) {
-            clearCache()
+            clearCache(cacheKey)
             if (!canceled) setState({ status: 'ready', user: null })
             return
           }
           const user = authState.user
           const normalizedEmail = user.email?.toLowerCase() ?? null
-          const cache = readCache()
+          const cache = readCache(cacheKey)
           if (isCacheValid(cache, user.uid, normalizedEmail)) {
             if (!canceled) setState({ status: 'ready', user: cache?.user ?? null })
             return
@@ -116,13 +141,14 @@ export function useCurrentUser() {
             return
           }
 
-          if (inflightPromise) {
-            const payload = await inflightPromise
+          const inflight = inflightPromises.get(cacheKey)
+          if (inflight) {
+            const payload = await inflight
             if (!canceled && payload) setState({ status: 'ready', user: payload.user })
             return
           }
 
-          inflightPromise = (async () => {
+          const promise = (async () => {
             const leagueId = getLeagueId()
             if (!normalizedEmail) {
               const fallbackUser: Member = {
@@ -139,7 +165,7 @@ export function useCurrentUser() {
                 isMember: false,
                 savedAt: Date.now()
               }
-              writeCache(payload)
+              writeCache(cacheKey, payload)
               return payload
             }
             const memberRef = doc(firebaseDb, 'leagues', leagueId, 'members', normalizedEmail)
@@ -164,24 +190,25 @@ export function useCurrentUser() {
               isMember,
               savedAt: Date.now()
             }
-            writeCache(payload)
+            writeCache(cacheKey, payload)
             return payload
           })()
+          inflightPromises.set(cacheKey, promise)
 
-          const payload = await inflightPromise
-          inflightPromise = null
+          const payload = await promise
+          inflightPromises.delete(cacheKey)
           if (!canceled && payload) {
             setState({ status: 'ready', user: payload.user })
           }
           return
         }
 
-        const membersFile = await fetchMembers()
+        const membersFile = await fetchMembers({ mode })
         if (canceled) return
         const fallbackUser = membersFile.members.find((member) => member.id === CURRENT_USER_ID) ?? null
         setState({ status: 'ready', user: fallbackUser })
       } catch {
-        inflightPromise = null
+        inflightPromises.delete(cacheKey)
         if (!canceled) setState({ status: 'error' })
       }
     }
@@ -189,7 +216,7 @@ export function useCurrentUser() {
     return () => {
       canceled = true
     }
-  }, [authState.status, authState.user, refreshIndex])
+  }, [authState.status, authState.user, cacheKey, mode, refreshIndex])
 
   if (state.status === 'ready') return state.user
   return null

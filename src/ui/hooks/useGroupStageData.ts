@@ -7,6 +7,7 @@ import type { GroupPrediction } from '../../types/bracket'
 import type { Match } from '../../types/matches'
 import { useAuthState } from './useAuthState'
 import { useCurrentUser } from './useCurrentUser'
+import { useRouteDataMode } from './useRouteDataMode'
 import { useViewerId } from './useViewerId'
 
 const DEFAULT_BEST_THIRD_SLOTS = 8
@@ -67,8 +68,8 @@ function hasAnyGroupSelection(groups: Record<string, GroupPrediction>, bestThird
   return bestThirds.some((team) => Boolean(team))
 }
 
-function saveLocalGroupStage(userId: string, data: GroupStageData) {
-  const existing = loadLocalBracketPrediction(userId)
+function saveLocalGroupStage(userId: string, data: GroupStageData, mode: 'default' | 'demo') {
+  const existing = loadLocalBracketPrediction(userId, mode)
   const updatedAt = data.updatedAt || new Date().toISOString()
   saveLocalBracketPrediction(userId, {
     id: existing?.id ?? `bracket-${userId}`,
@@ -78,12 +79,14 @@ function saveLocalGroupStage(userId: string, data: GroupStageData) {
     knockout: existing?.knockout ?? {},
     createdAt: existing?.createdAt ?? updatedAt,
     updatedAt
-  })
+  }, mode)
 }
 
 export function useGroupStageData(matches: Match[]) {
   const authState = useAuthState()
   const currentUser = useCurrentUser()
+  const mode = useRouteDataMode()
+  const isDemoMode = mode === 'demo'
   const userId = useViewerId()
   const groupIds = useMemo(() => buildGroupIds(matches), [matches])
 
@@ -92,6 +95,7 @@ export function useGroupStageData(matches: Match[]) {
   const [data, setData] = useState<GroupStageData>(() => createEmptyData(groupIds))
 
   const firestoreEnabled =
+    !isDemoMode &&
     hasFirebase &&
     authState.status === 'ready' &&
     !!authState.user &&
@@ -127,7 +131,7 @@ export function useGroupStageData(matches: Match[]) {
         }
 
         if (!next) {
-          const local = loadLocalBracketPrediction(userId)
+          const local = loadLocalBracketPrediction(userId, mode)
           if (local && hasAnyGroupSelection(local.groups ?? {}, local.bestThirds ?? [])) {
             next = {
               groups: normalizeGroups(local.groups ?? {}, groupIds),
@@ -142,7 +146,7 @@ export function useGroupStageData(matches: Match[]) {
           bestThirds: normalizeBestThirds(empty.bestThirds, slotCount)
         }
 
-        saveLocalGroupStage(userId, resolved)
+        saveLocalGroupStage(userId, resolved, mode)
         if (canceled) return
         setData(resolved)
         setSaveStatus('idle')
@@ -162,7 +166,7 @@ export function useGroupStageData(matches: Match[]) {
     return () => {
       canceled = true
     }
-  }, [authState.status, firestoreEnabled, groupIds, userId])
+  }, [authState.status, firestoreEnabled, groupIds, mode, userId])
 
   const setGroupPick = useCallback(
     (groupId: string, field: 'first' | 'second', value: string) => {
@@ -189,12 +193,12 @@ export function useGroupStageData(matches: Match[]) {
           groups: nextGroups,
           updatedAt: new Date().toISOString()
         }
-        saveLocalGroupStage(userId, next)
+        saveLocalGroupStage(userId, next, mode)
         return next
       })
       setSaveStatus('idle')
     },
-    [userId]
+    [mode, userId]
   )
 
   const setBestThird = useCallback(
@@ -209,18 +213,18 @@ export function useGroupStageData(matches: Match[]) {
           bestThirds: nextBestThirds,
           updatedAt: new Date().toISOString()
         }
-        saveLocalGroupStage(userId, next)
+        saveLocalGroupStage(userId, next, mode)
         return next
       })
       setSaveStatus('idle')
     },
-    [userId]
+    [mode, userId]
   )
 
   const save = useCallback(async () => {
     setSaveStatus('saving')
     try {
-      saveLocalGroupStage(userId, data)
+      saveLocalGroupStage(userId, data, mode)
       if (firestoreEnabled) {
         await saveUserGroupStageDoc(userId, data.groups, data.bestThirds)
       }
@@ -228,7 +232,7 @@ export function useGroupStageData(matches: Match[]) {
     } catch {
       setSaveStatus('error')
     }
-  }, [data, firestoreEnabled, userId])
+  }, [data, firestoreEnabled, mode, userId])
 
   return {
     loadState,

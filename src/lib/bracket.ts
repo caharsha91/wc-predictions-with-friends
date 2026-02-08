@@ -4,16 +4,20 @@ import type {
   BracketPrediction,
   BracketPredictionsFile
 } from '../types/bracket'
+import type { DataMode } from './dataMode'
 
 const STORAGE_PREFIX = 'wc-bracket'
 
-export function getLocalBracketKey(userId: string): string {
-  return `${STORAGE_PREFIX}:${userId}`
+export function getLocalBracketKey(userId: string, mode: DataMode = 'default'): string {
+  return `${STORAGE_PREFIX}:${mode}:${userId}`
 }
 
-export function loadLocalBracketPrediction(userId: string): BracketPrediction | null {
+export function loadLocalBracketPrediction(
+  userId: string,
+  mode: DataMode = 'default'
+): BracketPrediction | null {
   if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(getLocalBracketKey(userId))
+  const raw = window.localStorage.getItem(getLocalBracketKey(userId, mode))
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as { prediction?: BracketPrediction }
@@ -23,10 +27,14 @@ export function loadLocalBracketPrediction(userId: string): BracketPrediction | 
   }
 }
 
-export function saveLocalBracketPrediction(userId: string, prediction: BracketPrediction): void {
+export function saveLocalBracketPrediction(
+  userId: string,
+  prediction: BracketPrediction,
+  mode: DataMode = 'default'
+): void {
   if (typeof window === 'undefined') return
   const payload = JSON.stringify({ prediction })
-  window.localStorage.setItem(getLocalBracketKey(userId), payload)
+  window.localStorage.setItem(getLocalBracketKey(userId, mode), payload)
 }
 
 export function hasBracketData(prediction: BracketPrediction): boolean {

@@ -8,6 +8,7 @@ import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 import { useAuthState } from './useAuthState'
 import { useCurrentUser } from './useCurrentUser'
+import { useRouteDataMode } from './useRouteDataMode'
 import { useViewerId } from './useViewerId'
 
 type PicksLoadState =
@@ -18,11 +19,14 @@ type PicksLoadState =
 export function usePicksData() {
   const authState = useAuthState()
   const currentUser = useCurrentUser()
+  const mode = useRouteDataMode()
+  const isDemoMode = mode === 'demo'
   const userId = useViewerId()
   const [state, setState] = useState<PicksLoadState>({ status: 'loading' })
-  const [picks, setPicks] = useState<Pick[]>(() => loadLocalPicks(userId))
+  const [picks, setPicks] = useState<Pick[]>(() => loadLocalPicks(userId, mode))
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const firestoreEnabled =
+    !isDemoMode &&
     hasFirebase &&
     authState.status === 'ready' &&
     !!authState.user &&
@@ -34,7 +38,7 @@ export function usePicksData() {
       if (hasFirebase && authState.status === 'loading') return
       setState({ status: 'loading' })
       try {
-        const matchesFile = await fetchMatches()
+        const matchesFile = await fetchMatches({ mode })
         if (canceled) return
 
         let nextPicks: Pick[] | null = null
@@ -42,23 +46,23 @@ export function usePicksData() {
           const remote = await fetchUserPicksDoc(userId)
           if (remote !== null) {
             nextPicks = remote
-            saveLocalPicks(userId, remote)
+            saveLocalPicks(userId, remote, mode)
           }
         }
 
         if (nextPicks === null) {
-          const stored = loadLocalPicks(userId)
+          const stored = loadLocalPicks(userId, mode)
           if (stored.length > 0) {
             nextPicks = stored
           } else {
-            const picksFile = await fetchPicks()
+            const picksFile = await fetchPicks({ mode })
             nextPicks = getUserPicksFromFile(picksFile, userId)
           }
         }
 
         setPicks(nextPicks ?? [])
         if (nextPicks && nextPicks.length > 0) {
-          saveLocalPicks(userId, nextPicks)
+          saveLocalPicks(userId, nextPicks, mode)
         }
         setSaveStatus('idle')
         setState({
@@ -75,11 +79,11 @@ export function usePicksData() {
     return () => {
       canceled = true
     }
-  }, [authState.status, firestoreEnabled, userId])
+  }, [authState.status, firestoreEnabled, mode, userId])
 
   function updatePicks(nextPicks: Pick[]) {
     setPicks(nextPicks)
-    saveLocalPicks(userId, nextPicks)
+    saveLocalPicks(userId, nextPicks, mode)
     setSaveStatus('idle')
   }
 

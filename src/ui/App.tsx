@@ -10,6 +10,7 @@ import AccessDeniedPage from './pages/AccessDeniedPage'
 import AdminExportsPage from './pages/AdminExportsPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import BracketPage from './pages/BracketPage'
+import DemoControlsPage from './pages/DemoControlsPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -175,6 +176,7 @@ export default function App() {
             <Route path="league" element={<LeaderboardPage />} />
           </Route>
           <Route path="admin">
+            <Route path="controls" element={<DemoControlsPage />} />
             <Route path="players" element={<AdminUsersPage />} />
             <Route path="exports" element={<AdminExportsPage />} />
           </Route>
