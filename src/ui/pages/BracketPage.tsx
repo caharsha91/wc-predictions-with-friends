@@ -1,13 +1,12 @@
 import { useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 
-import { getGroupOutcomesLockTime } from '../../lib/matches'
-import { isMatchLocked } from '../../lib/matches'
+import { getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../lib/matches'
 import type { Match } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
-import { ButtonLink } from '../components/ui/Button'
+import { Button, ButtonLink } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Skeleton from '../components/ui/Skeleton'
@@ -147,7 +146,6 @@ export default function BracketPage() {
         .filter((value): value is NonNullable<typeof value> => Boolean(value)),
     [readyBracketState, bracket.knockout, bracket.stageOrder, now]
   )
-
   if (picksState.state.status === 'loading' || bracket.loadState.status === 'loading') {
     return (
       <div className="space-y-4">
@@ -177,7 +175,8 @@ export default function BracketPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeroPanel
+      <div className="space-y-6">
+        <PageHeroPanel
         kicker="Knockout"
         title="Knockout Detail"
         subtitle="Read-only bracket picks and results. Use Play Center for guided edits."
@@ -222,82 +221,112 @@ export default function BracketPage() {
             )}
           </div>
         </Card>
-      </PageHeroPanel>
+        </PageHeroPanel>
 
-      {unlocked ? (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {stageSummary.map((stage) => (
-              <Card key={stage.stage} className="rounded-2xl border-border/60 bg-transparent p-4">
-                <div className="space-y-1">
-                  <div className="text-sm font-semibold text-foreground">{STAGE_LABELS[stage.stage]}</div>
-                  <div className="text-xs text-muted-foreground">Picked {stage.picked}/{stage.total}</div>
-                  <div className="text-xs text-muted-foreground">Locked {stage.locked}/{stage.total}</div>
-                </div>
-              </Card>
-            ))}
-          </div>
+        {unlocked ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {stageSummary.map((stage) => (
+                <Card key={stage.stage} className="rounded-2xl border-border/60 bg-transparent p-4">
+                  <div className="space-y-1">
+                    <div className="text-sm font-semibold text-foreground">{STAGE_LABELS[stage.stage]}</div>
+                    <div className="text-xs text-muted-foreground">Picked {stage.picked}/{stage.total}</div>
+                    <div className="text-xs text-muted-foreground">Locked {stage.locked}/{stage.total}</div>
+                  </div>
+                </Card>
+              ))}
+            </div>
 
-          <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
-            <div className="space-y-3">
-              <div className="text-sm font-semibold text-foreground">Bracket picks and results</div>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>Stage</th>
-                    <th>Match</th>
-                    <th>Your pick</th>
-                    <th>Actual winner</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.map((entry) => {
-                    const pickedWinner = bracket.knockout[entry.stage]?.[entry.match.id]
-                    const result: PredictionResult =
-                      entry.match.status !== 'FINISHED' || !entry.match.winner
-                        ? 'pending'
-                        : pickedWinner && pickedWinner === entry.match.winner
-                          ? 'correct'
-                          : 'wrong'
-                    return (
-                      <tr key={`${entry.stage}-${entry.match.id}`} className={resultSurfaceClass(result)}>
-                        <td>{STAGE_LABELS[entry.stage]}</td>
-                        <td>
-                          <div className="font-semibold text-foreground">
-                            {entry.match.homeTeam.code} vs {entry.match.awayTeam.code}
-                          </div>
-                          <div className="text-xs text-muted-foreground">{formatTime(entry.match.kickoffUtc)}</div>
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            Actual: <span className="font-semibold text-foreground">{actualResultLabel(entry.match)}</span>
-                          </div>
-                        </td>
-                        <td>{winnerLabel(pickedWinner, entry.match)}</td>
-                        <td>{winnerLabel(entry.match.winner, entry.match)}</td>
-                        <td>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge tone={resultTone(result)}>{resultLabel(result)}</Badge>
-                            <Badge tone={isMatchLocked(entry.match.kickoffUtc, now) ? 'locked' : 'secondary'}>
-                              {isMatchLocked(entry.match.kickoffUtc, now) ? 'Locked' : 'Open'}
-                            </Badge>
-                          </div>
+            <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
+              <div className="space-y-3">
+                <div className="text-sm font-semibold text-foreground">Bracket picks and results</div>
+                <Table>
+                  <thead>
+                    <tr>
+                      <th>Stage</th>
+                      <th>Match</th>
+                      <th>Your pick</th>
+                      <th>Actual winner</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entries.map((entry) => {
+                      const pickedWinner = bracket.knockout[entry.stage]?.[entry.match.id]
+                      const result: PredictionResult =
+                        entry.match.status !== 'FINISHED' || !entry.match.winner
+                          ? 'pending'
+                          : pickedWinner && pickedWinner === entry.match.winner
+                            ? 'correct'
+                            : 'wrong'
+                      return (
+                        <tr key={`${entry.stage}-${entry.match.id}`} className={resultSurfaceClass(result)}>
+                          <td>{STAGE_LABELS[entry.stage]}</td>
+                          <td>
+                            <div className="font-semibold text-foreground">
+                              {entry.match.homeTeam.code} vs {entry.match.awayTeam.code}
+                            </div>
+                            <div className="text-xs text-muted-foreground">{formatTime(entry.match.kickoffUtc)}</div>
+                            {!isMatchLocked(entry.match.kickoffUtc, now) ? (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className={pickedWinner === 'HOME' ? 'border-primary' : undefined}
+                                  onClick={async () => {
+                                    bracket.setPick(entry.stage, entry.match.id, 'HOME')
+                                    await bracket.save()
+                                  }}
+                                >
+                                  {entry.match.homeTeam.code} advances
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className={pickedWinner === 'AWAY' ? 'border-primary' : undefined}
+                                  onClick={async () => {
+                                    bracket.setPick(entry.stage, entry.match.id, 'AWAY')
+                                    await bracket.save()
+                                  }}
+                                >
+                                  {entry.match.awayTeam.code} advances
+                                </Button>
+                              </div>
+                            ) : null}
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Actual: <span className="font-semibold text-foreground">{actualResultLabel(entry.match)}</span>
+                            </div>
+                          </td>
+                          <td>{winnerLabel(pickedWinner, entry.match)}</td>
+                          <td>{winnerLabel(entry.match.winner, entry.match)}</td>
+                          <td>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge tone={resultTone(result)}>{resultLabel(result)}</Badge>
+                              <Badge tone={isMatchLocked(entry.match.kickoffUtc, now) ? 'locked' : 'secondary'}>
+                                {isMatchLocked(entry.match.kickoffUtc, now) ? 'Locked' : 'Open'}
+                              </Badge>
+                              {bracket.saveStatus === 'saving' ? <Badge tone="secondary">Saving</Badge> : null}
+                              {bracket.saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
+                              {bracket.saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                    {entries.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center text-sm text-muted-foreground">
+                          No knockout matches available.
                         </td>
                       </tr>
-                    )
-                  })}
-                  {entries.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center text-sm text-muted-foreground">
-                        No knockout matches available.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </Table>
-            </div>
-          </Card>
-        </>
-      ) : null}
+                    ) : null}
+                  </tbody>
+                </Table>
+              </div>
+            </Card>
+          </>
+        ) : null}
+      </div>
     </div>
   )
 }

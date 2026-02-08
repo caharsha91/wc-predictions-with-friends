@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { fetchScoring } from '../../lib/data'
 import { getLockTime, isMatchLocked } from '../../lib/matches'
@@ -8,12 +8,14 @@ import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 import type { KnockoutStage, ScoringConfig } from '../../types/scoring'
 import { CORE_LIST_PAGE_SIZE } from '../constants/pagination'
+import PicksWizardFlow from '../components/play/PicksWizardFlow'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/Accordion'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import { useNow } from '../hooks/useNow'
@@ -161,7 +163,9 @@ function ReadOnlyMatchList({
   userId,
   now,
   emptyMessage,
-  pageSize = CORE_LIST_PAGE_SIZE
+  pageSize = CORE_LIST_PAGE_SIZE,
+  showInlineEdit = false,
+  onEditMatch
 }: {
   matches: Match[]
   picks: Pick[]
@@ -169,6 +173,8 @@ function ReadOnlyMatchList({
   now: Date
   emptyMessage: string
   pageSize?: number
+  showInlineEdit?: boolean
+  onEditMatch?: (matchId: string) => void
 }) {
   const [page, setPage] = useState(1)
 
@@ -219,6 +225,11 @@ function ReadOnlyMatchList({
                     {complete ? 'Picked' : locked ? 'Locked' : 'Needs pick'}
                   </Badge>
                   <Badge tone={resultTone(result)}>{resultLabel(result)}</Badge>
+                  {showInlineEdit && !locked ? (
+                    <Button size="sm" variant="secondary" onClick={() => onEditMatch?.(match.id)}>
+                      Edit
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -253,6 +264,7 @@ function ReadOnlyMatchList({
 
 export default function PicksPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const now = useNow()
   const userId = useViewerId()
   const mode = useRouteDataMode()
@@ -260,6 +272,7 @@ export default function PicksPage() {
   const [scoringState, setScoringState] = useState<ScoringState>({ status: 'loading' })
   const [finishedPage, setFinishedPage] = useState(1)
   const [expandedSections, setExpandedSections] = useState<string[]>(['open-now'])
+  const [quickEditMatchId, setQuickEditMatchId] = useState<string | null>(null)
 
   const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
   const toPlayPath = (segment?: 'picks') =>
@@ -384,9 +397,12 @@ export default function PicksPage() {
     )
   }
 
+  const quickEditMatch = quickEditMatchId ? matches.find((match) => match.id === quickEditMatchId) ?? null : null
+
   return (
     <div className="space-y-6">
-      <PageHeroPanel
+      <div className="space-y-6">
+        <PageHeroPanel
         title="Picks Detail"
         subtitle="Read-only pick detail with embedded results. Use Play Center for guided edits."
         kicker="Reference"
@@ -403,14 +419,14 @@ export default function PicksPage() {
             </div>
           </div>
         }
-      />
+        />
 
-      <Accordion
-        type="multiple"
-        className="space-y-3"
-        value={expandedSections}
-        onValueChange={setExpandedSections}
-      >
+        <Accordion
+          type="multiple"
+          className="space-y-3"
+          value={expandedSections}
+          onValueChange={setExpandedSections}
+        >
         <AccordionItem value="open-now">
           <AccordionTrigger>
             <span className="flex flex-wrap items-center gap-2">
@@ -429,6 +445,8 @@ export default function PicksPage() {
               userId={userId}
               now={now}
               emptyMessage="No urgent picks right now."
+              showInlineEdit
+              onEditMatch={setQuickEditMatchId}
             />
           </AccordionContent>
         </AccordionItem>
@@ -564,7 +582,33 @@ export default function PicksPage() {
             </div>
           </AccordionContent>
         </AccordionItem>
-      </Accordion>
+        </Accordion>
+      </div>
+
+      <Sheet open={Boolean(quickEditMatchId)} onOpenChange={(open) => !open && setQuickEditMatchId(null)}>
+        <SheetContent side="right" className="w-[96vw] max-w-xl p-0">
+          <SheetHeader>
+            <SheetTitle>Quick edit</SheetTitle>
+            <SheetDescription>
+              {quickEditMatch
+                ? `${quickEditMatch.homeTeam.code} vs ${quickEditMatch.awayTeam.code}`
+                : 'Edit match pick'}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="p-4">
+            <PicksWizardFlow
+              layout="compact-inline"
+              onOpenReferencePage={() => navigate(toPlayPath('picks'))}
+              activeMatchId={quickEditMatchId}
+            />
+          </div>
+          <div className="border-t border-border/60 p-4">
+            <SheetClose asChild>
+              <Button variant="secondary">Close</Button>
+            </SheetClose>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

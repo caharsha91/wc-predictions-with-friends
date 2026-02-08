@@ -82,7 +82,11 @@ vi.mock('../hooks/useGroupStageData', () => ({
       bestThirds: fixtures.bestThirds,
       updatedAt: '2026-06-12T12:00:00.000Z'
     },
-    groupIds: fixtures.groupIds
+    groupIds: fixtures.groupIds,
+    setGroupPick: vi.fn(),
+    setBestThird: vi.fn(),
+    save: vi.fn(async () => {}),
+    saveStatus: 'idle'
   })
 }))
 
@@ -105,6 +109,7 @@ describe('GroupStagePage read-only detail', () => {
     expect(screen.getByRole('heading', { name: /group stage detail/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /back to picks/i })).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^edit$/i }).length).toBeGreaterThan(0)
   })
 
   it('shows closed badge and alert after lock', () => {
@@ -112,8 +117,9 @@ describe('GroupStagePage read-only detail', () => {
 
     renderPage()
 
-    expect(screen.getByText(/group stage is closed/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/group stage is closed/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/detail view only/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
   })
 
   it('renders incomplete status when groups are not fully finished', () => {

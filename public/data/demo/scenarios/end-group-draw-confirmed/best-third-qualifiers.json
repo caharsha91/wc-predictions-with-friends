@@ -1,23 +1,23 @@
 {
-  "updatedAt": "2026-02-08T21:48:24.619Z",
+  "updatedAt": "2026-02-08T22:03:33.057Z",
   "qualifiers": [
-    "MAR",
-    "ALG",
+    "JOR",
     "GHA",
-    "CUR",
-    "QAT",
-    "RSA",
-    "ESP",
-    "SUI"
+    "NED",
+    "COL",
+    "SEN",
+    "URU",
+    "HAI",
+    "GER"
   ],
   "qualifiers_hint": [
-    "MAR",
-    "ALG",
+    "JOR",
     "GHA",
-    "CUR",
-    "QAT",
-    "RSA",
-    "ESP",
-    "SUI"
+    "NED",
+    "COL",
+    "SEN",
+    "URU",
+    "HAI",
+    "GER"
   ]
 }

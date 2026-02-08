@@ -7,9 +7,10 @@ import type { GroupPrediction } from '../../types/bracket'
 import type { Match, Team } from '../../types/matches'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
-import { ButtonLink } from '../components/ui/Button'
+import { Button, ButtonLink } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import { useGroupStageData } from '../hooks/useGroupStageData'
@@ -199,6 +200,24 @@ export default function GroupStagePage() {
   const qualifiersSet = useMemo(() => new Set(qualifiersState.qualifiers), [qualifiersState.qualifiers])
   const groupsFinal = completion.groupsDone === groupIds.length && groupIds.length > 0
   const bestThirdsFinal = groupsFinal && qualifiersState.qualifiers.length >= BEST_THIRD_SLOTS
+  const [quickEditorTarget, setQuickEditorTarget] = useState<{ kind: 'group'; groupId: string } | { kind: 'best-third' } | null>(null)
+  const bestThirdCandidatesForIndex = useMemo(() => (index: number) => {
+    const excludedTopTwo = new Set<string>()
+    for (const groupId of groupIds) {
+      const pick = groupStage.data.groups[groupId] ?? {}
+      if (pick.first) excludedTopTwo.add(pick.first)
+      if (pick.second) excludedTopTwo.add(pick.second)
+    }
+    const selectedElsewhere = new Set(
+      groupStage.data.bestThirds
+        .map((team, idx) => ({ team, idx }))
+        .filter((entry) => entry.idx !== index && Boolean(entry.team))
+        .map((entry) => entry.team)
+    )
+    return Object.values(groupTeams)
+      .flat()
+      .filter((team) => !excludedTopTwo.has(team.code) && !selectedElsewhere.has(team.code))
+  }, [groupIds, groupStage.data.bestThirds, groupStage.data.groups, groupTeams])
 
   useEffect(() => {
     let canceled = false
@@ -247,7 +266,8 @@ export default function GroupStagePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeroPanel
+      <div className="space-y-6">
+        <PageHeroPanel
         kicker="Group stage"
         title="Group Stage Detail"
         subtitle="Read-only group predictions and standings. Use Play Center for guided edits."
@@ -296,6 +316,7 @@ export default function GroupStagePage() {
                   <th>Result (1st)</th>
                   <th>Your pick (2nd)</th>
                   <th>Result (2nd)</th>
+                  <th>Edit</th>
                 </tr>
               </thead>
               <tbody>
@@ -352,6 +373,13 @@ export default function GroupStagePage() {
                           )}
                         </div>
                       </td>
+                      <td>
+                        {!groupClosed ? (
+                          <Button size="sm" variant="secondary" onClick={() => setQuickEditorTarget({ kind: 'group', groupId })}>
+                            Edit
+                          </Button>
+                        ) : null}
+                      </td>
                     </tr>
                   )
                 })}
@@ -359,49 +387,138 @@ export default function GroupStagePage() {
             </Table>
           </div>
         </Card>
-      </PageHeroPanel>
+        </PageHeroPanel>
 
-      <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-sm font-semibold text-foreground">Best 8 third-place qualifiers</div>
-            <Badge tone={bestThirdsFinal ? 'success' : 'secondary'}>
-              {bestThirdsFinal ? 'Final' : 'Incomplete'}
-            </Badge>
-          </div>
-          {qualifiersState.status === 'ready' ? (
-            <div className="text-xs text-muted-foreground">
-              Actual qualifiers: {qualifiersState.qualifiers.length > 0 ? qualifiersState.qualifiers.join(', ') : '—'}
+        <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm font-semibold text-foreground">Best 8 third-place qualifiers</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone={bestThirdsFinal ? 'success' : 'secondary'}>
+                  {bestThirdsFinal ? 'Final' : 'Incomplete'}
+                </Badge>
+                {!groupClosed ? (
+                  <Button size="sm" variant="secondary" onClick={() => setQuickEditorTarget({ kind: 'best-third' })}>
+                    Edit
+                  </Button>
+                ) : null}
+              </div>
             </div>
-          ) : null}
-          {qualifiersState.status === 'error' ? (
-            <Alert tone="warning" title="Unable to load best-third qualifiers">
-              {qualifiersState.message}
-            </Alert>
-          ) : null}
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {bestThirds.map((teamCode, index) => {
-              const qualifierResult: PredictionResult = !bestThirdsFinal
-                ? 'pending'
-                : teamCode && qualifiersSet.has(teamCode)
-                  ? 'correct'
-                  : 'wrong'
-              return (
-                <div
-                  key={`best-third-${index}`}
-                  className={`rounded-xl border border-border/70 px-3 py-2 ${resultSurfaceClass(qualifierResult)}`}
-                >
-                  <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Slot {index + 1}</div>
-                  <div className="text-sm font-semibold text-foreground">Pick: {teamCode || '—'}</div>
-                  <div className="mt-1">
-                    <Badge tone={resultTone(qualifierResult)}>{resultLabel(qualifierResult)}</Badge>
+            {qualifiersState.status === 'ready' ? (
+              <div className="text-xs text-muted-foreground">
+                Actual qualifiers: {qualifiersState.qualifiers.length > 0 ? qualifiersState.qualifiers.join(', ') : '—'}
+              </div>
+            ) : null}
+            {qualifiersState.status === 'error' ? (
+              <Alert tone="warning" title="Unable to load best-third qualifiers">
+                {qualifiersState.message}
+              </Alert>
+            ) : null}
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {bestThirds.map((teamCode, index) => {
+                const qualifierResult: PredictionResult = !bestThirdsFinal
+                  ? 'pending'
+                  : teamCode && qualifiersSet.has(teamCode)
+                    ? 'correct'
+                    : 'wrong'
+                return (
+                  <div
+                    key={`best-third-${index}`}
+                    className={`rounded-xl border border-border/70 px-3 py-2 ${resultSurfaceClass(qualifierResult)}`}
+                  >
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Slot {index + 1}</div>
+                    <div className="text-sm font-semibold text-foreground">Pick: {teamCode || '—'}</div>
+                    <div className="mt-1">
+                      <Badge tone={resultTone(qualifierResult)}>{resultLabel(qualifierResult)}</Badge>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
+
+      <Sheet open={quickEditorTarget !== null} onOpenChange={(open) => !open && setQuickEditorTarget(null)}>
+        <SheetContent side="right" className="w-[96vw] max-w-xl p-0">
+          <SheetHeader>
+            <SheetTitle>Quick edit</SheetTitle>
+            <SheetDescription>
+              {quickEditorTarget?.kind === 'group'
+                ? `Group ${quickEditorTarget.groupId} qualifiers`
+                : 'Best 8 third-place qualifiers'}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="space-y-4 p-4">
+            {quickEditorTarget?.kind === 'group' ? (
+              <>
+                <label className="space-y-1 text-xs text-muted-foreground">
+                  <span>{`Group ${quickEditorTarget.groupId} • 1st`}</span>
+                  <select
+                    className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                    value={(groupStage.data.groups[quickEditorTarget.groupId] ?? {}).first ?? ''}
+                    onChange={(event) => groupStage.setGroupPick(quickEditorTarget.groupId, 'first', event.target.value)}
+                  >
+                    <option value="">Select team</option>
+                    {(groupTeams[quickEditorTarget.groupId] ?? []).map((team) => (
+                      <option key={`${quickEditorTarget.groupId}-drawer-first-${team.code}`} value={team.code}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-1 text-xs text-muted-foreground">
+                  <span>{`Group ${quickEditorTarget.groupId} • 2nd`}</span>
+                  <select
+                    className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                    value={(groupStage.data.groups[quickEditorTarget.groupId] ?? {}).second ?? ''}
+                    onChange={(event) => groupStage.setGroupPick(quickEditorTarget.groupId, 'second', event.target.value)}
+                  >
+                    <option value="">Select team</option>
+                    {(groupTeams[quickEditorTarget.groupId] ?? []).map((team) => (
+                      <option key={`${quickEditorTarget.groupId}-drawer-second-${team.code}`} value={team.code}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {bestThirds.map((teamCode, index) => (
+                  <label key={`drawer-best-third-${index}`} className="space-y-1 text-xs text-muted-foreground">
+                    <span>{`Best third #${index + 1}`}</span>
+                    <select
+                      className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                      value={teamCode ?? ''}
+                      onChange={(event) => groupStage.setBestThird(index, event.target.value)}
+                    >
+                      <option value="">Select team</option>
+                      {bestThirdCandidatesForIndex(index).map((team) => (
+                        <option key={`drawer-best-third-${index}-${team.code}`} value={team.code}>
+                          {team.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" onClick={() => void groupStage.save()} loading={groupStage.saveStatus === 'saving'}>
+                Save group picks
+              </Button>
+              {groupStage.saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
+              {groupStage.saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
+            </div>
+          </div>
+          <div className="border-t border-border/60 p-4">
+            <SheetClose asChild>
+              <Button variant="secondary">Close</Button>
+            </SheetClose>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

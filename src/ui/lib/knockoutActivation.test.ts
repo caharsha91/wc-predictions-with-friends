@@ -48,4 +48,40 @@ describe('resolveKnockoutActivation', () => {
     expect(state.inferredActive).toBe(true)
     expect(state.mismatchWarning).toBeNull()
   })
+
+  it('forces knockout active in demo end-group-draw-confirmed even when inference is inactive', () => {
+    const state = resolveKnockoutActivation({
+      mode: 'demo',
+      demoScenario: 'end-group-draw-confirmed',
+      groupComplete: true,
+      drawReady: false,
+      knockoutStarted: false
+    })
+
+    expect(state.active).toBe(true)
+    expect(state.forcedByDemoScenario).toBe(true)
+    expect(state.inferredActive).toBe(false)
+  })
+
+  it('keeps default mode fixture-inference behavior unchanged', () => {
+    const inactive = resolveKnockoutActivation({
+      mode: 'default',
+      demoScenario: 'end-group-draw-confirmed',
+      groupComplete: true,
+      drawReady: false,
+      knockoutStarted: false
+    })
+    const active = resolveKnockoutActivation({
+      mode: 'default',
+      demoScenario: 'end-group-draw-confirmed',
+      groupComplete: true,
+      drawReady: true,
+      knockoutStarted: false
+    })
+
+    expect(inactive.active).toBe(false)
+    expect(inactive.forcedByDemoScenario).toBe(false)
+    expect(active.active).toBe(true)
+    expect(active.forcedByDemoScenario).toBe(false)
+  })
 })

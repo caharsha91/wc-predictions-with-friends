@@ -1,23 +1,23 @@
 {
-  "updatedAt": "2026-02-08T21:48:24.419Z",
+  "updatedAt": "2026-02-08T22:03:32.729Z",
   "qualifiers": [
-    "K1",
-    "NED",
-    "CUR",
-    "I1",
-    "F1",
+    "HAI",
     "AUT",
-    "ALG",
-    "MAR"
+    "NZL",
+    "NOR",
+    "COL",
+    "JPN",
+    "MAR",
+    "JOR"
   ],
   "qualifiers_hint": [
-    "K1",
-    "NED",
-    "CUR",
-    "I1",
-    "F1",
+    "HAI",
     "AUT",
-    "ALG",
-    "MAR"
+    "NZL",
+    "NOR",
+    "COL",
+    "JPN",
+    "MAR",
+    "JOR"
   ]
 }

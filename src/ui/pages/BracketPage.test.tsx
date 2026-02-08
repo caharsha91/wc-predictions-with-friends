@@ -76,6 +76,9 @@ vi.mock('../hooks/useBracketKnockoutData', () => ({
     },
     knockout: { R32: { 'r32-1': 'HOME' } },
     stageOrder: ['R32', 'R16', 'QF', 'SF', 'Third', 'Final'],
+    setPick: vi.fn(),
+    save: vi.fn(async () => {}),
+    saveStatus: 'idle',
     totalMatches: 1,
     completeMatches: 1
   })
@@ -112,7 +115,10 @@ describe('BracketPage read-only detail', () => {
 
     expect(screen.getByRole('columnheader', { name: /actual winner/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /back to picks/i })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /save bracket/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /bra advances/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /ned advances/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /save knockout picks/i })).not.toBeInTheDocument()
   })
 
   it('forces detail active in demo mid-knockout and shows override warning if inference disagrees', () => {
@@ -156,5 +162,19 @@ describe('BracketPage read-only detail', () => {
 
     expect(screen.getByText(/source: demo scenario override/i)).toBeInTheDocument()
     expect(screen.queryByText(/knockout activation override/i)).not.toBeInTheDocument()
+  })
+
+  it('forces detail active in demo end-group-draw-confirmed when fixture inference is pending', () => {
+    fixtures.state.unlocked = false
+    window.localStorage.setItem('wc-demo-scenario', 'end-group-draw-confirmed')
+
+    render(
+      <MemoryRouter initialEntries={['/demo/play/bracket']}>
+        <BracketPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole('columnheader', { name: /actual winner/i })).toBeInTheDocument()
+    expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
   })
 })

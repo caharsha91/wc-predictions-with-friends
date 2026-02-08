@@ -125,6 +125,10 @@ vi.mock('../hooks/useGroupOutcomesData', () => ({
   })
 }))
 
+vi.mock('../components/play/PicksWizardFlow', () => ({
+  default: () => <div>Picks Wizard Quick Editor Mock</div>
+}))
+
 import PicksPage from './PicksPage'
 
 function LocationProbe() {
@@ -152,7 +156,8 @@ describe('PicksPage inline finished matches', () => {
     expect(screen.getByRole('link', { name: /back to picks/i })).toBeInTheDocument()
     expect(screen.getByText('Open now')).toBeInTheDocument()
     expect(screen.getByText('Finished matches')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /wizard/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
+    expect(screen.queryByText(/picks wizard quick editor mock/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('columnheader', { name: 'Points' })).not.toBeInTheDocument()
     expect(screen.queryByText(/open picks need submission/i)).not.toBeInTheDocument()
   })

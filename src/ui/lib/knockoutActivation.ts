@@ -2,6 +2,7 @@ import type { DataMode } from '../../lib/dataMode'
 import type { DemoScenarioId } from './demoControls'
 
 const DEMO_FORCED_KNOCKOUT_SCENARIOS = new Set<DemoScenarioId>([
+  'end-group-draw-confirmed',
   'mid-knockout',
   'world-cup-final-pending'
 ])

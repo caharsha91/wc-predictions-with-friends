@@ -325,4 +325,17 @@ describe('PlayPage action center', () => {
     expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
     expect(screen.queryByText(/knockout activation override/i)).not.toBeInTheDocument()
   })
+
+  it('forces knockout active in demo end-group-draw-confirmed even when draw inference is pending', () => {
+    window.localStorage.setItem('wc-demo-scenario', 'end-group-draw-confirmed')
+
+    render(
+      <MemoryRouter initialEntries={['/demo/play']}>
+        <PlayPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
+    expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
+  })
 })

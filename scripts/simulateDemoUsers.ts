@@ -895,14 +895,19 @@ function buildBestThirdQualifiers(
   scenario: ScenarioConfig
 ): SimulatedBestThirdQualifiersFile {
   const standings = computeGroupStandings(matches)
+  const topTwoPool = new Set(
+    [...standings.values()]
+      .flatMap((rows) => [rows[0]?.code, rows[1]?.code])
+      .filter((code): code is string => Boolean(code))
+  )
   const thirdPlacePool = [...standings.values()]
     .map((rows) => rows[2]?.code)
-    .filter((code): code is string => Boolean(code))
+    .filter((code): code is string => Boolean(code) && !topTwoPool.has(code))
 
   const fallbackPool = [...new Set(matches
     .filter((match) => match.stage === 'Group')
     .flatMap((match) => [match.homeTeam.code, match.awayTeam.code])
-    .filter((code) => code !== 'TBD'))]
+    .filter((code) => code !== 'TBD' && !topTwoPool.has(code)))]
 
   const pool = shuffle(random, [...thirdPlacePool, ...fallbackPool])
   const qualifiers = [...new Set(pool)].slice(0, 8)
