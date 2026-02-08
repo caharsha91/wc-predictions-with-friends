@@ -13,7 +13,7 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 - `/demo/play` demo play center (admin only)
 - `/demo/play/picks` demo picks detail (read-only + embedded results) (admin only)
 - `/demo/play/group-stage` demo group stage detail (read-only + standings/results) (admin only)
-- `/demo/play/bracket` demo knockout detail (read-only; active after group close + draw readiness) (admin only)
+- `/demo/play/bracket` demo knockout detail (read-only; fixture-activated or forced active for selected demo knockout scenarios) (admin only)
 - `/demo/play/league` demo standings (admin only)
 - `/demo/admin/controls` demo controls (scenario/viewer/session) (admin only)
 - `/demo/admin/players` demo member manager (admin only)
@@ -110,6 +110,8 @@ Demo snapshot data lives in per-scenario folders under `public/data/demo/scenari
 - Knockout card activates only after:
   - group-stage completion, and
   - knockout draw readiness inferred from Round-of-32 team completeness in match data.
+- Demo mode override: for `mid-knockout` and `world-cup-final-pending`, knockout is forced active even if fixture inference disagrees.
+- When forced activation disagrees with fixture inference, Play Center and Bracket detail show a warning banner with a source-of-truth label.
 - Knockout metrics/actions stay hidden or inactive until draw readiness.
 - During active knockout window, knockout action card moves to the top of Play Center.
 
@@ -222,6 +224,10 @@ Timestamp preset behavior:
   - random best-third qualifiers data,
   - knockout draw team assignments from qualified teams,
   - knockout winners/results progression per scenario status.
+- Knockout progression consistency rules:
+  - downstream knockout fixtures only resolve teams from finished upstream matches,
+  - unresolved downstream knockout fixtures are normalized to `SCHEDULED` with no winner/decider,
+  - in-play knockout fixtures do not publish finalized winner/decider values.
 - Simulation targets high prediction density for UX testing:
   - match picks are mostly filled in every scenario,
   - group-stage top-two and best-third user picks are fully populated,

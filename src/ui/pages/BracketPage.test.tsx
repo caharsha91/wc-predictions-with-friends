@@ -129,4 +129,32 @@ describe('BracketPage read-only detail', () => {
     expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
     expect(screen.getByText(/source: demo scenario override/i)).toBeInTheDocument()
   })
+
+  it('forces detail active in demo world-cup-final-pending and shows override warning when inference disagrees', () => {
+    fixtures.state.unlocked = false
+    window.localStorage.setItem('wc-demo-scenario', 'world-cup-final-pending')
+
+    render(
+      <MemoryRouter initialEntries={['/demo/play/bracket']}>
+        <BracketPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole('columnheader', { name: /actual winner/i })).toBeInTheDocument()
+    expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
+  })
+
+  it('shows demo source badge without warning when forced and inferred state agree', () => {
+    fixtures.state.unlocked = true
+    window.localStorage.setItem('wc-demo-scenario', 'mid-knockout')
+
+    render(
+      <MemoryRouter initialEntries={['/demo/play/bracket']}>
+        <BracketPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText(/source: demo scenario override/i)).toBeInTheDocument()
+    expect(screen.queryByText(/knockout activation override/i)).not.toBeInTheDocument()
+  })
 })

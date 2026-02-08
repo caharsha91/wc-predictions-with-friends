@@ -293,4 +293,36 @@ describe('PlayPage action center', () => {
     expect(screen.getByText(/demo scenario override keeps knockout active/i)).toBeInTheDocument()
     expect(screen.getByText(/source of truth: demo scenario override/i)).toBeInTheDocument()
   })
+
+  it('forces knockout active for demo world-cup-final-pending and shows warning when fixtures disagree', () => {
+    window.localStorage.setItem('wc-demo-scenario', 'world-cup-final-pending')
+
+    render(
+      <MemoryRouter initialEntries={['/demo/play']}>
+        <PlayPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
+    expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
+  })
+
+  it('does not show override warning when demo forced state matches fixture inference', () => {
+    window.localStorage.setItem('wc-demo-scenario', 'mid-knockout')
+    fixtures.state.nowIso = '2026-06-28T12:00:00.000Z'
+    fixtures.matches[0].status = 'FINISHED'
+    fixtures.matches[1].status = 'FINISHED'
+    fixtures.matches[2].status = 'FINISHED'
+    fixtures.matches[3].homeTeam.code = 'BRA'
+    fixtures.matches[3].awayTeam.code = 'NED'
+
+    render(
+      <MemoryRouter initialEntries={['/demo/play']}>
+        <PlayPage />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
+    expect(screen.queryByText(/knockout activation override/i)).not.toBeInTheDocument()
+  })
 })
