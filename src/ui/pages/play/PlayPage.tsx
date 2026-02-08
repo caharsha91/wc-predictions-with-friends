@@ -5,7 +5,6 @@ import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, isMatchLoc
 import { findPick, isPickComplete } from '../../../lib/picks'
 import type { Match } from '../../../types/matches'
 import type { Pick } from '../../../types/picks'
-import type { KnockoutStage } from '../../../types/scoring'
 import { readDemoScenario } from '../../lib/demoControls'
 import { resolveKnockoutActivation } from '../../lib/knockoutActivation'
 import { Alert } from '../../components/ui/Alert'
@@ -21,6 +20,7 @@ import { useBracketKnockoutData } from '../../hooks/useBracketKnockoutData'
 import { useNow } from '../../hooks/useNow'
 import { usePicksData } from '../../hooks/usePicksData'
 import { useRouteDataMode } from '../../hooks/useRouteDataMode'
+import { useToast } from '../../hooks/useToast'
 import { useViewerId } from '../../hooks/useViewerId'
 import type { PlayCenterState } from '../../lib/nextActionResolver'
 
@@ -104,7 +104,6 @@ function toQueueMatch(match: Match, pick: Pick | undefined, now: Date): QueueMat
 }
 
 type HubSection = 'group' | 'picks' | 'knockout'
-type KnockoutEntry = { stage: KnockoutStage; match: Match }
 
 export default function PlayPage() {
   const navigate = useNavigate()
@@ -114,6 +113,7 @@ export default function PlayPage() {
   const isDemoRoute = location.pathname.startsWith('/demo/')
   const demoScenario = isDemoRoute ? readDemoScenario() : null
   const now = useNow({ tickMs: 30_000 })
+  const { showToast } = useToast()
   const picksState = usePicksData()
   const editorRef = useRef<HTMLDivElement | null>(null)
   const [lastFocusedMatchId, setLastFocusedMatchId] = useState<string | null>(() => {
@@ -121,7 +121,6 @@ export default function PlayPage() {
     return window.localStorage.getItem(`wc-play-last-focus:${mode}:${userId}`)
   })
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null)
-  const [inlineNotice, setInlineNotice] = useState<string | null>(null)
 
   const emitTelemetry = useCallback((event: string, payload: Record<string, unknown> = {}) => {
     if (typeof window === 'undefined') return
@@ -258,6 +257,9 @@ export default function PlayPage() {
     [demoScenario, groupComplete, isDemoRoute, knockoutDrawReady, knockoutStarted]
   )
   const knockoutActive = knockoutActivation.active
+  const knockoutDetailEnabled = isDemoRoute
+    ? demoScenario === 'end-group-draw-confirmed' || demoScenario === 'mid-knockout' || demoScenario === 'world-cup-final-pending'
+    : groupComplete && knockoutDrawReady
   const groupCompletion = useMemo(() => {
     let groupsDone = 0
     for (const groupId of groupStage.groupIds) {
@@ -274,86 +276,34 @@ export default function PlayPage() {
     }
   }, [groupStage.data.bestThirds, groupStage.data.groups, groupStage.groupIds])
 
+  const groupPendingActions = useMemo(() => {
+    const groupsRemaining = Math.max(0, groupCompletion.groupsTotal - groupCompletion.groupsDone)
+    const bestThirdRemaining = Math.max(0, 8 - groupCompletion.bestThirdDone)
+    return groupsRemaining + bestThirdRemaining
+  }, [groupCompletion.bestThirdDone, groupCompletion.groupsDone, groupCompletion.groupsTotal])
+
   const groupStageCtaLabel = useMemo(() => {
-    if (groupCompletion.groupsTotal === 0) return 'Open Group Stage'
     if (groupClosed) return 'View Group Stage'
-    const complete =
-      groupCompletion.groupsDone === groupCompletion.groupsTotal && groupCompletion.bestThirdDone === 8
-    return complete ? 'Open Group Stage' : 'Continue Group Stage'
-  }, [groupClosed, groupCompletion.bestThirdDone, groupCompletion.groupsDone, groupCompletion.groupsTotal])
+    return groupPendingActions > 0 ? 'Continue Group Stage' : 'Open Group Stage'
+  }, [groupClosed, groupPendingActions])
 
-  const teamsByGroup = useMemo(() => {
-    const byGroup = new Map<string, Array<{ code: string; name: string }>>()
-    for (const match of groupMatches) {
-      if (!match.group) continue
-      const existing = byGroup.get(match.group) ?? []
-      if (!existing.some((team) => team.code === match.homeTeam.code)) {
-        existing.push({ code: match.homeTeam.code, name: match.homeTeam.name })
+  const knockoutPendingActions = useMemo(
+    () => Math.max(0, knockoutData.totalMatches - knockoutData.completeMatches),
+    [knockoutData.completeMatches, knockoutData.totalMatches]
+  )
+
+  const knockoutPendingOpenActions = useMemo(() => {
+    if (knockoutData.loadState.status !== 'ready') return 0
+    let pending = 0
+    for (const stage of knockoutData.stageOrder) {
+      for (const match of knockoutData.loadState.byStage[stage] ?? []) {
+        if (isMatchLocked(match.kickoffUtc, now)) continue
+        if (knockoutData.knockout[stage]?.[match.id]) continue
+        pending += 1
       }
-      if (!existing.some((team) => team.code === match.awayTeam.code)) {
-        existing.push({ code: match.awayTeam.code, name: match.awayTeam.name })
-      }
-      byGroup.set(match.group, existing)
     }
-    return byGroup
-  }, [groupMatches])
-
-  const activeGroupId = useMemo(() => {
-    for (const groupId of groupStage.groupIds) {
-      const selection = groupStage.data.groups[groupId] ?? {}
-      if (!selection.first || !selection.second || selection.first === selection.second) return groupId
-    }
-    return groupStage.groupIds[0] ?? null
-  }, [groupStage.data.groups, groupStage.groupIds])
-
-  const activeGroupSelection = activeGroupId ? groupStage.data.groups[activeGroupId] ?? {} : {}
-  const activeGroupTeams = activeGroupId ? teamsByGroup.get(activeGroupId) ?? [] : []
-
-  const bestThirdActiveIndex = useMemo(() => {
-    const firstOpen = groupStage.data.bestThirds.findIndex((team) => !team)
-    if (firstOpen >= 0) return firstOpen
-    return Math.max(0, groupStage.data.bestThirds.length - 1)
-  }, [groupStage.data.bestThirds])
-
-  const bestThirdCandidates = useMemo(() => {
-    const excludedTopTwo = new Set<string>()
-    for (const groupId of groupStage.groupIds) {
-      const pick = groupStage.data.groups[groupId] ?? {}
-      if (pick.first) excludedTopTwo.add(pick.first)
-      if (pick.second) excludedTopTwo.add(pick.second)
-    }
-    const selectedElsewhere = new Set(
-      groupStage.data.bestThirds
-        .map((team, idx) => ({ team, idx }))
-        .filter((entry) => entry.idx !== bestThirdActiveIndex && Boolean(entry.team))
-        .map((entry) => entry.team)
-    )
-
-    const allTeams = [...teamsByGroup.values()].flat()
-    return allTeams.filter((team) => !excludedTopTwo.has(team.code) && !selectedElsewhere.has(team.code))
-  }, [bestThirdActiveIndex, groupStage.data.bestThirds, groupStage.data.groups, groupStage.groupIds, teamsByGroup])
-
-  const knockoutEntries = useMemo<KnockoutEntry[]>(() => {
-    if (knockoutData.loadState.status !== 'ready') return []
-    const readyState = knockoutData.loadState
-    return knockoutData.stageOrder.flatMap((stage) =>
-      (readyState.byStage[stage] ?? []).map((match) => ({ stage, match }))
-    )
-  }, [knockoutData.loadState, knockoutData.stageOrder])
-
-  const activeKnockoutEntry = useMemo(() => {
-    const firstOpen = knockoutEntries.find(
-      (entry) =>
-        !isMatchLocked(entry.match.kickoffUtc, now) &&
-        !knockoutData.knockout[entry.stage]?.[entry.match.id]
-    )
-    if (firstOpen) return firstOpen
-    return knockoutEntries.find((entry) => !isMatchLocked(entry.match.kickoffUtc, now)) ?? null
-  }, [knockoutData.knockout, knockoutEntries, now])
-
-  const activeKnockoutWinner = activeKnockoutEntry
-    ? knockoutData.knockout[activeKnockoutEntry.stage]?.[activeKnockoutEntry.match.id]
-    : undefined
+    return pending
+  }, [knockoutData.knockout, knockoutData.loadState, knockoutData.stageOrder, now])
 
   const sectionOrder = useMemo<HubSection[]>(() => {
     if (knockoutActive) return ['knockout', 'picks', 'group']
@@ -440,7 +390,6 @@ export default function PlayPage() {
     const currentQueueEntry =
       activeMatchId ? queueMatches.find((entry) => entry.match.id === activeMatchId && !entry.locked) : null
     if (currentQueueEntry) {
-      setInlineNotice(null)
       focusInlineEditor()
       return
     }
@@ -449,26 +398,23 @@ export default function PlayPage() {
         ? queueMatches.find((entry) => entry.match.id === lastFocusedMatchId && !entry.locked)?.match.id
         : null) ?? nextIncompleteEntry?.match.id
     if (!fallback) {
-      setInlineNotice("You're chill.")
+      showToast({ title: 'No open picks', message: "You're chill.", tone: 'info' })
       return
     }
-    setInlineNotice(null)
     setActiveMatchId(fallback)
     focusInlineEditor()
   }
 
   function handleNextIncompletePick() {
     if (!nextIncompleteEntry) {
-      setInlineNotice('Nothing open right now. Check results or the league.')
+      showToast({ title: 'No open picks', message: 'Nothing open right now. Check results or the league.', tone: 'info' })
       return
     }
-    setInlineNotice(null)
     setActiveMatchId(nextIncompleteEntry.match.id)
     focusInlineEditor()
   }
 
   function handleSelectQueueItem(matchId: string) {
-    setInlineNotice(null)
     setActiveMatchId(matchId)
     setLastFocusedMatchId(matchId)
     emitTelemetry('play_center_queue_item_selected', { match_id: matchId })
@@ -531,23 +477,8 @@ export default function PlayPage() {
             <div className="space-y-4">
               {sectionOrder.map((section) => {
                 if (section === 'group') {
-                  if (groupClosed) {
-                    return (
-                      <Card key="group-collapsed" className="rounded-2xl border-border/60 bg-transparent px-4 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Group stage</div>
-                            <div className="truncate text-sm text-muted-foreground">Closed. View picks and results.</div>
-                          </div>
-                          <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('group-stage'))}>
-                            View
-                          </Button>
-                        </div>
-                      </Card>
-                    )
-                  }
                   return (
-                    <Card key="group-active" className="rounded-2xl border-border/60 bg-transparent p-4">
+                    <Card key="group-summary" className="rounded-2xl border-border/60 bg-transparent p-4">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Group stage</div>
@@ -562,6 +493,9 @@ export default function PlayPage() {
                           <Badge tone={groupCompletion.bestThirdDone === 8 ? 'success' : 'warning'}>
                             Best thirds {groupCompletion.bestThirdDone}/8
                           </Badge>
+                          <Badge tone={groupPendingActions === 0 ? 'success' : 'warning'}>
+                            Pending {groupPendingActions}
+                          </Badge>
                           {groupLockTime ? (
                             <Badge tone={groupClosed ? 'locked' : 'info'}>
                               {groupClosed ? 'Closed' : `Closes ${formatDateTime(groupLockTime.toISOString())}`}
@@ -569,107 +503,52 @@ export default function PlayPage() {
                           ) : null}
                         </div>
                         {groupStage.loadState.status === 'loading' ? (
-                          <div className="text-xs text-muted-foreground">Loading group wizard…</div>
+                          <div className="text-xs text-muted-foreground">Loading group-stage progress…</div>
                         ) : null}
                         {groupStage.loadState.status === 'error' ? (
-                          <div className="text-xs text-muted-foreground">Group wizard unavailable. Open detailed page.</div>
+                          <div className="text-xs text-muted-foreground">Group progress unavailable. Open detailed page.</div>
                         ) : null}
-                        {groupStage.loadState.status === 'ready' && activeGroupId ? (
-                          <div className="grid gap-2 rounded-xl border border-border/60 bg-transparent p-3 sm:grid-cols-3">
-                            <label className="space-y-1 text-xs text-muted-foreground">
-                              <span>{`Group ${activeGroupId} • 1st`}</span>
-                              <select
-                                className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
-                                value={activeGroupSelection.first ?? ''}
-                                onChange={(event) => groupStage.setGroupPick(activeGroupId, 'first', event.target.value)}
-                              >
-                                <option value="">Select team</option>
-                                {activeGroupTeams.map((team) => (
-                                  <option key={`${activeGroupId}-first-${team.code}`} value={team.code}>
-                                    {team.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="space-y-1 text-xs text-muted-foreground">
-                              <span>{`Group ${activeGroupId} • 2nd`}</span>
-                              <select
-                                className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
-                                value={activeGroupSelection.second ?? ''}
-                                onChange={(event) => groupStage.setGroupPick(activeGroupId, 'second', event.target.value)}
-                              >
-                                <option value="">Select team</option>
-                                {activeGroupTeams.map((team) => (
-                                  <option key={`${activeGroupId}-second-${team.code}`} value={team.code}>
-                                    {team.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="space-y-1 text-xs text-muted-foreground">
-                              <span>{`Best third #${bestThirdActiveIndex + 1}`}</span>
-                              <select
-                                className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
-                                value={groupStage.data.bestThirds[bestThirdActiveIndex] ?? ''}
-                                onChange={(event) => groupStage.setBestThird(bestThirdActiveIndex, event.target.value)}
-                              >
-                                <option value="">Select team</option>
-                                {bestThirdCandidates.map((team) => (
-                                  <option key={`best-third-${team.code}`} value={team.code}>
-                                    {team.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <div className="sm:col-span-3 flex flex-wrap items-center gap-2">
-                              <Button size="sm" onClick={() => void groupStage.save()} loading={groupStage.saveStatus === 'saving'}>
-                                Save group picks
-                              </Button>
-                              {groupStage.saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
-                              {groupStage.saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
-                            </div>
-                          </div>
-                        ) : null}
+                        <div className="text-xs text-muted-foreground">Open group-stage details to edit or review picks.</div>
                       </div>
                     </Card>
                   )
                 }
 
                 if (section === 'knockout') {
-                  if (!knockoutActive) {
-                    const collapsedCopy = !groupComplete
-                      ? 'Unlocks after group stage closes.'
-                      : !knockoutDrawReady
-                        ? 'Waiting for draw confirmation.'
-                        : 'Inactive. View picks and results.'
-                    return (
-                      <Card key="knockout-collapsed" className="rounded-2xl border-border/60 bg-transparent px-4 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Knockout</div>
-                            <div className="truncate text-sm text-muted-foreground">{collapsedCopy}</div>
-                          </div>
+                  return (
+                    <Card key="knockout-summary" className="rounded-2xl border-border/60 bg-transparent p-4">
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Knockout</div>
                           <Button
                             size="sm"
                             variant="secondary"
                             onClick={() => navigate(toPlayPath('bracket'))}
-                            disabled={!groupComplete || !knockoutDrawReady}
+                            disabled={!knockoutDetailEnabled}
                           >
-                            View
+                            Open Knockout
                           </Button>
                         </div>
-                      </Card>
-                    )
-                  }
-                  return (
-                    <Card key="knockout-active" className="rounded-2xl border-border/60 bg-transparent p-4">
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Knockout</div>
-                          <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('bracket'))}>
-                            Continue Knockout
-                          </Button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge tone={knockoutPendingActions === 0 ? 'success' : 'warning'}>
+                            Pending {knockoutPendingActions}
+                          </Badge>
+                          <Badge tone={knockoutPendingOpenActions === 0 ? 'secondary' : 'warning'}>
+                            Pending now {knockoutPendingOpenActions}
+                          </Badge>
+                          <Badge tone={knockoutActive ? 'info' : 'secondary'}>
+                            {knockoutActive ? 'Active' : 'Inactive'}
+                          </Badge>
                         </div>
+                        {!knockoutDetailEnabled ? (
+                          <div className="text-xs text-muted-foreground">
+                            {!groupComplete
+                              ? 'Unlocks after group stage completes.'
+                              : !knockoutDrawReady && !isDemoRoute
+                                ? 'Waiting for draw confirmation.'
+                                : 'Not available for this scenario yet.'}
+                          </div>
+                        ) : null}
                         {knockoutActivation.mismatchWarning ? (
                           <Alert tone="warning" title="Knockout activation override">
                             <div>{knockoutActivation.mismatchWarning}</div>
@@ -678,61 +557,7 @@ export default function PlayPage() {
                             </div>
                           </Alert>
                         ) : null}
-                        {knockoutData.loadState.status === 'loading' ? (
-                          <div className="text-xs text-muted-foreground">Loading knockout wizard…</div>
-                        ) : null}
-                        {knockoutData.loadState.status === 'error' ? (
-                          <div className="text-xs text-muted-foreground">Knockout wizard unavailable. Open detailed bracket.</div>
-                        ) : null}
-                        {knockoutData.loadState.status === 'ready' ? (
-                          <div className="space-y-2 rounded-xl border border-border/60 bg-transparent p-3">
-                            {activeKnockoutEntry ? (
-                              <>
-                                <div className="text-sm font-semibold text-foreground">
-                                  {activeKnockoutEntry.match.homeTeam.code} vs {activeKnockoutEntry.match.awayTeam.code}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Locks {formatDateTime(getLockTime(activeKnockoutEntry.match.kickoffUtc).toISOString())}
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    className={activeKnockoutWinner === 'HOME' ? 'border-primary' : undefined}
-                                    onClick={() =>
-                                      knockoutData.setPick(activeKnockoutEntry.stage, activeKnockoutEntry.match.id, 'HOME')
-                                    }
-                                  >
-                                    {activeKnockoutEntry.match.homeTeam.code} advances
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    className={activeKnockoutWinner === 'AWAY' ? 'border-primary' : undefined}
-                                    onClick={() =>
-                                      knockoutData.setPick(activeKnockoutEntry.stage, activeKnockoutEntry.match.id, 'AWAY')
-                                    }
-                                  >
-                                    {activeKnockoutEntry.match.awayTeam.code} advances
-                                  </Button>
-                                </div>
-                              </>
-                            ) : (
-                              <div className="text-xs text-muted-foreground">All currently open knockout picks are complete.</div>
-                            )}
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => void knockoutData.save()}
-                                loading={knockoutData.saveStatus === 'saving'}
-                              >
-                                Save knockout picks
-                              </Button>
-                              {knockoutData.saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
-                              {knockoutData.saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
-                            </div>
-                          </div>
-                        ) : null}
+                        <div className="text-xs text-muted-foreground">Open knockout details to edit or review bracket picks.</div>
                       </div>
                     </Card>
                   )
@@ -783,7 +608,6 @@ export default function PlayPage() {
                           <Badge tone="secondary">Done {metricCounts.finished}</Badge>
                         </div>
                       </div>
-                      {inlineNotice ? <div className="text-xs text-muted-foreground">{inlineNotice}</div> : null}
                       <div className="grid gap-3 xl:grid-cols-[0.46fr_1.54fr]">
                         <Card className="rounded-2xl border-border/60 bg-transparent p-3 sm:p-4">
                           <DeadlineQueuePanel

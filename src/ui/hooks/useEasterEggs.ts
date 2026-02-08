@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useTheme } from '../../theme/ThemeProvider'
+import { useToast } from './useToast'
 
 const SIDEBAR_COMPACT_KEY = 'wc-sidebar-compact'
 const LOGO_CLICK_WINDOW_MS = 2000
@@ -15,14 +16,13 @@ function readCompactMode() {
 
 export function useEasterEggs() {
   const { mode, isSystemMode, setMode, setSystemMode } = useTheme()
+  const { showToast } = useToast()
   const [sidebarCompact, setSidebarCompact] = useState(readCompactMode)
-  const [notice, setNotice] = useState<string | null>(null)
   const [popHighlightActive, setPopHighlightActive] = useState(false)
 
   const logoClicksRef = useRef<number[]>([])
   const metaTapsRef = useRef<number[]>([])
   const holdTimerRef = useRef<number | null>(null)
-  const noticeTimerRef = useRef<number | null>(null)
   const popTimerRef = useRef<number | null>(null)
   const suppressNextClickRef = useRef(false)
 
@@ -31,21 +31,9 @@ export function useEasterEggs() {
     window.sessionStorage.setItem(SIDEBAR_COMPACT_KEY, sidebarCompact ? '1' : '0')
   }, [sidebarCompact])
 
-  useEffect(() => {
-    if (!notice) return
-    if (noticeTimerRef.current) {
-      window.clearTimeout(noticeTimerRef.current)
-    }
-    noticeTimerRef.current = window.setTimeout(() => {
-      setNotice(null)
-      noticeTimerRef.current = null
-    }, 2200)
-  }, [notice])
-
   useEffect(
     () => () => {
       if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current)
-      if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current)
       if (popTimerRef.current) window.clearTimeout(popTimerRef.current)
     },
     []
@@ -54,19 +42,19 @@ export function useEasterEggs() {
   const cycleThemeMode = useCallback(() => {
     if (isSystemMode) {
       setMode('light')
-      setNotice('Theme: Light')
+      showToast({ title: 'Theme updated', message: 'Theme: Light', tone: 'info' })
       return
     }
 
     if (mode === 'light') {
       setMode('dark')
-      setNotice('Theme: Dark')
+      showToast({ title: 'Theme updated', message: 'Theme: Dark', tone: 'info' })
       return
     }
 
     setSystemMode(true)
-    setNotice('Theme: System')
-  }, [isSystemMode, mode, setMode, setSystemMode])
+    showToast({ title: 'Theme updated', message: 'Theme: System', tone: 'info' })
+  }, [isSystemMode, mode, setMode, setSystemMode, showToast])
 
   const activatePopHighlight = useCallback(() => {
     setPopHighlightActive(true)
@@ -94,10 +82,14 @@ export function useEasterEggs() {
     logoClicksRef.current = []
     setSidebarCompact((current) => {
       const next = !current
-      setNotice(next ? 'Focus mode: Compact sidebar on' : 'Focus mode: Compact sidebar off')
+      showToast({
+        title: 'Focus mode',
+        message: next ? 'Compact sidebar on' : 'Compact sidebar off',
+        tone: 'info'
+      })
       return next
     })
-  }, [])
+  }, [showToast])
 
   const clearHoldTimer = useCallback(() => {
     if (holdTimerRef.current) {
@@ -127,13 +119,12 @@ export function useEasterEggs() {
 
     metaTapsRef.current = []
     activatePopHighlight()
-    setNotice('Pop focus active for 20s')
-  }, [activatePopHighlight])
+    showToast({ title: 'Pop focus', message: 'Pop focus active for 20s', tone: 'info' })
+  }, [activatePopHighlight, showToast])
 
   return useMemo(
     () => ({
       sidebarCompact,
-      notice,
       popHighlightActive,
       onLogoClick,
       onLogoPointerDown,
@@ -143,7 +134,6 @@ export function useEasterEggs() {
       onLastUpdatedTap
     }),
     [
-      notice,
       onLastUpdatedTap,
       onLogoClick,
       onLogoPointerDown,

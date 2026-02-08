@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 
 import App from './ui/App'
+import { ToastProvider } from './ui/hooks/useToast'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { applyInitialTheme } from './theme/themeState'
 import './styles/index.css'
@@ -12,9 +13,11 @@ applyInitialTheme()
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
-      <HashRouter>
-        <App />
-      </HashRouter>
+      <ToastProvider>
+        <HashRouter>
+          <App />
+        </HashRouter>
+      </ToastProvider>
     </ThemeProvider>
   </React.StrictMode>
 )

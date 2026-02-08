@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from 'react'
+import { useEffect, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 
@@ -17,6 +17,7 @@ import {
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useEasterEggs } from './hooks/useEasterEggs'
+import { useToast } from './hooks/useToast'
 import {
   DEMO_SCENARIO_STORAGE_KEY,
   readDemoNowOverride,
@@ -103,7 +104,6 @@ function SidebarAccountMenu({
   onToggleDemoMode,
   canToggleDemoMode,
   isDemoMode,
-  authError,
   compact
 }: {
   initials: string
@@ -112,7 +112,6 @@ function SidebarAccountMenu({
   onToggleDemoMode: () => Promise<void>
   canToggleDemoMode: boolean
   isDemoMode: boolean
-  authError: string | null
   compact: boolean
 }) {
   const { mode, isSystemMode, setMode, setSystemMode } = useTheme()
@@ -173,7 +172,6 @@ function SidebarAccountMenu({
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
-      {authError ? <div className="px-1 pt-2 text-[11px] text-destructive">{authError}</div> : null}
     </DropdownMenu>
   )
 }
@@ -240,11 +238,10 @@ function LayoutFrame() {
   const location = useLocation()
   const user = useCurrentUser()
   const authState = useAuthState()
-  const [authError, setAuthError] = useState<string | null>(null)
+  const { showToast } = useToast()
   const canAccessAdmin = user?.isAdmin === true
   const {
     sidebarCompact,
-    notice,
     popHighlightActive,
     onLogoClick,
     onLogoPointerDown,
@@ -256,25 +253,23 @@ function LayoutFrame() {
 
   async function handleSignIn() {
     if (!firebaseAuth) return
-    setAuthError(null)
     try {
       const provider = new GoogleAuthProvider()
       await signInWithPopup(firebaseAuth, provider)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign in.'
-      setAuthError(message)
+      showToast({ title: 'Sign in failed', message, tone: 'danger' })
     }
   }
 
   async function handleSignOut() {
     if (!firebaseAuth) return
-    setAuthError(null)
     try {
       clearDemoLocalStorage()
       await signOut(firebaseAuth)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign out.'
-      setAuthError(message)
+      showToast({ title: 'Sign out failed', message, tone: 'danger' })
     }
   }
 
@@ -356,16 +351,6 @@ function LayoutFrame() {
                 onPointerCancel: onLogoPointerCancel
               }}
             />
-            {notice ? (
-              <div
-                className={cn(
-                  'rounded-lg border border-[var(--sidebar-border)] bg-[var(--sidebar-nav-hover-bg)] px-2 py-1 text-[11px] text-[var(--sidebar-nav-foreground)]',
-                  sidebarCompact && 'text-center'
-                )}
-              >
-                {notice}
-              </div>
-            ) : null}
           </div>
 
           <div className="flex-1 space-y-6 overflow-y-auto pr-1" aria-label="Primary">
@@ -396,7 +381,6 @@ function LayoutFrame() {
                 onToggleDemoMode={handleToggleDemoMode}
                 canToggleDemoMode={canAccessAdmin}
                 isDemoMode={isDemoRoute}
-                authError={authError}
                 compact={sidebarCompact}
               />
             ) : hasFirebase ? (
@@ -424,7 +408,6 @@ function LayoutFrame() {
             )}
             onClickCapture={handleMainClickCapture}
           >
-            {authError ? <div className="mb-4 text-xs text-destructive">{authError}</div> : null}
             <Outlet />
           </main>
         </div>

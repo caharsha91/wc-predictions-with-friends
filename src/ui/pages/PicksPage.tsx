@@ -466,6 +466,8 @@ export default function PicksPage() {
               userId={userId}
               now={now}
               emptyMessage="No completed open picks yet."
+              showInlineEdit
+              onEditMatch={setQuickEditMatchId}
             />
           </AccordionContent>
         </AccordionItem>

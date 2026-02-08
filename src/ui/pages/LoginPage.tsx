@@ -2,14 +2,14 @@ import { Navigate } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 
 import { firebaseAuth, hasFirebase } from '../../lib/firebase'
-import { useState } from 'react'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuthState } from '../hooks/useAuthState'
+import { useToast } from '../hooks/useToast'
 
 export default function LoginPage() {
   const authState = useAuthState()
-  const [authError, setAuthError] = useState<string | null>(null)
+  const { showToast } = useToast()
 
   if (authState.user) {
     return <Navigate to="/" replace />
@@ -17,13 +17,12 @@ export default function LoginPage() {
 
   async function handleSignIn() {
     if (!firebaseAuth) return
-    setAuthError(null)
     try {
       const provider = new GoogleAuthProvider()
       await signInWithPopup(firebaseAuth, provider)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to sign in.'
-      setAuthError(message)
+      showToast({ title: 'Sign in failed', message, tone: 'danger' })
     }
   }
 
@@ -42,7 +41,6 @@ export default function LoginPage() {
               Firebase auth is not configured. The app is currently read-only in browser mode.
             </div>
           )}
-          {authError ? <div className="text-xs text-destructive">{authError}</div> : null}
           <div className="flex flex-wrap gap-2">
             {hasFirebase ? (
               <Button type="button" onClick={() => void handleSignIn()}>

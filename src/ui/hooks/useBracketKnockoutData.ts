@@ -188,8 +188,10 @@ export function useBracketKnockoutData() {
         await saveUserBracketKnockoutDoc(userId, knockout)
       }
       setSaveStatus('saved')
+      return true
     } catch {
       setSaveStatus('error')
+      return false
     }
   }, [firestoreEnabled, knockout, mode, userId])
 

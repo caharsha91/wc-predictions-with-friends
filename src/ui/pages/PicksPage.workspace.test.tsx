@@ -194,6 +194,21 @@ describe('PicksPage inline finished matches', () => {
     dispatchSpy.mockRestore()
   })
 
+  it('shows quick edit for completed open picks and opens the drawer', async () => {
+    renderAt('/play/picks')
+
+    fireEvent.click(screen.getByRole('button', { name: /completed \(open\)/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+
+    expect(screen.getByRole('heading', { name: /quick edit/i })).toBeInTheDocument()
+    expect(screen.getByText(/picks wizard quick editor mock/i)).toBeInTheDocument()
+  })
+
   it('keeps a header picks link available', () => {
     renderAt('/play/picks')
 

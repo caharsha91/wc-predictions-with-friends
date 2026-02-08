@@ -12,6 +12,7 @@ import { InputField } from '../components/ui/Field'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Table from '../components/ui/Table'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
+import { useToast } from '../hooks/useToast'
 
 type MemberEntry = {
   id: string
@@ -46,12 +47,12 @@ function sortEntries(entries: MemberEntry[]): MemberEntry[] {
 
 export default function AdminUsersPage() {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
-  const [formError, setFormError] = useState<string | null>(null)
-  const [formStatus, setFormStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [formStatus, setFormStatus] = useState<'idle' | 'saving'>('idle')
   const [editing, setEditing] = useState<MemberEntry | null>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
+  const { showToast } = useToast()
   const leagueId = useMemo(() => getLeagueId(), [])
   const mode = useRouteDataMode()
   const isDemoMode = mode === 'demo'
@@ -101,7 +102,6 @@ export default function AdminUsersPage() {
     setName('')
     setEmail('')
     setIsAdmin(false)
-    setFormError(null)
     setFormStatus('idle')
   }
 
@@ -110,26 +110,22 @@ export default function AdminUsersPage() {
     setName(entry.name ?? '')
     setEmail(entry.email)
     setIsAdmin(Boolean(entry.isAdmin))
-    setFormError(null)
     setFormStatus('idle')
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!firestoreEnabled || !firebaseDb) {
-      setFormError('Local config is read-only for member writes.')
-      setFormStatus('error')
+      showToast({ title: 'Save failed', message: 'Local config is read-only for member writes.', tone: 'danger' })
       return
     }
 
     const normalizedEmail = email.trim().toLowerCase()
     if (!normalizedEmail) {
-      setFormError('Email is required.')
-      setFormStatus('error')
+      showToast({ title: 'Validation error', message: 'Email is required.', tone: 'warning' })
       return
     }
 
-    setFormError(null)
     setFormStatus('saving')
     try {
       const ref = doc(firebaseDb, 'leagues', leagueId, 'members', normalizedEmail)
@@ -155,7 +151,12 @@ export default function AdminUsersPage() {
         const rest = current.entries.filter((entry) => entry.id !== normalizedEmail)
         return { status: 'ready', entries: sortEntries([nextEntry, ...rest]) }
       })
-      setFormStatus('saved')
+      setFormStatus('idle')
+      showToast({
+        title: 'Player saved',
+        message: editing ? 'Player details updated.' : 'Player added to roster.',
+        tone: 'success'
+      })
       if (!editing) {
         setName('')
         setEmail('')
@@ -163,8 +164,8 @@ export default function AdminUsersPage() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to save member.'
-      setFormError(message)
-      setFormStatus('error')
+      setFormStatus('idle')
+      showToast({ title: 'Save failed', message, tone: 'danger' })
     }
   }
 
@@ -233,7 +234,6 @@ export default function AdminUsersPage() {
               />
               Grant admin access
             </label>
-            {formError ? <Alert tone="danger">{formError}</Alert> : null}
             <div className="flex flex-wrap gap-2">
               <Button type="submit" size="sm" disabled={!canManageMembers} loading={formStatus === 'saving'}>
                 {editing ? 'Save player' : 'Add player'}
@@ -241,7 +241,6 @@ export default function AdminUsersPage() {
               <Button type="button" size="sm" variant="secondary" onClick={startCreate}>
                 New
               </Button>
-              {formStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
             </div>
           </form>
         </Card>

@@ -21,6 +21,7 @@ import {
   writeDemoViewerId
 } from '../lib/demoControls'
 import { clearDemoLocalStorage } from '../lib/demoStorage'
+import { useToast } from '../hooks/useToast'
 
 type LoadState =
   | { status: 'loading' }
@@ -90,7 +91,7 @@ export default function DemoControlsPage() {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [selectedScenario, setSelectedScenario] = useState<DemoScenarioId>(() => readDemoScenario())
   const [selectedViewerId, setSelectedViewerId] = useState<string>(() => readDemoViewerId() ?? '')
-  const [message, setMessage] = useState<string | null>(null)
+  const { showToast } = useToast()
 
   useEffect(() => {
     let canceled = false
@@ -131,14 +132,14 @@ export default function DemoControlsPage() {
     writeDemoScenario(selectedScenario)
     writeDemoNowOverride(scenarioNow.toISOString())
     emitControlsChanged()
-    setMessage(`Scenario applied: ${selectedScenario}`)
+    showToast({ tone: 'success', title: 'Scenario applied', message: selectedScenario })
   }
 
   function applyViewer() {
     if (!selectedViewerId) return
     writeDemoViewerId(selectedViewerId)
     emitControlsChanged()
-    setMessage(`Viewer applied: ${selectedViewerId}`)
+    showToast({ tone: 'success', title: 'Viewer applied', message: selectedViewerId })
   }
 
   function reloadSnapshots() {
@@ -160,7 +161,7 @@ export default function DemoControlsPage() {
     clearDemoViewerId()
     clearDemoLocalStorage()
     emitControlsChanged()
-    setMessage('Demo session cleared.')
+    showToast({ tone: 'success', title: 'Demo session cleared' })
   }
 
   if (state.status === 'loading') {
@@ -194,8 +195,6 @@ export default function DemoControlsPage() {
           <Badge tone="secondary">Current viewer: {currentViewer ?? 'none'}</Badge>
         </div>
       </PageHeroPanel>
-
-      {message ? <Alert tone="success">{message}</Alert> : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="rounded-2xl border-border/60 p-4">

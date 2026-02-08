@@ -35,6 +35,7 @@ import { SelectField } from '../components/ui/Field'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Skeleton from '../components/ui/Skeleton'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
+import { useToast } from '../hooks/useToast'
 
 type ExportMode = 'USER_ALL_MATCHDAYS' | 'MATCHDAY_ALL_USERS'
 type ExportIntent =
@@ -1176,12 +1177,12 @@ async function loadBundleForMode(dataMode: DataMode): Promise<SnapshotBundle> {
 
 export default function AdminExportsPage() {
   const dataMode = useRouteDataMode()
+  const { showToast } = useToast()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [mode, setMode] = useState<ExportMode>('USER_ALL_MATCHDAYS')
   const [selectedUserId, setSelectedUserId] = useState('')
   const [selectedMatchday, setSelectedMatchday] = useState('')
-  const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done' | 'error'>('idle')
-  const [exportMessage, setExportMessage] = useState<string | null>(null)
+  const [exportStatus, setExportStatus] = useState<'idle' | 'exporting'>('idle')
 
   useEffect(() => {
     let canceled = false
@@ -1235,12 +1236,11 @@ export default function AdminExportsPage() {
 
     try {
       setExportStatus('exporting')
-      setExportMessage(null)
 
       if (mode === 'USER_ALL_MATCHDAYS') {
         if (!selectedUser) {
-          setExportStatus('error')
-          setExportMessage('Select a user before exporting.')
+          showToast({ title: 'Export blocked', message: 'Select a user before exporting.', tone: 'warning' })
+          setExportStatus('idle')
           return
         }
 
@@ -1279,20 +1279,22 @@ export default function AdminExportsPage() {
         const prefix = intent === 'USER_PICKS' ? 'user-picks-export' : 'user-results-export'
         const fileName = `${prefix}-${sanitizeToken(selectedUser.name || selectedUser.id)}-${new Date().toISOString().slice(0, 10)}.xlsx`
         await downloadWorkbook(fileName, sheets)
-        setExportStatus('done')
+        setExportStatus('idle')
         if (resolvedPicks.length === 0) {
-          setExportMessage(
-            `Downloaded ${fileName} (no picks found from Firestore for selected user).`
-          )
+          showToast({
+            title: 'Export complete',
+            message: `Downloaded ${fileName} (no picks found from Firestore for selected user).`,
+            tone: 'success'
+          })
         } else {
-          setExportMessage(`Downloaded ${fileName}`)
+          showToast({ title: 'Export complete', message: `Downloaded ${fileName}`, tone: 'success' })
         }
         return
       }
 
       if (!selectedMatchday) {
-        setExportStatus('error')
-        setExportMessage('Select a matchday before exporting.')
+        showToast({ title: 'Export blocked', message: 'Select a matchday before exporting.', tone: 'warning' })
+        setExportStatus('idle')
         return
       }
 
@@ -1300,12 +1302,12 @@ export default function AdminExportsPage() {
       const prefix = intent === 'MATCHDAY_PICKS' ? 'matchday-picks-export' : 'matchday-leaderboard-export'
       const fileName = `${prefix}-${sanitizeToken(selectedMatchday)}-${new Date().toISOString().slice(0, 10)}.xlsx`
       await downloadWorkbook(fileName, sheets)
-      setExportStatus('done')
-      setExportMessage(`Downloaded ${fileName}`)
+      setExportStatus('idle')
+      showToast({ title: 'Export complete', message: `Downloaded ${fileName}`, tone: 'success' })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Export failed.'
-      setExportStatus('error')
-      setExportMessage(message)
+      setExportStatus('idle')
+      showToast({ title: 'Export failed', message, tone: 'danger' })
     }
   }
 
@@ -1481,12 +1483,6 @@ export default function AdminExportsPage() {
           </div>
         </Card>
       )}
-
-      {exportMessage ? (
-        <Alert tone={exportStatus === 'error' ? 'danger' : 'success'} title="Export status">
-          {exportMessage}
-        </Alert>
-      ) : null}
     </div>
   )
 }

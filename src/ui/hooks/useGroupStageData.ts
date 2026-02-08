@@ -242,8 +242,10 @@ export function useGroupStageData(matches: Match[]) {
         await saveUserGroupStageDoc(userId, data.groups, data.bestThirds)
       }
       setSaveStatus('saved')
+      return true
     } catch {
       setSaveStatus('error')
+      return false
     }
   }, [data, firestoreEnabled, mode, userId])
 

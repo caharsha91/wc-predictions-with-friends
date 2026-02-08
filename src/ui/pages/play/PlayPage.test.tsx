@@ -179,8 +179,8 @@ describe('PlayPage action center', () => {
 
     expect(screen.getByText(/^Group stage$/i)).toBeInTheDocument()
     expect(screen.getByText(/^Match picks$/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /save group picks/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /continue group stage/i })).toBeInTheDocument()
+    expect(screen.getAllByText(/pending/i).length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: /play center/i })).toBeInTheDocument()
   })
 
@@ -256,7 +256,7 @@ describe('PlayPage action center', () => {
 
     renderPage()
 
-    expect(screen.getByText(/closed\. view picks and results\./i)).toBeInTheDocument()
+    expect(screen.getAllByText(/^Closed$/i).length).toBeGreaterThan(0)
     const matchPicksHeading = screen.getByText(/^Match picks$/i)
     const groupHeading = screen.getByText(/^Group stage$/i)
     expect(matchPicksHeading.compareDocumentPosition(groupHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -275,8 +275,8 @@ describe('PlayPage action center', () => {
     const knockoutHeading = screen.getByText(/^Knockout$/i)
     const groupHeading = screen.getByText(/^Group stage$/i)
     expect(knockoutHeading.compareDocumentPosition(groupHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /save knockout picks/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open knockout/i })).toBeInTheDocument()
+    expect(screen.getByText(/pending now/i)).toBeInTheDocument()
   })
 
   it('forces knockout active for demo mid-knockout and shows inference warning when fixtures disagree', () => {
@@ -288,7 +288,7 @@ describe('PlayPage action center', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open knockout/i })).toBeInTheDocument()
     expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
     expect(screen.getByText(/demo scenario override keeps knockout active/i)).toBeInTheDocument()
     expect(screen.getByText(/source of truth: demo scenario override/i)).toBeInTheDocument()
@@ -303,7 +303,7 @@ describe('PlayPage action center', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open knockout/i })).toBeInTheDocument()
     expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
   })
 
@@ -322,7 +322,7 @@ describe('PlayPage action center', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open knockout/i })).toBeInTheDocument()
     expect(screen.queryByText(/knockout activation override/i)).not.toBeInTheDocument()
   })
 
@@ -335,7 +335,7 @@ describe('PlayPage action center', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open knockout/i })).toBeInTheDocument()
     expect(screen.getByText(/knockout activation override/i)).toBeInTheDocument()
   })
 })

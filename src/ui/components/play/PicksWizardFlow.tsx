@@ -8,6 +8,7 @@ import type { Pick, PickAdvances } from '../../../types/picks'
 import { useNow } from '../../hooks/useNow'
 import { usePicksData } from '../../hooks/usePicksData'
 import { useRouteDataMode } from '../../hooks/useRouteDataMode'
+import { useToast } from '../../hooks/useToast'
 import { useViewerId } from '../../hooks/useViewerId'
 import { Alert } from '../ui/Alert'
 import { Badge } from '../ui/Badge'
@@ -103,6 +104,7 @@ export default function PicksWizardFlow({
   const now = useNow({ tickMs: 30_000 })
   const userId = useViewerId()
   const mode = useRouteDataMode()
+  const { showToast } = useToast()
   const picksState = usePicksData()
 
   const isCompactInline = layout === 'compact-inline'
@@ -216,6 +218,12 @@ export default function PicksWizardFlow({
     setCurrentStepIndex(reviewIndex >= 0 ? reviewIndex : 0)
     initialStepRef.current = true
   }, [isMatchStepComplete, steps])
+
+  useEffect(() => {
+    if (!notice) return
+    showToast({ title: 'Action update', message: notice, tone: 'info' })
+    setNotice(null)
+  }, [notice, showToast])
 
   useEffect(() => {
     if (!activeMatchId) return
@@ -513,15 +521,8 @@ export default function PicksWizardFlow({
                 </Button>
               ) : null}
             </div>
-            {notice ? <div className="text-xs text-muted-foreground">{notice}</div> : null}
           </div>
         </Card>
-      ) : null}
-
-      {isCompactInline && notice ? (
-        <Alert tone="info" title="Status">
-          {notice}
-        </Alert>
       ) : null}
 
       {openMatches.length === 0 ? (

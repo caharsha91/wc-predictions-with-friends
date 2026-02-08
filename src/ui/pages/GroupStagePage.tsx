@@ -17,6 +17,7 @@ import { useGroupStageData } from '../hooks/useGroupStageData'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
+import { useToast } from '../hooks/useToast'
 
 const BEST_THIRD_SLOTS = 8
 
@@ -170,6 +171,7 @@ function formatTeam(code: string | undefined, teams: Team[]): string {
 export default function GroupStagePage() {
   const location = useLocation()
   const mode = useRouteDataMode()
+  const { showToast } = useToast()
   const now = useNow({ tickMs: 30_000 })
   const picksState = usePicksData()
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
@@ -505,11 +507,20 @@ export default function GroupStagePage() {
               </div>
             )}
             <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" onClick={() => void groupStage.save()} loading={groupStage.saveStatus === 'saving'}>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  const ok = await groupStage.save()
+                  showToast({
+                    tone: ok ? 'success' : 'danger',
+                    title: ok ? 'Group picks saved' : 'Save failed',
+                    message: ok ? 'Your group-stage edits were saved.' : 'Unable to save group-stage edits.'
+                  })
+                }}
+                loading={groupStage.saveStatus === 'saving'}
+              >
                 Save group picks
               </Button>
-              {groupStage.saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
-              {groupStage.saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
             </div>
           </div>
           <div className="border-t border-border/60 p-4">

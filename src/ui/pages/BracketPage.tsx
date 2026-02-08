@@ -14,6 +14,7 @@ import Table from '../components/ui/Table'
 import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
+import { useToast } from '../hooks/useToast'
 import { readDemoScenario } from '../lib/demoControls'
 import { resolveKnockoutActivation } from '../lib/knockoutActivation'
 
@@ -81,6 +82,7 @@ export default function BracketPage() {
   const isDemoRoute = location.pathname.startsWith('/demo/')
   const demoScenario = isDemoRoute ? readDemoScenario() : null
   const now = useNow({ tickMs: 30_000 })
+  const { showToast } = useToast()
   const picksState = usePicksData()
   const bracket = useBracketKnockoutData()
   const readyBracketState = bracket.loadState.status === 'ready' ? bracket.loadState : null
@@ -275,7 +277,14 @@ export default function BracketPage() {
                                   className={pickedWinner === 'HOME' ? 'border-primary' : undefined}
                                   onClick={async () => {
                                     bracket.setPick(entry.stage, entry.match.id, 'HOME')
-                                    await bracket.save()
+                                    const ok = await bracket.save()
+                                    showToast({
+                                      tone: ok ? 'success' : 'danger',
+                                      title: ok ? 'Knockout pick saved' : 'Autosave failed',
+                                      message: ok
+                                        ? `${entry.match.homeTeam.code} set to advance.`
+                                        : 'Unable to save knockout pick.'
+                                    })
                                   }}
                                 >
                                   {entry.match.homeTeam.code} advances
@@ -286,7 +295,14 @@ export default function BracketPage() {
                                   className={pickedWinner === 'AWAY' ? 'border-primary' : undefined}
                                   onClick={async () => {
                                     bracket.setPick(entry.stage, entry.match.id, 'AWAY')
-                                    await bracket.save()
+                                    const ok = await bracket.save()
+                                    showToast({
+                                      tone: ok ? 'success' : 'danger',
+                                      title: ok ? 'Knockout pick saved' : 'Autosave failed',
+                                      message: ok
+                                        ? `${entry.match.awayTeam.code} set to advance.`
+                                        : 'Unable to save knockout pick.'
+                                    })
                                   }}
                                 >
                                   {entry.match.awayTeam.code} advances
@@ -305,9 +321,6 @@ export default function BracketPage() {
                               <Badge tone={isMatchLocked(entry.match.kickoffUtc, now) ? 'locked' : 'secondary'}>
                                 {isMatchLocked(entry.match.kickoffUtc, now) ? 'Locked' : 'Open'}
                               </Badge>
-                              {bracket.saveStatus === 'saving' ? <Badge tone="secondary">Saving</Badge> : null}
-                              {bracket.saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
-                              {bracket.saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
                             </div>
                           </td>
                         </tr>
