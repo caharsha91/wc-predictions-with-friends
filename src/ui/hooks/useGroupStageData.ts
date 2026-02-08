@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { loadLocalBracketPrediction, saveLocalBracketPrediction } from '../../lib/bracket'
+import { fetchBracketPredictions } from '../../lib/data'
 import { fetchUserGroupStageDoc, saveUserGroupStageDoc } from '../../lib/firestoreData'
 import { hasFirebase } from '../../lib/firebase'
 import type { GroupPrediction } from '../../types/bracket'
@@ -137,6 +138,18 @@ export function useGroupStageData(matches: Match[]) {
               groups: normalizeGroups(local.groups ?? {}, groupIds),
               bestThirds: normalizeBestThirds(local.bestThirds ?? [], slotCount),
               updatedAt: local.updatedAt || new Date().toISOString()
+            }
+          }
+        }
+
+        if (!next) {
+          const seed = await fetchBracketPredictions({ mode })
+          const seedDoc = seed.group.find((entry) => entry.userId === userId) ?? seed.group[0]
+          if (seedDoc) {
+            next = {
+              groups: normalizeGroups(seedDoc.groups ?? {}, groupIds),
+              bestThirds: normalizeBestThirds(seedDoc.bestThirds ?? [], slotCount),
+              updatedAt: seedDoc.updatedAt || new Date().toISOString()
             }
           }
         }

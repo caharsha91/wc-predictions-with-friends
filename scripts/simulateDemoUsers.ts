@@ -714,11 +714,14 @@ function generateGroupDoc(
   const bestThirdCandidates: Array<{ groupId: string; team: string }> = []
 
   for (const [groupId, teams] of groupTeamMap.entries()) {
-    if (teams.length < 3) {
-      groups[groupId] = {}
-      continue
+    const pool = [...teams]
+    let syntheticIndex = 1
+    while (pool.length < 4) {
+      const syntheticCode = `${groupId}${syntheticIndex}`
+      if (!pool.includes(syntheticCode)) pool.push(syntheticCode)
+      syntheticIndex += 1
     }
-    const shuffled = shuffle(random, teams)
+    const shuffled = shuffle(random, pool)
     groups[groupId] = {
       first: shuffled[0],
       second: shuffled[1]
@@ -748,11 +751,11 @@ function generateKnockoutDoc(
   const byStage: Partial<Record<Exclude<MatchStage, 'Group'>, Record<string, 'HOME' | 'AWAY'>>> = {}
   const pickChance =
     scenario.id === 'world-cup-final-pending'
-      ? 0.95
+      ? 0.99
       : scenario.id === 'mid-knockout'
-        ? 0.9
+        ? 0.96
         : scenario.id === 'end-group-draw-confirmed'
-          ? 0.5
+          ? 0.85
           : 0
 
   if (!scenario.allowKnockoutPredictions) {
@@ -815,18 +818,18 @@ function generatePicksForUser(
   for (const match of matches) {
     const lockTime = new Date(match.kickoffUtc).getTime() - 30 * 60 * 1000
     const isLocked = now >= lockTime
-    let pickChance = 0.55
+    let pickChance = 0.8
 
     if (scenario.id === 'pre-group') {
-      pickChance = match.stage === 'Group' ? 0.45 : 0.2
+      pickChance = match.stage === 'Group' ? 0.95 : 0.8
     } else if (scenario.id === 'mid-group') {
-      pickChance = match.stage === 'Group' ? (isLocked ? 0.9 : 0.7) : 0.2
+      pickChance = match.stage === 'Group' ? (isLocked ? 0.99 : 0.95) : 0.8
     } else if (scenario.id === 'end-group-draw-confirmed') {
-      pickChance = match.stage === 'Group' ? 0.95 : 0.5
+      pickChance = match.stage === 'Group' ? 0.99 : 0.88
     } else if (scenario.id === 'mid-knockout') {
-      pickChance = match.stage === 'Group' ? 0.95 : 0.85
+      pickChance = match.stage === 'Group' ? 0.99 : 0.95
     } else if (scenario.id === 'world-cup-final-pending') {
-      pickChance = match.stage === 'Group' ? 0.95 : 0.95
+      pickChance = 0.99
     }
 
     if (random() > pickChance) continue
@@ -853,15 +856,22 @@ function buildBestThirdQualifiers(
     .map((rows) => rows[2]?.code)
     .filter((code): code is string => Boolean(code))
 
-  if (!scenario.allowKnockoutPredictions) {
-    return {
-      updatedAt: new Date().toISOString(),
-      qualifiers: [],
-      qualifiers_hint: shuffle(random, thirdPlacePool).slice(0, 8)
-    }
+  const fallbackPool = [...new Set(matches
+    .filter((match) => match.stage === 'Group')
+    .flatMap((match) => [match.homeTeam.code, match.awayTeam.code])
+    .filter((code) => code !== 'TBD'))]
+
+  const pool = shuffle(random, [...thirdPlacePool, ...fallbackPool])
+  const qualifiers = [...new Set(pool)].slice(0, 8)
+
+  // Keep outputs UX-rich in all scenarios by providing 8 entries.
+  let syntheticIndex = 1
+  while (qualifiers.length < 8) {
+    const synthetic = `BT${syntheticIndex}`
+    if (!qualifiers.includes(synthetic)) qualifiers.push(synthetic)
+    syntheticIndex += 1
   }
 
-  const qualifiers = shuffle(random, thirdPlacePool).slice(0, 8)
   return {
     updatedAt: new Date().toISOString(),
     qualifiers,

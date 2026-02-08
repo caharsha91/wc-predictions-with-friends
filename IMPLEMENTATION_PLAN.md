@@ -210,6 +210,10 @@ This document tracks the agreed implementation plan and completion status for de
    - best-third qualifiers data,
    - knockout draw team assignments,
    - knockout winners progression based on match status per scenario.
+8. Increased simulator prediction density across scenarios for UX testing:
+   - group-stage predictions and best-third picks are always fully populated per demo user,
+   - best-third qualifiers output always includes 8 entries,
+   - match-pick and knockout-pick generation probabilities are tuned to keep datasets mostly filled.
 
 ### Verification
 
@@ -321,7 +325,33 @@ This document tracks the agreed implementation plan and completion status for de
 
 ### Status
 
-- `pending`
+- `completed` (2026-02-08)
+
+### Completion Notes
+
+1. Reworked Play Center phase cards in `src/ui/pages/play/PlayPage.tsx`:
+   - Added phase-oriented Group Stage and Knockout cards around the always-active picks action hub.
+   - Applied phase movement rules:
+     - Group stage active before kickoff; inactive after group start.
+     - Knockout promoted to top when group is complete and draw is inferred ready.
+     - Knockout returns to inactive state once knockout has started.
+2. Added draw-readiness inference from match data completeness:
+   - Uses Round-of-32 team-code completeness (`AAA` code check, no placeholders).
+3. Enforced knockout visibility behavior in Play Center:
+   - Knockout metrics/actions are hidden or disabled until draw readiness.
+4. Kept picks-for-matches always actionable in Play Center:
+   - Existing picks queue + inline wizard remains continuously active.
+5. Added route-safe navigation for both default and demo Play Center contexts:
+   - CTA links now resolve to `/play/*` or `/demo/play/*` based on active route.
+6. Expanded Play Center test coverage in `src/ui/pages/play/PlayPage.test.tsx`:
+   - Group phase inactive after kickoff.
+   - Knockout top-card promotion after group completion + draw readiness.
+   - Demo-route CTA navigation path.
+
+### Verification
+
+1. `npm run build` passed.
+2. `npm test` passed.
 
 ## Increment 6: Detailed Pages Read-Only + Final Consistency Pass
 
@@ -361,7 +391,31 @@ This document tracks the agreed implementation plan and completion status for de
 
 ### Status
 
-- `pending`
+- `completed` (2026-02-08)
+
+### Completion Notes
+
+1. Added a shared right-side quick menu component for detailed pages:
+   - `src/ui/components/ui/DetailQuickMenu.tsx`
+2. Converted picks detail page to read-only with embedded results and consistent quick menu:
+   - `src/ui/pages/PicksPage.tsx`
+3. Converted group stage detail page to read-only with standings/results summary and consistent quick menu:
+   - `src/ui/pages/GroupStagePage.tsx`
+4. Converted knockout detail page to read-only with unlock gating based on:
+   - group lock closure, and
+   - draw readiness inferred from Round-of-32 fixture team-code completeness.
+   - file: `src/ui/pages/BracketPage.tsx`
+5. Applied route parity for default and demo detail routes by resolving links against:
+   - `/play/*` or `/demo/play/*` based on current path.
+6. Updated detail-page tests for the read-only behavior and quick-menu navigation:
+   - `src/ui/pages/PicksPage.workspace.test.tsx`
+   - `src/ui/pages/GroupStagePage.test.tsx`
+   - `src/ui/pages/BracketPage.test.tsx`
+
+### Verification
+
+1. `npm run build` passed.
+2. `npm test` passed.
 
 ## Increment 7: Global Toast Confirmations (Planned Only)
 
@@ -402,3 +456,101 @@ This document tracks the agreed implementation plan and completion status for de
 ### Status
 
 - `pending` (not implemented per current instruction)
+
+## Increment 8: Action Hub Phase Reordering + Compact Rows
+
+### Status
+
+- `completed` (2026-02-08)
+
+### Completion Notes
+
+1. Refactored `/play` and `/demo/play` Action Hub layout in:
+   - `src/ui/pages/play/PlayPage.tsx`
+2. Moved Group Stage and Knockout sections under Action Hub and removed standalone top cards.
+3. Added explicit `Match picks` section label for the picks queue + inline editor block.
+4. Implemented dynamic section order:
+   - default: Group Stage, Match Picks, Knockout
+   - when `groupClosed`: Match Picks, Knockout, Group Stage
+   - when knockout is active: Knockout, Match Picks, Group Stage
+5. Implemented compact one-line collapsed rows (status + detailed-page link) for inactive phases.
+6. Applied route-aware parity for demo and non-demo pages (`/play/*` and `/demo/play/*`).
+7. Updated tests in `src/ui/pages/play/PlayPage.test.tsx` for:
+   - `Match picks` label presence,
+   - collapsed Group Stage row behavior and ordering,
+   - demo route CTA behavior parity.
+
+### Verification
+
+1. `npm run build` passed.
+2. `npm test` passed.
+
+## Increment 9: Embedded Group + Knockout Compact Wizards In Play Center
+
+### Status
+
+- `completed` (2026-02-08)
+
+### Completion Notes
+
+1. Embedded compact Group Stage wizard controls inside Action Hub in:
+   - `src/ui/pages/play/PlayPage.tsx`
+2. Group wizard now supports:
+   - active-group top-two quick picks,
+   - next best-third quick pick,
+   - inline save action with status badge.
+3. Embedded compact Knockout wizard controls inside Action Hub in:
+   - `src/ui/pages/play/PlayPage.tsx`
+4. Knockout wizard now supports:
+   - next open knockout matchup quick winner picks,
+   - inline save action with status badge.
+5. Preserved detailed-page workflows (`/play/group-stage`, `/play/bracket`) while adding Play Center compact flows.
+6. Added/updated test coverage in:
+   - `src/ui/pages/play/PlayPage.test.tsx`
+   - validates embedded group and knockout compact wizard controls render in expected phase states.
+
+### Verification
+
+1. `npm run build` passed.
+2. `npm test` passed.
+
+## Increment 10: Play Center Control Placement Consistency
+
+### Status
+
+- `completed` (2026-02-08)
+
+### Completion Notes
+
+1. Moved match-pick control actions (`Continue`, `Next one`) from top summary strip into the `Match picks` section header in:
+   - `src/ui/pages/play/PlayPage.tsx`
+2. Kept section hierarchy visually consistent so phase sections render before match-pick actions.
+3. Updated summary strip action model to support pages without top-level actions:
+   - `src/ui/components/ui/ActionSummaryStrip.tsx`
+
+### Verification
+
+1. `npm run build` passed.
+2. `npm test` passed.
+
+## Increment 11: Match Picks Status Placement + Visual Uniformity
+
+### Status
+
+- `completed` (2026-02-08)
+
+### Completion Notes
+
+1. Moved match status UI into `Match picks` section in:
+   - `src/ui/pages/play/PlayPage.tsx`
+   - includes progress bar, metric pills, and closes/deadline pill.
+2. Removed top-level summary status duplication so status indicators are scoped to `Match picks`.
+3. Reduced section highlight intensity for cleaner uniform look:
+   - switched Action Hub phase card surfaces to transparent/neutral backgrounds.
+4. Updated shared summary strip behavior for optional status/actions/metrics:
+   - `src/ui/components/ui/ActionSummaryStrip.tsx`
+
+### Verification
+
+1. `npm run build` passed.
+2. `npm test` passed.

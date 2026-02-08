@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../../lib/matches'
 import { findPick, isPickComplete } from '../../../lib/picks'
 import type { Match } from '../../../types/matches'
 import type { Pick } from '../../../types/picks'
+import type { KnockoutStage } from '../../../types/scoring'
 import PicksWizardFlow from '../../components/play/PicksWizardFlow'
 import DeadlineQueuePanel, { type DeadlineQueueItem } from '../../components/ui/DeadlineQueuePanel'
 import PlayCenterHero from '../../components/ui/PlayCenterHero'
@@ -13,6 +14,7 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import Skeleton from '../../components/ui/Skeleton'
 import { useGroupStageData } from '../../hooks/useGroupStageData'
+import { useBracketKnockoutData } from '../../hooks/useBracketKnockoutData'
 import { useNow } from '../../hooks/useNow'
 import { usePicksData } from '../../hooks/usePicksData'
 import { useRouteDataMode } from '../../hooks/useRouteDataMode'
@@ -69,6 +71,15 @@ function hasStartedPick(pick?: Pick): boolean {
   )
 }
 
+function normalizeStatus(status: Match['status'] | string): string {
+  return String(status || '').toUpperCase()
+}
+
+function isResolvedTeamCode(code?: string): boolean {
+  const normalized = (code ?? '').trim().toUpperCase()
+  return /^[A-Z]{3}$/.test(normalized)
+}
+
 type QueueMatch = {
   match: Match
   lockUtc: string
@@ -89,8 +100,12 @@ function toQueueMatch(match: Match, pick: Pick | undefined, now: Date): QueueMat
   return { match, lockUtc, locked, complete, started, actionLabel }
 }
 
+type HubSection = 'group' | 'picks' | 'knockout'
+type KnockoutEntry = { stage: KnockoutStage; match: Match }
+
 export default function PlayPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const userId = useViewerId()
   const mode = useRouteDataMode()
   const now = useNow({ tickMs: 30_000 })
@@ -114,6 +129,7 @@ export default function PlayPage() {
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
   const groupStage = useGroupStageData(matches)
+  const knockoutData = useBracketKnockoutData()
 
   const upcomingMatches = useMemo(
     () =>
@@ -153,6 +169,11 @@ export default function PlayPage() {
 
   const nextLockUtc = queueMatches[0]?.lockUtc
   const latestResultsUpdatedUtc = picksState.state.status === 'ready' ? picksState.state.lastUpdated : undefined
+  const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
+  const toPlayPath = useCallback((segment?: 'picks' | 'group-stage' | 'bracket' | 'league') => {
+    if (!segment) return playRoot
+    return `${playRoot}/${segment}`
+  }, [playRoot])
 
   const playState: PlayCenterState = useMemo(() => {
     if (picksState.state.status === 'loading') return 'LOADING'
@@ -181,9 +202,46 @@ export default function PlayPage() {
     if (nextLockUtc) return { type: 'deadline' as const, text: formatClosesChip(nextLockUtc, now) }
     return { type: 'deadline' as const, text: '—' }
   }, [nextLockUtc, now])
+  const matchProgressPct = useMemo(
+    () => (openMatches.length > 0 ? Math.round((completedOpenMatches.length / openMatches.length) * 100) : 0),
+    [completedOpenMatches.length, openMatches.length]
+  )
 
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
   const groupClosed = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
+  const groupMatches = useMemo(() => matches.filter((match) => match.stage === 'Group'), [matches])
+  const groupCompleteFromMatches = useMemo(
+    () => groupMatches.length > 0 && groupMatches.every((match) => normalizeStatus(match.status) === 'FINISHED'),
+    [groupMatches]
+  )
+
+  const knockoutMatches = useMemo(() => matches.filter((match) => match.stage !== 'Group'), [matches])
+  const roundOf32Matches = useMemo(
+    () => knockoutMatches.filter((match) => match.stage === 'R32'),
+    [knockoutMatches]
+  )
+  const knockoutDrawReady = useMemo(
+    () =>
+      roundOf32Matches.length > 0 &&
+      roundOf32Matches.every(
+        (match) => isResolvedTeamCode(match.homeTeam.code) && isResolvedTeamCode(match.awayTeam.code)
+      ),
+    [roundOf32Matches]
+  )
+  const firstKnockoutKickoffUtc = useMemo(() => {
+    const first = knockoutMatches
+      .slice()
+      .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())[0]
+    return first?.kickoffUtc
+  }, [knockoutMatches])
+  const knockoutStarted = useMemo(() => {
+    const startedByStatus = knockoutMatches.some((match) => normalizeStatus(match.status) !== 'SCHEDULED')
+    if (startedByStatus) return true
+    if (!firstKnockoutKickoffUtc) return false
+    return now.getTime() >= new Date(firstKnockoutKickoffUtc).getTime()
+  }, [firstKnockoutKickoffUtc, knockoutMatches, now])
+  const groupComplete = groupCompleteFromMatches || groupClosed
+  const knockoutActive = groupComplete && knockoutDrawReady && !knockoutStarted
   const groupCompletion = useMemo(() => {
     let groupsDone = 0
     for (const groupId of groupStage.groupIds) {
@@ -207,6 +265,85 @@ export default function PlayPage() {
       groupCompletion.groupsDone === groupCompletion.groupsTotal && groupCompletion.bestThirdDone === 8
     return complete ? 'Open Group Stage' : 'Continue Group Stage'
   }, [groupClosed, groupCompletion.bestThirdDone, groupCompletion.groupsDone, groupCompletion.groupsTotal])
+
+  const teamsByGroup = useMemo(() => {
+    const byGroup = new Map<string, Array<{ code: string; name: string }>>()
+    for (const match of groupMatches) {
+      if (!match.group) continue
+      const existing = byGroup.get(match.group) ?? []
+      if (!existing.some((team) => team.code === match.homeTeam.code)) {
+        existing.push({ code: match.homeTeam.code, name: match.homeTeam.name })
+      }
+      if (!existing.some((team) => team.code === match.awayTeam.code)) {
+        existing.push({ code: match.awayTeam.code, name: match.awayTeam.name })
+      }
+      byGroup.set(match.group, existing)
+    }
+    return byGroup
+  }, [groupMatches])
+
+  const activeGroupId = useMemo(() => {
+    for (const groupId of groupStage.groupIds) {
+      const selection = groupStage.data.groups[groupId] ?? {}
+      if (!selection.first || !selection.second || selection.first === selection.second) return groupId
+    }
+    return groupStage.groupIds[0] ?? null
+  }, [groupStage.data.groups, groupStage.groupIds])
+
+  const activeGroupSelection = activeGroupId ? groupStage.data.groups[activeGroupId] ?? {} : {}
+  const activeGroupTeams = activeGroupId ? teamsByGroup.get(activeGroupId) ?? [] : []
+
+  const bestThirdActiveIndex = useMemo(() => {
+    const firstOpen = groupStage.data.bestThirds.findIndex((team) => !team)
+    if (firstOpen >= 0) return firstOpen
+    return Math.max(0, groupStage.data.bestThirds.length - 1)
+  }, [groupStage.data.bestThirds])
+
+  const bestThirdCandidates = useMemo(() => {
+    const excludedTopTwo = new Set<string>()
+    for (const groupId of groupStage.groupIds) {
+      const pick = groupStage.data.groups[groupId] ?? {}
+      if (pick.first) excludedTopTwo.add(pick.first)
+      if (pick.second) excludedTopTwo.add(pick.second)
+    }
+    const selectedElsewhere = new Set(
+      groupStage.data.bestThirds
+        .map((team, idx) => ({ team, idx }))
+        .filter((entry) => entry.idx !== bestThirdActiveIndex && Boolean(entry.team))
+        .map((entry) => entry.team)
+    )
+
+    const allTeams = [...teamsByGroup.values()].flat()
+    return allTeams.filter((team) => !excludedTopTwo.has(team.code) && !selectedElsewhere.has(team.code))
+  }, [bestThirdActiveIndex, groupStage.data.bestThirds, groupStage.data.groups, groupStage.groupIds, teamsByGroup])
+
+  const knockoutEntries = useMemo<KnockoutEntry[]>(() => {
+    if (knockoutData.loadState.status !== 'ready') return []
+    const readyState = knockoutData.loadState
+    return knockoutData.stageOrder.flatMap((stage) =>
+      (readyState.byStage[stage] ?? []).map((match) => ({ stage, match }))
+    )
+  }, [knockoutData.loadState, knockoutData.stageOrder])
+
+  const activeKnockoutEntry = useMemo(() => {
+    const firstOpen = knockoutEntries.find(
+      (entry) =>
+        !isMatchLocked(entry.match.kickoffUtc, now) &&
+        !knockoutData.knockout[entry.stage]?.[entry.match.id]
+    )
+    if (firstOpen) return firstOpen
+    return knockoutEntries.find((entry) => !isMatchLocked(entry.match.kickoffUtc, now)) ?? null
+  }, [knockoutData.knockout, knockoutEntries, now])
+
+  const activeKnockoutWinner = activeKnockoutEntry
+    ? knockoutData.knockout[activeKnockoutEntry.stage]?.[activeKnockoutEntry.match.id]
+    : undefined
+
+  const sectionOrder = useMemo<HubSection[]>(() => {
+    if (knockoutActive) return ['knockout', 'picks', 'group']
+    if (groupClosed) return ['picks', 'knockout', 'group']
+    return ['group', 'picks', 'knockout']
+  }, [groupClosed, knockoutActive])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -366,38 +503,6 @@ export default function PlayPage() {
 
   return (
     <div className="space-y-4">
-      <Card className="rounded-2xl border-border/60 bg-bg2 p-4 sm:p-5">
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Group stage</div>
-            <Button size="sm" variant="secondary" onClick={() => navigate('/play/group-stage')}>
-              {groupStageCtaLabel}
-            </Button>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={groupCompletion.groupsDone === groupCompletion.groupsTotal ? 'success' : 'warning'}>
-              Groups {groupCompletion.groupsDone}/{groupCompletion.groupsTotal}
-            </Badge>
-            <Badge tone={groupCompletion.bestThirdDone === 8 ? 'success' : 'warning'}>
-              Best thirds {groupCompletion.bestThirdDone}/8
-            </Badge>
-            <Badge tone={groupClosed ? 'locked' : 'info'}>
-              {groupLockTime
-                ? `${groupClosed ? 'Closed' : 'Closes'} ${formatDateTime(groupLockTime.toISOString())}`
-                : 'No close window'}
-            </Badge>
-            {groupStage.loadState.status === 'error' ? (
-              <Badge tone="danger">Unavailable</Badge>
-            ) : null}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {groupClosed
-              ? 'Group stage is read-only.'
-              : 'Pick 1st, 2nd, and best 8 third-place qualifiers.'}
-          </div>
-        </div>
-      </Card>
-
       <PlayCenterHero
         title="Play Center"
         subtitle="Your move."
@@ -405,90 +510,306 @@ export default function PlayPage() {
         state={playState}
         summary={{
           headline: 'Up next',
-          subline:
-            pendingOpenMatches.length > 0
-              ? 'Tap, pick, profit*'
-              : "You're chill.",
-          progress: {
-            label: 'Progress',
-            current: completedOpenMatches.length,
-            total: openMatches.length,
-            valueSuffix: 'in'
-          },
-          metrics: [
-            { label: 'To pick', value: Math.max(0, metricCounts.todo), tone: 'warning' },
-            { label: 'In play', value: metricCounts.inProgress, tone: 'info' },
-            { label: 'Closed', value: metricCounts.locked, tone: 'locked' },
-            { label: 'Done', value: metricCounts.finished, tone: 'secondary' }
-          ],
-          statusChip,
-          primaryAction: {
-            label: 'Continue',
-            onClick: handleContinueCurrentMatch,
-            disabled: queueMatches.length === 0
-          },
-          secondaryAction: {
-            label: 'Next one',
-            onClick: handleNextIncompletePick,
-            disabled: !nextIncompleteEntry
-          },
+          subline: pendingOpenMatches.length > 0 ? 'Use match picks below.' : "You're chill.",
           detail: (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <Button size="sm" variant="secondary" onClick={() => navigate('/play/picks')}>
-                  Schedule
-                </Button>
-              </div>
-
-              <div className="text-sm text-muted-foreground">Press buttons. Earn glory. ✨</div>
-              {inlineNotice ? <div className="text-xs text-muted-foreground">{inlineNotice}</div> : null}
-
-              <div className="grid gap-4 xl:grid-cols-[0.46fr_1.54fr]">
-                <Card className="rounded-2xl border-border/60 bg-bg2 p-4 sm:p-5">
-                  <DeadlineQueuePanel
-                    items={nextMatchdayQueueItems}
-                    pageSize={nextMatchdayQueueItems.length || 1}
-                    onSelectItem={handleSelectQueueItem}
-                    selectedItemId={activeMatchId ?? undefined}
-                    heading="Closing soon"
-                    description="Tap a match to jump in."
-                    emptyMessage="Nothing closing soon. Enjoy the calm."
-                    container="inline"
-                  />
-                </Card>
-
-                <div ref={editorRef}>
-                  {queueMatches.length > 0 ? (
-                    <PicksWizardFlow
-                      layout="compact-inline"
-                      activeMatchId={activeMatchId}
-                      onActiveMatchChange={(matchId) => {
-                        if (!matchId) return
-                        setActiveMatchId(matchId)
-                        setLastFocusedMatchId(matchId)
-                      }}
-                      onOpenReferencePage={() => navigate('/play/picks')}
-                    />
-                  ) : (
-                    <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-                      <div className="space-y-3">
-                        <div className="text-sm font-semibold text-foreground">You're chill.</div>
-                        <div className="text-sm text-muted-foreground">
-                          Nothing open right now. Check results or the league.
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button size="sm" onClick={() => navigate('/play/league')}>
-                            View league
+              {sectionOrder.map((section) => {
+                if (section === 'group') {
+                  if (groupClosed) {
+                    return (
+                      <Card key="group-collapsed" className="rounded-2xl border-border/60 bg-transparent px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Group stage</div>
+                            <div className="truncate text-sm text-muted-foreground">Closed. View picks and results.</div>
+                          </div>
+                          <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('group-stage'))}>
+                            View
                           </Button>
-                          <Button size="sm" variant="secondary" onClick={() => navigate('/play/picks')}>
-                            See results
+                        </div>
+                      </Card>
+                    )
+                  }
+                  return (
+                    <Card key="group-active" className="rounded-2xl border-border/60 bg-transparent p-4">
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Group stage</div>
+                          <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('group-stage'))}>
+                            {groupStageCtaLabel}
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge tone={groupCompletion.groupsDone === groupCompletion.groupsTotal ? 'success' : 'warning'}>
+                            Groups {groupCompletion.groupsDone}/{groupCompletion.groupsTotal}
+                          </Badge>
+                          <Badge tone={groupCompletion.bestThirdDone === 8 ? 'success' : 'warning'}>
+                            Best thirds {groupCompletion.bestThirdDone}/8
+                          </Badge>
+                          {groupLockTime ? (
+                            <Badge tone={groupClosed ? 'locked' : 'info'}>
+                              {groupClosed ? 'Closed' : `Closes ${formatDateTime(groupLockTime.toISOString())}`}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        {groupStage.loadState.status === 'loading' ? (
+                          <div className="text-xs text-muted-foreground">Loading group wizard…</div>
+                        ) : null}
+                        {groupStage.loadState.status === 'error' ? (
+                          <div className="text-xs text-muted-foreground">Group wizard unavailable. Open detailed page.</div>
+                        ) : null}
+                        {groupStage.loadState.status === 'ready' && activeGroupId ? (
+                          <div className="grid gap-2 rounded-xl border border-border/60 bg-transparent p-3 sm:grid-cols-3">
+                            <label className="space-y-1 text-xs text-muted-foreground">
+                              <span>{`Group ${activeGroupId} • 1st`}</span>
+                              <select
+                                className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                                value={activeGroupSelection.first ?? ''}
+                                onChange={(event) => groupStage.setGroupPick(activeGroupId, 'first', event.target.value)}
+                              >
+                                <option value="">Select team</option>
+                                {activeGroupTeams.map((team) => (
+                                  <option key={`${activeGroupId}-first-${team.code}`} value={team.code}>
+                                    {team.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="space-y-1 text-xs text-muted-foreground">
+                              <span>{`Group ${activeGroupId} • 2nd`}</span>
+                              <select
+                                className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                                value={activeGroupSelection.second ?? ''}
+                                onChange={(event) => groupStage.setGroupPick(activeGroupId, 'second', event.target.value)}
+                              >
+                                <option value="">Select team</option>
+                                {activeGroupTeams.map((team) => (
+                                  <option key={`${activeGroupId}-second-${team.code}`} value={team.code}>
+                                    {team.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="space-y-1 text-xs text-muted-foreground">
+                              <span>{`Best third #${bestThirdActiveIndex + 1}`}</span>
+                              <select
+                                className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                                value={groupStage.data.bestThirds[bestThirdActiveIndex] ?? ''}
+                                onChange={(event) => groupStage.setBestThird(bestThirdActiveIndex, event.target.value)}
+                              >
+                                <option value="">Select team</option>
+                                {bestThirdCandidates.map((team) => (
+                                  <option key={`best-third-${team.code}`} value={team.code}>
+                                    {team.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <div className="sm:col-span-3 flex flex-wrap items-center gap-2">
+                              <Button size="sm" onClick={() => void groupStage.save()} loading={groupStage.saveStatus === 'saving'}>
+                                Save group picks
+                              </Button>
+                              {groupStage.saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
+                              {groupStage.saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </Card>
+                  )
+                }
+
+                if (section === 'knockout') {
+                  if (!knockoutActive) {
+                    const collapsedCopy = !groupComplete
+                      ? 'Unlocks after group stage closes.'
+                      : !knockoutDrawReady
+                        ? 'Waiting for draw confirmation.'
+                        : 'Inactive. View picks and results.'
+                    return (
+                      <Card key="knockout-collapsed" className="rounded-2xl border-border/60 bg-transparent px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Knockout</div>
+                            <div className="truncate text-sm text-muted-foreground">{collapsedCopy}</div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => navigate(toPlayPath('bracket'))}
+                            disabled={!groupComplete || !knockoutDrawReady}
+                          >
+                            View
+                          </Button>
+                        </div>
+                      </Card>
+                    )
+                  }
+                  return (
+                    <Card key="knockout-active" className="rounded-2xl border-border/60 bg-transparent p-4">
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Knockout</div>
+                          <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('bracket'))}>
+                            Continue Knockout
+                          </Button>
+                        </div>
+                        {knockoutData.loadState.status === 'loading' ? (
+                          <div className="text-xs text-muted-foreground">Loading knockout wizard…</div>
+                        ) : null}
+                        {knockoutData.loadState.status === 'error' ? (
+                          <div className="text-xs text-muted-foreground">Knockout wizard unavailable. Open detailed bracket.</div>
+                        ) : null}
+                        {knockoutData.loadState.status === 'ready' ? (
+                          <div className="space-y-2 rounded-xl border border-border/60 bg-transparent p-3">
+                            {activeKnockoutEntry ? (
+                              <>
+                                <div className="text-sm font-semibold text-foreground">
+                                  {activeKnockoutEntry.match.homeTeam.code} vs {activeKnockoutEntry.match.awayTeam.code}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Locks {formatDateTime(getLockTime(activeKnockoutEntry.match.kickoffUtc).toISOString())}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    className={activeKnockoutWinner === 'HOME' ? 'border-primary' : undefined}
+                                    onClick={() =>
+                                      knockoutData.setPick(activeKnockoutEntry.stage, activeKnockoutEntry.match.id, 'HOME')
+                                    }
+                                  >
+                                    {activeKnockoutEntry.match.homeTeam.code} advances
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    className={activeKnockoutWinner === 'AWAY' ? 'border-primary' : undefined}
+                                    onClick={() =>
+                                      knockoutData.setPick(activeKnockoutEntry.stage, activeKnockoutEntry.match.id, 'AWAY')
+                                    }
+                                  >
+                                    {activeKnockoutEntry.match.awayTeam.code} advances
+                                  </Button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-xs text-muted-foreground">All currently open knockout picks are complete.</div>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => void knockoutData.save()}
+                                loading={knockoutData.saveStatus === 'saving'}
+                              >
+                                Save knockout picks
+                              </Button>
+                              {knockoutData.saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
+                              {knockoutData.saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </Card>
+                  )
+                }
+
+                return (
+                  <Card key="match-picks" className="rounded-2xl border-border/60 bg-transparent p-4">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Match picks</div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge tone="warning">Closes {statusChip.text}</Badge>
+                          <Button
+                            size="sm"
+                            onClick={handleContinueCurrentMatch}
+                            disabled={queueMatches.length === 0}
+                          >
+                            Continue
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={handleNextIncompletePick}
+                            disabled={!nextIncompleteEntry}
+                          >
+                            Next one
+                          </Button>
+                          <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('picks'))}>
+                            Schedule
                           </Button>
                         </div>
                       </div>
-                    </Card>
-                  )}
-                </div>
-              </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Progress</span>
+                          <span>
+                            {completedOpenMatches.length}/{openMatches.length} in
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full bg-bg2">
+                          <div className="h-full rounded-full bg-primary" style={{ width: `${matchProgressPct}%` }} />
+                        </div>
+                        <div className="text-xs text-muted-foreground">{matchProgressPct}% complete</div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge tone="warning">To pick {Math.max(0, metricCounts.todo)}</Badge>
+                          <Badge tone="info">In play {metricCounts.inProgress}</Badge>
+                          <Badge tone="locked">Closed {metricCounts.locked}</Badge>
+                          <Badge tone="secondary">Done {metricCounts.finished}</Badge>
+                        </div>
+                      </div>
+                      {inlineNotice ? <div className="text-xs text-muted-foreground">{inlineNotice}</div> : null}
+                      <div className="grid gap-3 xl:grid-cols-[0.46fr_1.54fr]">
+                        <Card className="rounded-2xl border-border/60 bg-transparent p-3 sm:p-4">
+                          <DeadlineQueuePanel
+                            items={nextMatchdayQueueItems}
+                            pageSize={nextMatchdayQueueItems.length || 1}
+                            onSelectItem={handleSelectQueueItem}
+                            selectedItemId={activeMatchId ?? undefined}
+                            heading="Closing soon"
+                            description="Tap a match to jump in."
+                            emptyMessage="Nothing closing soon. Enjoy the calm."
+                            container="inline"
+                          />
+                        </Card>
+
+                        <div ref={editorRef}>
+                          {queueMatches.length > 0 ? (
+                            <PicksWizardFlow
+                              layout="compact-inline"
+                              activeMatchId={activeMatchId}
+                              onActiveMatchChange={(matchId) => {
+                                if (!matchId) return
+                                setActiveMatchId(matchId)
+                                setLastFocusedMatchId(matchId)
+                              }}
+                              onOpenReferencePage={() => navigate(toPlayPath('picks'))}
+                            />
+                          ) : (
+                            <Card className="rounded-2xl border-border/60 p-4">
+                              <div className="space-y-3">
+                                <div className="text-sm font-semibold text-foreground">You're chill.</div>
+                                <div className="text-sm text-muted-foreground">
+                                  Nothing open right now. Check results or the league.
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button size="sm" onClick={() => navigate(toPlayPath('league'))}>
+                                    View league
+                                  </Button>
+                                  <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('picks'))}>
+                                    See results
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )
+              })}
             </div>
           )
         }}

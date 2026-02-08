@@ -31,9 +31,9 @@ export type ActionSummaryStripProps = {
     total: number
     valueSuffix?: string
   }
-  metrics: ActionSummaryMetric[]
-  statusChip: ActionStatusChip
-  primaryAction: ActionSummaryAction
+  metrics?: ActionSummaryMetric[]
+  statusChip?: ActionStatusChip
+  primaryAction?: ActionSummaryAction
   secondaryAction?: ActionSummaryAction
   detail?: ReactNode
   className?: string
@@ -53,7 +53,7 @@ export default function ActionSummaryStrip({
   headline,
   subline,
   progress,
-  metrics,
+  metrics = [],
   statusChip,
   primaryAction,
   secondaryAction,
@@ -70,9 +70,11 @@ export default function ActionSummaryStrip({
           <div className="text-xl font-semibold text-foreground">{headline}</div>
           {subline ? <div className="text-sm text-muted-foreground">{subline}</div> : null}
         </div>
-        <Badge tone={statusChipTone(statusChip.type)}>
-          {statusChip.type === 'lastSubmitted' ? 'Synced' : 'Closes'} {statusChip.text}
-        </Badge>
+        {statusChip ? (
+          <Badge tone={statusChipTone(statusChip.type)}>
+            {statusChip.type === 'lastSubmitted' ? 'Synced' : 'Closes'} {statusChip.text}
+          </Badge>
+        ) : null}
       </div>
 
       {progress ? (
@@ -91,35 +93,39 @@ export default function ActionSummaryStrip({
         </div>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
-        <div className="flex flex-wrap items-center gap-2">
-          {metrics.map((metric) => (
-            <Badge key={metric.label} tone={metric.tone ?? 'secondary'}>
-              {metric.label} {metric.value}
-            </Badge>
-          ))}
-        </div>
+      {metrics.length > 0 || primaryAction ? (
+        <div className={cn('grid gap-3 md:items-start', primaryAction ? 'md:grid-cols-[1fr_auto]' : undefined)}>
+          <div className="flex flex-wrap items-center gap-2">
+            {metrics.map((metric) => (
+              <Badge key={metric.label} tone={metric.tone ?? 'secondary'}>
+                {metric.label} {metric.value}
+              </Badge>
+            ))}
+          </div>
 
-        <div className="flex flex-wrap justify-start gap-2 md:justify-end">
-          <Button
-            onClick={primaryAction.onClick}
-            disabled={primaryAction.disabled}
-            loading={primaryAction.loading}
-          >
-            {primaryAction.label}
-          </Button>
-          {secondaryAction ? (
-            <Button
-              variant="secondary"
-              onClick={secondaryAction.onClick}
-              disabled={secondaryAction.disabled}
-              loading={secondaryAction.loading}
-            >
-              {secondaryAction.label}
-            </Button>
+          {primaryAction ? (
+            <div className="flex flex-wrap justify-start gap-2 md:justify-end">
+              <Button
+                onClick={primaryAction.onClick}
+                disabled={primaryAction.disabled}
+                loading={primaryAction.loading}
+              >
+                {primaryAction.label}
+              </Button>
+              {secondaryAction ? (
+                <Button
+                  variant="secondary"
+                  onClick={secondaryAction.onClick}
+                  disabled={secondaryAction.disabled}
+                  loading={secondaryAction.loading}
+                >
+                  {secondaryAction.label}
+                </Button>
+              ) : null}
+            </div>
           ) : null}
         </div>
-      </div>
+      ) : null}
 
       {detail ? <div className="pt-1">{detail}</div> : null}
     </div>

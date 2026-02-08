@@ -6,14 +6,14 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 
 - `/` redirects to `/play`
 - `/play` play center workspace (default member entry)
-- `/play/picks` picks workspace
-- `/play/group-stage` group stage predictions
-- `/play/bracket` knockout bracket editor and review
+- `/play/picks` picks detail (read-only + embedded results)
+- `/play/group-stage` group stage detail (read-only + standings/results)
+- `/play/bracket` knockout detail (read-only; active after group close + draw readiness)
 - `/play/league` standings
 - `/demo/play` demo play center (admin only)
-- `/demo/play/picks` demo picks workspace (admin only)
-- `/demo/play/group-stage` demo group stage predictions (admin only)
-- `/demo/play/bracket` demo knockout workspace (admin only)
+- `/demo/play/picks` demo picks detail (read-only + embedded results) (admin only)
+- `/demo/play/group-stage` demo group stage detail (read-only + standings/results) (admin only)
+- `/demo/play/bracket` demo knockout detail (read-only; active after group close + draw readiness) (admin only)
 - `/demo/play/league` demo standings (admin only)
 - `/demo/admin/controls` demo controls (scenario/viewer/session) (admin only)
 - `/demo/admin/players` demo member manager (admin only)
@@ -86,6 +86,30 @@ Demo snapshot data lives in `public/data/demo/` with the same file set.
 
 - Group stage guide highlights group qualifiers + best third-place pick flow.
 - Knockout guide explains inline team-pill picks and champion badge from the Final.
+
+## Play Center Phase Behavior
+
+- Play Center (`/play` and `/demo/play`) keeps match picks always active.
+- Under Action Hub, sections are phase-ordered and compact:
+  - default: Group Stage, Match Picks, Knockout
+  - when `groupClosed`: Match Picks and Knockout move above a collapsed Group Stage row
+  - when knockout is active: Knockout moves to top
+- Play Center embeds compact wizards for:
+  - Group stage (active group top-two + next best-third slot + save),
+  - Knockout (next open matchup winner selection + save).
+- Match-pick control buttons (`Continue`, `Next one`) are anchored inside the `Match picks` section for consistent section-first layout.
+- Match-pick status UI (progress bar, metric pills, and closes/deadline pill) is anchored inside the `Match picks` section.
+- Section cards use neutral/transparent surfaces for a more uniform visual hierarchy.
+- Detailed pages (`/play/picks`, `/play/group-stage`, `/play/bracket` and demo equivalents) are read-only and include a consistent right-side quick menu with:
+  - back-to-play link,
+  - section navigation links,
+  - completion stats.
+- Group-stage card is active before group kickoff; after kickoff it becomes inactive with view-only guidance.
+- Knockout card activates only after:
+  - group-stage completion, and
+  - knockout draw readiness inferred from Round-of-32 team completeness in match data.
+- Knockout metrics/actions stay hidden or inactive until draw readiness.
+- During active knockout window, knockout action card moves to the top of Play Center.
 
 ## Admin
 
@@ -188,6 +212,10 @@ Timestamp preset behavior:
   - random best-third qualifiers data,
   - knockout draw team assignments from qualified teams,
   - knockout winners/results progression per scenario status.
+- Simulation targets high prediction density for UX testing:
+  - match picks are mostly filled in every scenario,
+  - group-stage top-two and best-third user picks are fully populated,
+  - `best-third-qualifiers.json` always contains 8 qualifiers.
 
 ## Deploy (GitHub Pages)
 

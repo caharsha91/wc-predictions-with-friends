@@ -1,27 +1,27 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 
 import { getGroupOutcomesLockTime } from '../../lib/matches'
 import type { GroupPrediction } from '../../types/bracket'
 import type { Match, Team } from '../../types/matches'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
-import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import DetailQuickMenu from '../components/ui/DetailQuickMenu'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Skeleton from '../components/ui/Skeleton'
+import Table from '../components/ui/Table'
 import { useGroupStageData } from '../hooks/useGroupStageData'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
 
 const BEST_THIRD_SLOTS = 8
 
-type GroupErrors = Record<string, { first?: string; second?: string }>
-
-type ValidationResult = {
-  groupErrors: GroupErrors
-  bestThirdErrors: string[]
-  hasErrors: boolean
+type GroupStanding = {
+  code: string
+  points: number
+  gd: number
+  gf: number
 }
 
 function formatTime(iso?: string): string {
@@ -68,109 +68,88 @@ function getCompletionCount(groups: Record<string, GroupPrediction>, groupIds: s
   return complete
 }
 
-function validateSelections(
-  groups: Record<string, GroupPrediction>,
-  groupIds: string[],
-  bestThirds: string[],
-  teamGroupByCode: Map<string, string>
-): ValidationResult {
-  const groupErrors: GroupErrors = {}
-  const bestThirdErrors: string[] = []
+function computeGroupStandings(matches: Match[]): {
+  standingsByGroup: Map<string, GroupStanding[]>
+  completeGroups: Set<string>
+} {
+  const tables = new Map<string, Map<string, GroupStanding>>()
+  const totalPerGroup = new Map<string, number>()
+  const finishedPerGroup = new Map<string, number>()
 
-  for (const groupId of groupIds) {
-    const group = groups[groupId] ?? {}
-    if (!group.first) {
-      groupErrors[groupId] = { ...(groupErrors[groupId] ?? {}), first: 'Required' }
+  for (const match of matches) {
+    if (match.stage !== 'Group' || !match.group) continue
+    totalPerGroup.set(match.group, (totalPerGroup.get(match.group) ?? 0) + 1)
+
+    const groupTable = tables.get(match.group) ?? new Map<string, GroupStanding>()
+    if (!groupTable.has(match.homeTeam.code)) {
+      groupTable.set(match.homeTeam.code, { code: match.homeTeam.code, points: 0, gd: 0, gf: 0 })
     }
-    if (!group.second) {
-      groupErrors[groupId] = { ...(groupErrors[groupId] ?? {}), second: 'Required' }
+    if (!groupTable.has(match.awayTeam.code)) {
+      groupTable.set(match.awayTeam.code, { code: match.awayTeam.code, points: 0, gd: 0, gf: 0 })
     }
-    if (group.first && group.second && group.first === group.second) {
-      groupErrors[groupId] = {
-        first: 'Pick two different teams',
-        second: 'Pick two different teams'
-      }
-    }
-  }
+    tables.set(match.group, groupTable)
 
-  const normalizedBestThirds = normalizeBestThirds(bestThirds)
-  const teamIndexes = new Map<string, number[]>()
-  const groupIndexes = new Map<string, number[]>()
+    if (match.status !== 'FINISHED' || !match.score) continue
 
-  normalizedBestThirds.forEach((code, index) => {
-    if (!code) {
-      bestThirdErrors[index] = 'Required'
-      return
-    }
+    finishedPerGroup.set(match.group, (finishedPerGroup.get(match.group) ?? 0) + 1)
 
-    const groupId = teamGroupByCode.get(code)
-    if (!groupId) {
-      bestThirdErrors[index] = 'Invalid team'
-      return
-    }
+    const home = groupTable.get(match.homeTeam.code)
+    const away = groupTable.get(match.awayTeam.code)
+    if (!home || !away) continue
 
-    const teamSlots = teamIndexes.get(code) ?? []
-    teamSlots.push(index)
-    teamIndexes.set(code, teamSlots)
+    home.gf += match.score.home
+    away.gf += match.score.away
+    home.gd += match.score.home - match.score.away
+    away.gd += match.score.away - match.score.home
 
-    const groupSlots = groupIndexes.get(groupId) ?? []
-    groupSlots.push(index)
-    groupIndexes.set(groupId, groupSlots)
-
-    const selectedTopTwo = groups[groupId] ?? {}
-    if (selectedTopTwo.first === code || selectedTopTwo.second === code) {
-      bestThirdErrors[index] = `Already selected in Group ${groupId} top two`
-    }
-  })
-
-  for (const slots of teamIndexes.values()) {
-    if (slots.length <= 1) continue
-    for (const index of slots) {
-      if (!bestThirdErrors[index]) bestThirdErrors[index] = 'Duplicate team'
+    if (match.score.home > match.score.away) {
+      home.points += 3
+    } else if (match.score.home < match.score.away) {
+      away.points += 3
+    } else {
+      home.points += 1
+      away.points += 1
     }
   }
 
-  for (const slots of groupIndexes.values()) {
-    if (slots.length <= 1) continue
-    for (const index of slots) {
-      if (!bestThirdErrors[index]) bestThirdErrors[index] = 'Different groups only'
-    }
+  const standingsByGroup = new Map<string, GroupStanding[]>()
+  for (const [groupId, table] of tables.entries()) {
+    const sorted = [...table.values()].sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points
+      if (b.gd !== a.gd) return b.gd - a.gd
+      if (b.gf !== a.gf) return b.gf - a.gf
+      return a.code.localeCompare(b.code)
+    })
+    standingsByGroup.set(groupId, sorted)
   }
 
-  const hasGroupErrors = Object.keys(groupErrors).length > 0
-  const hasBestThirdErrors = bestThirdErrors.some(Boolean)
-  return {
-    groupErrors,
-    bestThirdErrors,
-    hasErrors: hasGroupErrors || hasBestThirdErrors
+  const completeGroups = new Set<string>()
+  for (const [groupId, total] of totalPerGroup.entries()) {
+    if ((finishedPerGroup.get(groupId) ?? 0) >= total) completeGroups.add(groupId)
   }
+
+  return { standingsByGroup, completeGroups }
+}
+
+function formatTeam(code: string | undefined, teams: Team[]): string {
+  if (!code) return '—'
+  const team = teams.find((entry) => entry.code === code)
+  return team ? `${team.code} · ${team.name}` : code
 }
 
 export default function GroupStagePage() {
-  const navigate = useNavigate()
+  const location = useLocation()
   const now = useNow({ tickMs: 30_000 })
   const picksState = usePicksData()
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
   const groupStage = useGroupStageData(matches)
 
+  const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
+  const toPlayPath = (segment?: 'picks' | 'group-stage' | 'bracket' | 'league') =>
+    segment ? `${playRoot}/${segment}` : playRoot
+
   const groupTeams = useMemo(() => buildGroupTeams(matches), [matches])
   const groupIds = groupStage.groupIds
-
-  const allTeams = useMemo(
-    () => Object.values(groupTeams).flat().sort((a, b) => a.code.localeCompare(b.code)),
-    [groupTeams]
-  )
-
-  const teamGroupByCode = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const [groupId, teams] of Object.entries(groupTeams)) {
-      for (const team of teams) {
-        map.set(team.code, groupId)
-      }
-    }
-    return map
-  }, [groupTeams])
-
   const bestThirds = normalizeBestThirds(groupStage.data.bestThirds)
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
   const groupClosed = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
@@ -181,13 +160,7 @@ export default function GroupStagePage() {
     return { groupsDone, bestThirdDone }
   }, [bestThirds, groupIds, groupStage.data.groups])
 
-  const validation = useMemo(
-    () => validateSelections(groupStage.data.groups, groupIds, bestThirds, teamGroupByCode),
-    [bestThirds, groupIds, groupStage.data.groups, teamGroupByCode]
-  )
-
-  const canSave =
-    groupStage.loadState.status === 'ready' && !groupClosed && !validation.hasErrors
+  const standings = useMemo(() => computeGroupStandings(matches), [matches])
 
   if (picksState.state.status === 'loading' || groupStage.loadState.status === 'loading') {
     return (
@@ -218,8 +191,8 @@ export default function GroupStagePage() {
     <div className="space-y-6">
       <PageHeroPanel
         kicker="Group stage"
-        title="Group Stage"
-        subtitle="Set 1st, 2nd, and best 8 third-place qualifiers."
+        title="Group Stage Detail"
+        subtitle="Read-only group predictions and standings. Use Play Center for guided edits."
         meta={
           <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
             <div className="uppercase tracking-[0.2em]">Last updated</div>
@@ -229,153 +202,95 @@ export default function GroupStagePage() {
           </div>
         }
       >
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={completion.groupsDone === groupIds.length && groupIds.length > 0 ? 'success' : 'warning'}>
-              Groups {completion.groupsDone}/{groupIds.length}
-            </Badge>
-            <Badge tone={completion.bestThirdDone === BEST_THIRD_SLOTS ? 'success' : 'warning'}>
-              Best thirds {completion.bestThirdDone}/{BEST_THIRD_SLOTS}
-            </Badge>
-            <Badge tone={groupClosed ? 'locked' : 'info'}>
-              {groupClosed
-                ? `Closed ${formatTime(groupLockTime?.toISOString())}`
-                : `Closes ${formatTime(groupLockTime?.toISOString())}`}
-            </Badge>
-          </div>
+        <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone={completion.groupsDone === groupIds.length && groupIds.length > 0 ? 'success' : 'warning'}>
+                  Groups {completion.groupsDone}/{groupIds.length}
+                </Badge>
+                <Badge tone={completion.bestThirdDone === BEST_THIRD_SLOTS ? 'success' : 'warning'}>
+                  Best thirds {completion.bestThirdDone}/{BEST_THIRD_SLOTS}
+                </Badge>
+                <Badge tone={groupClosed ? 'locked' : 'info'}>
+                  {groupClosed
+                    ? `Closed ${formatTime(groupLockTime?.toISOString())}`
+                    : `Closes ${formatTime(groupLockTime?.toISOString())}`}
+                </Badge>
+              </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={() => navigate('/play')}>Back to Play Center</Button>
-            <Button
-              variant="secondary"
-              onClick={() => void groupStage.save()}
-              disabled={!canSave}
-              loading={groupStage.saveStatus === 'saving'}
-            >
-              Save Group Stage
-            </Button>
-            {groupStage.saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
-            {groupStage.saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
-          </div>
+              {groupClosed ? (
+                <Alert tone="info" title="Group stage is closed">
+                  Detail view only. Selections are visible with embedded standings below.
+                </Alert>
+              ) : null}
 
-          {groupClosed ? (
-            <Alert tone="info" title="Group stage is closed">
-              Editing is disabled, but selections remain visible.
-            </Alert>
-          ) : null}
+              <Table>
+                <thead>
+                  <tr>
+                    <th>Group</th>
+                    <th>Your 1st</th>
+                    <th>Your 2nd</th>
+                    <th>Result status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupIds.map((groupId) => {
+                    const teams = groupTeams[groupId] ?? []
+                    const prediction = groupStage.data.groups[groupId] ?? {}
+                    const groupStandings = standings.standingsByGroup.get(groupId) ?? []
+                    const complete = standings.completeGroups.has(groupId)
+                    const actualTopTwo = groupStandings.slice(0, 2).map((entry) => entry.code)
+
+                    const statusLabel = complete
+                      ? `${actualTopTwo[0] ?? '—'} / ${actualTopTwo[1] ?? '—'}`
+                      : 'In progress'
+
+                    return (
+                      <tr key={groupId}>
+                        <td>Group {groupId}</td>
+                        <td>{formatTeam(prediction.first, teams)}</td>
+                        <td>{formatTeam(prediction.second, teams)}</td>
+                        <td>{statusLabel}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </Table>
+            </div>
+          </Card>
+
+          <DetailQuickMenu
+            stats={[
+              { label: 'Groups done', value: `${completion.groupsDone}/${groupIds.length}` },
+              { label: 'Best thirds', value: `${completion.bestThirdDone}/${BEST_THIRD_SLOTS}` },
+              { label: 'Group lock', value: groupClosed ? 'Closed' : 'Open' },
+              { label: 'Mode', value: location.pathname.startsWith('/demo/') ? 'Demo' : 'Default' }
+            ]}
+            links={[
+              { label: 'Back to Play Center', to: toPlayPath() },
+              { label: 'Picks Detail', to: toPlayPath('picks') },
+              { label: 'Group Stage Detail', to: toPlayPath('group-stage') },
+              { label: 'Knockout Detail', to: toPlayPath('bracket') },
+              { label: 'League', to: toPlayPath('league') }
+            ]}
+          />
         </div>
       </PageHeroPanel>
 
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-          <div className="space-y-4">
-            <div className="text-sm font-semibold text-foreground">Group winners and runners-up</div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {groupIds.map((groupId) => {
-                const teams = groupTeams[groupId] ?? []
-                const prediction = groupStage.data.groups[groupId] ?? {}
-                const errors = validation.groupErrors[groupId]
-                const secondOptions = teams.filter((team) => team.code !== prediction.first)
-                return (
-                  <div key={groupId} className="rounded-xl border border-border/70 bg-bg2 p-3">
-                    <div className="mb-2 text-sm font-semibold text-foreground">Group {groupId}</div>
-                    <div className="grid gap-2">
-                      <div>
-                        <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">1st place</div>
-                        <select
-                          value={prediction.first ?? ''}
-                          disabled={groupClosed}
-                          onChange={(event) =>
-                            groupStage.setGroupPick(groupId, 'first', event.target.value)
-                          }
-                          className="w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground"
-                        >
-                          <option value="">Select team</option>
-                          {teams.map((team) => (
-                            <option key={`${groupId}-first-${team.code}`} value={team.code}>
-                              {team.code} · {team.name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors?.first ? <div className="mt-1 text-xs text-destructive">{errors.first}</div> : null}
-                      </div>
-
-                      <div>
-                        <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">2nd place</div>
-                        <select
-                          value={prediction.second ?? ''}
-                          disabled={groupClosed}
-                          onChange={(event) =>
-                            groupStage.setGroupPick(groupId, 'second', event.target.value)
-                          }
-                          className="w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground"
-                        >
-                          <option value="">Select team</option>
-                          {secondOptions.map((team) => (
-                            <option key={`${groupId}-second-${team.code}`} value={team.code}>
-                              {team.code} · {team.name}
-                            </option>
-                          ))}
-                        </select>
-                        {errors?.second ? <div className="mt-1 text-xs text-destructive">{errors.second}</div> : null}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+      <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
+        <div className="space-y-3">
+          <div className="text-sm font-semibold text-foreground">Best 8 third-place qualifiers (your picks)</div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {bestThirds.map((teamCode, index) => (
+              <div key={`best-third-${index}`} className="rounded-xl border border-border/70 bg-bg2/40 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Slot {index + 1}</div>
+                <div className="text-sm font-semibold text-foreground">{teamCode || '—'}</div>
+              </div>
+            ))}
           </div>
-        </Card>
-
-        <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-          <div className="space-y-4">
-            <div>
-              <div className="text-sm font-semibold text-foreground">Best 8 third-place qualifiers</div>
-              <div className="text-xs text-muted-foreground">Pick exactly 8 teams from different groups.</div>
-            </div>
-            <div className="space-y-2">
-              {bestThirds.map((selectedTeam, index) => {
-                const usedElsewhereTeams = bestThirds.filter((code, codeIndex) => code && codeIndex !== index)
-                const usedElsewhereGroups = new Set(
-                  bestThirds
-                    .map((code, codeIndex) => (codeIndex === index ? null : teamGroupByCode.get(code) ?? null))
-                    .filter((value): value is string => Boolean(value))
-                )
-                return (
-                  <div key={`best-third-${index}`} className="rounded-xl border border-border/70 bg-bg2 p-3">
-                    <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">Slot {index + 1}</div>
-                    <select
-                      value={selectedTeam}
-                      disabled={groupClosed}
-                      onChange={(event) => groupStage.setBestThird(index, event.target.value)}
-                      className="w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground"
-                    >
-                      <option value="">Select team</option>
-                      {allTeams.map((team) => {
-                        const teamGroup = teamGroupByCode.get(team.code)
-                        const topTwo = teamGroup ? groupStage.data.groups[teamGroup] : undefined
-                        const isTopTwo = Boolean(topTwo && (topTwo.first === team.code || topTwo.second === team.code))
-                        const usedTeam = team.code !== selectedTeam && usedElsewhereTeams.includes(team.code)
-                        const usedGroup =
-                          team.code !== selectedTeam && !!teamGroup && usedElsewhereGroups.has(teamGroup)
-                        const disabled = usedTeam || usedGroup || isTopTwo
-                        return (
-                          <option key={`best-third-${index}-${team.code}`} value={team.code} disabled={disabled}>
-                            {team.code} · {team.name}
-                          </option>
-                        )
-                      })}
-                    </select>
-                    {validation.bestThirdErrors[index] ? (
-                      <div className="mt-1 text-xs text-destructive">{validation.bestThirdErrors[index]}</div>
-                    ) : null}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </Card>
-      </div>
+        </div>
+      </Card>
     </div>
   )
 }

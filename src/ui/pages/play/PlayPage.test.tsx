@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import type { Match } from '../../../types/matches'
@@ -7,7 +7,8 @@ import type { Pick } from '../../../types/picks'
 
 const fixtures = vi.hoisted(() => {
   const state = {
-    mode: 'pending' as 'pending' | 'complete' | 'empty'
+    mode: 'pending' as 'pending' | 'complete' | 'empty',
+    nowIso: '2026-06-12T12:00:00.000Z'
   }
 
   const matches: Match[] = [
@@ -37,6 +38,14 @@ const fixtures = vi.hoisted(() => {
       status: 'SCHEDULED',
       homeTeam: { code: 'USA', name: 'United States' },
       awayTeam: { code: 'PAR', name: 'Paraguay' }
+    },
+    {
+      id: 'm-r32-1',
+      stage: 'R32',
+      kickoffUtc: '2026-07-01T18:00:00.000Z',
+      status: 'SCHEDULED',
+      homeTeam: { code: 'A1', name: 'Group A Winner' },
+      awayTeam: { code: 'B2', name: 'Group B Runner-up' }
     }
   ]
 
@@ -54,7 +63,7 @@ const fixtures = vi.hoisted(() => {
 })
 
 vi.mock('../../hooks/useNow', () => ({
-  useNow: () => new Date('2026-06-12T12:00:00.000Z')
+  useNow: () => new Date(fixtures.state.nowIso)
 }))
 
 vi.mock('../../hooks/useViewerId', () => ({
@@ -88,7 +97,39 @@ vi.mock('../../hooks/useGroupStageData', () => ({
       updatedAt: '2026-06-12T12:00:00.000Z'
     },
     groupIds: ['A', 'B'],
-    saveStatus: 'idle'
+    saveStatus: 'idle',
+    setGroupPick: vi.fn(),
+    setBestThird: vi.fn(),
+    save: vi.fn(async () => {}),
+    canPersistFirestore: false
+  })
+}))
+
+vi.mock('../../hooks/useBracketKnockoutData', () => ({
+  useBracketKnockoutData: () => ({
+    loadState: {
+      status: 'ready',
+      byStage: {
+        R32: [
+          {
+            id: 'm-r32-1',
+            stage: 'R32',
+            kickoffUtc: '2026-07-01T18:00:00.000Z',
+            status: 'SCHEDULED',
+            homeTeam: { code: 'BRA', name: 'Brazil' },
+            awayTeam: { code: 'NED', name: 'Netherlands' }
+          }
+        ]
+      }
+    },
+    knockout: {},
+    setPick: vi.fn(),
+    save: vi.fn(async () => {}),
+    saveStatus: 'idle',
+    canPersistFirestore: false,
+    stageOrder: ['R32', 'R16', 'QF', 'SF', 'Third', 'Final'],
+    totalMatches: 1,
+    completeMatches: 0
   })
 }))
 
@@ -121,19 +162,28 @@ function renderPage() {
 }
 
 describe('PlayPage action center', () => {
-  it('renders compact group stage section above picks action center', () => {
+  beforeEach(() => {
     fixtures.state.mode = 'pending'
+    fixtures.state.nowIso = '2026-06-12T12:00:00.000Z'
+    fixtures.matches[0].status = 'SCHEDULED'
+    fixtures.matches[1].status = 'SCHEDULED'
+    fixtures.matches[2].status = 'SCHEDULED'
+    fixtures.matches[3].status = 'SCHEDULED'
+    fixtures.matches[3].homeTeam.code = 'A1'
+    fixtures.matches[3].awayTeam.code = 'B2'
+  })
 
+  it('renders compact group stage section above picks action center', () => {
     renderPage()
 
     expect(screen.getByText(/^Group stage$/i)).toBeInTheDocument()
+    expect(screen.getByText(/^Match picks$/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /save group picks/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /continue group stage/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /play center/i })).toBeInTheDocument()
   })
 
   it('routes group stage CTA to /play/group-stage', () => {
-    fixtures.state.mode = 'pending'
-
     render(
       <MemoryRouter initialEntries={['/play']}>
         <Routes>
@@ -147,9 +197,21 @@ describe('PlayPage action center', () => {
     expect(screen.getByText('Group Stage Route')).toBeInTheDocument()
   })
 
-  it('renders queue and editor inline in one section for pending picks', () => {
-    fixtures.state.mode = 'pending'
+  it('routes group stage CTA to /demo/play/group-stage in demo mode', () => {
+    render(
+      <MemoryRouter initialEntries={['/demo/play']}>
+        <Routes>
+          <Route path="/demo/play" element={<PlayPage />} />
+          <Route path="/demo/play/group-stage" element={<div>Demo Group Stage Route</div>} />
+        </Routes>
+      </MemoryRouter>
+    )
 
+    fireEvent.click(screen.getByRole('button', { name: /continue group stage|open group stage|view group stage/i }))
+    expect(screen.getByText('Demo Group Stage Route')).toBeInTheDocument()
+  })
+
+  it('renders queue and editor inline in one section for pending picks', () => {
     renderPage()
 
     expect(screen.getByRole('button', { name: /^continue$/i })).toBeInTheDocument()
@@ -159,8 +221,6 @@ describe('PlayPage action center', () => {
   })
 
   it('updates inline editor context when selecting a queue row action', () => {
-    fixtures.state.mode = 'pending'
-
     renderPage()
 
     const civLabel = screen.getByText('CIV vs ECU')
@@ -172,8 +232,6 @@ describe('PlayPage action center', () => {
   })
 
   it('shows only the next upcoming matchday in locks-next queue and removes duplicate top review shortcuts', () => {
-    fixtures.state.mode = 'pending'
-
     renderPage()
 
     expect(screen.queryByRole('button', { name: /pick: /i })).not.toBeInTheDocument()
@@ -190,5 +248,33 @@ describe('PlayPage action center', () => {
     expect(screen.getAllByText(/you're chill\./i).length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: /view league/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /see results/i })).toBeInTheDocument()
+  })
+
+  it('moves group stage to collapsed row at bottom when group is closed', () => {
+    fixtures.state.nowIso = '2026-06-15T19:00:00.000Z'
+
+    renderPage()
+
+    expect(screen.getByText(/closed\. view picks and results\./i)).toBeInTheDocument()
+    const matchPicksHeading = screen.getByText(/^Match picks$/i)
+    const groupHeading = screen.getByText(/^Group stage$/i)
+    expect(matchPicksHeading.compareDocumentPosition(groupHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('shows knockout as the active top phase after group completion and draw readiness', () => {
+    fixtures.state.nowIso = '2026-06-28T12:00:00.000Z'
+    fixtures.matches[0].status = 'FINISHED'
+    fixtures.matches[1].status = 'FINISHED'
+    fixtures.matches[2].status = 'FINISHED'
+    fixtures.matches[3].homeTeam.code = 'BRA'
+    fixtures.matches[3].awayTeam.code = 'NED'
+
+    renderPage()
+
+    const knockoutHeading = screen.getByText(/^Knockout$/i)
+    const groupHeading = screen.getByText(/^Group stage$/i)
+    expect(knockoutHeading.compareDocumentPosition(groupHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByRole('button', { name: /continue knockout/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /save knockout picks/i })).toBeInTheDocument()
   })
 })

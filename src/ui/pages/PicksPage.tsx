@@ -1,41 +1,25 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 import { fetchScoring } from '../../lib/data'
-import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../lib/matches'
-import { findPick, getPickOutcome, getPredictedWinner, isPickComplete, upsertPick } from '../../lib/picks'
+import { getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../lib/matches'
+import { findPick, getPickOutcome, getPredictedWinner, isPickComplete } from '../../lib/picks'
 import type { Match } from '../../types/matches'
-import type { Pick, PickAdvances, PickOutcome } from '../../types/picks'
+import type { Pick } from '../../types/picks'
 import type { KnockoutStage, ScoringConfig } from '../../types/scoring'
 import { CORE_LIST_PAGE_SIZE } from '../constants/pagination'
-import { Alert } from '../components/ui/Alert'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/Accordion'
+import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
-import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
-import { Input } from '../components/ui/Input'
+import DetailQuickMenu from '../components/ui/DetailQuickMenu'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle
-} from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
-import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
-import { cn } from '../lib/utils'
-
-type DraftPick = {
-  homeScore: string
-  awayScore: string
-  advances: '' | PickAdvances
-}
 
 const EMPTY_MATCHES: Match[] = []
 const FINISHED_LIST_PAGE_SIZE = 10
@@ -78,27 +62,12 @@ function formatCountdown(target: Date, now: Date) {
   return `${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`
 }
 
-function parseScore(value: string): number | undefined {
-  if (value.trim() === '') return undefined
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed)) return undefined
-  return Math.max(0, Math.floor(parsed))
-}
-
-function toDraft(pick?: Pick): DraftPick {
-  return {
-    homeScore: typeof pick?.homeScore === 'number' ? String(pick.homeScore) : '',
-    awayScore: typeof pick?.awayScore === 'number' ? String(pick.awayScore) : '',
-    advances: pick?.advances ?? ''
-  }
-}
-
 function getStageConfig(match: Match, scoring: ScoringConfig) {
   if (match.stage === 'Group') return scoring.group
   return scoring.knockout[match.stage as KnockoutStage]
 }
 
-function getActualOutcome(match: Match): PickOutcome | undefined {
+function getActualOutcome(match: Match): 'WIN' | 'LOSS' | 'DRAW' | undefined {
   if (!match.score) return undefined
   if (match.score.home > match.score.away) return 'WIN'
   if (match.score.home < match.score.away) return 'LOSS'
@@ -143,14 +112,12 @@ function scorePick(match: Match, pick: Pick | undefined, scoring: ScoringConfig)
   }
 }
 
-function MatchList({
+function ReadOnlyMatchList({
   matches,
   picks,
   userId,
   now,
   emptyMessage,
-  onOpenEditor,
-  actionLabel,
   pageSize = CORE_LIST_PAGE_SIZE
 }: {
   matches: Match[]
@@ -158,8 +125,6 @@ function MatchList({
   userId: string
   now: Date
   emptyMessage: string
-  onOpenEditor: (matchId: string) => void
-  actionLabel: string
   pageSize?: number
 }) {
   const [page, setPage] = useState(1)
@@ -188,30 +153,21 @@ function MatchList({
           const pick = findPick(picks, match.id, userId)
           const complete = isPickComplete(match, pick)
           const locked = isMatchLocked(match.kickoffUtc, now)
-          const matchday = getDateKeyInTimeZone(match.kickoffUtc)
           return (
-            <div key={match.id} className="rounded-xl border border-border/70 bg-bg2 p-3">
+            <div key={match.id} className="rounded-xl border border-border/70 bg-bg2/40 p-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold text-foreground">
                     {match.homeTeam.code} vs {match.awayTeam.code}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Matchday {matchday} · {match.stage} · {formatKickoff(match.kickoffUtc)}
+                    {match.stage} · {formatKickoff(match.kickoffUtc)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge tone={complete ? 'success' : locked ? 'locked' : 'warning'}>
                     {complete ? 'Picked' : locked ? 'Locked' : 'Needs pick'}
                   </Badge>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={locked}
-                    onClick={() => onOpenEditor(match.id)}
-                  >
-                    {actionLabel}
-                  </Button>
                 </div>
               </div>
             </div>
@@ -223,26 +179,8 @@ function MatchList({
           <div className="text-xs text-muted-foreground">
             Showing {startIndex + 1}-{Math.min(startIndex + pageSize, matches.length)} of {matches.length}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={safePage <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              Prev
-            </Button>
-            <div className="text-xs text-muted-foreground">
-              Page {safePage} / {totalPages}
-            </div>
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={safePage >= totalPages}
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            >
-              Next
-            </Button>
+          <div className="text-xs text-muted-foreground">
+            Page {safePage} / {totalPages}
           </div>
         </div>
       ) : null}
@@ -250,139 +188,20 @@ function MatchList({
   )
 }
 
-function PickEditor({
-  selectedMatch,
-  draft,
-  onDraftChange,
-  onSave,
-  locked,
-  canSave,
-  saving,
-  saveStatus
-}: {
-  selectedMatch: Match | null
-  draft: DraftPick
-  onDraftChange: (next: DraftPick) => void
-  onSave: () => void
-  locked: boolean
-  canSave: boolean
-  saving: boolean
-  saveStatus: 'idle' | 'saving' | 'saved' | 'error'
-}) {
-  if (!selectedMatch) {
-    return (
-      <Card className="rounded-2xl border-border/60 p-4">
-        <div className="text-sm text-muted-foreground">Choose an open match to quick-edit a pick.</div>
-      </Card>
-    )
-  }
-
-  const parsedHome = parseScore(draft.homeScore)
-  const parsedAway = parseScore(draft.awayScore)
-  const tieInput = parsedHome !== undefined && parsedAway !== undefined && parsedHome === parsedAway
-  const requiresAdvances = selectedMatch.stage !== 'Group' && tieInput
-
-  return (
-    <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-      <div className="space-y-4">
-        <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Quick editor</div>
-          <div className="mt-1 text-lg font-semibold text-foreground">
-            {selectedMatch.homeTeam.code} vs {selectedMatch.awayTeam.code}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {selectedMatch.stage} · Kickoff {formatKickoff(selectedMatch.kickoffUtc)} · Locks{' '}
-            {formatKickoff(getLockTime(selectedMatch.kickoffUtc).toISOString())}
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              {selectedMatch.homeTeam.code} score
-            </div>
-            <Input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={draft.homeScore}
-              onChange={(event) => onDraftChange({ ...draft, homeScore: event.target.value })}
-              disabled={locked}
-            />
-          </div>
-          <div>
-            <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              {selectedMatch.awayTeam.code} score
-            </div>
-            <Input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={draft.awayScore}
-              onChange={(event) => onDraftChange({ ...draft, awayScore: event.target.value })}
-              disabled={locked}
-            />
-          </div>
-        </div>
-
-        {selectedMatch.stage !== 'Group' ? (
-          <div className="rounded-xl border border-border/70 bg-bg2 p-3">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Knockout tie rule</div>
-            <div className="mt-1 text-sm text-foreground">
-              Tied knockout scores require selecting who advances.
-            </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <Button
-                variant="secondary"
-                data-active={draft.advances === 'HOME' ? 'true' : 'false'}
-                className={draft.advances === 'HOME' ? 'border-primary' : ''}
-                disabled={locked || !requiresAdvances}
-                onClick={() => onDraftChange({ ...draft, advances: 'HOME' })}
-              >
-                {selectedMatch.homeTeam.code} advances
-              </Button>
-              <Button
-                variant="secondary"
-                data-active={draft.advances === 'AWAY' ? 'true' : 'false'}
-                className={draft.advances === 'AWAY' ? 'border-primary' : ''}
-                disabled={locked || !requiresAdvances}
-                onClick={() => onDraftChange({ ...draft, advances: 'AWAY' })}
-              >
-                {selectedMatch.awayTeam.code} advances
-              </Button>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={locked ? 'locked' : 'info'}>{locked ? 'Locked' : 'Open'}</Badge>
-          {saveStatus === 'saved' ? <Badge tone="success">Saved</Badge> : null}
-          {saveStatus === 'error' ? <Badge tone="danger">Save failed</Badge> : null}
-        </div>
-
-        <Button onClick={onSave} disabled={!canSave} loading={saving}>
-          Save quick edit
-        </Button>
-      </div>
-    </Card>
-  )
-}
-
 export default function PicksPage() {
-  const navigate = useNavigate()
+  const location = useLocation()
   const now = useNow()
   const lockNow = useNow({ tickMs: 1000 })
   const userId = useViewerId()
   const mode = useRouteDataMode()
-  const isDesktop = useMediaQuery('(min-width: 1024px)')
   const picksState = usePicksData()
-  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
-  const [draft, setDraft] = useState<DraftPick>({ homeScore: '', awayScore: '', advances: '' })
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [savingPick, setSavingPick] = useState(false)
   const [scoringState, setScoringState] = useState<ScoringState>({ status: 'loading' })
   const [finishedPage, setFinishedPage] = useState(1)
   const [expandedSections, setExpandedSections] = useState<string[]>(['open-now'])
+
+  const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
+  const toPlayPath = (segment?: 'picks' | 'group-stage' | 'bracket' | 'league') =>
+    segment ? `${playRoot}/${segment}` : playRoot
 
   useEffect(() => {
     let canceled = false
@@ -439,76 +258,6 @@ export default function PicksPage() {
     [now, upcomingMatches]
   )
 
-  const quickEditTarget = pendingOpenMatches[0] ?? openMatches[0] ?? null
-
-  useEffect(() => {
-    if (upcomingMatches.length === 0) {
-      setSelectedMatchId(null)
-      return
-    }
-    const stillVisible = selectedMatchId && upcomingMatches.some((match) => match.id === selectedMatchId)
-    if (stillVisible) return
-    setSelectedMatchId(quickEditTarget?.id ?? upcomingMatches[0]?.id ?? null)
-  }, [quickEditTarget?.id, selectedMatchId, upcomingMatches])
-
-  const selectedMatch = useMemo(
-    () => upcomingMatches.find((match) => match.id === selectedMatchId) ?? null,
-    [selectedMatchId, upcomingMatches]
-  )
-
-  const selectedPick = useMemo(
-    () => (selectedMatch ? findPick(picksState.picks, selectedMatch.id, userId) : undefined),
-    [picksState.picks, selectedMatch, userId]
-  )
-
-  useEffect(() => {
-    setDraft(toDraft(selectedPick))
-  }, [selectedPick?.id, selectedPick?.updatedAt, selectedMatch?.id])
-
-  const parsedHome = parseScore(draft.homeScore)
-  const parsedAway = parseScore(draft.awayScore)
-  const tieInput = parsedHome !== undefined && parsedAway !== undefined && parsedHome === parsedAway
-  const requiresAdvances = selectedMatch ? selectedMatch.stage !== 'Group' && tieInput : false
-  const selectedLocked = selectedMatch ? isMatchLocked(selectedMatch.kickoffUtc, now) : true
-  const canSavePick =
-    !!selectedMatch &&
-    !selectedLocked &&
-    parsedHome !== undefined &&
-    parsedAway !== undefined &&
-    (!requiresAdvances || draft.advances === 'HOME' || draft.advances === 'AWAY')
-
-  const onSavePick = useCallback(async () => {
-    if (!selectedMatch || !canSavePick || parsedHome === undefined || parsedAway === undefined) return
-    setSavingPick(true)
-    try {
-      const next = upsertPick(picksState.picks, {
-        matchId: selectedMatch.id,
-        userId,
-        homeScore: parsedHome,
-        awayScore: parsedAway,
-        advances: requiresAdvances ? draft.advances || undefined : undefined
-      })
-      picksState.updatePicks(next)
-      await picksState.savePicks(next)
-    } finally {
-      setSavingPick(false)
-    }
-  }, [
-    canSavePick,
-    draft.advances,
-    parsedAway,
-    parsedHome,
-    picksState,
-    requiresAdvances,
-    selectedMatch,
-    userId
-  ])
-
-  function openEditor(matchId: string) {
-    setSelectedMatchId(matchId)
-    setEditorOpen(true)
-  }
-
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
 
   const pendingOpenDeadlines = useMemo(
@@ -519,6 +268,7 @@ export default function PicksPage() {
   const nextLockedKickoffUtc = lockedMatches
     .map((match) => match.kickoffUtc)
     .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0]
+
   const finishedMatches = useMemo(
     () =>
       matches
@@ -533,6 +283,7 @@ export default function PicksPage() {
     finishedStartIndex,
     finishedStartIndex + FINISHED_LIST_PAGE_SIZE
   )
+
   const latestResultsUpdatedUtc =
     finishedMatches.length > 0 && picksState.state.status === 'ready'
       ? picksState.state.lastUpdated
@@ -550,6 +301,7 @@ export default function PicksPage() {
       .sort((a, b) => a.lockTime.getTime() - b.lockTime.getTime())
     return candidates[0] ?? null
   }, [lockNow, matches])
+
   const nextLockCountdown = nextLock ? formatCountdown(nextLock.lockTime, lockNow) : null
   const nextLockPick = nextLock ? findPick(picksState.picks, nextLock.match.id, userId) : undefined
   const nextLockPicked = nextLock ? isPickComplete(nextLock.match, nextLockPick) : false
@@ -588,9 +340,9 @@ export default function PicksPage() {
   return (
     <div className="space-y-6">
       <PageHeroPanel
-        title="My Picks Hub"
-        subtitle="Quick review for the next lock lives here. Use Play Center for guided picks."
-        kicker="Reference + quick edit"
+        title="Picks Detail"
+        subtitle="Read-only pick detail with embedded results. Use Play Center for guided edits."
+        kicker="Reference"
         meta={
           <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
             <div className="uppercase tracking-[0.2em]">Last updated</div>
@@ -601,7 +353,7 @@ export default function PicksPage() {
         }
       >
         <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="rounded-2xl border-border/70 bg-bg2 p-4 sm:p-5">
+          <Card className="rounded-2xl border-border/70 bg-transparent p-4 sm:p-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Next lock</div>
@@ -617,23 +369,14 @@ export default function PicksPage() {
                   <div className="text-sm text-muted-foreground">
                     {nextLock.match.stage} · Locks at {formatKickoff(nextLock.lockTime.toISOString())}
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/60 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-bg2/40 p-3">
                     <div className="flex flex-col gap-1">
                       <div className="text-xs text-muted-foreground">Locks in</div>
                       <div className="text-sm font-semibold text-foreground">{nextLockCountdown}</div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge tone={nextLockPicked ? 'success' : 'warning'}>
-                        {nextLockPicked ? 'Picked' : 'Needs pick'}
-                      </Badge>
-                      <Button
-                        size="sm"
-                        variant="pill"
-                        onClick={() => openEditor(nextLock.match.id)}
-                      >
-                        Review pick
-                      </Button>
-                    </div>
+                    <Badge tone={nextLockPicked ? 'success' : 'warning'}>
+                      {nextLockPicked ? 'Picked' : 'Needs pick'}
+                    </Badge>
                   </div>
                 </>
               ) : (
@@ -644,23 +387,21 @@ export default function PicksPage() {
             </div>
           </Card>
 
-          <div className="rounded-2xl border border-border/70 bg-bg2 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Rules</div>
-              <Button size="sm" variant="pill" onClick={() => navigate('/play')}>
-                Open Play Center
-              </Button>
-            </div>
-            <div className="mt-2 space-y-2 text-sm text-foreground">
-              <div>Picks lock 30 minutes before kickoff.</div>
-              <div>Knockout ties require selecting who advances.</div>
-              <div>
-                {groupLockTime
-                  ? `Group outcomes lock at ${formatKickoff(groupLockTime.toISOString())}.`
-                  : 'Group outcomes unlock with group matches.'}
-              </div>
-            </div>
-          </div>
+          <DetailQuickMenu
+            stats={[
+              { label: 'To pick', value: pendingOpenMatches.length },
+              { label: 'Open picked', value: completedOpenMatches.length },
+              { label: 'Locked', value: lockedMatches.length },
+              { label: 'Finished', value: finishedMatches.length }
+            ]}
+            links={[
+              { label: 'Back to Play Center', to: toPlayPath() },
+              { label: 'Picks Detail', to: toPlayPath('picks') },
+              { label: 'Group Stage Detail', to: toPlayPath('group-stage') },
+              { label: 'Knockout Detail', to: toPlayPath('bracket') },
+              { label: 'League', to: toPlayPath('league') }
+            ]}
+          />
         </div>
       </PageHeroPanel>
 
@@ -682,14 +423,12 @@ export default function PicksPage() {
           </AccordionTrigger>
           <AccordionContent>
             <div className="mb-3 text-xs text-muted-foreground">Unsubmitted and unlocked picks.</div>
-            <MatchList
+            <ReadOnlyMatchList
               matches={pendingOpenMatches}
               picks={picksState.picks}
               userId={userId}
               now={now}
               emptyMessage="No urgent picks right now."
-              onOpenEditor={(matchId) => openEditor(matchId)}
-              actionLabel="Quick edit"
             />
           </AccordionContent>
         </AccordionItem>
@@ -703,14 +442,12 @@ export default function PicksPage() {
             </span>
           </AccordionTrigger>
           <AccordionContent>
-            <MatchList
+            <ReadOnlyMatchList
               matches={completedOpenMatches}
               picks={picksState.picks}
               userId={userId}
               now={now}
               emptyMessage="No completed open picks yet."
-              onOpenEditor={(matchId) => openEditor(matchId)}
-              actionLabel="Review"
             />
           </AccordionContent>
         </AccordionItem>
@@ -724,14 +461,12 @@ export default function PicksPage() {
             </span>
           </AccordionTrigger>
           <AccordionContent>
-            <MatchList
+            <ReadOnlyMatchList
               matches={lockedMatches}
               picks={picksState.picks}
               userId={userId}
               now={now}
               emptyMessage="No locked picks."
-              onOpenEditor={(matchId) => openEditor(matchId)}
-              actionLabel="Locked"
             />
           </AccordionContent>
         </AccordionItem>
@@ -809,26 +544,8 @@ export default function PicksPage() {
                     Showing {finishedStartIndex + 1}-{Math.min(finishedStartIndex + FINISHED_LIST_PAGE_SIZE, finishedMatches.length)} of{' '}
                     {finishedMatches.length}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={safeFinishedPage <= 1}
-                      onClick={() => setFinishedPage((current) => Math.max(1, current - 1))}
-                    >
-                      Prev
-                    </Button>
-                    <div className="text-xs text-muted-foreground">
-                      Page {safeFinishedPage} / {finishedTotalPages}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={safeFinishedPage >= finishedTotalPages}
-                      onClick={() => setFinishedPage((current) => Math.min(finishedTotalPages, current + 1))}
-                    >
-                      Next
-                    </Button>
+                  <div className="text-xs text-muted-foreground">
+                    Page {safeFinishedPage} / {finishedTotalPages}
                   </div>
                 </div>
               ) : null}
@@ -837,31 +554,17 @@ export default function PicksPage() {
         </AccordionItem>
       </Accordion>
 
-      <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
-        <SheetContent
-          side={isDesktop ? 'right' : 'bottom'}
-          className={cn(
-            isDesktop ? 'w-[92vw] max-w-xl' : 'pickEditorSheetMobile rounded-t-2xl'
-          )}
-        >
-          <SheetHeader>
-            <SheetTitle>Quick edit</SheetTitle>
-            <SheetDescription>For guided flow, open Play Center.</SheetDescription>
-          </SheetHeader>
-          <div className="px-4 pb-4">
-            <PickEditor
-              selectedMatch={selectedMatch}
-              draft={draft}
-              onDraftChange={setDraft}
-              onSave={onSavePick}
-              locked={selectedLocked}
-              canSave={canSavePick}
-              saving={savingPick}
-              saveStatus={picksState.saveStatus}
-            />
+      <Card className="rounded-2xl border-border/70 bg-transparent p-4">
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <div className="font-semibold text-foreground">Read-only detail page</div>
+          <div>Use Play Center for guided pick edits and phase-specific wizards.</div>
+          <div>
+            {groupLockTime
+              ? `Group outcomes lock at ${formatKickoff(groupLockTime.toISOString())}.`
+              : 'Group outcomes unlock with group matches.'}
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </Card>
     </div>
   )
 }

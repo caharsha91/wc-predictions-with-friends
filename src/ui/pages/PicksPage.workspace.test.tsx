@@ -145,12 +145,11 @@ function renderAt(path: string) {
 }
 
 describe('PicksPage inline finished matches', () => {
-  it('renders compact top area with next lock and keeps lists without Picks/Results tabs', () => {
+  it('renders read-only detail shell with quick menu and embedded lists', () => {
     renderAt('/play/picks')
 
     expect(screen.getByText('Next lock')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /review pick/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /open play center/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to play center/i })).toBeInTheDocument()
     expect(screen.getByText('Open now')).toBeInTheDocument()
     expect(screen.getByText('Finished matches')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /wizard/i })).not.toBeInTheDocument()
@@ -190,10 +189,10 @@ describe('PicksPage inline finished matches', () => {
     dispatchSpy.mockRestore()
   })
 
-  it('routes to play center from top CTA', () => {
+  it('routes to play center from quick menu CTA', () => {
     renderAt('/play/picks')
 
-    fireEvent.click(screen.getByRole('button', { name: /open play center/i }))
+    fireEvent.click(screen.getByRole('link', { name: /back to play center/i }))
 
     expect(screen.getByText('Play Center Route')).toBeInTheDocument()
     expect(screen.getByTestId('location-probe')).toHaveTextContent('/play')

@@ -2,49 +2,61 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 
-import type { Match } from '../../types/matches'
 import type { GroupPrediction } from '../../types/bracket'
+import type { Match } from '../../types/matches'
 
 const fixtures = vi.hoisted(() => {
-  const groupIds = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-  const matches: Match[] = groupIds.flatMap((groupId, groupIndex) => [
+  const groupIds = ['A', 'B']
+  const matches: Match[] = [
     {
-      id: `${groupId}-m1`,
-      stage: 'Group' as const,
-      group: groupId,
-      kickoffUtc: `2026-06-${String(15 + groupIndex).padStart(2, '0')}T18:00:00.000Z`,
-      status: 'SCHEDULED' as const,
-      homeTeam: { code: `${groupId}1`, name: `${groupId} Team 1` },
-      awayTeam: { code: `${groupId}2`, name: `${groupId} Team 2` }
+      id: 'A-m1',
+      stage: 'Group',
+      group: 'A',
+      kickoffUtc: '2026-06-15T18:00:00.000Z',
+      status: 'SCHEDULED',
+      homeTeam: { code: 'A1', name: 'A Team 1' },
+      awayTeam: { code: 'A2', name: 'A Team 2' }
     },
     {
-      id: `${groupId}-m2`,
-      stage: 'Group' as const,
-      group: groupId,
-      kickoffUtc: `2026-06-${String(15 + groupIndex).padStart(2, '0')}T21:00:00.000Z`,
-      status: 'SCHEDULED' as const,
-      homeTeam: { code: `${groupId}3`, name: `${groupId} Team 3` },
-      awayTeam: { code: `${groupId}4`, name: `${groupId} Team 4` }
+      id: 'A-m2',
+      stage: 'Group',
+      group: 'A',
+      kickoffUtc: '2026-06-15T21:00:00.000Z',
+      status: 'SCHEDULED',
+      homeTeam: { code: 'A3', name: 'A Team 3' },
+      awayTeam: { code: 'A4', name: 'A Team 4' }
+    },
+    {
+      id: 'B-m1',
+      stage: 'Group',
+      group: 'B',
+      kickoffUtc: '2026-06-16T18:00:00.000Z',
+      status: 'SCHEDULED',
+      homeTeam: { code: 'B1', name: 'B Team 1' },
+      awayTeam: { code: 'B2', name: 'B Team 2' }
+    },
+    {
+      id: 'B-m2',
+      stage: 'Group',
+      group: 'B',
+      kickoffUtc: '2026-06-16T21:00:00.000Z',
+      status: 'SCHEDULED',
+      homeTeam: { code: 'B3', name: 'B Team 3' },
+      awayTeam: { code: 'B4', name: 'B Team 4' }
     }
-  ])
+  ]
 
-  const emptyGroups: Record<string, GroupPrediction> = Object.fromEntries(groupIds.map((id) => [id, {}]))
-  const completeGroups: Record<string, GroupPrediction> = Object.fromEntries(
-    groupIds.map((id) => [id, { first: `${id}1`, second: `${id}2` }])
-  )
+  const groups: Record<string, GroupPrediction> = {
+    A: { first: 'A1', second: 'A2' },
+    B: { first: 'B1', second: 'B2' }
+  }
 
   return {
     groupIds,
     matches,
     now: new Date('2026-06-01T12:00:00.000Z'),
-    groups: emptyGroups,
-    bestThirds: [] as string[],
-    saveStatus: 'idle' as 'idle' | 'saving' | 'saved' | 'error',
-    completeGroups,
-    validBestThirds: groupIds.map((id) => `${id}3`),
-    save: vi.fn(async () => {}),
-    setGroupPick: vi.fn(),
-    setBestThird: vi.fn()
+    groups,
+    bestThirds: ['A3', 'B3', '', '', '', '', '', '']
   }
 })
 
@@ -70,11 +82,7 @@ vi.mock('../hooks/useGroupStageData', () => ({
       bestThirds: fixtures.bestThirds,
       updatedAt: '2026-06-12T12:00:00.000Z'
     },
-    groupIds: fixtures.groupIds,
-    setGroupPick: fixtures.setGroupPick,
-    setBestThird: fixtures.setBestThird,
-    save: fixtures.save,
-    saveStatus: fixtures.saveStatus
+    groupIds: fixtures.groupIds
   })
 }))
 
@@ -82,64 +90,37 @@ import GroupStagePage from './GroupStagePage'
 
 function renderPage() {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={['/play/group-stage']}>
       <GroupStagePage />
     </MemoryRouter>
   )
 }
 
-describe('GroupStagePage', () => {
-  it('shows required validation and blocks save when fields are incomplete', () => {
+describe('GroupStagePage read-only detail', () => {
+  it('renders read-only detail layout with quick menu', () => {
     fixtures.now = new Date('2026-06-01T12:00:00.000Z')
-    fixtures.groups = Object.fromEntries(fixtures.groupIds.map((id) => [id, {}]))
-    fixtures.bestThirds = []
-    fixtures.saveStatus = 'idle'
 
     renderPage()
 
-    expect(screen.getAllByText('Required').length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: /save group stage/i })).toBeDisabled()
+    expect(screen.getByRole('heading', { name: /group stage detail/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to play center/i })).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
-  it('enforces unique team and unique group constraints for best-third qualifiers', () => {
-    fixtures.now = new Date('2026-06-01T12:00:00.000Z')
-    fixtures.groups = fixtures.completeGroups
-    fixtures.bestThirds = ['A3', 'A4', 'A3', 'B3', 'C3', 'D3', 'E3', 'F3']
-
-    renderPage()
-
-    expect(screen.getAllByText('Different groups only').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Duplicate team').length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: /save group stage/i })).toBeDisabled()
-  })
-
-  it('renders closed state as read-only', () => {
-    fixtures.now = new Date('2026-06-15T18:00:01.000Z')
-    fixtures.groups = fixtures.completeGroups
-    fixtures.bestThirds = fixtures.validBestThirds
+  it('shows closed badge and alert after lock', () => {
+    fixtures.now = new Date('2026-06-15T18:30:01.000Z')
 
     renderPage()
 
     expect(screen.getByText(/group stage is closed/i)).toBeInTheDocument()
-    expect(screen.getByText(/editing is disabled/i)).toBeInTheDocument()
-    expect(screen.getAllByRole('combobox')[0]).toBeDisabled()
+    expect(screen.getByText(/detail view only/i)).toBeInTheDocument()
   })
 
-  it('shows save success and error states', () => {
+  it('renders in-progress results status when groups are not fully finished', () => {
     fixtures.now = new Date('2026-06-01T12:00:00.000Z')
-    fixtures.groups = fixtures.completeGroups
-    fixtures.bestThirds = fixtures.validBestThirds
 
-    fixtures.saveStatus = 'saved'
-    const { rerender } = renderPage()
-    expect(screen.getByText('Saved')).toBeInTheDocument()
+    renderPage()
 
-    fixtures.saveStatus = 'error'
-    rerender(
-      <MemoryRouter>
-        <GroupStagePage />
-      </MemoryRouter>
-    )
-    expect(screen.getByText('Save failed')).toBeInTheDocument()
+    expect(screen.getAllByText(/in progress/i).length).toBeGreaterThan(0)
   })
 })
