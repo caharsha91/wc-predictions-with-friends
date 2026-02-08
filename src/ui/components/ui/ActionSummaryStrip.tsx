@@ -29,11 +29,13 @@ export type ActionSummaryStripProps = {
     label: string
     current: number
     total: number
+    valueSuffix?: string
   }
   metrics: ActionSummaryMetric[]
   statusChip: ActionStatusChip
   primaryAction: ActionSummaryAction
   secondaryAction?: ActionSummaryAction
+  detail?: ReactNode
   className?: string
 }
 
@@ -55,6 +57,7 @@ export default function ActionSummaryStrip({
   statusChip,
   primaryAction,
   secondaryAction,
+  detail,
   className
 }: ActionSummaryStripProps) {
   const progressPct =
@@ -68,8 +71,7 @@ export default function ActionSummaryStrip({
           {subline ? <div className="text-sm text-muted-foreground">{subline}</div> : null}
         </div>
         <Badge tone={statusChipTone(statusChip.type)}>
-          {statusChip.type === 'deadline' ? 'Deadline' : statusChip.type === 'unlock' ? 'Unlock' : 'Last submitted'}{' '}
-          {statusChip.text}
+          {statusChip.type === 'lastSubmitted' ? 'Synced' : 'Closes'} {statusChip.text}
         </Badge>
       </div>
 
@@ -79,6 +81,7 @@ export default function ActionSummaryStrip({
             <span>{progress.label}</span>
             <span>
               {progress.current}/{progress.total}
+              {progress.valueSuffix ? ` ${progress.valueSuffix}` : ''}
             </span>
           </div>
           <div className="h-2 rounded-full bg-bg2">
@@ -88,33 +91,37 @@ export default function ActionSummaryStrip({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {metrics.map((metric) => (
-          <Badge key={metric.label} tone={metric.tone ?? 'secondary'}>
-            {metric.label} {metric.value}
-          </Badge>
-        ))}
+      <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
+        <div className="flex flex-wrap items-center gap-2">
+          {metrics.map((metric) => (
+            <Badge key={metric.label} tone={metric.tone ?? 'secondary'}>
+              {metric.label} {metric.value}
+            </Badge>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap justify-start gap-2 md:justify-end">
+          <Button
+            onClick={primaryAction.onClick}
+            disabled={primaryAction.disabled}
+            loading={primaryAction.loading}
+          >
+            {primaryAction.label}
+          </Button>
+          {secondaryAction ? (
+            <Button
+              variant="secondary"
+              onClick={secondaryAction.onClick}
+              disabled={secondaryAction.disabled}
+              loading={secondaryAction.loading}
+            >
+              {secondaryAction.label}
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          onClick={primaryAction.onClick}
-          disabled={primaryAction.disabled}
-          loading={primaryAction.loading}
-        >
-          {primaryAction.label}
-        </Button>
-        {secondaryAction ? (
-          <Button
-            variant="secondary"
-            onClick={secondaryAction.onClick}
-            disabled={secondaryAction.disabled}
-            loading={secondaryAction.loading}
-          >
-            {secondaryAction.label}
-          </Button>
-        ) : null}
-      </div>
+      {detail ? <div className="pt-1">{detail}</div> : null}
     </div>
   )
 }

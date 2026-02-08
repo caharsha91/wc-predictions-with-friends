@@ -15,9 +15,7 @@ import LeaderboardPage from './pages/LeaderboardPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import PicksPage from './pages/PicksPage'
-import PicksWizardPage from './pages/PicksWizardPage'
 import PlayPage from './pages/play/PlayPage'
-import ResultsPage from './pages/ResultsPage'
 
 function GateCard({
   kicker,
@@ -127,8 +125,8 @@ export default function App() {
         <Route path="access-denied" element={<AccessDeniedPage />} />
 
         <Route path="picks" element={<Navigate to="/play/picks" replace />} />
-        <Route path="picks/wizard" element={<Navigate to="/play/picks/wizard" replace />} />
-        <Route path="results" element={<Navigate to="/play/results" replace />} />
+        <Route path="picks/wizard" element={<Navigate to="/play" replace />} />
+        <Route path="results" element={<Navigate to="/play/picks" replace />} />
         <Route path="bracket" element={<Navigate to="/play/bracket" replace />} />
         <Route path="leaderboard" element={<Navigate to="/play/league" replace />} />
         <Route path="players" element={<Navigate to="/admin/players" replace />} />
@@ -138,8 +136,7 @@ export default function App() {
           <Route path="play">
             <Route index element={<PlayPage />} />
             <Route path="picks" element={<PicksPage />} />
-            <Route path="picks/wizard" element={<PicksWizardPage />} />
-            <Route path="results" element={<ResultsPage />} />
+            <Route path="picks/wizard" element={<Navigate to="/play" replace />} />
             <Route path="bracket" element={<BracketPage />} />
             <Route path="league" element={<LeaderboardPage />} />
           </Route>

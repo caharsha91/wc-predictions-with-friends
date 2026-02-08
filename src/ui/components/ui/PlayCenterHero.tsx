@@ -36,13 +36,9 @@ function stateTone(state: PlayCenterState) {
 }
 
 function stateLabel(state: PlayCenterState) {
-  if (state === 'READY_OPEN_PICKS') return 'Open picks'
-  if (state === 'READY_OPEN_BRACKET') return 'Open bracket'
-  if (state === 'READY_RESULTS') return 'Review results'
-  if (state === 'READY_LOCKED_WAITING') return 'Locked / waiting'
-  if (state === 'READY_IDLE') return 'Idle'
-  if (state === 'ERROR') return 'Error'
-  return 'Loading'
+  if (state === 'ERROR') return 'Retry'
+  if (state === 'LOADING') return 'Syncing'
+  return 'Play picks'
 }
 
 /**
@@ -60,14 +56,14 @@ export default function PlayCenterHero({
 }: PlayCenterHeroProps) {
   return (
     <PageHeroPanel
-      kicker="Play center"
+      kicker="Action hub"
       title={title}
       subtitle={subtitle}
       className={cn('space-y-0', className)}
       meta={
         <div className="flex flex-col items-end gap-2 text-right">
           <div data-last-updated className="space-y-1">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Last updated</div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Synced</div>
             <div className="text-sm font-semibold text-foreground">{formatLastUpdated(lastUpdatedUtc)}</div>
           </div>
           <Badge tone={stateTone(state)}>{stateLabel(state)}</Badge>

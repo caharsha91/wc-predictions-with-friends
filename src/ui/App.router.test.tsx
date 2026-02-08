@@ -30,9 +30,7 @@ vi.mock('./hooks/useEasterEggs', () => ({
 }))
 
 vi.mock('./pages/PicksPage', () => ({ default: () => <div>Picks route</div> }))
-vi.mock('./pages/PicksWizardPage', () => ({ default: () => <div>Picks wizard route</div> }))
 vi.mock('./pages/play/PlayPage', () => ({ default: () => <div>Play route</div> }))
-vi.mock('./pages/ResultsPage', () => ({ default: () => <div>Results route</div> }))
 vi.mock('./pages/BracketPage', () => ({ default: () => <div>Bracket route</div> }))
 vi.mock('./pages/LeaderboardPage', () => ({ default: () => <div>Leaderboard route</div> }))
 vi.mock('./pages/LoginPage', () => ({ default: () => <div>Login route</div> }))
@@ -46,11 +44,11 @@ import App from './App'
 
 function LocationProbe() {
   const location = useLocation()
-  return <div data-testid="location-probe">{location.pathname}</div>
+  return <div data-testid="location-probe">{`${location.pathname}${location.search}`}</div>
 }
 
 describe('App routing', () => {
-  it('renders picks by default and navigates to results', () => {
+  it('renders play by default and navigates to picks', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <LocationProbe />
@@ -61,17 +59,18 @@ describe('App routing', () => {
     expect(screen.getByText('Play route')).toBeInTheDocument()
     expect(screen.getByTestId('location-probe')).toHaveTextContent('/play')
 
-    const resultsLink = screen.getAllByRole('link', { name: /results/i })[0]
-    fireEvent.click(resultsLink)
+    const picksLink = screen.getAllByRole('link', { name: /picks/i })[0]
+    fireEvent.click(picksLink)
 
-    expect(screen.getByText('Results route')).toBeInTheDocument()
-    expect(screen.getByTestId('location-probe')).toHaveTextContent('/play/results')
+    expect(screen.getByText('Picks route')).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/play/picks')
   })
 
   it.each([
     ['/picks', '/play/picks', 'Picks route'],
-    ['/picks/wizard', '/play/picks/wizard', 'Picks wizard route'],
-    ['/results', '/play/results', 'Results route'],
+    ['/picks/wizard', '/play', 'Play route'],
+    ['/play/picks/wizard', '/play', 'Play route'],
+    ['/results', '/play/picks', 'Picks route'],
     ['/bracket', '/play/bracket', 'Bracket route'],
     ['/leaderboard', '/play/league', 'Leaderboard route'],
     ['/players', '/admin/players', 'Players route'],

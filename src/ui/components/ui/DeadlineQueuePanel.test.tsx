@@ -25,7 +25,20 @@ describe('DeadlineQueuePanel', () => {
     expect(screen.getByText(/aaa vs bbb/i)).toBeInTheDocument()
     expect(screen.queryByText(/ccc vs ddd/i)).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /open/i }))
+    const openButtons = screen.getAllByRole('button', { name: /open/i })
+    fireEvent.click(openButtons[openButtons.length - 1])
     expect(onOpenItem).toHaveBeenCalledWith('match-1')
+  })
+
+  it('supports inline container mode', () => {
+    render(
+      <DeadlineQueuePanel
+        container="inline"
+        items={[{ id: 'match-1', label: 'AAA vs BBB', status: 'Needs pick' }]}
+      />
+    )
+
+    expect(screen.getByText(/closing soon/i)).toBeInTheDocument()
+    expect(screen.getByText(/aaa vs bbb/i)).toBeInTheDocument()
   })
 })

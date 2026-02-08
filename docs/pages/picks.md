@@ -1,13 +1,22 @@
 # Picks Page
 
 ## Route
-`/` and `/picks`
+`/play/picks`  
+Legacy redirects: `/picks` -> `/play/picks`, `/results` -> `/play/picks`
 
 ## Purpose
-Primary picks workspace for upcoming matches and group outcomes.
+Reference + quick-edit workspace for picks and inline finished results.
 
 ## Key behavior
-- Upcoming picks list with stage filter and pending-first ordering.
+- Top area is compact and non-duplicative:
+  - Next lock summary with countdown and `Review pick`
+  - Rules card with `Open Play Center` redirect
+- Picks queue remains action-first:
+  - open now
+  - completed (open)
+  - locked / waiting
+- Guided picks workflow is hosted in Play Center (`/play`) instead of this page.
+- Finished matches is an inline category in the same flow (collapsed by default).
 - Inline pick editor (desktop side panel, mobile sheet) for score + knockout advance.
-- Group outcomes editor with validation for top-2 and best-third slots.
+- Finished matches table includes match, your pick, final result, and points with compact pagination.
 - Saves to Firestore when member auth is enabled; otherwise browser-local.

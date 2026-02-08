@@ -27,7 +27,8 @@ describe('PlayCenterHero', () => {
     )
 
     expect(screen.getByRole('heading', { name: /play center/i })).toBeInTheDocument()
-    expect(screen.getByText(/^Open picks$/i)).toBeInTheDocument()
+    expect(screen.getByText(/^Play picks$/i)).toBeInTheDocument()
+    expect(screen.getByText(/^Synced$/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /continue next action/i })).toBeInTheDocument()
     expect(screen.getByText(/queue summary/i)).toBeInTheDocument()
   })
