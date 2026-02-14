@@ -36,7 +36,7 @@ Demo snapshot data lives in per-scenario folders under `public/data/demo/scenari
 - Demo mode disables Firestore writes (including picks, group stage, knockout, members admin edits, theme sync, and export backfills).
 - Demo localStorage keys are explicitly cleared on logout and on page exit while in demo mode.
 - `/demo/admin/controls` lets admins:
-  - set scenario-based demo "now" timestamps for lock testing,
+  - set scenario-based demo "now" timestamps for lock validation,
   - switch the active demo viewer user,
   - reload demo snapshots after running the simulation CLI,
   - clear demo session keys.
@@ -91,6 +91,17 @@ Demo snapshot data lives in per-scenario folders under `public/data/demo/scenari
 1. Install Node.js (v20+ recommended)
 2. Install deps: `npm install`
 3. Run: `npm run dev`
+
+## Testing and Validation
+
+- No automated unit/integration test suite is currently configured (no `npm test` script).
+- Use `npm run build` as the primary CI-style validation command. It runs:
+  - `npm run lint:tokens`
+  - `npm run lint:contrast`
+  - `npm run lint:routes`
+  - TypeScript project build (`tsc -b`)
+  - Vite production build (`vite build`)
+- Use demo scenarios (`npm run demo:simulate ...`) for manual UX and lock-behavior validation.
 
 ## Local Firebase (Emulators)
 
@@ -220,7 +231,7 @@ Notes:
 
 ## Demo Simulation CLI
 
-Generate demo-mode data snapshots for UX/testing with 50 simulated users:
+Generate demo-mode data snapshots for UX validation with 50 simulated users:
 
 - `npm run demo:simulate -- --scenario=pre-group --users=50 --seed=101`
 - `npm run demo:simulate -- --scenario=mid-group --users=50 --seed=202`
@@ -258,7 +269,7 @@ Timestamp preset behavior:
   - downstream knockout fixtures only resolve teams from finished upstream matches,
   - unresolved downstream knockout fixtures are normalized to `SCHEDULED` with no winner/decider,
   - in-play knockout fixtures do not publish finalized winner/decider values.
-- Simulation targets high prediction density for UX testing:
+- Simulation targets high prediction density for UX validation:
   - match picks are mostly filled in every scenario,
   - group-stage top-two and best-third user picks are fully populated,
   - `best-third-qualifiers.json` always contains 8 qualifiers.
