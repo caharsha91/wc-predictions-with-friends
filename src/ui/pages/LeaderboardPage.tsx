@@ -1,14 +1,15 @@
 import * as ProgressPrimitive from '@radix-ui/react-progress'
 import { cva } from 'class-variance-authority'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { fetchLeaderboard, fetchMatches, fetchPicks } from '../../lib/data'
+import { fetchLeaderboard, fetchMatches, fetchPicks, fetchScoring } from '../../lib/data'
 import { isMatchLocked, getLockTime } from '../../lib/matches'
 import { getPredictedWinner } from '../../lib/picks'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
+import type { ScoringConfig } from '../../types/scoring'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -16,12 +17,17 @@ import { Card } from '../components/ui/Card'
 import DetailsDisclosure from '../components/ui/DetailsDisclosure'
 import PanelState from '../components/ui/PanelState'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
+import ScoreStepper from '../components/ui/ScoreStepper'
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import { LEADERBOARD_LIST_PAGE_SIZE } from '../constants/pagination'
 import { useAuthState } from '../hooks/useAuthState'
 import { useNow } from '../hooks/useNow'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
+import { buildViewerKeySet, resolveLeaderboardIdentityKeys, resolveLeaderboardUserContext } from '../lib/leaderboardContext'
+import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { cn } from '../lib/utils'
+import { buildProjectedLeaderboard, type SimulatedMatchOutcome } from '../lib/whatIfSimulator'
 
 const RANK_SNAPSHOT_STORAGE_KEY = 'wc-leaderboard-rank-snapshot'
 
@@ -78,6 +84,7 @@ type LoadState =
       lastUpdated: string
       matches: Match[]
       picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[]
+      scoring: ScoringConfig
     }
 
 type RankSnapshot = {
@@ -97,6 +104,13 @@ type SwingOpportunity = {
 }
 
 type MovementDirection = 'up' | 'down' | 'flat'
+
+type WhatIfDraft = {
+  enabled: boolean
+  homeScore: number
+  awayScore: number
+  advances?: 'HOME' | 'AWAY'
+}
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -220,6 +234,39 @@ function getMovementDirection(delta: number): MovementDirection {
   return 'flat'
 }
 
+function SocialBadgePill({ badge }: { badge: SocialBadge }) {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-bg2/60 px-2.5 py-1 text-xs text-foreground">
+      <span
+        className={cn(
+          'inline-flex h-4 w-4 items-center justify-center',
+          badge.kind === 'perfect_pick'
+            ? 'text-[var(--success)]'
+            : badge.kind === 'contrarian'
+              ? 'text-[var(--warning)]'
+              : 'text-[var(--info)]'
+        )}
+        aria-hidden="true"
+      >
+        {badge.kind === 'perfect_pick' ? (
+          <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current">
+            <path d="M10 1.5l2.2 4.4 4.8.7-3.5 3.4.8 4.8-4.3-2.3-4.3 2.3.8-4.8L3 6.6l4.8-.7L10 1.5z" />
+          </svg>
+        ) : badge.kind === 'contrarian' ? (
+          <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current">
+            <path d="M10 1.5l8.5 15H1.5l8.5-15zm0 4.2L6 13h8l-4-7.3z" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current">
+            <path d="M10 2.5a6 6 0 00-6 6c0 4 6 9 6 9s6-5 6-9a6 6 0 00-6-6zm0 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
+          </svg>
+        )}
+      </span>
+      <span className="font-semibold">{badge.label}</span>
+    </div>
+  )
+}
+
 function LeaderboardSkeleton() {
   return (
     <div className="space-y-6">
@@ -267,25 +314,19 @@ export default function LeaderboardPage() {
   const [page, setPage] = useState(1)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [previousRanks, setPreviousRanks] = useState<Record<string, number> | null>(null)
+  const [isCurrentRowVisible, setIsCurrentRowVisible] = useState(true)
+  const [simulatorOpen, setSimulatorOpen] = useState(false)
+  const [whatIfDrafts, setWhatIfDrafts] = useState<Record<string, WhatIfDraft>>({})
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const currentRowRef = useRef<HTMLDivElement | null>(null)
 
   const viewerKeys = useMemo(() => {
-    const keys = new Set<string>()
-    if (userId) keys.add(userId.toLowerCase())
-    const authUid = authState.user?.uid
-    if (authUid) keys.add(authUid.toLowerCase())
-    const authEmail = authState.user?.email?.toLowerCase()
-    if (authEmail) keys.add(authEmail)
-    return keys
+    return buildViewerKeySet([userId, authState.user?.uid, authState.user?.email])
   }, [authState.user?.email, authState.user?.uid, userId])
 
   function isCurrentUserEntry(entry: LeaderboardEntry): boolean {
-    const memberId = entry.member.id?.toLowerCase()
-    const memberEmail = entry.member.email?.toLowerCase()
-    return (
-      (memberId ? viewerKeys.has(memberId) : false) ||
-      (memberEmail ? viewerKeys.has(memberEmail) : false)
-    )
+    const context = resolveLeaderboardUserContext([entry], viewerKeys)
+    return Boolean(context)
   }
 
   useEffect(() => {
@@ -293,10 +334,11 @@ export default function LeaderboardPage() {
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [leaderboardFile, matchesFile, picksFile] = await Promise.all([
+        const [leaderboardFile, matchesFile, picksFile, scoring] = await Promise.all([
           fetchLeaderboard({ mode }),
           fetchMatches({ mode }),
-          fetchPicks({ mode })
+          fetchPicks({ mode }),
+          fetchScoring({ mode })
         ])
         if (canceled) return
         const sorted = [...leaderboardFile.entries].sort((a, b) => b.totalPoints - a.totalPoints)
@@ -305,7 +347,8 @@ export default function LeaderboardPage() {
           entries: sorted,
           lastUpdated: leaderboardFile.lastUpdated,
           matches: matchesFile.matches,
-          picksDocs: picksFile.picks
+          picksDocs: picksFile.picks,
+          scoring
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
@@ -341,8 +384,9 @@ export default function LeaderboardPage() {
   const summary = useMemo(() => {
     if (state.status !== 'ready') return null
     const leader = state.entries[0] ?? null
-    const currentRank = state.entries.findIndex((entry) => isCurrentUserEntry(entry)) + 1
-    const current = currentRank > 0 ? state.entries[currentRank - 1] : null
+    const userContext = resolveLeaderboardUserContext(state.entries, viewerKeys)
+    const currentRank = userContext?.current.rank ?? null
+    const current = userContext?.current.entry ?? null
     const count = state.entries.length
     const avg = (value: number) => (count > 0 ? Math.round(value / count) : 0)
     const sumTotal = state.entries.reduce((sum, entry) => sum + entry.totalPoints, 0)
@@ -361,8 +405,8 @@ export default function LeaderboardPage() {
     const maxKo = maxBy((entry) => entry.knockoutPoints)
     const maxBracket = maxBy((entry) => entry.bracketPoints)
 
-    const closestAbove = currentRank > 1 ? state.entries[currentRank - 2] : null
-    const closestBelow = currentRank > 0 ? state.entries[currentRank] ?? null : null
+    const closestAbove = userContext?.above?.entry ?? null
+    const closestBelow = userContext?.below?.entry ?? null
     const nearestRivalGap =
       current && (closestAbove || closestBelow)
         ? Math.min(
@@ -379,7 +423,7 @@ export default function LeaderboardPage() {
     return {
       leader,
       current,
-      currentRank: currentRank > 0 ? currentRank : null,
+      currentRank,
       closestAbove,
       closestBelow,
       nearestRivalGap,
@@ -404,6 +448,142 @@ export default function LeaderboardPage() {
     }
   }, [state, swingOpportunities.length, viewerKeys])
 
+  const socialBadgesByUser = useMemo(() => {
+    if (state.status !== 'ready') return new Map<string, SocialBadge[]>()
+    return buildSocialBadgeMap(state.matches, state.picksDocs)
+  }, [state])
+
+  const socialBadgesByEntry = useMemo(() => {
+    if (state.status !== 'ready') return new Map<string, SocialBadge[]>()
+    const byEntry = new Map<string, SocialBadge[]>()
+    for (const entry of state.entries) {
+      const entryKey = getEntryIdentityKey(entry)
+      const seenKinds = new Set<SocialBadge['kind']>()
+      const badges: SocialBadge[] = []
+      for (const key of buildViewerKeySet(resolveLeaderboardIdentityKeys(entry))) {
+        for (const badge of socialBadgesByUser.get(key) ?? []) {
+          if (seenKinds.has(badge.kind)) continue
+          seenKinds.add(badge.kind)
+          badges.push(badge)
+        }
+      }
+      byEntry.set(entryKey, badges)
+    }
+    return byEntry
+  }, [socialBadgesByUser, state])
+
+  const whatIfMatches = useMemo(() => {
+    if (state.status !== 'ready') return []
+    return state.matches
+      .filter((match) => match.status !== 'FINISHED')
+      .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())
+  }, [state])
+
+  useEffect(() => {
+    if (state.status !== 'ready') return
+    const validMatchIds = new Set(whatIfMatches.map((match) => match.id))
+    setWhatIfDrafts((current) => {
+      const next: Record<string, WhatIfDraft> = {}
+      let changed = false
+      for (const [matchId, draft] of Object.entries(current)) {
+        if (!validMatchIds.has(matchId)) {
+          changed = true
+          continue
+        }
+        next[matchId] = draft
+      }
+      return changed ? next : current
+    })
+  }, [state, whatIfMatches])
+
+  const simulatedOutcomes = useMemo(() => {
+    const outcomes: Record<string, SimulatedMatchOutcome> = {}
+    for (const [matchId, draft] of Object.entries(whatIfDrafts)) {
+      if (!draft.enabled) continue
+      outcomes[matchId] = {
+        homeScore: draft.homeScore,
+        awayScore: draft.awayScore,
+        advances: draft.advances
+      }
+    }
+    return outcomes
+  }, [whatIfDrafts])
+
+  const projectedRows = useMemo(() => {
+    if (state.status !== 'ready') return []
+    if (Object.keys(simulatedOutcomes).length === 0) return []
+    return buildProjectedLeaderboard(
+      state.entries,
+      state.matches,
+      state.picksDocs,
+      state.scoring,
+      simulatedOutcomes
+    )
+  }, [simulatedOutcomes, state])
+
+  const projectedYou = useMemo(() => {
+    for (const row of projectedRows) {
+      if (resolveLeaderboardUserContext([row.entry], viewerKeys)) return row
+    }
+    return null
+  }, [projectedRows, viewerKeys])
+
+  const currentRankByKey = useMemo(() => {
+    if (state.status !== 'ready') return new Map<string, number>()
+    const ranks = new Map<string, number>()
+    for (let index = 0; index < state.entries.length; index += 1) {
+      ranks.set(getEntryIdentityKey(state.entries[index]), index + 1)
+    }
+    return ranks
+  }, [state])
+
+  function toggleWhatIfMatch(matchId: string) {
+    setWhatIfDrafts((current) => {
+      const existing = current[matchId]
+      if (existing) {
+        return {
+          ...current,
+          [matchId]: { ...existing, enabled: !existing.enabled }
+        }
+      }
+      return {
+        ...current,
+        [matchId]: { enabled: true, homeScore: 0, awayScore: 0 }
+      }
+    })
+  }
+
+  function updateWhatIfScore(match: Match, side: 'home' | 'away', nextScore: number) {
+    setWhatIfDrafts((current) => {
+      const existing = current[match.id] ?? { enabled: true, homeScore: 0, awayScore: 0 }
+      const next: WhatIfDraft =
+        side === 'home'
+          ? { ...existing, enabled: true, homeScore: nextScore }
+          : { ...existing, enabled: true, awayScore: nextScore }
+
+      if (match.stage === 'Group') {
+        next.advances = undefined
+      } else if (next.homeScore !== next.awayScore) {
+        next.advances = undefined
+      }
+
+      return {
+        ...current,
+        [match.id]: next
+      }
+    })
+  }
+
+  function updateWhatIfAdvance(matchId: string, advances: 'HOME' | 'AWAY') {
+    setWhatIfDrafts((current) => {
+      const existing = current[matchId] ?? { enabled: true, homeScore: 0, awayScore: 0 }
+      return {
+        ...current,
+        [matchId]: { ...existing, enabled: true, advances }
+      }
+    })
+  }
+
   function openAdvancedMetrics() {
     setAdvancedOpen(true)
     if (typeof document === 'undefined') return
@@ -414,6 +594,27 @@ export default function LeaderboardPage() {
   useEffect(() => {
     setPage(1)
   }, [state.status === 'ready' ? state.entries.length : 0])
+
+  useEffect(() => {
+    const row = currentRowRef.current
+    if (!row) {
+      setIsCurrentRowVisible(true)
+      return
+    }
+    if (typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
+      setIsCurrentRowVisible(true)
+      return
+    }
+
+    const observer = new window.IntersectionObserver(
+      ([entry]) => {
+        setIsCurrentRowVisible(entry.isIntersecting)
+      },
+      { threshold: 0.2 }
+    )
+    observer.observe(row)
+    return () => observer.disconnect()
+  }, [page, state.status === 'ready' ? state.entries.length : 0])
 
   if (state.status === 'loading') {
     return <LeaderboardSkeleton />
@@ -449,6 +650,20 @@ export default function LeaderboardPage() {
     progressTarget > 0
       ? Math.max(0, Math.min(100, Math.round((Math.min(currentPoints, progressTarget) / progressTarget) * 100)))
       : 0
+  const stickyUserRow = summary?.current ?? null
+  const shouldShowStickyRow = Boolean(stickyUserRow) && !isCurrentRowVisible
+  const activeSimulationCount = Object.keys(simulatedOutcomes).length
+  const projectedRankDelta =
+    summary?.currentRank && projectedYou ? summary.currentRank - projectedYou.projectedRank : null
+
+  function jumpToCurrentUserRow() {
+    if (!summary?.currentRank) return
+    const targetPage = Math.max(1, Math.ceil(summary.currentRank / LEADERBOARD_LIST_PAGE_SIZE))
+    setPage(targetPage)
+    window.setTimeout(() => {
+      currentRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+  }
 
   return (
     <div className="space-y-6">
@@ -544,6 +759,9 @@ export default function LeaderboardPage() {
                 <Button size="sm" onClick={() => navigate('/play')}>
                   Open Play Center
                 </Button>
+                <Button size="sm" variant="secondary" onClick={() => setSimulatorOpen(true)}>
+                  Open What-If Simulator
+                </Button>
                 <Button size="sm" variant="secondary" onClick={openAdvancedMetrics}>
                   Open advanced metrics
                 </Button>
@@ -569,6 +787,7 @@ export default function LeaderboardPage() {
             {pageRows.map((entry, index) => {
               const rank = start + index + 1
               const entryKey = getEntryIdentityKey(entry)
+              const entryBadges = socialBadgesByEntry.get(entryKey) ?? []
               const isYou = isCurrentUserEntry(entry)
               const isClosestAbove = closestAboveKey !== null && entryKey === closestAboveKey
               const isClosestBelow = closestBelowKey !== null && entryKey === closestBelowKey
@@ -579,53 +798,77 @@ export default function LeaderboardPage() {
               const movementGlyph = movementDirection === 'up' ? '↑' : movementDirection === 'down' ? '↓' : '—'
 
               return (
-                <div key={entry.member.id} className={leaderboardRow({ intent: rowIntent })}>
-                  <div className="text-base font-black uppercase tracking-tight text-foreground">#{rank}</div>
-                  <div className="flex items-center gap-0.5">
-                    {movementDirection === 'flat' ? (
-                      <span className={momentumChevron({ direction: 'flat' })}>—</span>
-                    ) : (
-                      <>
-                        <span className={cn(momentumChevron({ direction: movementDirection }), 'animate-pulse')}>
-                          {movementGlyph}
-                        </span>
-                        <span
-                          className={cn(
-                            momentumChevron({ direction: movementDirection }),
-                            'animate-pulse opacity-70 [animation-delay:120ms]'
-                          )}
-                        >
-                          {movementGlyph}
-                        </span>
-                        {Math.abs(movementDelta) > 1 ? (
+                <div key={entry.member.id} className="space-y-1">
+                  <div
+                    ref={isYou ? currentRowRef : null}
+                    className={leaderboardRow({ intent: rowIntent })}
+                  >
+                    <div className="text-base font-black uppercase tracking-tight text-foreground">#{rank}</div>
+                    <div className="flex items-center gap-0.5">
+                      {movementDirection === 'flat' ? (
+                        <span className={momentumChevron({ direction: 'flat' })}>—</span>
+                      ) : (
+                        <>
+                          <span className={cn(momentumChevron({ direction: movementDirection }), 'animate-pulse')}>
+                            {movementGlyph}
+                          </span>
                           <span
                             className={cn(
-                              'ml-1 text-xs font-black',
-                              movementDirection === 'up' ? 'text-success' : 'text-destructive'
+                              momentumChevron({ direction: movementDirection }),
+                              'animate-pulse opacity-70 [animation-delay:120ms]'
                             )}
                           >
-                            {Math.abs(movementDelta)}
+                            {movementGlyph}
                           </span>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-foreground">{entry.member.name}</div>
-                    <div className="mt-1 flex flex-wrap items-center gap-1">
-                      {isYou ? <Badge tone="info">You</Badge> : null}
-                      {!isYou && isClosestAbove ? <Badge tone="warning">Closest above</Badge> : null}
-                      {!isYou && isClosestBelow ? <Badge tone="secondary">Closest below</Badge> : null}
+                          {Math.abs(movementDelta) > 1 ? (
+                            <span
+                              className={cn(
+                                'ml-1 text-xs font-black',
+                                movementDirection === 'up' ? 'text-success' : 'text-destructive'
+                              )}
+                            >
+                              {Math.abs(movementDelta)}
+                            </span>
+                          ) : null}
+                        </>
+                      )}
                     </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-foreground">{entry.member.name}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1">
+                        {isYou ? <Badge tone="info">You</Badge> : null}
+                        {!isYou && isClosestAbove ? <Badge tone="warning">Closest above</Badge> : null}
+                        {!isYou && isClosestBelow ? <Badge tone="secondary">Closest below</Badge> : null}
+                      </div>
+                    </div>
+                    <div className="text-lg font-black uppercase tracking-tight text-foreground">
+                      {entry.totalPoints}
+                      <span className="ml-1 text-[10px] text-muted-foreground">PTS</span>
+                    </div>
+                    <div className="text-sm font-semibold text-foreground">{entry.exactPoints}</div>
+                    <div className="text-sm font-semibold text-foreground">{entry.resultPoints}</div>
+                    <div className="text-sm font-semibold text-foreground">{entry.knockoutPoints}</div>
+                    <div className="text-sm font-semibold text-foreground">{entry.bracketPoints}</div>
                   </div>
-                  <div className="text-lg font-black uppercase tracking-tight text-foreground">
-                    {entry.totalPoints}
-                    <span className="ml-1 text-[10px] text-muted-foreground">PTS</span>
-                  </div>
-                  <div className="text-sm font-semibold text-foreground">{entry.exactPoints}</div>
-                  <div className="text-sm font-semibold text-foreground">{entry.resultPoints}</div>
-                  <div className="text-sm font-semibold text-foreground">{entry.knockoutPoints}</div>
-                  <div className="text-sm font-semibold text-foreground">{entry.bracketPoints}</div>
+                  <DetailsDisclosure
+                    title="Signals"
+                    meta={entryBadges.length > 0 ? `${entryBadges.length} badges` : 'No badges'}
+                    defaultOpen={isYou}
+                    className="bg-bg2/35"
+                  >
+                    {entryBadges.length === 0 ? (
+                      <PanelState className="text-xs" tone="empty" message="No social badges yet." />
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {entryBadges.map((badge) => (
+                          <div key={`${entryKey}-${badge.kind}`} className="space-y-1">
+                            <SocialBadgePill badge={badge} />
+                            <div className="px-1 text-[11px] text-muted-foreground">{badge.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </DetailsDisclosure>
                 </div>
               )
             })}
@@ -661,6 +904,25 @@ export default function LeaderboardPage() {
           </div>
         ) : null}
       </Card>
+
+      {shouldShowStickyRow && stickyUserRow ? (
+        <div className="fixed inset-x-4 bottom-4 z-40 mx-auto max-w-5xl" data-testid="leaderboard-sticky-user-row">
+          <div className="rounded-2xl border border-[var(--border-accent)] bg-[var(--accent-soft)]/90 p-3 shadow-[0_0_0_1px_var(--border-accent),0_0_24px_var(--glow)] backdrop-blur-md">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Your row</div>
+                <div className="text-sm font-semibold text-foreground">
+                  #{summary?.currentRank} {stickyUserRow.member.name}
+                </div>
+                <div className="text-xs text-muted-foreground">{stickyUserRow.totalPoints} pts</div>
+              </div>
+              <Button size="sm" variant="secondary" onClick={jumpToCurrentUserRow}>
+                Jump to row
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <DetailsDisclosure
@@ -726,6 +988,170 @@ export default function LeaderboardPage() {
           </div>
         ) : null}
       </div>
+
+      <Sheet open={simulatorOpen} onOpenChange={setSimulatorOpen}>
+        <SheetContent side="right" className="w-[96vw] max-w-2xl p-0">
+          <SheetHeader>
+            <SheetTitle>What-If Simulator</SheetTitle>
+            <SheetDescription>
+              Model hypothetical upcoming match results and preview projected ranks.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="space-y-4 p-4">
+            <div className="rounded-xl border border-dashed border-[var(--border-accent)] bg-[var(--accent-soft)]/35 p-3">
+              <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Simulation mode</div>
+              <div className="mt-1 text-sm text-foreground">
+                Simulated projections only. Live leaderboard data remains unchanged.
+              </div>
+            </div>
+
+            {whatIfMatches.length === 0 ? (
+              <PanelState message="No upcoming matches available for simulation." tone="empty" />
+            ) : (
+              <div className="space-y-3">
+                {whatIfMatches.map((match) => {
+                  const draft = whatIfDrafts[match.id] ?? { enabled: false, homeScore: 0, awayScore: 0 }
+                  const tieNeedsAdvance = match.stage !== 'Group' && draft.enabled && draft.homeScore === draft.awayScore
+
+                  return (
+                    <div key={`what-if-${match.id}`} className="rounded-xl border border-border/70 bg-bg2/45 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-semibold text-foreground">
+                            {match.homeTeam.code} vs {match.awayTeam.code}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {match.stage} · Kick {formatTime(match.kickoffUtc)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant={draft.enabled ? 'primary' : 'secondary'}
+                            onClick={() => toggleWhatIfMatch(match.id)}
+                          >
+                            {draft.enabled ? 'Included' : 'Include'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={!whatIfDrafts[match.id]}
+                            onClick={() =>
+                              setWhatIfDrafts((current) => {
+                                const next = { ...current }
+                                delete next[match.id]
+                                return next
+                              })
+                            }
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <ScoreStepper
+                          label={`${match.homeTeam.code} score`}
+                          value={draft.homeScore}
+                          disabled={!draft.enabled}
+                          onChange={(next) => updateWhatIfScore(match, 'home', next)}
+                        />
+                        <ScoreStepper
+                          label={`${match.awayTeam.code} score`}
+                          value={draft.awayScore}
+                          disabled={!draft.enabled}
+                          onChange={(next) => updateWhatIfScore(match, 'away', next)}
+                        />
+                      </div>
+
+                      {tieNeedsAdvance ? (
+                        <div className="mt-3 rounded-xl border border-border/70 bg-card/60 p-3">
+                          <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                            Tiebreak winner
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant={draft.advances === 'HOME' ? 'primary' : 'secondary'}
+                              onClick={() => updateWhatIfAdvance(match.id, 'HOME')}
+                            >
+                              {match.homeTeam.code} advances
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={draft.advances === 'AWAY' ? 'primary' : 'secondary'}
+                              onClick={() => updateWhatIfAdvance(match.id, 'AWAY')}
+                            >
+                              {match.awayTeam.code} advances
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="rounded-xl border border-[rgba(var(--info-rgb),0.45)] bg-[rgba(var(--info-rgb),0.08)] p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm font-semibold text-foreground">Projected leaderboard</div>
+                <Badge tone="info">{activeSimulationCount} simulated matches</Badge>
+              </div>
+              {projectedYou ? (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Your projected rank: #{projectedYou.projectedRank}
+                  {projectedRankDelta === null
+                    ? ''
+                    : projectedRankDelta > 0
+                      ? ` (+${projectedRankDelta})`
+                      : projectedRankDelta < 0
+                        ? ` (${projectedRankDelta})`
+                        : ' (no change)'}
+                </div>
+              ) : null}
+
+              {projectedRows.length === 0 ? (
+                <PanelState className="mt-3 text-xs" message="Include a match above to generate projections." tone="empty" />
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {projectedRows.slice(0, 8).map((row) => {
+                    const rowKey = getEntryIdentityKey(row.entry)
+                    const currentRank = currentRankByKey.get(rowKey) ?? row.projectedRank
+                    const rankChange = currentRank - row.projectedRank
+                    const isYou = isCurrentUserEntry(row.entry)
+                    return (
+                      <div key={`projected-${rowKey}`} className="rounded-lg border border-border/60 bg-card/80 px-3 py-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-sm font-semibold text-foreground">
+                            #{row.projectedRank} {row.entry.member.name}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isYou ? <Badge tone="info">You</Badge> : null}
+                            <Badge tone={row.projectedDelta > 0 ? 'success' : 'secondary'}>
+                              {row.projectedDelta >= 0 ? '+' : ''}
+                              {row.projectedDelta} pts
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Total {row.projectedTotalPoints} · Rank change {rankChange >= 0 ? '+' : ''}
+                          {rankChange}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="border-t border-border/60 p-4">
+            <SheetClose asChild>
+              <Button variant="secondary">Close</Button>
+            </SheetClose>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

@@ -14,6 +14,7 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTi
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import { useGroupStageData } from '../hooks/useGroupStageData'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
@@ -25,6 +26,7 @@ type GroupStanding = {
   code: string
   points: number
   gd: number
+  ga: number
   gf: number
 }
 
@@ -90,10 +92,10 @@ function computeGroupStandings(matches: Match[]): {
 
     const groupTable = tables.get(match.group) ?? new Map<string, GroupStanding>()
     if (!groupTable.has(match.homeTeam.code)) {
-      groupTable.set(match.homeTeam.code, { code: match.homeTeam.code, points: 0, gd: 0, gf: 0 })
+      groupTable.set(match.homeTeam.code, { code: match.homeTeam.code, points: 0, gd: 0, ga: 0, gf: 0 })
     }
     if (!groupTable.has(match.awayTeam.code)) {
-      groupTable.set(match.awayTeam.code, { code: match.awayTeam.code, points: 0, gd: 0, gf: 0 })
+      groupTable.set(match.awayTeam.code, { code: match.awayTeam.code, points: 0, gd: 0, ga: 0, gf: 0 })
     }
     tables.set(match.group, groupTable)
 
@@ -106,7 +108,9 @@ function computeGroupStandings(matches: Match[]): {
     if (!home || !away) continue
 
     home.gf += match.score.home
+    home.ga += match.score.away
     away.gf += match.score.away
+    away.ga += match.score.home
     home.gd += match.score.home - match.score.away
     away.gd += match.score.away - match.score.home
 
@@ -174,6 +178,7 @@ export default function GroupStagePage() {
   const mode = useRouteDataMode()
   const { showToast } = useToast()
   const now = useNow({ tickMs: 30_000 })
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const picksState = usePicksData()
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
   const groupStage = useGroupStageData(matches)
@@ -204,6 +209,7 @@ export default function GroupStagePage() {
   const groupsFinal = completion.groupsDone === groupIds.length && groupIds.length > 0
   const bestThirdsFinal = groupsFinal && qualifiersState.qualifiers.length >= BEST_THIRD_SLOTS
   const [quickEditorTarget, setQuickEditorTarget] = useState<{ kind: 'group'; groupId: string } | { kind: 'best-third' } | null>(null)
+  const [showStandingsDetails, setShowStandingsDetails] = useState(false)
   const bestThirdCandidatesForIndex = useMemo(() => (index: number) => {
     const excludedTopTwo = new Set<string>()
     for (const groupId of groupIds) {
@@ -241,6 +247,10 @@ export default function GroupStagePage() {
       canceled = true
     }
   }, [mode])
+
+  useEffect(() => {
+    if (!isMobile) setShowStandingsDetails(true)
+  }, [isMobile])
 
   if (picksState.state.status === 'loading' || groupStage.loadState.status === 'loading') {
     return (
@@ -391,6 +401,68 @@ export default function GroupStagePage() {
           </div>
         </Card>
         </PageHeroPanel>
+
+        <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm font-semibold text-foreground">Group standings snapshot</div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setShowStandingsDetails((current) => !current)}
+              >
+                {showStandingsDetails ? 'Hide details' : 'Show details'}
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Teams are sorted by points, then goal difference, then goals for.
+            </div>
+            <div className="grid gap-3 lg:grid-cols-2">
+              {groupIds.map((groupId) => {
+                const groupStandings = standings.standingsByGroup.get(groupId) ?? []
+                return (
+                  <div key={`standings-${groupId}`} className="rounded-xl border border-border/70 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div className="text-sm font-semibold text-foreground">Group {groupId}</div>
+                      <Badge tone={standings.completeGroups.has(groupId) ? 'success' : 'secondary'}>
+                        {standings.completeGroups.has(groupId) ? 'Final' : 'Live'}
+                      </Badge>
+                    </div>
+                    <Table>
+                      <thead>
+                        <tr>
+                          <th>Team</th>
+                          <th>Pts</th>
+                          {showStandingsDetails ? <th>GD</th> : null}
+                          {showStandingsDetails ? <th>GA</th> : null}
+                          {showStandingsDetails ? <th>GF</th> : null}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupStandings.map((entry) => (
+                          <tr key={`group-standing-${groupId}-${entry.code}`}>
+                            <td>{entry.code}</td>
+                            <td>{entry.points}</td>
+                            {showStandingsDetails ? <td>{entry.gd}</td> : null}
+                            {showStandingsDetails ? <td>{entry.ga}</td> : null}
+                            {showStandingsDetails ? <td>{entry.gf}</td> : null}
+                          </tr>
+                        ))}
+                        {groupStandings.length === 0 ? (
+                          <tr>
+                            <td colSpan={showStandingsDetails ? 5 : 2} className="text-center text-xs text-muted-foreground">
+                              No standings data yet.
+                            </td>
+                          </tr>
+                        ) : null}
+                      </tbody>
+                    </Table>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </Card>
 
         <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
           <div className="space-y-3">

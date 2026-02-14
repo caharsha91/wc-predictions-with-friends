@@ -9,9 +9,16 @@ import type { Match } from '../../../types/matches'
 import type { Member } from '../../../types/members'
 import type { Pick } from '../../../types/picks'
 import { readDemoScenario } from '../../lib/demoControls'
+import {
+  buildViewerKeySet,
+  resolveLeaderboardIdentityKeys,
+  resolveLeaderboardUserContext,
+  type LeaderboardUserContext
+} from '../../lib/leaderboardContext'
 import { resolveKnockoutActivation } from '../../lib/knockoutActivation'
 import { Alert } from '../../components/ui/Alert'
 import PicksWizardFlow from '../../components/play/PicksWizardFlow'
+import UserStatusCard from '../../components/play/UserStatusCard'
 import DeadlineQueuePanel, { type DeadlineQueueItem } from '../../components/ui/DeadlineQueuePanel'
 import PlayCenterHero from '../../components/ui/PlayCenterHero'
 import { Badge } from '../../components/ui/Badge'
@@ -116,7 +123,6 @@ function toQueueMatch(match: Match, pick: Pick | undefined, now: Date): QueueMat
 }
 
 type CoreHubSection = 'group' | 'picks' | 'knockout'
-type HubSection = CoreHubSection | 'all'
 type MatchFilter = 'closingSoon' | 'unpicked' | 'live' | 'all'
 const MATCH_FILTER_PRIORITY: MatchFilter[] = ['live', 'closingSoon', 'unpicked', 'all']
 const MOMENTUM_STORAGE_KEY = 'wc-play-rank-momentum'
@@ -135,6 +141,7 @@ type FriendActivity = {
 }
 
 type SocialSignals = {
+  userContext: LeaderboardUserContext | null
   rivalry: RivalrySummary | null
   momentumCopy: string
   friendActivity: FriendActivity[]
@@ -147,14 +154,6 @@ function getQueueMatchesForFilter(filter: MatchFilter, queueMatches: QueueMatch[
   return queueMatches
     .filter((entry) => !entry.locked && isInCurrentOrNextPacificDay(entry.match.kickoffUtc, now))
     .sort((a, b) => new Date(a.lockUtc).getTime() - new Date(b.lockUtc).getTime())
-}
-
-function resolveLeaderboardIdentity(entry: LeaderboardEntry): string[] {
-  const keys: string[] = []
-  if (entry.member.id) keys.push(entry.member.id.toLowerCase())
-  if (entry.member.uid) keys.push(entry.member.uid.toLowerCase())
-  if (entry.member.email) keys.push(entry.member.email.toLowerCase())
-  return keys
 }
 
 function formatRelativeTime(utcIso: string, now: Date): string {
@@ -224,15 +223,18 @@ function buildSocialSignals(
 ): SocialSignals {
   const sortedEntries = [...leaderboardEntries].sort((a, b) => b.totalPoints - a.totalPoints)
   const viewerKey = userId.toLowerCase()
-  const youIndex = sortedEntries.findIndex((entry) => resolveLeaderboardIdentity(entry).includes(viewerKey))
-  const youEntry = youIndex >= 0 ? sortedEntries[youIndex] : null
-  const aboveEntry = youIndex > 0 ? sortedEntries[youIndex - 1] : null
-  const belowEntry = youIndex >= 0 && youIndex < sortedEntries.length - 1 ? sortedEntries[youIndex + 1] : null
+  const userContext = resolveLeaderboardUserContext(
+    sortedEntries,
+    buildViewerKeySet([userId])
+  )
+  const youEntry = userContext?.current.entry ?? null
+  const aboveEntry = userContext?.above?.entry ?? null
+  const belowEntry = userContext?.below?.entry ?? null
 
   const rivalry: RivalrySummary | null = youEntry
     ? {
         you: {
-          rank: youIndex + 1,
+          rank: userContext?.current.rank ?? 1,
           name: youEntry.member.name,
           points: youEntry.totalPoints
         },
@@ -258,7 +260,7 @@ function buildSocialSignals(
     if (member.email) memberNameById.set(member.email.toLowerCase(), member.name)
   }
   for (const entry of sortedEntries) {
-    for (const key of resolveLeaderboardIdentity(entry)) {
+    for (const key of resolveLeaderboardIdentityKeys(entry)) {
       memberNameById.set(key, entry.member.name)
     }
   }
@@ -275,6 +277,7 @@ function buildSocialSignals(
     .slice(0, 8)
 
   return {
+    userContext,
     rivalry,
     momentumCopy: buildMomentumCopy(userId, mode, rivalry?.you.rank ?? null, leaderboardUpdatedAt),
     friendActivity
@@ -298,9 +301,9 @@ export default function PlayPage() {
     return window.localStorage.getItem(`wc-play-last-focus:${mode}:${userId}`)
   })
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null)
-  const [activeHubSection, setActiveHubSection] = useState<HubSection>('all')
   const [matchFilter, setMatchFilter] = useState<MatchFilter>('live')
   const [socialSignals, setSocialSignals] = useState<SocialSignals>({
+    userContext: null,
     rivalry: null,
     momentumCopy: 'Rank momentum appears after your next leaderboard refresh.',
     friendActivity: []
@@ -532,33 +535,7 @@ export default function PlayPage() {
     return ['group', 'picks', 'knockout']
   }, [groupClosed, knockoutActive])
 
-  const hubTabCounts = useMemo(
-    () => ({
-      picks: pendingOpenMatches.length,
-      group: groupPendingActions,
-      knockout: knockoutPendingActions,
-      all: queueMatches.length
-    }),
-    [groupPendingActions, knockoutPendingActions, pendingOpenMatches.length, queueMatches.length]
-  )
-
-  const hubTabs = useMemo(
-    () => [
-      { id: 'picks' as const, label: `Match Picks (${hubTabCounts.picks})` },
-      { id: 'group' as const, label: `Group Stage (${hubTabCounts.group})` },
-      { id: 'knockout' as const, label: `Knockout (${hubTabCounts.knockout})` },
-      { id: 'all' as const, label: `All Picks (${hubTabCounts.all})` }
-    ],
-    [hubTabCounts.all, hubTabCounts.group, hubTabCounts.knockout, hubTabCounts.picks]
-  )
-
-  useEffect(() => {
-    if (activeHubSection === 'all') return
-    if (sectionOrder.includes(activeHubSection)) return
-    setActiveHubSection(sectionOrder[0] ?? 'picks')
-  }, [activeHubSection, sectionOrder])
-
-  const visibleSections = activeHubSection === 'all' ? sectionOrder : sectionOrder.filter((section) => section === activeHubSection)
+  const visibleSections = sectionOrder
 
   const filterOptions = useMemo(
     () =>
@@ -767,6 +744,11 @@ export default function PlayPage() {
           subline: pendingOpenMatches.length > 0 ? 'Use match picks below.' : "You're chill.",
           detail: (
             <div className="space-y-4">
+              <UserStatusCard
+                context={socialSignals.userContext}
+                onOpenLeague={() => navigate(toPlayPath('league'))}
+              />
+
               <Card className="rounded-2xl border-border/60 bg-bg2 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Rivalry</div>
@@ -843,22 +825,6 @@ export default function PlayPage() {
                   </div>
                 )}
               </DetailsDisclosure>
-
-              <Card className="rounded-2xl border-border/60 bg-transparent p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  {hubTabs.map((tab) => (
-                    <Button
-                      key={tab.id}
-                      size="sm"
-                      variant={activeHubSection === tab.id ? 'primary' : 'secondary'}
-                      onClick={() => setActiveHubSection(tab.id)}
-                      aria-label={`Open ${tab.label} section`}
-                    >
-                      {tab.label}
-                    </Button>
-                  ))}
-                </div>
-              </Card>
 
               <Card className="sticky top-2 z-10 rounded-2xl border-border/60 bg-bg2/95 p-3 backdrop-blur-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -998,7 +964,10 @@ export default function PlayPage() {
                   <Card key="match-picks" className="rounded-2xl border-border/60 bg-transparent p-4">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Match picks</div>
+                        <div>
+                          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Match picks</div>
+                          <div className="text-xs text-muted-foreground">Upcoming matches and prediction entry in one flow.</div>
+                        </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge tone="warning">Closes {statusChip.text}</Badge>
                           <Badge tone={pendingOpenMatches.length > 0 ? 'warning' : 'success'}>

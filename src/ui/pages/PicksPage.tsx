@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { fetchScoring } from '../../lib/data'
@@ -17,14 +17,13 @@ import { Card } from '../components/ui/Card'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
-import Table from '../components/ui/Table'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
 
 const EMPTY_MATCHES: Match[] = []
-const FINISHED_LIST_PAGE_SIZE = 10
+const FINISHED_HISTORY_DAY_BATCH = 4
 
 type ScoringState =
   | { status: 'loading' }
@@ -51,6 +50,19 @@ function formatKickoff(utcIso: string): string {
 
 function formatChipDateTime(utcIso?: string): string {
   return utcIso ? formatKickoff(utcIso) : '—'
+}
+
+function toDayKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function formatDayLabel(dayKey: string): string {
+  const [year, month, day] = dayKey.split('-').map((value) => Number(value))
+  const date = new Date(year, month - 1, day)
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
 function buildPageNumbers(totalPages: number): number[] {
@@ -271,9 +283,10 @@ export default function PicksPage() {
   const mode = useRouteDataMode()
   const picksState = usePicksData()
   const [scoringState, setScoringState] = useState<ScoringState>({ status: 'loading' })
-  const [finishedPage, setFinishedPage] = useState(1)
   const [expandedSections, setExpandedSections] = useState<string[]>(['open-now'])
   const [quickEditMatchId, setQuickEditMatchId] = useState<string | null>(null)
+  const [visibleFinishedDayCount, setVisibleFinishedDayCount] = useState(FINISHED_HISTORY_DAY_BATCH)
+  const dayRefs = useRef(new Map<string, HTMLDivElement>())
 
   const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
   const toPlayPath = (segment?: 'picks') =>
@@ -350,13 +363,26 @@ export default function PicksPage() {
         .sort((a, b) => new Date(b.kickoffUtc).getTime() - new Date(a.kickoffUtc).getTime()),
     [matches]
   )
-  const finishedTotalPages = Math.max(1, Math.ceil(finishedMatches.length / FINISHED_LIST_PAGE_SIZE))
-  const safeFinishedPage = Math.min(finishedPage, finishedTotalPages)
-  const finishedStartIndex = (safeFinishedPage - 1) * FINISHED_LIST_PAGE_SIZE
-  const visibleFinishedMatches = finishedMatches.slice(
-    finishedStartIndex,
-    finishedStartIndex + FINISHED_LIST_PAGE_SIZE
-  )
+
+  const finishedGroups = useMemo(() => {
+    const byDay = new Map<string, Match[]>()
+    for (const match of finishedMatches) {
+      const key = toDayKey(new Date(match.kickoffUtc))
+      const group = byDay.get(key) ?? []
+      group.push(match)
+      byDay.set(key, group)
+    }
+    return [...byDay.entries()]
+      .map(([dayKey, dayMatches]) => ({
+        dayKey,
+        label: formatDayLabel(dayKey),
+        matches: dayMatches.sort((a, b) => new Date(b.kickoffUtc).getTime() - new Date(a.kickoffUtc).getTime())
+      }))
+      .sort((a, b) => b.dayKey.localeCompare(a.dayKey))
+  }, [finishedMatches])
+  const visibleFinishedGroups = finishedGroups.slice(0, visibleFinishedDayCount)
+  const todayKey = toDayKey(now)
+  const todayGroupIndex = finishedGroups.findIndex((group) => group.dayKey === todayKey)
 
   const latestResultsUpdatedUtc =
     finishedMatches.length > 0 && picksState.state.status === 'ready'
@@ -364,8 +390,8 @@ export default function PicksPage() {
       : undefined
 
   useEffect(() => {
-    setFinishedPage(1)
-  }, [finishedMatches.length])
+    setVisibleFinishedDayCount(FINISHED_HISTORY_DAY_BATCH)
+  }, [finishedGroups.length])
 
   const latestCompletedOpenSubmissionUtc = completedOpenMatches
     .map((match) => findPick(picksState.picks, match.id, userId)?.updatedAt)
@@ -399,6 +425,19 @@ export default function PicksPage() {
   }
 
   const quickEditMatch = quickEditMatchId ? matches.find((match) => match.id === quickEditMatchId) ?? null : null
+
+  function jumpToToday() {
+    if (todayGroupIndex < 0) return
+    const requiredCount = todayGroupIndex + 1
+    if (requiredCount > visibleFinishedDayCount) {
+      setVisibleFinishedDayCount(requiredCount)
+      requestAnimationFrame(() => {
+        dayRefs.current.get(todayKey)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+      return
+    }
+    dayRefs.current.get(todayKey)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <div className="space-y-6">
@@ -507,81 +546,98 @@ export default function PicksPage() {
                 </Alert>
               ) : null}
 
-              <Table>
-                <thead>
-                  <tr>
-                    <th>Match</th>
-                    <th>Your pick</th>
-                    <th>Result</th>
-                    <th>Points</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleFinishedMatches.map((match) => {
-                    const pick = findPick(picksState.picks, match.id, userId)
-                    const result = getPredictionResult(match, pick)
-                    const points =
-                      scoringState.status === 'ready'
-                        ? scorePick(match, pick, scoringState.scoring)
-                        : undefined
-                    return (
-                      <tr key={`finished-${match.id}`} className={resultRowClass(result)}>
-                        <td>
-                          <div className="font-semibold text-foreground">
-                            {match.homeTeam.code} vs {match.awayTeam.code}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {match.stage} · {formatKickoff(match.kickoffUtc)}
-                          </div>
-                        </td>
-                        <td>{pickLabel(match, pick)}</td>
-                        <td>{actualLabel(match)}</td>
-                        <td>
-                          <div className="flex items-center gap-2">
-                            <Badge tone={resultTone(result)}>{resultLabel(result)}</Badge>
-                          {points ? (
-                            <Badge tone={points.total > 0 ? 'success' : 'secondary'}>+{points.total}</Badge>
-                          ) : (
-                            '—'
-                          )}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                  {visibleFinishedMatches.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="text-center text-sm text-muted-foreground">
-                        No finished matches yet.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </Table>
-
-              {finishedMatches.length > FINISHED_LIST_PAGE_SIZE ? (
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-xs text-muted-foreground">
-                    Showing {finishedStartIndex + 1}-{Math.min(finishedStartIndex + FINISHED_LIST_PAGE_SIZE, finishedMatches.length)} of{' '}
-                    {finishedMatches.length}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1">
-                    {buildPageNumbers(finishedTotalPages).map((pageNumber) => (
-                      <Button
-                        key={`finished-page-${pageNumber}`}
-                        type="button"
-                        size="sm"
-                        variant={pageNumber === safeFinishedPage ? 'primary' : 'secondary'}
-                        onClick={() => setFinishedPage(pageNumber)}
-                        aria-label={`Finished page ${pageNumber}`}
-                        disabled={pageNumber === safeFinishedPage}
-                      >
-                        {pageNumber}
-                      </Button>
-                    ))}
-                  </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs text-muted-foreground">
+                  History grouped by day ({finishedMatches.length} finished matches)
                 </div>
-              ) : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="secondary" onClick={jumpToToday} disabled={todayGroupIndex < 0}>
+                    Jump to Today
+                  </Button>
+                  {finishedGroups.length > visibleFinishedGroups.length ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() =>
+                        setVisibleFinishedDayCount((current) =>
+                          Math.min(current + FINISHED_HISTORY_DAY_BATCH, finishedGroups.length)
+                        )
+                      }
+                    >
+                      Load older days
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {visibleFinishedGroups.map((group) => (
+                  <div
+                    key={`finished-day-${group.dayKey}`}
+                    className="rounded-2xl border border-border/60 bg-transparent p-3"
+                    ref={(node) => {
+                      if (!node) {
+                        dayRefs.current.delete(group.dayKey)
+                        return
+                      }
+                      dayRefs.current.set(group.dayKey, node)
+                    }}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-sm font-semibold text-foreground">{group.label}</div>
+                        <Badge tone="secondary">{group.matches.length} matches</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {group.matches.map((match) => {
+                          const pick = findPick(picksState.picks, match.id, userId)
+                          const result = getPredictionResult(match, pick)
+                          const points =
+                            scoringState.status === 'ready'
+                              ? scorePick(match, pick, scoringState.scoring)
+                              : undefined
+                          return (
+                            <div
+                              key={`finished-${group.dayKey}-${match.id}`}
+                              className={`rounded-xl border border-border/70 p-3 ${resultRowClass(result)}`}
+                            >
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                  <div className="font-semibold text-foreground">
+                                    {match.homeTeam.code} vs {match.awayTeam.code}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {match.stage} · {formatKickoff(match.kickoffUtc)}
+                                  </div>
+                                  <div className="mt-1 text-xs text-muted-foreground">
+                                    Your pick: <span className="font-semibold text-foreground">{pickLabel(match, pick)}</span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Actual: <span className="font-semibold text-foreground">{actualLabel(match)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge tone={resultTone(result)}>{resultLabel(result)}</Badge>
+                                  {points ? (
+                                    <Badge tone={points.total > 0 ? 'success' : 'secondary'}>+{points.total}</Badge>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">—</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {visibleFinishedGroups.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+                    No finished matches yet.
+                  </div>
+                ) : null}
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>

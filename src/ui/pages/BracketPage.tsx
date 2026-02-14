@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import { getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../lib/matches'
@@ -12,6 +12,7 @@ import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
 import { useToast } from '../hooks/useToast'
@@ -83,6 +84,7 @@ export default function BracketPage() {
   const isDemoRoute = location.pathname.startsWith('/demo/')
   const demoScenario = isDemoRoute ? readDemoScenario() : null
   const now = useNow({ tickMs: 30_000 })
+  const isMobile = useMediaQuery('(max-width: 1023px)')
   const { showToast } = useToast()
   const picksState = usePicksData()
   const bracket = useBracketKnockoutData()
@@ -134,6 +136,11 @@ export default function BracketPage() {
       (readyBracketState.byStage[stage] ?? []).map((match) => ({ stage, match }))
     )
   }, [readyBracketState, bracket.stageOrder])
+
+  const [viewMode, setViewMode] = useState<'table' | 'list'>('table')
+  useEffect(() => {
+    setViewMode(isMobile ? 'list' : 'table')
+  }, [isMobile])
 
   const stageSummary = useMemo(
     () =>
@@ -242,7 +249,26 @@ export default function BracketPage() {
 
             <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
               <div className="space-y-3">
-                <div className="text-sm font-semibold text-foreground">Bracket picks and results</div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-sm font-semibold text-foreground">Bracket picks and results</div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={viewMode === 'list' ? 'primary' : 'secondary'}
+                      onClick={() => setViewMode('list')}
+                    >
+                      List view
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={viewMode === 'table' ? 'primary' : 'secondary'}
+                      onClick={() => setViewMode('table')}
+                    >
+                      Table view
+                    </Button>
+                  </div>
+                </div>
+                {viewMode === 'table' ? (
                 <Table>
                   <thead>
                     <tr>
@@ -336,6 +362,94 @@ export default function BracketPage() {
                     ) : null}
                   </tbody>
                 </Table>
+                ) : (
+                  <div className="space-y-3">
+                    {entries.map((entry) => {
+                      const pickedWinner = bracket.knockout[entry.stage]?.[entry.match.id]
+                      const result: PredictionResult =
+                        entry.match.status !== 'FINISHED' || !entry.match.winner
+                          ? 'pending'
+                          : pickedWinner && pickedWinner === entry.match.winner
+                            ? 'correct'
+                            : 'wrong'
+                      return (
+                        <div
+                          key={`${entry.stage}-${entry.match.id}`}
+                          className={`rounded-xl border border-border/70 p-3 ${resultSurfaceClass(result)}`}
+                        >
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <Badge tone="secondary">{STAGE_LABELS[entry.stage]}</Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge tone={resultTone(result)}>{resultLabel(result)}</Badge>
+                                <Badge tone={isMatchLocked(entry.match.kickoffUtc, now) ? 'locked' : 'secondary'}>
+                                  {isMatchLocked(entry.match.kickoffUtc, now) ? 'Locked' : 'Open'}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-semibold text-foreground">
+                                {entry.match.homeTeam.code} vs {entry.match.awayTeam.code}
+                              </div>
+                              <div className="text-xs text-muted-foreground">{formatTime(entry.match.kickoffUtc)}</div>
+                            </div>
+                            {!isMatchLocked(entry.match.kickoffUtc, now) ? (
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className={pickedWinner === 'HOME' ? 'border-primary' : undefined}
+                                  onClick={async () => {
+                                    bracket.setPick(entry.stage, entry.match.id, 'HOME')
+                                    const ok = await bracket.save()
+                                    showToast({
+                                      tone: ok ? 'success' : 'danger',
+                                      title: ok ? 'Knockout pick saved' : 'Autosave failed',
+                                      message: ok
+                                        ? `${entry.match.homeTeam.code} set to advance.`
+                                        : 'Unable to save knockout pick.'
+                                    })
+                                  }}
+                                >
+                                  {entry.match.homeTeam.code} advances
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className={pickedWinner === 'AWAY' ? 'border-primary' : undefined}
+                                  onClick={async () => {
+                                    bracket.setPick(entry.stage, entry.match.id, 'AWAY')
+                                    const ok = await bracket.save()
+                                    showToast({
+                                      tone: ok ? 'success' : 'danger',
+                                      title: ok ? 'Knockout pick saved' : 'Autosave failed',
+                                      message: ok
+                                        ? `${entry.match.awayTeam.code} set to advance.`
+                                        : 'Unable to save knockout pick.'
+                                    })
+                                  }}
+                                >
+                                  {entry.match.awayTeam.code} advances
+                                </Button>
+                              </div>
+                            ) : null}
+                            <div className="text-xs text-muted-foreground">
+                              Your pick: <span className="font-semibold text-foreground">{winnerLabel(pickedWinner, entry.match)}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Actual: <span className="font-semibold text-foreground">{actualResultLabel(entry.match)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {entries.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+                        No knockout matches available.
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
             </Card>
           </>

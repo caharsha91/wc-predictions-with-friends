@@ -15,7 +15,7 @@ import { Alert } from '../ui/Alert'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
-import { Input } from '../ui/Input'
+import ScoreStepper from '../ui/ScoreStepper'
 import Skeleton from '../ui/Skeleton'
 
 type DraftPick = {
@@ -63,6 +63,11 @@ function parseScore(value: string): number | undefined {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return undefined
   return Math.max(0, Math.floor(parsed))
+}
+
+function toStepperValue(value: string): number | null {
+  const parsed = parseScore(value)
+  return parsed === undefined ? null : parsed
 }
 
 function formatDurationMs(durationMs: number): string {
@@ -700,36 +705,22 @@ export default function PicksWizardFlow({
             ) : null}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  {currentMatch.homeTeam.code} score
-                </div>
-                <Input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  value={activeMatchDraft.homeScore}
-                  disabled={matchLocked}
-                  onChange={(event) =>
-                    setActiveMatchDraft((current) => ({ ...current, homeScore: event.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <div className="mb-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  {currentMatch.awayTeam.code} score
-                </div>
-                <Input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  value={activeMatchDraft.awayScore}
-                  disabled={matchLocked}
-                  onChange={(event) =>
-                    setActiveMatchDraft((current) => ({ ...current, awayScore: event.target.value }))
-                  }
-                />
-              </div>
+              <ScoreStepper
+                label={`${currentMatch.homeTeam.code} score`}
+                value={toStepperValue(activeMatchDraft.homeScore)}
+                disabled={matchLocked}
+                onChange={(next) =>
+                  setActiveMatchDraft((current) => ({ ...current, homeScore: String(next) }))
+                }
+              />
+              <ScoreStepper
+                label={`${currentMatch.awayTeam.code} score`}
+                value={toStepperValue(activeMatchDraft.awayScore)}
+                disabled={matchLocked}
+                onChange={(next) =>
+                  setActiveMatchDraft((current) => ({ ...current, awayScore: String(next) }))
+                }
+              />
             </div>
 
             {currentMatch.stage !== 'Group' ? (

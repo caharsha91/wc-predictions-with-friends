@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { fetchMatches, fetchMembers } from '../../lib/data'
 import type { Match } from '../../types/matches'
 import type { Member } from '../../types/members'
+import ConfirmationModal from '../components/ConfirmationModal'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -28,6 +29,8 @@ type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'ready'; matches: Match[]; members: Member[] }
+
+type ConfirmAction = 'reload-snapshots' | 'clear-session' | 'reset-to-live'
 
 function toLabel(value: Date | null): string {
   if (!value) return 'Unavailable'
@@ -101,13 +104,17 @@ function resolveScenarioNow(matches: Match[], scenario: DemoScenarioId): Date | 
 export default function DemoControlsPage() {
   // QA-SMOKE: route=/demo/admin?tab=demo ; checklist-id=smoke-demo-controls
   const navigate = useNavigate()
+  const location = useLocation()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [selectedScenario, setSelectedScenario] = useState<DemoScenarioId>(() => readDemoScenario())
   const [selectedViewerId, setSelectedViewerId] = useState<string>(() => readDemoViewerId() ?? '')
+  const [pendingAction, setPendingAction] = useState<ConfirmAction | null>(null)
+  const [isActionRunning, setIsActionRunning] = useState(false)
   const [sessionProgress, setSessionProgress] = useState(0)
   const [sessionProgressLabel, setSessionProgressLabel] = useState<string>('Idle')
   const [sessionProgressIntent, setSessionProgressIntent] = useState<'default' | 'momentum' | 'warning' | 'success'>('default')
   const { showToast, updateToast } = useToast()
+  const isDemoRoute = location.pathname.startsWith('/demo/')
 
   useEffect(() => {
     let canceled = false
@@ -217,6 +224,63 @@ export default function DemoControlsPage() {
     showToast({ tone: 'success', title: 'Demo session cleared' })
   }
 
+  function resetToLive() {
+    clearDemoNowOverride()
+    clearDemoViewerId()
+    clearDemoLocalStorage()
+    emitControlsChanged()
+    setSessionProgress(100)
+    setSessionProgressLabel('Live mode restored')
+    setSessionProgressIntent('success')
+    window.setTimeout(() => setSessionProgress(0), 1_100)
+    showToast({ tone: 'success', title: 'Live mode restored' })
+    if (isDemoRoute) {
+      navigate('/admin?tab=demo#demo', { replace: true })
+    }
+  }
+
+  async function runConfirmedAction() {
+    if (!pendingAction || isActionRunning) return
+    setIsActionRunning(true)
+    try {
+      if (pendingAction === 'reload-snapshots') {
+        await reloadSnapshots()
+      } else if (pendingAction === 'clear-session') {
+        clearSession()
+      } else {
+        resetToLive()
+      }
+      setPendingAction(null)
+    } finally {
+      setIsActionRunning(false)
+    }
+  }
+
+  const confirmationConfig = useMemo(() => {
+    if (!pendingAction) return null
+    if (pendingAction === 'reload-snapshots') {
+      return {
+        title: 'Reload demo snapshots?',
+        description: 'This will clear cached demo snapshot data and reload the page.',
+        confirmLabel: 'Reload snapshots'
+      }
+    }
+    if (pendingAction === 'clear-session') {
+      return {
+        title: 'Clear demo session?',
+        description: 'This removes demo scenario, viewer, and demo-mode local storage overrides.',
+        confirmLabel: 'Clear session'
+      }
+    }
+    return {
+      title: isDemoRoute ? 'Reset to live mode?' : 'Clear demo mode data?',
+      description: isDemoRoute
+        ? 'This exits demo mode and clears demo overrides so you return to live admin data.'
+        : 'This clears demo overrides currently stored in your browser.',
+      confirmLabel: 'Reset to Live'
+    }
+  }, [isDemoRoute, pendingAction])
+
   if (state.status === 'loading') {
     return (
       <div className="space-y-4">
@@ -310,11 +374,18 @@ export default function DemoControlsPage() {
             Use reload after regenerating demo files with `npm run demo:simulate ...`.
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => void reloadSnapshots()}>
+            <Button variant="secondary" onClick={() => setPendingAction('reload-snapshots')}>
               Reload Demo Snapshots
             </Button>
-            <Button variant="secondary" onClick={clearSession}>
+            <Button variant="secondary" onClick={() => setPendingAction('clear-session')}>
               Clear Demo Session
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPendingAction('reset-to-live')}
+              className="border-[var(--border-danger)] bg-[rgba(var(--danger-rgb),0.15)] text-foreground hover:bg-[rgba(var(--danger-rgb),0.26)]"
+            >
+              Reset to Live
             </Button>
           </div>
           {sessionProgress > 0 ? (
@@ -330,6 +401,17 @@ export default function DemoControlsPage() {
           ) : null}
         </div>
       </Card>
+
+      <ConfirmationModal
+        isOpen={confirmationConfig !== null}
+        title={confirmationConfig?.title ?? ''}
+        description={confirmationConfig?.description ?? ''}
+        confirmLabel={confirmationConfig?.confirmLabel}
+        onCancel={() => setPendingAction(null)}
+        onConfirm={() => void runConfirmedAction()}
+        isDestructive
+        isLoading={isActionRunning}
+      />
     </div>
   )
 }
