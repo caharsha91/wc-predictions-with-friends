@@ -18,3 +18,5 @@ yarn-error.log*
 pnpm-debug.log*
 firebase-debug.log*
 firestore-debug.log*
+screenshots
+coverage

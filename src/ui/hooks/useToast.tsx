@@ -45,10 +45,11 @@ const DEFAULT_DURATION_MS = 10_000
 const MAX_VISIBLE_TOASTS = 4
 
 function toneClass(tone: ToastTone): string {
-  if (tone === 'success') return 'border-[rgba(var(--primary-rgb),0.5)] bg-[rgba(var(--primary-rgb),0.14)]'
-  if (tone === 'warning') return 'border-[rgba(var(--warn-rgb),0.46)] bg-[rgba(var(--warn-rgb),0.14)]'
-  if (tone === 'danger') return 'border-[rgba(var(--danger-rgb),0.48)] bg-[rgba(var(--danger-rgb),0.14)]'
-  return 'border-[rgba(var(--info-rgb),0.52)] bg-[rgba(var(--info-rgb),0.14)]'
+  const base = 'backdrop-blur-md shadow-lg'
+  if (tone === 'success') return `${base} border-[rgba(var(--primary-rgb),0.3)] bg-[rgba(var(--primary-rgb),0.1)]`
+  if (tone === 'warning') return `${base} border-[rgba(var(--warn-rgb),0.3)] bg-[rgba(var(--warn-rgb),0.1)]`
+  if (tone === 'danger') return `${base} border-[rgba(var(--danger-rgb),0.3)] bg-[rgba(var(--danger-rgb),0.1)]`
+  return `${base} border-[var(--border)] bg-[var(--surface-card)]/80`
 }
 
 function toneToProgressIntent(tone: ToastTone): ProgressIntent {
@@ -159,13 +160,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-4 z-[90] flex w-[min(92vw,26rem)] flex-col gap-2">
+      <div className="pointer-events-none fixed right-4 top-4 z-[110] flex w-[min(92vw,26rem)] flex-col gap-2">
         {toasts.map((toast) => (
           <button
             key={toast.id}
             type="button"
             onClick={() => dismissToast(toast.id)}
-            className={`pointer-events-auto rounded-xl border px-4 py-3 text-left shadow-[var(--shadow1)] ${toneClass(toast.tone)}`}
+            className={`pointer-events-auto rounded-xl border px-4 py-3 text-left transition-all hover:opacity-90 ${toneClass(toast.tone)}`}
           >
             <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{toast.title}</div>
             {toast.message ? <div className="mt-1 text-sm text-foreground">{toast.message}</div> : null}

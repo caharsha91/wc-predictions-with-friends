@@ -229,6 +229,15 @@ async function ensureDemoDefaults(): Promise<void> {
   }
 }
 
+function DemoBanner() {
+  return (
+    <div className="flex items-center justify-center gap-2 border-b border-[rgba(var(--warn-rgb),0.2)] bg-[rgba(var(--warn-rgb),0.1)] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-[rgb(var(--warn-rgb))] backdrop-blur-sm">
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[rgb(var(--warn-rgb))]" />
+      Demo Mode Active
+    </div>
+  )
+}
+
 function LayoutFrame() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -396,6 +405,7 @@ function LayoutFrame() {
         </aside>
 
         <div className="flex min-w-0 flex-col md:h-screen md:overflow-hidden">
+          {isDemoRoute ? <DemoBanner /> : null}
           <main
             data-testid="app-shell-main"
             className={cn(
