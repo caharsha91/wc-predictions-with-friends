@@ -1,8 +1,9 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 
 import { useCurrentUser } from '../hooks/useCurrentUser'
+import { isDemoPath } from '../../lib/dataMode'
 import { cn } from '../lib/utils'
-import { ADMIN_NAV, MAIN_NAV } from '../nav'
+import { ADMIN_NAV, DEMO_ADMIN_NAV, DEMO_MAIN_NAV, MAIN_NAV } from '../nav'
 import BrandLogo from './BrandLogo'
 import { Button } from './ui/Button'
 import {
@@ -20,8 +21,12 @@ type AppMobileNavProps = {
 }
 
 export default function AppMobileNav({ triggerLabel = 'Menu' }: AppMobileNavProps) {
+  const location = useLocation()
   const user = useCurrentUser()
   const canAccessAdmin = user?.isAdmin === true
+  const isDemoRoute = isDemoPath(location.pathname)
+  const mainNavItems = isDemoRoute ? DEMO_MAIN_NAV : MAIN_NAV
+  const adminNavItems = isDemoRoute ? DEMO_ADMIN_NAV : ADMIN_NAV
 
   return (
     <Sheet>
@@ -35,11 +40,11 @@ export default function AppMobileNav({ triggerLabel = 'Menu' }: AppMobileNavProp
           <SheetTitle className="text-left">
             <BrandLogo size="sm" variant="full" />
           </SheetTitle>
-          <SheetDescription>Move between play center, group stage, picks, bracket, standings, and players.</SheetDescription>
+          <SheetDescription>Move between Play Center, League, and Admin Console.</SheetDescription>
         </SheetHeader>
 
         <div className="grid gap-2 px-4 py-4">
-          {MAIN_NAV.map((item) => {
+          {mainNavItems.map((item) => {
             const Icon = item.icon
             return (
               <SheetClose asChild key={item.to}>
@@ -63,12 +68,13 @@ export default function AppMobileNav({ triggerLabel = 'Menu' }: AppMobileNavProp
           })}
 
           {canAccessAdmin
-            ? ADMIN_NAV.map((item) => {
+            ? adminNavItems.map((item) => {
                 const Icon = item.icon
                 return (
                   <SheetClose asChild key={item.to}>
                     <NavLink
                       to={item.to}
+                      end={item.end}
                       className={({ isActive }) =>
                         cn(
                           'flex items-center gap-3 rounded-xl border px-3 py-2 text-sm font-semibold transition',

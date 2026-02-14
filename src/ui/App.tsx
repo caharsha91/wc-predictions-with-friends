@@ -7,10 +7,8 @@ import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import Layout from './Layout'
 import AccessDeniedPage from './pages/AccessDeniedPage'
-import AdminExportsPage from './pages/AdminExportsPage'
-import AdminUsersPage from './pages/AdminUsersPage'
+import AdminConsolePage from './pages/AdminConsolePage'
 import BracketPage from './pages/BracketPage'
-import DemoControlsPage from './pages/DemoControlsPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -162,8 +160,9 @@ export default function App() {
           </Route>
 
           <Route element={<AdminGate />}>
-            <Route path="admin/players" element={<AdminUsersPage />} />
-            <Route path="admin/exports" element={<AdminExportsPage />} />
+            <Route path="admin" element={<AdminConsolePage />} />
+            <Route path="admin/players" element={<Navigate to="/admin?tab=players#players" replace />} />
+            <Route path="admin/exports" element={<Navigate to="/admin?tab=exports#exports" replace />} />
           </Route>
         </Route>
 
@@ -176,9 +175,10 @@ export default function App() {
             <Route path="league" element={<LeaderboardPage />} />
           </Route>
           <Route path="admin">
-            <Route path="controls" element={<DemoControlsPage />} />
-            <Route path="players" element={<AdminUsersPage />} />
-            <Route path="exports" element={<AdminExportsPage />} />
+            <Route index element={<AdminConsolePage />} />
+            <Route path="controls" element={<Navigate to="/demo/admin?tab=demo#demo" replace />} />
+            <Route path="players" element={<Navigate to="/demo/admin?tab=players#players" replace />} />
+            <Route path="exports" element={<Navigate to="/demo/admin?tab=exports#exports" replace />} />
           </Route>
         </Route>
 

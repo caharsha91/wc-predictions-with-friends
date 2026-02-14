@@ -10,6 +10,8 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { InputField } from '../components/ui/Field'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
+import Progress from '../components/ui/Progress'
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import Table from '../components/ui/Table'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
@@ -46,9 +48,12 @@ function sortEntries(entries: MemberEntry[]): MemberEntry[] {
 }
 
 export default function AdminUsersPage() {
+  // QA-SMOKE: route=/admin/players and /demo/admin/players ; checklist-id=smoke-admin-players
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [formStatus, setFormStatus] = useState<'idle' | 'saving'>('idle')
   const [editing, setEditing] = useState<MemberEntry | null>(null)
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [memberMutationProgress, setMemberMutationProgress] = useState(0)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
@@ -103,6 +108,7 @@ export default function AdminUsersPage() {
     setEmail('')
     setIsAdmin(false)
     setFormStatus('idle')
+    setEditorOpen(true)
   }
 
   function startEdit(entry: MemberEntry) {
@@ -111,6 +117,7 @@ export default function AdminUsersPage() {
     setEmail(entry.email)
     setIsAdmin(Boolean(entry.isAdmin))
     setFormStatus('idle')
+    setEditorOpen(true)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -127,6 +134,7 @@ export default function AdminUsersPage() {
     }
 
     setFormStatus('saving')
+    setMemberMutationProgress(20)
     try {
       const ref = doc(firebaseDb, 'leagues', leagueId, 'members', normalizedEmail)
       await setDoc(
@@ -152,19 +160,18 @@ export default function AdminUsersPage() {
         return { status: 'ready', entries: sortEntries([nextEntry, ...rest]) }
       })
       setFormStatus('idle')
+      setMemberMutationProgress(100)
       showToast({
         title: 'Player saved',
-        message: editing ? 'Player details updated.' : 'Player added to roster.',
+        message: editing ? '1 player updated.' : '1 player added.',
         tone: 'success'
       })
-      if (!editing) {
-        setName('')
-        setEmail('')
-        setIsAdmin(false)
-      }
+      setEditorOpen(false)
+      window.setTimeout(() => setMemberMutationProgress(0), 900)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to save member.'
       setFormStatus('idle')
+      setMemberMutationProgress(0)
       showToast({ title: 'Save failed', message, tone: 'danger' })
     }
   }
@@ -199,14 +206,67 @@ export default function AdminUsersPage() {
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <Card className="rounded-2xl border-border/60 p-4">
-          <div className="flex items-center justify-between">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Player editor</div>
-            {canManageMembers ? <Badge tone="success">Writable</Badge> : <Badge tone="warning">Read-only</Badge>}
+      <Card className="rounded-2xl border-border/60 p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Roster</div>
+            <div className="text-lg font-semibold text-foreground">Invite-only players</div>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone="secondary">Total {entries.length}</Badge>
+            <Badge tone="secondary">Admins {adminCount}</Badge>
+            <Badge tone="secondary">Members {memberCount}</Badge>
+            <Button type="button" size="sm" onClick={startCreate} disabled={!canManageMembers}>
+              Add player
+            </Button>
+          </div>
+        </div>
 
-          <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+        {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading players...</div> : null}
+        {state.status === 'ready' && entries.length === 0 ? (
+          <div className="text-sm text-muted-foreground">No players found.</div>
+        ) : null}
+
+        {state.status === 'ready' && entries.length > 0 ? (
+          <Table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr key={entry.id}>
+                  <td className="font-semibold text-foreground">{entry.name || 'Unnamed user'}</td>
+                  <td>{entry.email}</td>
+                  <td>{entry.isAdmin ? <Badge tone="info">Admin</Badge> : <Badge>Member</Badge>}</td>
+                  <td>
+                    <Button type="button" size="sm" variant="secondary" onClick={() => startEdit(entry)}>
+                      Edit
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        ) : null}
+      </Card>
+
+      <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
+        <SheetContent side="right" className="w-[96vw] max-w-lg">
+          <SheetHeader>
+            <SheetTitle>{editing ? 'Edit Player' : 'Add Player'}</SheetTitle>
+            <SheetDescription>
+              {editing
+                ? 'Update player details and admin access.'
+                : 'Create a new player in the invite-only roster.'}
+            </SheetDescription>
+          </SheetHeader>
+
+          <form className="space-y-3 px-4 py-3" onSubmit={handleSubmit}>
             <InputField
               id="member-name"
               label="Name"
@@ -234,63 +294,42 @@ export default function AdminUsersPage() {
               />
               Grant admin access
             </label>
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" size="sm" disabled={!canManageMembers} loading={formStatus === 'saving'}>
-                {editing ? 'Save player' : 'Add player'}
-              </Button>
-              <Button type="button" size="sm" variant="secondary" onClick={startCreate}>
-                New
-              </Button>
-            </div>
+
+            <SheetFooter className="px-0 pb-0 pt-3">
+              <div className="w-full space-y-2">
+                {formStatus === 'saving' || memberMutationProgress > 0 ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{formStatus === 'saving' ? 'Updating player...' : 'Update complete'}</span>
+                      <span>{memberMutationProgress >= 100 ? 'Done' : 'In progress'}</span>
+                    </div>
+                    <Progress
+                      value={memberMutationProgress}
+                      intent={formStatus === 'saving' ? 'momentum' : 'success'}
+                      size="sm"
+                      aria-label="Player update progress"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="flex w-full flex-wrap justify-end gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setEditorOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={!canManageMembers || formStatus === 'saving'}>
+                  {editing ? 'Save player' : 'Add player'}
+                </Button>
+                </div>
+              </div>
+            </SheetFooter>
           </form>
-        </Card>
-
-        <Card className="rounded-2xl border-border/60 p-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Roster</div>
-              <div className="text-lg font-semibold text-foreground">Invite-only players</div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge tone="secondary">Total {entries.length}</Badge>
-              <Badge tone="secondary">Admins {adminCount}</Badge>
-              <Badge tone="secondary">Members {memberCount}</Badge>
-            </div>
-          </div>
-
-          {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading players...</div> : null}
-          {state.status === 'ready' && entries.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No players found.</div>
-          ) : null}
-
-          {state.status === 'ready' && entries.length > 0 ? (
-            <Table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <tr key={entry.id}>
-                    <td className="font-semibold text-foreground">{entry.name || 'Unnamed user'}</td>
-                    <td>{entry.email}</td>
-                    <td>{entry.isAdmin ? <Badge tone="info">Admin</Badge> : <Badge>Member</Badge>}</td>
-                    <td>
-                      <Button type="button" size="sm" variant="secondary" onClick={() => startEdit(entry)}>
-                        Edit
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          ) : null}
-        </Card>
-      </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

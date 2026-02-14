@@ -169,6 +169,7 @@ function formatTeam(code: string | undefined, teams: Team[]): string {
 }
 
 export default function GroupStagePage() {
+  // QA-SMOKE: route=/play/group-stage and /demo/play/group-stage ; checklist-id=smoke-group-stage-detail
   const location = useLocation()
   const mode = useRouteDataMode()
   const { showToast } = useToast()
@@ -275,8 +276,8 @@ export default function GroupStagePage() {
         subtitle="Read-only group predictions and standings. Use Play Center for guided edits."
         meta={
           <div className="flex items-start gap-3 text-right">
-            <ButtonLink to={toPlayPath('picks')} size="sm" variant="primary">
-              Back to Picks
+            <ButtonLink to={toPlayPath()} size="sm" variant="primary">
+              Back to Play Center
             </ButtonLink>
             <div className="text-xs text-muted-foreground" data-last-updated="true">
               <div className="uppercase tracking-[0.2em]">Last updated</div>

@@ -9,6 +9,7 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
+import Progress from '../components/ui/Progress'
 import {
   DEMO_SCENARIO_OPTIONS,
   type DemoScenarioId,
@@ -28,20 +29,31 @@ type LoadState =
   | { status: 'error'; message: string }
   | { status: 'ready'; matches: Match[]; members: Member[] }
 
-function toIso(value: Date | null): string {
-  return value ? value.toISOString() : '—'
-}
-
 function toLabel(value: Date | null): string {
   if (!value) return 'Unavailable'
   return value.toLocaleString(undefined, {
-    timeZone: 'America/Los_Angeles',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     year: 'numeric'
   })
+}
+
+function toRelativeLabel(value: Date | null): string {
+  if (!value) return 'Relative time unavailable'
+  const diffMs = value.getTime() - Date.now()
+  const diffMinutes = Math.round(diffMs / 60_000)
+  if (Math.abs(diffMinutes) < 1) return 'Now'
+
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
+  if (Math.abs(diffMinutes) < 60) return rtf.format(diffMinutes, 'minute')
+
+  const diffHours = Math.round(diffMs / 3_600_000)
+  if (Math.abs(diffHours) < 48) return rtf.format(diffHours, 'hour')
+
+  const diffDays = Math.round(diffMs / 86_400_000)
+  return rtf.format(diffDays, 'day')
 }
 
 function midpoint(start: Date, end: Date): Date {
@@ -87,11 +99,15 @@ function resolveScenarioNow(matches: Match[], scenario: DemoScenarioId): Date | 
 }
 
 export default function DemoControlsPage() {
+  // QA-SMOKE: route=/demo/admin?tab=demo ; checklist-id=smoke-demo-controls
   const navigate = useNavigate()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [selectedScenario, setSelectedScenario] = useState<DemoScenarioId>(() => readDemoScenario())
   const [selectedViewerId, setSelectedViewerId] = useState<string>(() => readDemoViewerId() ?? '')
-  const { showToast } = useToast()
+  const [sessionProgress, setSessionProgress] = useState(0)
+  const [sessionProgressLabel, setSessionProgressLabel] = useState<string>('Idle')
+  const [sessionProgressIntent, setSessionProgressIntent] = useState<'default' | 'momentum' | 'warning' | 'success'>('default')
+  const { showToast, updateToast } = useToast()
 
   useEffect(() => {
     let canceled = false
@@ -142,18 +158,51 @@ export default function DemoControlsPage() {
     showToast({ tone: 'success', title: 'Viewer applied', message: selectedViewerId })
   }
 
-  function reloadSnapshots() {
+  async function reloadSnapshots() {
     if (typeof window === 'undefined') return
+    const progressToastId = showToast({
+      tone: 'info',
+      title: 'Reloading snapshots',
+      message: 'Clearing local cache before reload...',
+      progress: { value: 10, intent: 'momentum' },
+      durationMs: 20_000
+    })
+    setSessionProgress(10)
+    setSessionProgressLabel('Preparing cache cleanup...')
+    setSessionProgressIntent('momentum')
+
+    await new Promise((resolve) => window.setTimeout(resolve, 120))
     const keysToRemove: string[] = []
     for (let index = 0; index < window.localStorage.length; index += 1) {
       const key = window.localStorage.key(index)
       if (!key || !key.startsWith('wc-cache:demo:')) continue
       keysToRemove.push(key)
     }
+    setSessionProgress(50)
+    setSessionProgressLabel(`Clearing ${keysToRemove.length} cached snapshot keys...`)
+    updateToast(progressToastId, {
+      message: `Clearing ${keysToRemove.length} cached snapshot keys...`,
+      progress: { value: 50, intent: 'momentum' }
+    })
+
+    await new Promise((resolve) => window.setTimeout(resolve, 120))
     for (const key of keysToRemove) {
       window.localStorage.removeItem(key)
     }
-    window.location.reload()
+    setSessionProgress(100)
+    setSessionProgressLabel('Reloading page...')
+    setSessionProgressIntent('success')
+    updateToast(progressToastId, {
+      tone: 'success',
+      title: 'Reloading now',
+      message: `Cleared ${keysToRemove.length} cache keys.`,
+      progress: { value: 100, intent: 'success' },
+      durationMs: 4_000
+    })
+
+    window.setTimeout(() => {
+      window.location.reload()
+    }, 280)
   }
 
   function clearSession() {
@@ -161,6 +210,10 @@ export default function DemoControlsPage() {
     clearDemoViewerId()
     clearDemoLocalStorage()
     emitControlsChanged()
+    setSessionProgress(100)
+    setSessionProgressLabel('Session cleared')
+    setSessionProgressIntent('success')
+    window.setTimeout(() => setSessionProgress(0), 1_100)
     showToast({ tone: 'success', title: 'Demo session cleared' })
   }
 
@@ -211,8 +264,8 @@ export default function DemoControlsPage() {
                 </option>
               ))}
             </select>
-            <div className="text-xs text-muted-foreground">Pacific preview: {toLabel(scenarioNow)}</div>
-            <div className="text-xs text-muted-foreground">UTC: {toIso(scenarioNow)}</div>
+            <div className="text-xs text-muted-foreground">Local time: {toLabel(scenarioNow)}</div>
+            <div className="text-xs text-muted-foreground">Relative: {toRelativeLabel(scenarioNow)}</div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={applyScenario} disabled={!scenarioNow}>
                 Apply Scenario Time
@@ -257,13 +310,24 @@ export default function DemoControlsPage() {
             Use reload after regenerating demo files with `npm run demo:simulate ...`.
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={reloadSnapshots}>
+            <Button variant="secondary" onClick={() => void reloadSnapshots()}>
               Reload Demo Snapshots
             </Button>
             <Button variant="secondary" onClick={clearSession}>
               Clear Demo Session
             </Button>
           </div>
+          {sessionProgress > 0 ? (
+            <div className="space-y-1">
+              <div className="text-xs text-muted-foreground">{sessionProgressLabel}</div>
+              <Progress
+                value={sessionProgress}
+                intent={sessionProgressIntent}
+                size="sm"
+                aria-label="Demo session progress"
+              />
+            </div>
+          ) : null}
         </div>
       </Card>
     </div>

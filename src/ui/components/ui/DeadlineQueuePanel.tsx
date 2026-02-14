@@ -1,3 +1,5 @@
+import { useEffect, useMemo, useState } from 'react'
+
 import { Badge } from './Badge'
 import { Button } from './Button'
 import { Card } from './Card'
@@ -22,6 +24,7 @@ type DeadlineQueuePanelProps = {
   heading?: string
   description?: string
   selectedItemId?: string
+  paginationKey?: string
 }
 
 /**
@@ -37,10 +40,29 @@ export default function DeadlineQueuePanel({
   container = 'card',
   heading = 'Closing soon',
   description = 'Tap a match to jump in.',
-  selectedItemId
+  selectedItemId,
+  paginationKey
 }: DeadlineQueuePanelProps) {
-  const visibleItems = items.slice(0, pageSize)
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+  const [page, setPage] = useState(1)
+  const safePage = Math.min(page, totalPages)
+  const pageStart = (safePage - 1) * pageSize
+  const visibleItems = useMemo(
+    () => items.slice(pageStart, pageStart + pageSize),
+    [items, pageSize, pageStart]
+  )
   const selectItem = onSelectItem ?? onOpenItem
+
+  useEffect(() => {
+    setPage(1)
+  }, [paginationKey])
+
+  useEffect(() => {
+    if (safePage === page) return
+    setPage(safePage)
+  }, [page, safePage])
+
+  const canPaginate = items.length > pageSize
   const content = (
     <div className="space-y-4">
       <div>
@@ -61,9 +83,10 @@ export default function DeadlineQueuePanel({
                 selectedItemId === item.id
                   ? 'border-primary/70 bg-[rgba(var(--primary-rgb),0.12)]'
                   : 'border-border/70 bg-bg2'
-              } ${selectItem && !item.actionDisabled ? 'cursor-pointer' : ''}`}
+              } ${selectItem && !item.actionDisabled ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-bg2' : ''}`}
               role={selectItem && !item.actionDisabled ? 'button' : undefined}
               tabIndex={selectItem && !item.actionDisabled ? 0 : undefined}
+              aria-disabled={item.actionDisabled ? true : undefined}
               onClick={() => {
                 if (!selectItem || item.actionDisabled) return
                 selectItem(item.id)
@@ -100,6 +123,40 @@ export default function DeadlineQueuePanel({
           ))}
         </div>
       )}
+
+      {canPaginate ? (
+        <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-2">
+          <div className="text-xs text-muted-foreground">
+            Page {safePage} of {totalPages}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setPage(1)}
+              disabled={safePage <= 1}
+            >
+              First
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={safePage <= 1}
+            >
+              Prev
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              disabled={safePage >= totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 

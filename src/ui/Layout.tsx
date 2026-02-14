@@ -180,10 +180,8 @@ function toDemoPath(pathname: string): string {
   if (pathname.startsWith('/demo/')) return pathname
   if (pathname === '/play') return '/demo/play'
   if (pathname.startsWith('/play/')) return pathname.replace('/play/', '/demo/play/')
-  if (pathname === '/admin') return '/demo/admin/players'
-  if (pathname === '/admin/players') return '/demo/admin/players'
-  if (pathname === '/admin/exports') return '/demo/admin/exports'
-  if (pathname.startsWith('/admin/')) return '/demo/admin/players'
+  if (pathname === '/admin') return '/demo/admin'
+  if (pathname.startsWith('/admin/')) return '/demo/admin'
   return '/demo/play'
 }
 
@@ -191,10 +189,8 @@ function toDefaultPath(pathname: string): string {
   if (!pathname.startsWith('/demo/')) return pathname
   if (pathname === '/demo/play') return '/play'
   if (pathname.startsWith('/demo/play/')) return pathname.replace('/demo/play/', '/play/')
-  if (pathname === '/demo/admin') return '/admin/players'
-  if (pathname === '/demo/admin/players') return '/admin/players'
-  if (pathname === '/demo/admin/exports') return '/admin/exports'
-  if (pathname.startsWith('/demo/admin/')) return '/admin/players'
+  if (pathname === '/demo/admin') return '/admin'
+  if (pathname.startsWith('/demo/admin/')) return '/admin'
   return '/play'
 }
 

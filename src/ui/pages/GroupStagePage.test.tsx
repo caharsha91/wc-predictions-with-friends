@@ -101,13 +101,13 @@ function renderPage() {
 }
 
 describe('GroupStagePage read-only detail', () => {
-  it('renders read-only detail layout with header picks link', () => {
+  it('renders read-only detail layout with header play-center link', () => {
     fixtures.now = new Date('2026-06-01T12:00:00.000Z')
 
     renderPage()
 
     expect(screen.getByRole('heading', { name: /group stage detail/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /back to picks/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to play center/i })).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /^edit$/i }).length).toBeGreaterThan(0)
   })

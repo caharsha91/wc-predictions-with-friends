@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../../lib/matches'
+import { fetchLeaderboard, fetchMembers, fetchPicks } from '../../../lib/data'
+import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, getLockTimePstForDateKey, isMatchLocked } from '../../../lib/matches'
 import { findPick, isPickComplete } from '../../../lib/picks'
+import type { LeaderboardEntry } from '../../../types/leaderboard'
 import type { Match } from '../../../types/matches'
+import type { Member } from '../../../types/members'
 import type { Pick } from '../../../types/picks'
 import { readDemoScenario } from '../../lib/demoControls'
 import { resolveKnockoutActivation } from '../../lib/knockoutActivation'
@@ -14,6 +17,10 @@ import PlayCenterHero from '../../components/ui/PlayCenterHero'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import DetailsDisclosure from '../../components/ui/DetailsDisclosure'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../../components/ui/DropdownMenu'
+import PanelState from '../../components/ui/PanelState'
+import Progress from '../../components/ui/Progress'
 import Skeleton from '../../components/ui/Skeleton'
 import { useGroupStageData } from '../../hooks/useGroupStageData'
 import { useBracketKnockoutData } from '../../hooks/useBracketKnockoutData'
@@ -65,17 +72,22 @@ function getMatchLabel(match: Match): string {
   return `${match.homeTeam.code} vs ${match.awayTeam.code}`
 }
 
-function hasStartedPick(pick?: Pick): boolean {
-  return (
-    typeof pick?.homeScore === 'number' ||
-    typeof pick?.awayScore === 'number' ||
-    pick?.advances === 'HOME' ||
-    pick?.advances === 'AWAY'
-  )
-}
-
 function normalizeStatus(status: Match['status'] | string): string {
   return String(status || '').toUpperCase()
+}
+
+function isLiveByStatusOrKickoff(match: Match, now: Date): boolean {
+  const normalized = normalizeStatus(match.status)
+  if (normalized === 'IN_PLAY') return true
+  if (normalized === 'FINISHED') return false
+  return new Date(match.kickoffUtc).getTime() <= now.getTime()
+}
+
+function isInCurrentOrNextPacificDay(utcIso: string, now: Date): boolean {
+  const todayPstKey = getDateKeyInTimeZone(now.toISOString())
+  const tomorrowPstKey = getDateKeyInTimeZone(getLockTimePstForDateKey(todayPstKey, 1).toISOString())
+  const matchPstKey = getDateKeyInTimeZone(utcIso)
+  return matchPstKey === todayPstKey || matchPstKey === tomorrowPstKey
 }
 
 function isResolvedTeamCode(code?: string): boolean {
@@ -88,7 +100,7 @@ type QueueMatch = {
   lockUtc: string
   locked: boolean
   complete: boolean
-  started: boolean
+  live: boolean
   actionLabel: 'Edit' | 'Peek' | 'Open'
 }
 
@@ -96,16 +108,181 @@ function toQueueMatch(match: Match, pick: Pick | undefined, now: Date): QueueMat
   const lockUtc = getLockTime(match.kickoffUtc).toISOString()
   const locked = isMatchLocked(match.kickoffUtc, now)
   const complete = isPickComplete(match, pick)
-  const started = hasStartedPick(pick)
+  const live = isLiveByStatusOrKickoff(match, now)
 
-  const actionLabel: QueueMatch['actionLabel'] = locked ? 'Peek' : complete || started ? 'Edit' : 'Open'
+  const actionLabel: QueueMatch['actionLabel'] = locked ? 'Peek' : complete || live ? 'Edit' : 'Open'
 
-  return { match, lockUtc, locked, complete, started, actionLabel }
+  return { match, lockUtc, locked, complete, live, actionLabel }
 }
 
-type HubSection = 'group' | 'picks' | 'knockout'
+type CoreHubSection = 'group' | 'picks' | 'knockout'
+type HubSection = CoreHubSection | 'all'
+type MatchFilter = 'closingSoon' | 'unpicked' | 'live' | 'all'
+const MATCH_FILTER_PRIORITY: MatchFilter[] = ['live', 'closingSoon', 'unpicked', 'all']
+const MOMENTUM_STORAGE_KEY = 'wc-play-rank-momentum'
+
+type RivalrySummary = {
+  you: { rank: number; name: string; points: number }
+  above: { name: string; gap: number } | null
+  below: { name: string; gap: number } | null
+}
+
+type FriendActivity = {
+  userId: string
+  name: string
+  updatedAt: string
+  picksCount: number
+}
+
+type SocialSignals = {
+  rivalry: RivalrySummary | null
+  momentumCopy: string
+  friendActivity: FriendActivity[]
+}
+
+function getQueueMatchesForFilter(filter: MatchFilter, queueMatches: QueueMatch[], now: Date): QueueMatch[] {
+  if (filter === 'all') return queueMatches
+  if (filter === 'unpicked') return queueMatches.filter((entry) => !entry.locked && !entry.complete)
+  if (filter === 'live') return queueMatches.filter((entry) => entry.live)
+  return queueMatches
+    .filter((entry) => !entry.locked && isInCurrentOrNextPacificDay(entry.match.kickoffUtc, now))
+    .sort((a, b) => new Date(a.lockUtc).getTime() - new Date(b.lockUtc).getTime())
+}
+
+function resolveLeaderboardIdentity(entry: LeaderboardEntry): string[] {
+  const keys: string[] = []
+  if (entry.member.id) keys.push(entry.member.id.toLowerCase())
+  if (entry.member.uid) keys.push(entry.member.uid.toLowerCase())
+  if (entry.member.email) keys.push(entry.member.email.toLowerCase())
+  return keys
+}
+
+function formatRelativeTime(utcIso: string, now: Date): string {
+  const diffMs = Math.max(0, now.getTime() - new Date(utcIso).getTime())
+  const minutes = Math.floor(diffMs / (60 * 1000))
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+function buildMomentumCopy(
+  userId: string,
+  mode: 'default' | 'demo',
+  currentRank: number | null,
+  leaderboardUpdatedAt: string | null
+): string {
+  if (currentRank === null || !leaderboardUpdatedAt) {
+    return 'Rank momentum appears after your first scored leaderboard update.'
+  }
+  if (typeof window === 'undefined') {
+    return 'Rank momentum appears after your first scored leaderboard update.'
+  }
+
+  const key = `${MOMENTUM_STORAGE_KEY}:${mode}:${userId}`
+  let previousRank: number | null = null
+  let previousUpdatedAt: string | null = null
+  const raw = window.localStorage.getItem(key)
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as { rank?: unknown; updatedAt?: unknown }
+      if (typeof parsed.rank === 'number' && Number.isFinite(parsed.rank)) previousRank = parsed.rank
+      if (typeof parsed.updatedAt === 'string') previousUpdatedAt = parsed.updatedAt
+    } catch {
+      previousRank = null
+      previousUpdatedAt = null
+    }
+  }
+
+  window.localStorage.setItem(
+    key,
+    JSON.stringify({
+      rank: currentRank,
+      updatedAt: leaderboardUpdatedAt
+    })
+  )
+
+  if (previousRank === null || previousUpdatedAt === null || previousUpdatedAt === leaderboardUpdatedAt) {
+    return 'Rank momentum appears after your next leaderboard refresh.'
+  }
+
+  const delta = previousRank - currentRank
+  if (delta > 0) return `You gained +${delta} rank since last update.`
+  if (delta < 0) return `You dropped ${Math.abs(delta)} rank since last update.`
+  return 'No rank movement since last update.'
+}
+
+function buildSocialSignals(
+  leaderboardEntries: LeaderboardEntry[],
+  leaderboardUpdatedAt: string | null,
+  picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[],
+  members: Member[],
+  userId: string,
+  mode: 'default' | 'demo'
+): SocialSignals {
+  const sortedEntries = [...leaderboardEntries].sort((a, b) => b.totalPoints - a.totalPoints)
+  const viewerKey = userId.toLowerCase()
+  const youIndex = sortedEntries.findIndex((entry) => resolveLeaderboardIdentity(entry).includes(viewerKey))
+  const youEntry = youIndex >= 0 ? sortedEntries[youIndex] : null
+  const aboveEntry = youIndex > 0 ? sortedEntries[youIndex - 1] : null
+  const belowEntry = youIndex >= 0 && youIndex < sortedEntries.length - 1 ? sortedEntries[youIndex + 1] : null
+
+  const rivalry: RivalrySummary | null = youEntry
+    ? {
+        you: {
+          rank: youIndex + 1,
+          name: youEntry.member.name,
+          points: youEntry.totalPoints
+        },
+        above: aboveEntry
+          ? {
+              name: aboveEntry.member.name,
+              gap: Math.max(0, aboveEntry.totalPoints - youEntry.totalPoints)
+            }
+          : null,
+        below: belowEntry
+          ? {
+              name: belowEntry.member.name,
+              gap: Math.max(0, youEntry.totalPoints - belowEntry.totalPoints)
+            }
+          : null
+      }
+    : null
+
+  const memberNameById = new Map<string, string>()
+  for (const member of members) {
+    memberNameById.set(member.id.toLowerCase(), member.name)
+    if (member.uid) memberNameById.set(member.uid.toLowerCase(), member.name)
+    if (member.email) memberNameById.set(member.email.toLowerCase(), member.name)
+  }
+  for (const entry of sortedEntries) {
+    for (const key of resolveLeaderboardIdentity(entry)) {
+      memberNameById.set(key, entry.member.name)
+    }
+  }
+
+  const friendActivity = picksDocs
+    .filter((doc) => doc.userId.toLowerCase() !== viewerKey)
+    .map((doc) => ({
+      userId: doc.userId,
+      name: memberNameById.get(doc.userId.toLowerCase()) ?? doc.userId,
+      updatedAt: doc.updatedAt,
+      picksCount: doc.picks.length
+    }))
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 8)
+
+  return {
+    rivalry,
+    momentumCopy: buildMomentumCopy(userId, mode, rivalry?.you.rank ?? null, leaderboardUpdatedAt),
+    friendActivity
+  }
+}
 
 export default function PlayPage() {
+  // QA-SMOKE: route=/play and /demo/play ; checklist-id=smoke-play-center
   const navigate = useNavigate()
   const location = useLocation()
   const userId = useViewerId()
@@ -121,6 +298,13 @@ export default function PlayPage() {
     return window.localStorage.getItem(`wc-play-last-focus:${mode}:${userId}`)
   })
   const [activeMatchId, setActiveMatchId] = useState<string | null>(null)
+  const [activeHubSection, setActiveHubSection] = useState<HubSection>('all')
+  const [matchFilter, setMatchFilter] = useState<MatchFilter>('live')
+  const [socialSignals, setSocialSignals] = useState<SocialSignals>({
+    rivalry: null,
+    momentumCopy: 'Rank momentum appears after your next leaderboard refresh.',
+    friendActivity: []
+  })
 
   const emitTelemetry = useCallback((event: string, payload: Record<string, unknown> = {}) => {
     if (typeof window === 'undefined') return
@@ -134,6 +318,48 @@ export default function PlayPage() {
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
   const groupStage = useGroupStageData(matches)
   const knockoutData = useBracketKnockoutData()
+
+  useEffect(() => {
+    let canceled = false
+
+    async function loadSignals() {
+      const [leaderboardResult, picksResult, membersResult] = await Promise.allSettled([
+        fetchLeaderboard({ mode }),
+        fetchPicks({ mode }),
+        fetchMembers({ mode })
+      ])
+      if (canceled) return
+
+      const leaderboardEntries =
+        leaderboardResult.status === 'fulfilled' ? leaderboardResult.value.entries : []
+      const leaderboardUpdatedAt =
+        leaderboardResult.status === 'fulfilled' ? leaderboardResult.value.lastUpdated : null
+      const picksDocs =
+        picksResult.status === 'fulfilled' ? picksResult.value.picks : []
+      const members =
+        membersResult.status === 'fulfilled' ? membersResult.value.members : []
+
+      setSocialSignals(
+        buildSocialSignals(
+          leaderboardEntries,
+          leaderboardUpdatedAt,
+          picksDocs,
+          members,
+          userId,
+          mode
+        )
+      )
+    }
+
+    void loadSignals()
+    const interval = window.setInterval(() => {
+      void loadSignals()
+    }, 60_000)
+    return () => {
+      canceled = true
+      window.clearInterval(interval)
+    }
+  }, [mode, userId])
 
   const upcomingMatches = useMemo(
     () =>
@@ -187,20 +413,6 @@ export default function PlayPage() {
     if (upcomingMatches.length > 0) return 'READY_LOCKED_WAITING'
     return 'READY_IDLE'
   }, [completedOpenMatches.length, pendingOpenMatches.length, picksState.state.status, upcomingMatches.length])
-
-  const metricCounts = useMemo(() => {
-    let inProgress = 0
-    for (const entry of queueMatches) {
-      if (entry.locked || entry.complete || !entry.started) continue
-      inProgress += 1
-    }
-    return {
-      todo: pendingOpenMatches.length - inProgress,
-      inProgress,
-      locked: queueMatches.filter((entry) => entry.locked).length,
-      finished: matches.filter((match) => match.status === 'FINISHED').length
-    }
-  }, [matches, pendingOpenMatches.length, queueMatches])
 
   const statusChip = useMemo(() => {
     if (nextLockUtc) return { type: 'deadline' as const, text: formatClosesChip(nextLockUtc, now) }
@@ -281,6 +493,11 @@ export default function PlayPage() {
     const bestThirdRemaining = Math.max(0, 8 - groupCompletion.bestThirdDone)
     return groupsRemaining + bestThirdRemaining
   }, [groupCompletion.bestThirdDone, groupCompletion.groupsDone, groupCompletion.groupsTotal])
+  const groupProgressPct = useMemo(() => {
+    const totalSlots = groupCompletion.groupsTotal + 8
+    if (totalSlots <= 0) return 0
+    return Math.round(((groupCompletion.groupsDone + groupCompletion.bestThirdDone) / totalSlots) * 100)
+  }, [groupCompletion.bestThirdDone, groupCompletion.groupsDone, groupCompletion.groupsTotal])
 
   const groupStageCtaLabel = useMemo(() => {
     if (groupClosed) return 'View Group Stage'
@@ -304,12 +521,55 @@ export default function PlayPage() {
     }
     return pending
   }, [knockoutData.knockout, knockoutData.loadState, knockoutData.stageOrder, now])
+  const knockoutProgressPct = useMemo(() => {
+    if (knockoutData.totalMatches <= 0) return 0
+    return Math.round((knockoutData.completeMatches / knockoutData.totalMatches) * 100)
+  }, [knockoutData.completeMatches, knockoutData.totalMatches])
 
-  const sectionOrder = useMemo<HubSection[]>(() => {
+  const sectionOrder = useMemo<CoreHubSection[]>(() => {
     if (knockoutActive) return ['knockout', 'picks', 'group']
     if (groupClosed) return ['picks', 'knockout', 'group']
     return ['group', 'picks', 'knockout']
   }, [groupClosed, knockoutActive])
+
+  const hubTabCounts = useMemo(
+    () => ({
+      picks: pendingOpenMatches.length,
+      group: groupPendingActions,
+      knockout: knockoutPendingActions,
+      all: queueMatches.length
+    }),
+    [groupPendingActions, knockoutPendingActions, pendingOpenMatches.length, queueMatches.length]
+  )
+
+  const hubTabs = useMemo(
+    () => [
+      { id: 'picks' as const, label: `Match Picks (${hubTabCounts.picks})` },
+      { id: 'group' as const, label: `Group Stage (${hubTabCounts.group})` },
+      { id: 'knockout' as const, label: `Knockout (${hubTabCounts.knockout})` },
+      { id: 'all' as const, label: `All Picks (${hubTabCounts.all})` }
+    ],
+    [hubTabCounts.all, hubTabCounts.group, hubTabCounts.knockout, hubTabCounts.picks]
+  )
+
+  useEffect(() => {
+    if (activeHubSection === 'all') return
+    if (sectionOrder.includes(activeHubSection)) return
+    setActiveHubSection(sectionOrder[0] ?? 'picks')
+  }, [activeHubSection, sectionOrder])
+
+  const visibleSections = activeHubSection === 'all' ? sectionOrder : sectionOrder.filter((section) => section === activeHubSection)
+
+  const filterOptions = useMemo(
+    () =>
+      [
+        { id: 'live' as const, label: 'Live' },
+        { id: 'closingSoon' as const, label: 'Closing soon' },
+        { id: 'unpicked' as const, label: 'Unpicked' },
+        { id: 'all' as const, label: 'All' }
+      ] satisfies { id: MatchFilter; label: string }[],
+    []
+  )
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -343,40 +603,67 @@ export default function PlayPage() {
     })
   }, [emitTelemetry, pendingOpenMatches.length, queueMatches.length])
 
+  const queueMatchesByFilter = useMemo(
+    () =>
+      ({
+        live: getQueueMatchesForFilter('live', queueMatches, now),
+        closingSoon: getQueueMatchesForFilter('closingSoon', queueMatches, now),
+        unpicked: getQueueMatchesForFilter('unpicked', queueMatches, now),
+        all: getQueueMatchesForFilter('all', queueMatches, now)
+      }) satisfies Record<MatchFilter, QueueMatch[]>,
+    [now, queueMatches]
+  )
+
+  const filteredQueueMatches = queueMatchesByFilter[matchFilter]
+  const disabledFilters = useMemo(
+    () =>
+      ({
+        live: queueMatchesByFilter.live.length === 0,
+        closingSoon: queueMatchesByFilter.closingSoon.length === 0,
+        unpicked: queueMatchesByFilter.unpicked.length === 0,
+        all: queueMatchesByFilter.all.length === 0
+      }) satisfies Record<MatchFilter, boolean>,
+    [queueMatchesByFilter]
+  )
+
+  useEffect(() => {
+    if (queueMatches.length === 0) return
+    if (queueMatchesByFilter[matchFilter].length > 0) return
+    const startIndex = MATCH_FILTER_PRIORITY.indexOf(matchFilter)
+    const nextAvailable = MATCH_FILTER_PRIORITY
+      .slice(Math.max(0, startIndex + 1))
+      .find((filter) => queueMatchesByFilter[filter].length > 0)
+    if (!nextAvailable || nextAvailable === matchFilter) return
+    setMatchFilter(nextAvailable)
+  }, [matchFilter, queueMatches.length, queueMatchesByFilter])
+
   const queueItems = useMemo<DeadlineQueueItem[]>(
     () =>
-      queueMatches.map((entry) => ({
+      filteredQueueMatches.map((entry) => ({
         id: entry.match.id,
         label: getMatchLabel(entry.match),
         subline: formatLockSubline(entry.lockUtc),
-        status: entry.complete ? 'In' : entry.started ? 'In play' : entry.locked ? 'Closed' : 'To pick',
-        statusTone: entry.complete ? 'success' : entry.started ? 'info' : entry.locked ? 'locked' : 'warning',
+        status: entry.complete ? 'In' : entry.live ? 'Live' : entry.locked ? 'Closed' : 'To pick',
+        statusTone: entry.complete ? 'success' : entry.live ? 'info' : entry.locked ? 'locked' : 'warning',
         actionLabel: entry.actionLabel,
         actionDisabled: entry.locked
       })),
-    [queueMatches]
+    [filteredQueueMatches]
   )
 
-  const nextUpcomingMatchdayKey = useMemo(() => {
-    const firstUpcoming = queueMatches.find((entry) => !entry.locked)
-    if (!firstUpcoming) return null
-    return getDateKeyInTimeZone(firstUpcoming.lockUtc)
-  }, [queueMatches])
+  const queuePanelHeading = useMemo(() => {
+    if (matchFilter === 'unpicked') return 'Unpicked'
+    if (matchFilter === 'live') return 'Live now'
+    if (matchFilter === 'all') return 'All picks'
+    return 'Closing soon'
+  }, [matchFilter])
 
-  const queueMatchdayById = useMemo(
-    () => new Map(queueMatches.map((entry) => [entry.match.id, getDateKeyInTimeZone(entry.lockUtc)] as const)),
-    [queueMatches]
-  )
-
-  const nextMatchdayQueueItems = useMemo(
-    () =>
-      queueItems.filter(
-        (item) =>
-          nextUpcomingMatchdayKey !== null &&
-          queueMatchdayById.get(item.id) === nextUpcomingMatchdayKey
-      ),
-    [nextUpcomingMatchdayKey, queueItems, queueMatchdayById]
-  )
+  const queueEmptyMessage = useMemo(() => {
+    if (matchFilter === 'unpicked') return 'No unpicked open matches right now.'
+    if (matchFilter === 'live') return 'No live matches right now.'
+    if (matchFilter === 'all') return 'No matches available right now.'
+    return 'Nothing closing soon. Enjoy the calm.'
+  }, [matchFilter])
 
   function focusInlineEditor() {
     const node = editorRef.current
@@ -467,7 +754,12 @@ export default function PlayPage() {
     <div className="space-y-4">
       <PlayCenterHero
         title="Play Center"
-        subtitle="Your move."
+        subtitle={
+          <div className="space-y-1">
+            <div>Your move.</div>
+            <div className="text-xs text-muted-foreground">{socialSignals.momentumCopy}</div>
+          </div>
+        }
         lastUpdatedUtc={latestResultsUpdatedUtc}
         state={playState}
         summary={{
@@ -475,7 +767,113 @@ export default function PlayPage() {
           subline: pendingOpenMatches.length > 0 ? 'Use match picks below.' : "You're chill.",
           detail: (
             <div className="space-y-4">
-              {sectionOrder.map((section) => {
+              <Card className="rounded-2xl border-border/60 bg-bg2 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Rivalry</div>
+                  {socialSignals.rivalry ? (
+                    <Badge tone="info">Rank #{socialSignals.rivalry.you.rank}</Badge>
+                  ) : (
+                    <Badge tone="secondary">No rank yet</Badge>
+                  )}
+                </div>
+                {socialSignals.rivalry ? (
+                  <div className="mt-3 grid gap-2 md:grid-cols-3">
+                    <div className="rounded-xl border border-border/70 bg-transparent p-3">
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">You</div>
+                      <div className="mt-1 text-sm font-semibold text-foreground">{socialSignals.rivalry.you.name}</div>
+                      <div className="text-xs text-muted-foreground">{socialSignals.rivalry.you.points} pts</div>
+                    </div>
+                    <div className="rounded-xl border border-border/70 bg-transparent p-3">
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Above</div>
+                      <div className="mt-1 text-sm font-semibold text-foreground">
+                        {socialSignals.rivalry.above?.name ?? 'Leader locked in'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {socialSignals.rivalry.above
+                          ? `${socialSignals.rivalry.above.gap} pts to catch`
+                          : 'You are at the top'}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-border/70 bg-transparent p-3">
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Below</div>
+                      <div className="mt-1 text-sm font-semibold text-foreground">
+                        {socialSignals.rivalry.below?.name ?? 'No one below yet'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {socialSignals.rivalry.below
+                          ? `${socialSignals.rivalry.below.gap} pts cushion`
+                          : 'Keep pushing'}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <PanelState
+                    className="mt-2 text-xs"
+                    message="Complete picks and wait for scoring to join the rivalry strip."
+                    tone="empty"
+                  />
+                )}
+              </Card>
+
+              <DetailsDisclosure
+                title="Friend activity"
+                defaultOpen={false}
+                meta={
+                  socialSignals.friendActivity.length > 0
+                    ? `${socialSignals.friendActivity.length} recent`
+                    : 'No recent updates'
+                }
+                className="bg-bg2"
+              >
+                {socialSignals.friendActivity.length === 0 ? (
+                  <PanelState message="No friend updates yet." tone="empty" />
+                ) : (
+                  <div className="space-y-2">
+                    {socialSignals.friendActivity.map((activity) => (
+                      <div
+                        key={activity.userId}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/70 bg-transparent p-2"
+                      >
+                        <div className="text-sm font-semibold text-foreground">{activity.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Updated {activity.picksCount} picks · {formatRelativeTime(activity.updatedAt, now)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DetailsDisclosure>
+
+              <Card className="rounded-2xl border-border/60 bg-transparent p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {hubTabs.map((tab) => (
+                    <Button
+                      key={tab.id}
+                      size="sm"
+                      variant={activeHubSection === tab.id ? 'primary' : 'secondary'}
+                      onClick={() => setActiveHubSection(tab.id)}
+                      aria-label={`Open ${tab.label} section`}
+                    >
+                      {tab.label}
+                    </Button>
+                  ))}
+                </div>
+              </Card>
+
+              <Card className="sticky top-2 z-10 rounded-2xl border-border/60 bg-bg2/95 p-3 backdrop-blur-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-sm font-semibold text-foreground">
+                    {pendingOpenMatches.length > 0
+                      ? `Nearest lock ${statusChip.text} • ${pendingOpenMatches.length} pending`
+                      : "You're chill. No open picks."}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {nextLockUtc ? `Locks at ${formatDateTime(nextLockUtc)}` : 'No upcoming lock'}
+                  </div>
+                </div>
+              </Card>
+
+              {visibleSections.map((section) => {
                 if (section === 'group') {
                   return (
                     <Card key="group-summary" className="rounded-2xl border-border/60 bg-transparent p-4">
@@ -502,11 +900,30 @@ export default function PlayPage() {
                             </Badge>
                           ) : null}
                         </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Group picks completed</span>
+                            <span>
+                              {groupCompletion.groupsDone + groupCompletion.bestThirdDone}/
+                              {groupCompletion.groupsTotal + 8}
+                            </span>
+                          </div>
+                          <Progress
+                            value={groupProgressPct}
+                            intent={groupPendingActions > 0 ? 'warning' : 'success'}
+                            size="sm"
+                            aria-label="Group stage progress"
+                          />
+                        </div>
                         {groupStage.loadState.status === 'loading' ? (
-                          <div className="text-xs text-muted-foreground">Loading group-stage progress…</div>
+                          <PanelState className="text-xs" message="Loading group-stage progress…" tone="loading" />
                         ) : null}
                         {groupStage.loadState.status === 'error' ? (
-                          <div className="text-xs text-muted-foreground">Group progress unavailable. Open detailed page.</div>
+                          <PanelState
+                            className="text-xs"
+                            message="Group progress unavailable. Open detailed page."
+                            tone="error"
+                          />
                         ) : null}
                         <div className="text-xs text-muted-foreground">Open group-stage details to edit or review picks.</div>
                       </div>
@@ -540,6 +957,20 @@ export default function PlayPage() {
                             {knockoutActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Knockout picks completed</span>
+                            <span>
+                              {knockoutData.completeMatches}/{knockoutData.totalMatches}
+                            </span>
+                          </div>
+                          <Progress
+                            value={knockoutProgressPct}
+                            intent={knockoutPendingActions > 0 ? 'default' : 'success'}
+                            size="sm"
+                            aria-label="Knockout progress"
+                          />
+                        </div>
                         {!knockoutDetailEnabled ? (
                           <div className="text-xs text-muted-foreground">
                             {!groupComplete
@@ -570,54 +1001,79 @@ export default function PlayPage() {
                         <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Match picks</div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge tone="warning">Closes {statusChip.text}</Badge>
+                          <Badge tone={pendingOpenMatches.length > 0 ? 'warning' : 'success'}>
+                            {pendingOpenMatches.length > 0 ? `Pending ${pendingOpenMatches.length}` : 'All set'}
+                          </Badge>
                           <Button
                             size="sm"
-                            onClick={handleContinueCurrentMatch}
-                            disabled={queueMatches.length === 0}
-                          >
-                            Continue
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
                             onClick={handleNextIncompletePick}
                             disabled={!nextIncompleteEntry}
                           >
-                            Next one
+                            Continue picking
                           </Button>
-                          <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('picks'))}>
-                            Schedule
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="secondary" aria-label="Open more match actions">
+                                More
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onSelect={handleContinueCurrentMatch}>
+                                Resume current match
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => navigate(toPlayPath('picks'))}>
+                                Open all picks
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => navigate(toPlayPath('league'))}>
+                                Open league board
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Progress</span>
-                          <span>
-                            {completedOpenMatches.length}/{openMatches.length} in
-                          </span>
-                        </div>
-                        <div className="h-2 rounded-full bg-bg2">
-                          <div className="h-full rounded-full bg-primary" style={{ width: `${matchProgressPct}%` }} />
-                        </div>
-                        <div className="text-xs text-muted-foreground">{matchProgressPct}% complete</div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge tone="warning">To pick {Math.max(0, metricCounts.todo)}</Badge>
-                          <Badge tone="info">In play {metricCounts.inProgress}</Badge>
-                          <Badge tone="locked">Closed {metricCounts.locked}</Badge>
-                          <Badge tone="secondary">Done {metricCounts.finished}</Badge>
-                        </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Match picks completed</span>
+                        <span>
+                          {completedOpenMatches.length}/{openMatches.length}
+                        </span>
+                      </div>
+                      <Progress
+                        value={matchProgressPct}
+                        intent={pendingOpenMatches.length > 0 ? 'momentum' : 'success'}
+                        size="sm"
+                        aria-label="Match picks progress"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        {filterOptions.map((filter) => {
+                          const isDisabled = disabledFilters[filter.id]
+                          return (
+                          <Button
+                            key={filter.id}
+                            size="sm"
+                            variant={matchFilter === filter.id ? 'primary' : 'secondary'}
+                            aria-label={`Filter matches by ${filter.label}`}
+                            onClick={() => {
+                              if (isDisabled) return
+                              setMatchFilter(filter.id)
+                            }}
+                            disabled={isDisabled}
+                          >
+                            {filter.label}
+                          </Button>
+                          )
+                        })}
                       </div>
                       <div className="grid gap-3 xl:grid-cols-[0.46fr_1.54fr]">
                         <Card className="rounded-2xl border-border/60 bg-transparent p-3 sm:p-4">
                           <DeadlineQueuePanel
-                            items={nextMatchdayQueueItems}
-                            pageSize={nextMatchdayQueueItems.length || 1}
+                            items={queueItems}
+                            pageSize={3}
                             onSelectItem={handleSelectQueueItem}
                             selectedItemId={activeMatchId ?? undefined}
-                            heading="Closing soon"
+                            heading={queuePanelHeading}
                             description="Tap a match to jump in."
-                            emptyMessage="Nothing closing soon. Enjoy the calm."
+                            emptyMessage={queueEmptyMessage}
+                            paginationKey={matchFilter}
                             container="inline"
                           />
                         </Card>
@@ -638,15 +1094,17 @@ export default function PlayPage() {
                             <Card className="rounded-2xl border-border/60 p-4">
                               <div className="space-y-3">
                                 <div className="text-sm font-semibold text-foreground">You're chill.</div>
-                                <div className="text-sm text-muted-foreground">
-                                  Nothing open right now. Check results or the league.
-                                </div>
+                                <PanelState
+                                  className="text-sm"
+                                  message="Nothing open right now. Check results or the league."
+                                  tone="empty"
+                                />
                                 <div className="flex flex-wrap gap-2">
                                   <Button size="sm" onClick={() => navigate(toPlayPath('league'))}>
-                                    View league
+                                    Open league board
                                   </Button>
                                   <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('picks'))}>
-                                    See results
+                                    Open all picks
                                   </Button>
                                 </div>
                               </div>

@@ -39,9 +39,7 @@ vi.mock('./pages/play/PlayPage', () => ({ default: () => <div>Play route</div> }
 vi.mock('./pages/BracketPage', () => ({ default: () => <div>Bracket route</div> }))
 vi.mock('./pages/LeaderboardPage', () => ({ default: () => <div>Leaderboard route</div> }))
 vi.mock('./pages/LoginPage', () => ({ default: () => <div>Login route</div> }))
-vi.mock('./pages/DemoControlsPage', () => ({ default: () => <div>Demo controls route</div> }))
-vi.mock('./pages/AdminUsersPage', () => ({ default: () => <div>Players route</div> }))
-vi.mock('./pages/AdminExportsPage', () => ({ default: () => <div>Exports route</div> }))
+vi.mock('./pages/AdminConsolePage', () => ({ default: () => <div>Admin console route</div> }))
 vi.mock('./pages/AccessDeniedPage', () => ({ default: () => <div>Access denied</div> }))
 vi.mock('./pages/NotFoundPage', () => ({ default: () => <div>Not found</div> }))
 
@@ -69,7 +67,7 @@ describe('App routing', () => {
     mockCurrentUser.value = { id: 'user-1', name: 'Demo Player', isMember: true, isAdmin: true }
   })
 
-  it('renders play by default and navigates to picks', () => {
+  it('renders play by default and navigates to league', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <LocationProbe />
@@ -80,11 +78,11 @@ describe('App routing', () => {
     expect(screen.getByText('Play route')).toBeInTheDocument()
     expect(screen.getByTestId('location-probe')).toHaveTextContent('/play')
 
-    const picksLink = screen.getAllByRole('link', { name: /picks/i })[0]
-    fireEvent.click(picksLink)
+    const leagueLink = screen.getAllByRole('link', { name: /league/i })[0]
+    fireEvent.click(leagueLink)
 
-    expect(screen.getByText('Picks route')).toBeInTheDocument()
-    expect(screen.getByTestId('location-probe')).toHaveTextContent('/play/picks')
+    expect(screen.getByText('Leaderboard route')).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe')).toHaveTextContent('/play/league')
   })
 
   it.each(['/missing', '/legacy', '/v1/route'])('treats %s as not found', (missingPath) => {
@@ -109,11 +107,10 @@ describe('App routing', () => {
     ['/demo/play/group-stage', 'Group stage route'],
     ['/demo/play/bracket', 'Bracket route'],
     ['/demo/play/league', 'Leaderboard route'],
-    ['/admin/players', 'Players route'],
-    ['/admin/exports', 'Exports route'],
-    ['/demo/admin/controls', 'Demo controls route'],
-    ['/demo/admin/players', 'Players route'],
-    ['/demo/admin/exports', 'Exports route']
+    ['/admin', 'Admin console route'],
+    ['/admin?tab=exports', 'Admin console route'],
+    ['/demo/admin', 'Admin console route'],
+    ['/demo/admin?tab=demo', 'Admin console route']
   ])('keeps canonical route %s', (path, expectedText) => {
     render(
       <MemoryRouter initialEntries={[path]}>
@@ -124,5 +121,23 @@ describe('App routing', () => {
 
     expect(screen.getByText(expectedText)).toBeInTheDocument()
     expect(screen.getByTestId('location-probe')).toHaveTextContent(path)
+  })
+
+  it.each([
+    ['/admin/players', '/admin?tab=players'],
+    ['/admin/exports', '/admin?tab=exports'],
+    ['/demo/admin/players', '/demo/admin?tab=players'],
+    ['/demo/admin/exports', '/demo/admin?tab=exports'],
+    ['/demo/admin/controls', '/demo/admin?tab=demo']
+  ])('redirects legacy admin route %s to %s', (fromPath, expectedStart) => {
+    render(
+      <MemoryRouter initialEntries={[fromPath]}>
+        <LocationProbe />
+        <App />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Admin console route')).toBeInTheDocument()
+    expect(screen.getByTestId('location-probe').textContent).toContain(expectedStart)
   })
 })

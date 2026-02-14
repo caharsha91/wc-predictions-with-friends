@@ -114,7 +114,7 @@ describe('BracketPage read-only detail', () => {
     )
 
     expect(screen.getByRole('columnheader', { name: /actual winner/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /back to picks/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to play center/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /bra advances/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /ned advances/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()

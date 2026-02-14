@@ -78,6 +78,7 @@ function resolvedTeamCode(code?: string): boolean {
 }
 
 export default function BracketPage() {
+  // QA-SMOKE: route=/play/bracket and /demo/play/bracket ; checklist-id=smoke-knockout-detail
   const location = useLocation()
   const isDemoRoute = location.pathname.startsWith('/demo/')
   const demoScenario = isDemoRoute ? readDemoScenario() : null
@@ -184,8 +185,8 @@ export default function BracketPage() {
         subtitle="Read-only bracket picks and results. Use Play Center for guided edits."
         meta={
           <div className="flex items-start gap-3 text-right">
-            <ButtonLink to={toPlayPath('picks')} size="sm" variant="primary">
-              Back to Picks
+            <ButtonLink to={toPlayPath()} size="sm" variant="primary">
+              Back to Play Center
             </ButtonLink>
             <div className="text-xs text-muted-foreground" data-last-updated="true">
               <div className="uppercase tracking-[0.2em]">Last updated</div>

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { fetchPicks } from '../../../lib/data'
 import { getLockTime, isMatchLocked } from '../../../lib/matches'
 import { findPick, isPickComplete, upsertPick } from '../../../lib/picks'
 import type { Match } from '../../../types/matches'
@@ -28,6 +29,12 @@ type WizardStepKind = 'match' | 'review' | 'confirm'
 type ResumeState = {
   stepKind: WizardStepKind
   matchId?: string
+}
+
+type ConsensusSignal = {
+  winner: 'HOME' | 'AWAY'
+  sharePct: number
+  totalVotes: number
 }
 
 type WizardStep =
@@ -58,12 +65,32 @@ function parseScore(value: string): number | undefined {
   return Math.max(0, Math.floor(parsed))
 }
 
+function formatDurationMs(durationMs: number): string {
+  return `${(durationMs / 1000).toFixed(1)}s`
+}
+
 function toDraft(pick?: Pick): DraftPick {
   return {
     homeScore: typeof pick?.homeScore === 'number' ? String(pick.homeScore) : '',
     awayScore: typeof pick?.awayScore === 'number' ? String(pick.awayScore) : '',
     advances: pick?.advances ?? ''
   }
+}
+
+function resolveWinnerSide(
+  homeScore: number | undefined,
+  awayScore: number | undefined,
+  advances: PickAdvances | '' | undefined,
+  legacyWinner?: 'HOME' | 'AWAY'
+): 'HOME' | 'AWAY' | null {
+  if (homeScore !== undefined && awayScore !== undefined) {
+    if (homeScore > awayScore) return 'HOME'
+    if (awayScore > homeScore) return 'AWAY'
+    if (advances === 'HOME' || advances === 'AWAY') return advances
+  }
+  if (legacyWinner === 'HOME' || legacyWinner === 'AWAY') return legacyWinner
+  if (advances === 'HOME' || advances === 'AWAY') return advances
+  return null
 }
 
 function getWizardStorageKey(userId: string, mode: 'default' | 'demo') {
@@ -125,7 +152,7 @@ export default function PicksWizardFlow({
   const [savingMatch, setSavingMatch] = useState(false)
   const [savingFinal, setSavingFinal] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const [finalSaved, setFinalSaved] = useState(false)
+  const [snapshotPicks, setSnapshotPicks] = useState<{ userId: string; picks: Pick[] }[]>([])
 
   const resumeLoadedRef = useRef(false)
   const resumeTargetRef = useRef<{ kind: WizardStepKind; matchId?: string } | null>(null)
@@ -134,6 +161,23 @@ export default function PicksWizardFlow({
   const syncingExternalFocusRef = useRef<string | null>(null)
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
+
+  useEffect(() => {
+    let canceled = false
+    async function loadSnapshotPicks() {
+      try {
+        const file = await fetchPicks({ mode })
+        if (canceled) return
+        setSnapshotPicks(file.picks.map((entry) => ({ userId: entry.userId, picks: entry.picks })))
+      } catch {
+        if (!canceled) setSnapshotPicks([])
+      }
+    }
+    void loadSnapshotPicks()
+    return () => {
+      canceled = true
+    }
+  }, [mode])
 
   const upcomingMatches = useMemo(
     () =>
@@ -221,7 +265,7 @@ export default function PicksWizardFlow({
 
   useEffect(() => {
     if (!notice) return
-    showToast({ title: 'Action update', message: notice, tone: 'info' })
+    showToast({ title: 'Action needed', message: notice, tone: 'warning' })
     setNotice(null)
   }, [notice, showToast])
 
@@ -258,6 +302,35 @@ export default function PicksWizardFlow({
     [currentMatch, picksState.picks, userId]
   )
 
+  const consensusByMatchId = useMemo(() => {
+    const countsByMatch = new Map<string, { home: number; away: number }>()
+    for (const doc of snapshotPicks) {
+      for (const pick of doc.picks) {
+        const side = resolveWinnerSide(pick.homeScore, pick.awayScore, pick.advances, pick.winner)
+        if (!side) continue
+        const current = countsByMatch.get(pick.matchId) ?? { home: 0, away: 0 }
+        if (side === 'HOME') current.home += 1
+        if (side === 'AWAY') current.away += 1
+        countsByMatch.set(pick.matchId, current)
+      }
+    }
+
+    const consensus = new Map<string, ConsensusSignal>()
+    for (const [matchId, count] of countsByMatch.entries()) {
+      const totalVotes = count.home + count.away
+      if (totalVotes === 0) continue
+      if (count.home === count.away) continue
+      const winner = count.home > count.away ? 'HOME' : 'AWAY'
+      const winnerCount = winner === 'HOME' ? count.home : count.away
+      consensus.set(matchId, {
+        winner,
+        sharePct: Math.round((winnerCount / totalVotes) * 100),
+        totalVotes
+      })
+    }
+    return consensus
+  }, [snapshotPicks])
+
   useEffect(() => {
     setActiveMatchDraft(toDraft(currentPick))
   }, [currentPick?.id, currentPick?.updatedAt, currentMatch?.id])
@@ -282,6 +355,13 @@ export default function PicksWizardFlow({
     parsedHome !== undefined &&
     parsedAway !== undefined &&
     (!requiresAdvances || activeMatchDraft.advances === 'HOME' || activeMatchDraft.advances === 'AWAY')
+
+  const currentConsensus = currentMatch ? consensusByMatchId.get(currentMatch.id) ?? null : null
+  const activeDraftWinner = resolveWinnerSide(parsedHome, parsedAway, activeMatchDraft.advances, currentPick?.winner)
+  const contrarian =
+    !!currentConsensus &&
+    !!activeDraftWinner &&
+    activeDraftWinner !== currentConsensus.winner
 
   useEffect(() => {
     if (!currentMatch) {
@@ -323,6 +403,7 @@ export default function PicksWizardFlow({
     if (!currentMatch || !matchCanSave || parsedHome === undefined || parsedAway === undefined) return false
 
     setSavingMatch(true)
+    const startedAt = performance.now()
     try {
       const next = upsertPick(picksState.picks, {
         matchId: currentMatch.id,
@@ -333,8 +414,16 @@ export default function PicksWizardFlow({
       })
       picksState.updatePicks(next)
       await picksState.savePicks(next)
-      setNotice('Pick saved')
+      showToast({
+        title: 'Saved',
+        message: `Saved 1 pick in ${formatDurationMs(performance.now() - startedAt)}.`,
+        tone: 'success'
+      })
       return true
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to save pick.'
+      showToast({ title: 'Save failed', message, tone: 'danger' })
+      return false
     } finally {
       setSavingMatch(false)
     }
@@ -346,7 +435,8 @@ export default function PicksWizardFlow({
     parsedHome,
     picksState,
     requiresAdvances,
-    userId
+    userId,
+    showToast
   ])
 
   function goNextStep() {
@@ -456,12 +546,54 @@ export default function PicksWizardFlow({
     }
 
     setSavingFinal(true)
+    const startedAt = performance.now()
     try {
       await picksState.savePicks(picksState.picks)
-      setFinalSaved(true)
-      setNotice('All wizard picks submitted')
+      showToast({
+        title: 'Saved',
+        message: `Saved ${progressDone} picks in ${formatDurationMs(performance.now() - startedAt)}.`,
+        tone: 'success'
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to submit picks.'
+      showToast({ title: 'Save failed', message, tone: 'danger' })
     } finally {
       setSavingFinal(false)
+    }
+  }
+
+  function moveMatchStep(direction: 1 | -1) {
+    for (let index = currentStepIndex + direction; index >= 0 && index < steps.length; index += direction) {
+      const step = steps[index]
+      if (step.kind === 'match') {
+        setCurrentStepIndex(index)
+        return
+      }
+    }
+  }
+
+  function handleKeyboardShortcut(event: KeyboardEvent<HTMLDivElement>) {
+    if (!currentStep || currentStep.kind !== 'match') return
+    const target = event.target as HTMLElement
+    const tagName = target.tagName.toLowerCase()
+    const isEditable = tagName === 'input' || tagName === 'textarea' || target.isContentEditable
+    const isButton = tagName === 'button'
+
+    if (event.key === 'Enter' && !event.shiftKey && !event.metaKey && !event.ctrlKey && !isButton) {
+      event.preventDefault()
+      void handleMatchContinue()
+      return
+    }
+
+    if (isEditable) return
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      moveMatchStep(1)
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      moveMatchStep(-1)
     }
   }
 
@@ -483,7 +615,7 @@ export default function PicksWizardFlow({
   }
 
   return (
-    <div className={isCompactInline ? 'space-y-4' : 'space-y-6'}>
+    <div className={isCompactInline ? 'space-y-4' : 'space-y-6'} onKeyDown={handleKeyboardShortcut}>
       {!isCompactInline ? (
         <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
           <div className="space-y-3">
@@ -544,6 +676,19 @@ export default function PicksWizardFlow({
                   {currentMatch.stage} · Kick {formatKickoff(currentMatch.kickoffUtc)} · Closes{' '}
                   {formatKickoff(getLockTime(currentMatch.kickoffUtc).toISOString())}
                 </div>
+                {currentConsensus ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <Badge tone="info">
+                      Most picked:{' '}
+                      {currentConsensus.winner === 'HOME'
+                        ? currentMatch.homeTeam.code
+                        : currentMatch.awayTeam.code}{' '}
+                      {currentConsensus.sharePct}%
+                    </Badge>
+                    <Badge tone="secondary">{currentConsensus.totalVotes} votes</Badge>
+                    {contrarian ? <Badge tone="warning">Contrarian</Badge> : null}
+                  </div>
+                ) : null}
               </div>
               <Badge tone={matchLocked ? 'locked' : 'info'}>{matchLocked ? 'Closed' : 'Live'}</Badge>
             </div>
@@ -634,6 +779,11 @@ export default function PicksWizardFlow({
                 Save + Next
               </Button>
             </div>
+            {isCompactInline ? (
+              <div className="text-xs text-muted-foreground">
+                Keyboard: ↑/↓ move matches · Enter save + next
+              </div>
+            ) : null}
           </div>
         </Card>
       ) : null}
@@ -693,7 +843,6 @@ export default function PicksWizardFlow({
               <Badge tone={reviewReady ? 'success' : 'warning'}>
                 {reviewReady ? 'Ready to submit' : 'Resolve issues first'}
               </Badge>
-              {finalSaved ? <Badge tone="success">Submitted</Badge> : null}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">

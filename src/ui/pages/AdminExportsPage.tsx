@@ -32,17 +32,46 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import DetailsDisclosure from '../components/ui/DetailsDisclosure'
 import { SelectField } from '../components/ui/Field'
+import PanelState from '../components/ui/PanelState'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
+import Progress from '../components/ui/Progress'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle
+} from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
+import Table from '../components/ui/Table'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 
-type ExportMode = 'USER_ALL_MATCHDAYS' | 'MATCHDAY_ALL_USERS'
 type ExportIntent =
   | 'USER_PICKS'
   | 'USER_RESULTS'
   | 'MATCHDAY_PICKS'
   | 'MATCHDAY_LEADERBOARD'
+
+type ExportPresetId =
+  | 'USER_PICKS_WORKBOOK'
+  | 'MATCHDAY_PICKS_WORKBOOK'
+  | 'MATCHDAY_LEADERBOARD_SNAPSHOT'
+  | 'FULL_AUDIT_PACK'
+
+type ExportHistoryEntry = {
+  id: string
+  presetId: ExportPresetId
+  presetLabel: string
+  status: 'success' | 'failed'
+  fileName: string
+  rowCount: number
+  durationMs: number
+  createdAt: string
+  selectedUserId?: string
+  selectedMatchday?: string
+}
 
 type LoadState =
   | { status: 'loading' }
@@ -92,7 +121,56 @@ type ScoreTotals = {
   total: number
 }
 
+class NoDataError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'NoDataError'
+  }
+}
+
 const STAGE_ORDER: MatchStage[] = ['Group', 'R32', 'R16', 'QF', 'SF', 'Third', 'Final']
+
+const EXPORT_PRESETS: Array<{
+  id: ExportPresetId
+  label: string
+  description: string
+  includeSummary: string
+  primaryActionLabel: string
+  requires: 'user' | 'matchday' | 'both'
+}> = [
+  {
+    id: 'USER_PICKS_WORKBOOK',
+    label: 'User picks workbook',
+    description: 'One user across all matchdays with picks, outcomes, bracket, and results.',
+    includeSummary: 'Sheets: Picks, GroupOutcomes, Bracket, Results, Metadata',
+    primaryActionLabel: 'Download user picks workbook',
+    requires: 'user'
+  },
+  {
+    id: 'MATCHDAY_PICKS_WORKBOOK',
+    label: 'Matchday picks workbook',
+    description: 'One matchday across all users with submitted pick rows only.',
+    includeSummary: 'Sheets: Picks, Metadata',
+    primaryActionLabel: 'Download matchday picks workbook',
+    requires: 'matchday'
+  },
+  {
+    id: 'MATCHDAY_LEADERBOARD_SNAPSHOT',
+    label: 'Matchday leaderboard snapshot',
+    description: 'Standalone leaderboard snapshot for a selected matchday.',
+    includeSummary: 'Sheets: Leaderboard, Metadata',
+    primaryActionLabel: 'Download matchday leaderboard snapshot',
+    requires: 'matchday'
+  },
+  {
+    id: 'FULL_AUDIT_PACK',
+    label: 'Full audit pack',
+    description: 'Combined workbook for one user and one matchday in one download.',
+    includeSummary: 'Sheets: User workbook + matchday picks + matchday leaderboard (renamed to avoid collisions)',
+    primaryActionLabel: 'Download full audit pack',
+    requires: 'both'
+  }
+]
 
 function normalizeKey(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase()
@@ -283,6 +361,10 @@ async function downloadWorkbook(fileName: string, sheets: SheetSpec[]) {
   })
 }
 
+function getWorkbookRowCount(sheets: SheetSpec[]): number {
+  return sheets.reduce((total, sheet) => total + sheet.rows.length, 0)
+}
+
 function loadUsersFromSnapshots(bundle: SnapshotBundle): UserOption[] {
   const picksCountById = new Map<string, number>()
   for (const userDoc of bundle.picksFile.picks) {
@@ -337,7 +419,7 @@ function loadUsersFromSnapshots(bundle: SnapshotBundle): UserOption[] {
     })
   }
 
-  // Prefer users with actual picks so Mode 1 default never lands on an empty user.
+  // Prefer users with actual picks so default user preset never lands on an empty user.
   // In Firebase mode, do not introduce unknown users from static picks snapshots.
   for (const userDoc of bundle.picksFile.picks) {
     const memberById = membersById.get(normalizeKey(userDoc.userId))
@@ -471,7 +553,7 @@ function getScoreTotals(entry: ReturnType<typeof buildLeaderboard>[number] | und
   }
 }
 
-function buildModeOneSheets(
+function buildUserWorkbookSheets(
   bundle: SnapshotBundle,
   userId: string,
   userName: string,
@@ -643,10 +725,48 @@ function buildModeOneSheets(
   ])
 
   const nowIso = new Date().toISOString()
+  if (intent === 'USER_RESULTS') {
+    const metadataRows = [
+      ['Export preset', 'User results workbook'],
+      ['Last updated (offline)', bundle.offlineLastUpdated],
+      ['Export intent', 'User Results Export'],
+      ['Selected user', `${userName} (${userId})`],
+      ['Export timestamp (UTC)', nowIso],
+      ['Results rows', resultsRows.length],
+      ['User picks count', picks.length],
+      ['Matches snapshot last updated', formatDateTime(bundle.matchesFile.lastUpdated)],
+      ['Leaderboard snapshot last updated', formatDateTime(bundle.leaderboardFile.lastUpdated)]
+    ]
+
+    return [
+      {
+        name: 'Results',
+        headers: [
+          'Matchday',
+          'Finished Matches',
+          'Exact Points (Awarded)',
+          'Outcome Points (Awarded)',
+          'Knockout Points (Awarded)',
+          'Bracket Points (Awarded)',
+          'Matchday Total Points',
+          'Cumulative Total Points'
+        ],
+        rows: resultsRows,
+        widths: [14, 16, 20, 22, 22, 22, 20, 22]
+      },
+      {
+        name: 'Metadata',
+        headers: ['Field', 'Value'],
+        rows: metadataRows,
+        widths: [32, 56]
+      }
+    ]
+  }
+
   const metadataRows = [
-    ['Export mode', 'Single user -> all matchdays'],
+    ['Export preset', 'User picks workbook'],
     ['Last updated (offline)', bundle.offlineLastUpdated],
-    ['Export intent', intent === 'USER_PICKS' ? 'User Picks Export' : 'User Results Export'],
+    ['Export intent', 'User Picks Export'],
     ['Selected user', `${userName} (${userId})`],
     ['Export timestamp (UTC)', nowIso],
     ['Rows exported (Picks)', picksRows.length],
@@ -654,7 +774,8 @@ function buildModeOneSheets(
     ['Leaderboard snapshot last updated', formatDateTime(bundle.leaderboardFile.lastUpdated)],
     ['User picks count', picks.length],
     ['Group outcomes rows', groupRows.length + bestThirdRows.length],
-    ['Bracket picks rows', bracketRows.length]
+    ['Bracket picks rows', bracketRows.length],
+    ['Results rows', resultsRows.length]
   ]
 
   return [
@@ -731,88 +852,80 @@ function buildModeOneSheets(
   ]
 }
 
-function buildModeTwoSheets(
+function buildMatchdayPicksRows(
+  bundle: SnapshotBundle,
+  users: UserOption[],
+  selectedMatchday: string
+): SheetSpec['rows'] {
+  const matchById = new Map(
+    bundle.matchesFile.matches
+      .filter((match) => getDateKeyInTimeZone(match.kickoffUtc) === selectedMatchday)
+      .map((match) => [match.id, match])
+  )
+
+  const userNameById = new Map<string, string>()
+  for (const user of users) {
+    const allIds = dedupeIds([user.id, user.email, ...user.candidateIds])
+    for (const id of allIds) {
+      userNameById.set(normalizeKey(id), user.name)
+    }
+  }
+  for (const member of bundle.members) {
+    userNameById.set(normalizeKey(member.id), member.name || member.id)
+    if (member.email) userNameById.set(normalizeKey(member.email), member.name || member.email)
+    if (member.uid) userNameById.set(normalizeKey(member.uid), member.name || member.uid)
+  }
+
+  const rows: SheetSpec['rows'] = []
+  for (const userDoc of bundle.picksFile.picks) {
+    for (const pick of userDoc.picks ?? []) {
+      const match = matchById.get(pick.matchId)
+      if (!match) continue
+
+      const resolvedUserId = pick.userId || userDoc.userId
+      const resolvedUserName =
+        userNameById.get(normalizeKey(resolvedUserId)) ??
+        userNameById.get(normalizeKey(userDoc.userId)) ??
+        resolvedUserId
+
+      rows.push([
+        selectedMatchday,
+        match.id,
+        match.stage,
+        match.kickoffUtc,
+        resolvedUserId,
+        resolvedUserName,
+        match.homeTeam.code,
+        match.awayTeam.code,
+        typeof pick.homeScore === 'number' ? pick.homeScore : '',
+        typeof pick.awayScore === 'number' ? pick.awayScore : '',
+        getPickOutcome(pick) ?? '',
+        pick.advances ?? getPredictedWinner(pick) ?? '',
+        pick.updatedAt ?? ''
+      ])
+    }
+  }
+
+  rows.sort((a, b) => {
+    const kickoffA = new Date(String(a[3] ?? '')).getTime()
+    const kickoffB = new Date(String(b[3] ?? '')).getTime()
+    if (kickoffA !== kickoffB) return kickoffA - kickoffB
+    return String(a[5] ?? '').localeCompare(String(b[5] ?? ''))
+  })
+
+  return rows
+}
+
+function buildMatchdayWorkbookSheets(
   bundle: SnapshotBundle,
   users: UserOption[],
   selectedMatchday: string,
   intent: ExportIntent
 ): SheetSpec[] {
-  const matches = bundle.matchesFile.matches
-    .filter((match) => getDateKeyInTimeZone(match.kickoffUtc) === selectedMatchday)
-    .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())
-
-  const picksByUser = new Map<string, Map<string, Pick>>()
-  for (const doc of bundle.picksFile.picks) {
-    const key = normalizeKey(doc.userId)
-    const byMatch = new Map<string, Pick>()
-    for (const pick of doc.picks ?? []) {
-      byMatch.set(pick.matchId, pick)
-    }
-    picksByUser.set(key, byMatch)
-  }
-
-  const predictionsByUser = new Map<string, BracketPrediction>()
-  for (const prediction of combineBracketPredictions(bundle.bracketFile)) {
-    predictionsByUser.set(normalizeKey(prediction.userId), prediction)
-  }
-
-  const allUserMap = new Map<string, UserOption>()
-  for (const user of users) {
-    allUserMap.set(normalizeKey(user.id), user)
-  }
-  for (const doc of bundle.picksFile.picks) {
-    const key = normalizeKey(doc.userId)
-    if (allUserMap.has(key)) continue
-    allUserMap.set(key, {
-      id: doc.userId,
-      name: doc.userId,
-      candidateIds: [doc.userId],
-      picksCount: doc.picks?.length ?? 0
-    })
-  }
-
-  const sortedUsers = [...allUserMap.values()].sort((a, b) => a.name.localeCompare(b.name))
-
-  const picksRows = sortedUsers.flatMap((user) => {
-    const userPicks = picksByUser.get(normalizeKey(user.id))
-    const prediction = predictionsByUser.get(normalizeKey(user.id))
-
-    return matches.map((match) => {
-      const pick = userPicks?.get(match.id)
-      const outcome = pick ? getPickOutcome(pick) : ''
-      const predictedWinner = pick ? getPredictedWinner(pick) : undefined
-
-      const bracketWinner =
-        match.stage === 'Group'
-          ? ''
-          : prediction?.knockout?.[match.stage as Exclude<MatchStage, 'Group'>]?.[match.id] ?? ''
-
-      const bracketTeam =
-        bracketWinner === 'HOME'
-          ? match.homeTeam.code
-          : bracketWinner === 'AWAY'
-            ? match.awayTeam.code
-            : ''
-
-      return [
-        selectedMatchday,
-        user.id,
-        user.name,
-        match.id,
-        match.stage,
-        match.kickoffUtc,
-        match.homeTeam.code,
-        match.awayTeam.code,
-        typeof pick?.homeScore === 'number' ? pick.homeScore : '',
-        typeof pick?.awayScore === 'number' ? pick.awayScore : '',
-        outcome,
-        pick?.advances ?? predictedWinner ?? '',
-        bracketWinner,
-        bracketTeam,
-        pick?.updatedAt ?? ''
-      ]
-    })
-  })
+  const matches = bundle.matchesFile.matches.filter(
+    (match) => getDateKeyInTimeZone(match.kickoffUtc) === selectedMatchday
+  )
+  const picksRows = buildMatchdayPicksRows(bundle, users, selectedMatchday)
 
   const memberPool = buildMemberPool(bundle)
   const finishedThroughMatchday = bundle.matchesFile.matches.filter(
@@ -842,57 +955,67 @@ function buildModeTwoSheets(
 
   const nowIso = new Date().toISOString()
   const metadataRows = [
-    ['Export mode', 'Single matchday -> all users'],
+    ['Export preset', intent === 'MATCHDAY_PICKS' ? 'Matchday picks workbook' : 'Matchday leaderboard snapshot'],
     ['Last updated (offline)', bundle.offlineLastUpdated],
     ['Export intent', intent === 'MATCHDAY_PICKS' ? 'Matchday Picks Export' : 'Matchday Leaderboard Snapshot Export'],
     ['Selected matchday', selectedMatchday],
     ['Export timestamp (UTC)', nowIso],
     ['Matches snapshot last updated', formatDateTime(bundle.matchesFile.lastUpdated)],
     ['Leaderboard snapshot last updated', formatDateTime(bundle.leaderboardFile.lastUpdated)],
-    ['Users included', sortedUsers.length],
+    ['Users included', new Set(picksRows.map((row) => String(row[4] ?? ''))).size],
     ['Matches included', matches.length],
+    ['Pick rows', picksRows.length],
     ['Leaderboard rows', leaderboardRows.length]
   ]
+
+  if (intent === 'MATCHDAY_LEADERBOARD') {
+    return [
+      {
+        name: 'Leaderboard',
+        headers: [
+          'Rank',
+          'User ID',
+          'User Name',
+          'Total Points',
+          'Exact Points',
+          'Outcome Points',
+          'Knockout Points',
+          'Bracket Points',
+          'Exact Count',
+          'Graded Picks Count'
+        ],
+        rows: leaderboardRows,
+        widths: [8, 20, 20, 14, 14, 16, 16, 14, 12, 18]
+      },
+      {
+        name: 'Metadata',
+        headers: ['Field', 'Value'],
+        rows: metadataRows,
+        widths: [32, 56]
+      }
+    ]
+  }
 
   return [
     {
       name: 'Picks',
       headers: [
         'Matchday',
-        'User ID',
-        'User Name',
         'Match ID',
         'Stage',
         'Kickoff UTC',
+        'User ID',
+        'User Name',
         'Home Team',
         'Away Team',
         'Pick Home Score',
         'Pick Away Score',
         'Pick Outcome',
         'Advances',
-        'Bracket Winner',
-        'Bracket Team',
         'Pick Updated At UTC'
       ],
       rows: picksRows,
-      widths: [14, 20, 20, 18, 12, 24, 14, 14, 14, 14, 14, 12, 16, 14, 24]
-    },
-    {
-      name: 'Leaderboard',
-      headers: [
-        'Rank',
-        'User ID',
-        'User Name',
-        'Total Points',
-        'Exact Points',
-        'Outcome Points',
-        'Knockout Points',
-        'Bracket Points',
-        'Exact Count',
-        'Graded Picks Count'
-      ],
-      rows: leaderboardRows,
-      widths: [8, 20, 20, 14, 14, 16, 16, 14, 12, 18]
+      widths: [14, 18, 12, 24, 20, 20, 14, 14, 14, 14, 14, 12, 24]
     },
     {
       name: 'Metadata',
@@ -1175,14 +1298,98 @@ async function loadBundleForMode(dataMode: DataMode): Promise<SnapshotBundle> {
   }
 }
 
+const PRESET_FIELD_PREVIEW: Record<
+  ExportPresetId,
+  Array<{ sheet: string; rowSource: string; dateScope: string; columns: string[] }>
+> = {
+  USER_PICKS_WORKBOOK: [
+    {
+      sheet: 'Picks',
+      rowSource: 'Selected user picks',
+      dateScope: 'All matchdays',
+      columns: ['Matchday', 'Match ID', 'Stage', 'Home Team', 'Away Team', 'Pick scores', 'Advances']
+    },
+    {
+      sheet: 'GroupOutcomes',
+      rowSource: 'Selected user group outcomes',
+      dateScope: 'Tournament scope',
+      columns: ['Group', 'Predicted First', 'Predicted Second', 'Best Third Team']
+    },
+    {
+      sheet: 'Bracket',
+      rowSource: 'Selected user knockout picks',
+      dateScope: 'Knockout rounds',
+      columns: ['Stage', 'Match ID', 'Predicted Winner', 'Predicted Team']
+    },
+    {
+      sheet: 'Results',
+      rowSource: 'Computed scoring snapshots',
+      dateScope: 'Matchday cumulative',
+      columns: ['Matchday', 'Finished Matches', 'Matchday Total Points', 'Cumulative Total Points']
+    },
+    {
+      sheet: 'Metadata',
+      rowSource: 'Export diagnostics',
+      dateScope: 'Export timestamp',
+      columns: ['Field', 'Value']
+    }
+  ],
+  MATCHDAY_PICKS_WORKBOOK: [
+    {
+      sheet: 'Picks',
+      rowSource: 'Submitted picks for selected matchday',
+      dateScope: 'Selected matchday',
+      columns: ['Matchday', 'Match ID', 'Kickoff UTC', 'User ID', 'User Name', 'Pick scores', 'Advances']
+    },
+    {
+      sheet: 'Metadata',
+      rowSource: 'Export diagnostics',
+      dateScope: 'Export timestamp',
+      columns: ['Field', 'Value']
+    }
+  ],
+  MATCHDAY_LEADERBOARD_SNAPSHOT: [
+    {
+      sheet: 'Leaderboard',
+      rowSource: 'Computed leaderboard snapshot',
+      dateScope: 'Through selected matchday',
+      columns: ['Rank', 'User ID', 'Total Points', 'Exact Points', 'Outcome Points']
+    },
+    {
+      sheet: 'Metadata',
+      rowSource: 'Export diagnostics',
+      dateScope: 'Export timestamp',
+      columns: ['Field', 'Value']
+    }
+  ],
+  FULL_AUDIT_PACK: [
+    {
+      sheet: 'User workbook sheets',
+      rowSource: 'Selected user workbook',
+      dateScope: 'All matchdays',
+      columns: ['Picks', 'GroupOutcomes', 'Bracket', 'Results', 'Metadata']
+    },
+    {
+      sheet: 'Matchday sheets',
+      rowSource: 'Selected matchday exports',
+      dateScope: 'Selected matchday',
+      columns: ['MatchdayPicks', 'MatchdayBoard', 'MatchdayMeta']
+    }
+  ]
+}
+
 export default function AdminExportsPage() {
+  // QA-SMOKE: route=/admin?tab=exports and /demo/admin?tab=exports ; checklist-id=smoke-admin-exports
   const dataMode = useRouteDataMode()
-  const { showToast } = useToast()
+  const { showToast, updateToast } = useToast()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
-  const [mode, setMode] = useState<ExportMode>('USER_ALL_MATCHDAYS')
+  const [selectedPresetId, setSelectedPresetId] = useState<ExportPresetId>('USER_PICKS_WORKBOOK')
   const [selectedUserId, setSelectedUserId] = useState('')
   const [selectedMatchday, setSelectedMatchday] = useState('')
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting'>('idle')
+  const [exportProgress, setExportProgress] = useState(0)
+  const [fieldPreviewOpen, setFieldPreviewOpen] = useState(false)
+  const [exportHistory, setExportHistory] = useState<ExportHistoryEntry[]>([])
 
   useEffect(() => {
     let canceled = false
@@ -1231,83 +1438,305 @@ export default function AdminExportsPage() {
     [selectedUserId, users]
   )
 
-  async function handleExport(intent: ExportIntent) {
+  const selectedPreset = useMemo(
+    () => EXPORT_PRESETS.find((preset) => preset.id === selectedPresetId) ?? EXPORT_PRESETS[0],
+    [selectedPresetId]
+  )
+
+  const selectedPresetFieldPreview = PRESET_FIELD_PREVIEW[selectedPresetId]
+  const selectedMatchdayPickCount = useMemo(() => {
+    if (state.status !== 'ready' || !selectedMatchday) return 0
+    return buildMatchdayPicksRows(state.bundle, users, selectedMatchday).length
+  }, [selectedMatchday, state, users])
+  const selectedUserPickCount = useMemo(() => {
+    if (state.status !== 'ready' || !selectedUser) return 0
+    return resolveSelectedUserData(selectedUser).resolvedPicks.length
+  }, [selectedUser, state])
+  const noDataHint = useMemo(() => {
+    if (state.status !== 'ready') return null
+    if (selectedPreset.requires === 'user' && selectedUserPickCount === 0) {
+      return selectedUser ? `No data: ${selectedUser.name} has not submitted any picks yet.` : 'No data for selected user.'
+    }
+    if (selectedPreset.requires === 'matchday' && selectedMatchdayPickCount === 0) {
+      return selectedMatchday ? `No data: no picks were submitted for ${selectedMatchday}.` : 'No data for selected matchday.'
+    }
+    if (selectedPreset.requires === 'both') {
+      if (selectedUserPickCount === 0 && selectedMatchdayPickCount === 0) {
+        return `No data: ${selectedUser?.name ?? 'selected user'} has no picks and ${selectedMatchday || 'selected matchday'} has no submitted picks.`
+      }
+      if (selectedUserPickCount === 0) {
+        return `No data: ${selectedUser?.name ?? 'selected user'} has not submitted any picks yet.`
+      }
+      if (selectedMatchdayPickCount === 0) {
+        return `No data: no picks were submitted for ${selectedMatchday || 'selected matchday'}.`
+      }
+    }
+    return null
+  }, [
+    selectedMatchday,
+    selectedMatchdayPickCount,
+    selectedPreset.requires,
+    selectedUser,
+    selectedUserPickCount,
+    state.status
+  ])
+
+  function resolveSelectedUserData(user: UserOption) {
+    const candidateIds = dedupeIds([user.id, user.email, ...user.candidateIds])
+    const predictions = combineBracketPredictions(state.status === 'ready' ? state.bundle.bracketFile : { group: [], knockout: [] })
+
+    let resolvedPicks: Pick[] = []
+    let resolvedPrediction: BracketPrediction | null = null
+    let resolvedUserId = user.id
+
+    if (state.status !== 'ready') {
+      return { resolvedPicks, resolvedPrediction, resolvedUserId }
+    }
+
+    for (const candidateId of candidateIds) {
+      const candidatePicks = getUserPicksForId(state.bundle.picksFile, candidateId)
+      const candidatePrediction = getUserPrediction(predictions, candidateId)
+      if (candidatePicks.length > 0 || candidatePrediction) {
+        resolvedPicks = candidatePicks
+        resolvedPrediction = candidatePrediction
+        resolvedUserId = candidateId
+        break
+      }
+    }
+
+    return { resolvedPicks, resolvedPrediction, resolvedUserId }
+  }
+
+  function buildExportWorkbook(
+    presetId: ExportPresetId,
+    options?: { intentOverride?: ExportIntent }
+  ): {
+    presetLabel: string
+    fileName: string
+    sheets: SheetSpec[]
+    selectedUserId?: string
+    selectedMatchday?: string
+  } {
+    if (state.status !== 'ready') {
+      throw new Error('Export data is still loading.')
+    }
+
+    const dateSuffix = new Date().toISOString().slice(0, 10)
+
+    if (presetId === 'USER_PICKS_WORKBOOK') {
+      if (!selectedUser) {
+        throw new Error('Select a user before exporting.')
+      }
+
+      const { resolvedPicks, resolvedPrediction, resolvedUserId } = resolveSelectedUserData(selectedUser)
+      const intent = options?.intentOverride === 'USER_RESULTS' ? 'USER_RESULTS' : 'USER_PICKS'
+      if (resolvedPicks.length === 0) {
+        throw new NoDataError(`No picks found for ${selectedUser.name}.`)
+      }
+      const sheets = buildUserWorkbookSheets(
+        state.bundle,
+        resolvedUserId,
+        selectedUser.name,
+        intent,
+        {
+          picks: resolvedPicks,
+          prediction: resolvedPrediction
+        }
+      )
+      const filePrefix = intent === 'USER_RESULTS' ? 'user-results-workbook' : 'user-picks-workbook'
+      const fileName = `${filePrefix}-${sanitizeToken(selectedUser.name || selectedUser.id)}-${dateSuffix}.xlsx`
+      return {
+        presetLabel: intent === 'USER_RESULTS' ? 'User results workbook' : 'User picks workbook',
+        fileName,
+        sheets,
+        selectedUserId: selectedUser.id
+      }
+    }
+
+    if (presetId === 'MATCHDAY_PICKS_WORKBOOK') {
+      if (!selectedMatchday) {
+        throw new Error('Select a matchday before exporting.')
+      }
+      if (buildMatchdayPicksRows(state.bundle, users, selectedMatchday).length === 0) {
+        throw new NoDataError(`No picks found for ${selectedMatchday}.`)
+      }
+      const sheets = buildMatchdayWorkbookSheets(state.bundle, users, selectedMatchday, 'MATCHDAY_PICKS')
+      return {
+        presetLabel: 'Matchday picks workbook',
+        fileName: `matchday-picks-workbook-${sanitizeToken(selectedMatchday)}-${dateSuffix}.xlsx`,
+        sheets,
+        selectedMatchday
+      }
+    }
+
+    if (presetId === 'MATCHDAY_LEADERBOARD_SNAPSHOT') {
+      if (!selectedMatchday) {
+        throw new Error('Select a matchday before exporting.')
+      }
+      if (buildMatchdayPicksRows(state.bundle, users, selectedMatchday).length === 0) {
+        throw new NoDataError(`No picks found for ${selectedMatchday}.`)
+      }
+      const sheets = buildMatchdayWorkbookSheets(state.bundle, users, selectedMatchday, 'MATCHDAY_LEADERBOARD')
+      return {
+        presetLabel: 'Matchday leaderboard snapshot',
+        fileName: `matchday-leaderboard-snapshot-${sanitizeToken(selectedMatchday)}-${dateSuffix}.xlsx`,
+        sheets,
+        selectedMatchday
+      }
+    }
+
+    if (!selectedUser || !selectedMatchday) {
+      throw new Error('Select both user and matchday before exporting full audit pack.')
+    }
+
+    const { resolvedPicks, resolvedPrediction, resolvedUserId } = resolveSelectedUserData(selectedUser)
+    const matchdayPicksCount = buildMatchdayPicksRows(state.bundle, users, selectedMatchday).length
+    if (resolvedPicks.length === 0 && matchdayPicksCount === 0) {
+      throw new NoDataError(`No picks found for ${selectedUser.name} or ${selectedMatchday}.`)
+    }
+    if (resolvedPicks.length === 0) {
+      throw new NoDataError(`No picks found for ${selectedUser.name}.`)
+    }
+    if (matchdayPicksCount === 0) {
+      throw new NoDataError(`No picks found for ${selectedMatchday}.`)
+    }
+
+    const userSheets = buildUserWorkbookSheets(
+      state.bundle,
+      resolvedUserId,
+      selectedUser.name,
+      'USER_PICKS',
+      {
+        picks: resolvedPicks,
+        prediction: resolvedPrediction
+      }
+    )
+    const matchdaySheets = buildMatchdayWorkbookSheets(
+      state.bundle,
+      users,
+      selectedMatchday,
+      'MATCHDAY_PICKS'
+    ).map((sheet) => {
+      if (sheet.name === 'Picks') return { ...sheet, name: 'MatchdayPicks' }
+      if (sheet.name === 'Metadata') return { ...sheet, name: 'MatchdayMeta' }
+      return sheet
+    })
+    const leaderboardSheets = buildMatchdayWorkbookSheets(
+      state.bundle,
+      users,
+      selectedMatchday,
+      'MATCHDAY_LEADERBOARD'
+    ).map((sheet) => {
+      if (sheet.name === 'Leaderboard') return { ...sheet, name: 'MatchdayBoard' }
+      if (sheet.name === 'Metadata') return { ...sheet, name: 'MatchdayBoardMeta' }
+      return sheet
+    })
+
+    return {
+      presetLabel: 'Full audit pack',
+      fileName: `full-audit-pack-${sanitizeToken(selectedUser.name || selectedUser.id)}-${sanitizeToken(selectedMatchday)}-${dateSuffix}.xlsx`,
+      sheets: [...userSheets, ...matchdaySheets, ...leaderboardSheets],
+      selectedUserId: selectedUser.id,
+      selectedMatchday
+    }
+  }
+
+  async function runExport(
+    presetId: ExportPresetId,
+    options?: { intentOverride?: ExportIntent; overrideLabel?: string }
+  ) {
     if (state.status !== 'ready') return
+
+    const startMs = performance.now()
+    const fallbackPreset =
+      options?.overrideLabel ??
+      EXPORT_PRESETS.find((preset) => preset.id === presetId)?.label ??
+      'Workbook'
+    let progressToastId = ''
 
     try {
       setExportStatus('exporting')
+      setExportProgress(12)
+      progressToastId = showToast({
+        title: 'Preparing export',
+        message: `${fallbackPreset}...`,
+        tone: 'info',
+        progress: { value: 12, intent: 'momentum' },
+        durationMs: 45_000
+      })
 
-      if (mode === 'USER_ALL_MATCHDAYS') {
-        if (!selectedUser) {
-          showToast({ title: 'Export blocked', message: 'Select a user before exporting.', tone: 'warning' })
-          setExportStatus('idle')
-          return
-        }
+      setExportProgress(38)
+      updateToast(progressToastId, {
+        message: 'Compiling workbook sheets...',
+        progress: { value: 38, intent: 'momentum' }
+      })
+      const prepared = buildExportWorkbook(presetId, { intentOverride: options?.intentOverride })
 
-        const candidateIds = dedupeIds([
-          selectedUser.id,
-          selectedUser.email,
-          ...selectedUser.candidateIds
-        ])
-        const predictions = combineBracketPredictions(state.bundle.bracketFile)
-
-        let resolvedPicks: Pick[] = []
-        let resolvedPrediction: BracketPrediction | null = null
-        let resolvedUserId = selectedUser.id
-
-        for (const candidateId of candidateIds) {
-          const candidatePicks = getUserPicksForId(state.bundle.picksFile, candidateId)
-          const candidatePrediction = getUserPrediction(predictions, candidateId)
-          if (candidatePicks.length > 0 || candidatePrediction) {
-            resolvedPicks = candidatePicks
-            resolvedPrediction = candidatePrediction
-            resolvedUserId = candidateId
-            break
-          }
-        }
-
-        const sheets = buildModeOneSheets(
-          state.bundle,
-          resolvedUserId,
-          selectedUser.name,
-          intent,
-          {
-            picks: resolvedPicks,
-            prediction: resolvedPrediction
-          }
-        )
-        const prefix = intent === 'USER_PICKS' ? 'user-picks-export' : 'user-results-export'
-        const fileName = `${prefix}-${sanitizeToken(selectedUser.name || selectedUser.id)}-${new Date().toISOString().slice(0, 10)}.xlsx`
-        await downloadWorkbook(fileName, sheets)
-        setExportStatus('idle')
-        if (resolvedPicks.length === 0) {
-          showToast({
-            title: 'Export complete',
-            message: `Downloaded ${fileName} (no picks found from Firestore for selected user).`,
-            tone: 'success'
-          })
-        } else {
-          showToast({ title: 'Export complete', message: `Downloaded ${fileName}`, tone: 'success' })
-        }
-        return
-      }
-
-      if (!selectedMatchday) {
-        showToast({ title: 'Export blocked', message: 'Select a matchday before exporting.', tone: 'warning' })
-        setExportStatus('idle')
-        return
-      }
-
-      const sheets = buildModeTwoSheets(state.bundle, users, selectedMatchday, intent)
-      const prefix = intent === 'MATCHDAY_PICKS' ? 'matchday-picks-export' : 'matchday-leaderboard-export'
-      const fileName = `${prefix}-${sanitizeToken(selectedMatchday)}-${new Date().toISOString().slice(0, 10)}.xlsx`
-      await downloadWorkbook(fileName, sheets)
-      setExportStatus('idle')
-      showToast({ title: 'Export complete', message: `Downloaded ${fileName}`, tone: 'success' })
+      setExportProgress(72)
+      updateToast(progressToastId, {
+        message: `Writing ${prepared.sheets.length} sheets...`,
+        progress: { value: 72, intent: 'momentum' }
+      })
+      await downloadWorkbook(prepared.fileName, prepared.sheets)
+      const durationMs = Math.max(1, Math.round(performance.now() - startMs))
+      const rowCount = getWorkbookRowCount(prepared.sheets)
+      setExportProgress(100)
+      updateToast(progressToastId, {
+        title: 'Export downloaded',
+        message: `Exported ${rowCount} rows in ${(durationMs / 1000).toFixed(1)}s (${prepared.fileName}).`,
+        tone: 'success',
+        progress: { value: 100, intent: 'success' },
+        durationMs: 7_500
+      })
+      setExportHistory((current) => [
+        {
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          presetId,
+          presetLabel: prepared.presetLabel,
+          status: 'success' as const,
+          fileName: prepared.fileName,
+          rowCount,
+          durationMs,
+          createdAt: new Date().toISOString(),
+          selectedUserId: prepared.selectedUserId,
+          selectedMatchday: prepared.selectedMatchday
+        },
+        ...current
+      ].slice(0, 12))
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Export failed.'
+      const isNoData = error instanceof NoDataError
+      setExportProgress(100)
+      if (progressToastId) {
+        updateToast(progressToastId, {
+          title: isNoData ? 'No data to export' : 'Export failed',
+          message,
+          tone: isNoData ? 'warning' : 'danger',
+          progress: { value: 100, intent: 'warning' },
+          durationMs: isNoData ? 7_000 : 9_000
+        })
+      } else {
+        showToast({ title: isNoData ? 'No data to export' : 'Export failed', message, tone: isNoData ? 'warning' : 'danger' })
+      }
+      if (isNoData) return
+      setExportHistory((current) => [
+        {
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          presetId,
+          presetLabel: fallbackPreset,
+          status: 'failed' as const,
+          fileName: 'n/a',
+          rowCount: 0,
+          durationMs: Math.max(1, Math.round(performance.now() - startMs)),
+          createdAt: new Date().toISOString(),
+          selectedUserId: selectedUser?.id,
+          selectedMatchday: selectedMatchday || undefined
+        },
+        ...current
+      ].slice(0, 12))
+    } finally {
       setExportStatus('idle')
-      showToast({ title: 'Export failed', message, tone: 'danger' })
+      window.setTimeout(() => setExportProgress(0), 1_500)
     }
   }
 
@@ -1333,7 +1762,7 @@ export default function AdminExportsPage() {
       <PageHeroPanel
         kicker="Admin"
         title="Exports"
-        subtitle="Excel-only exports from Firestore queries with Spark-safe reads."
+        subtitle="Outcome-first export presets with workbook previews and trust-signal feedback."
         meta={
           <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
             <div className="uppercase tracking-[0.2em]">Last updated (offline)</div>
@@ -1343,46 +1772,27 @@ export default function AdminExportsPage() {
           </div>
         }
       >
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="rounded-2xl border-border/60 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Mode</div>
-                <div className="text-lg font-semibold text-foreground">Single user to all matchdays</div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {EXPORT_PRESETS.map((preset) => (
+            <Card key={preset.id} className="rounded-2xl border-border/60 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1">
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preset</div>
+                  <div className="text-base font-semibold text-foreground">{preset.label}</div>
+                </div>
+                {selectedPresetId === preset.id ? <Badge tone="info">Selected</Badge> : null}
               </div>
-              {mode === 'USER_ALL_MATCHDAYS' ? <Badge tone="info">Selected</Badge> : null}
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              Includes Picks, GroupOutcomes, Bracket, Results, and Metadata sheets.
-            </div>
-            <Button
-              className="mt-4"
-              variant={mode === 'USER_ALL_MATCHDAYS' ? 'primary' : 'secondary'}
-              onClick={() => setMode('USER_ALL_MATCHDAYS')}
-            >
-              Use Mode 1
-            </Button>
-          </Card>
-
-          <Card className="rounded-2xl border-border/60 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Mode</div>
-                <div className="text-lg font-semibold text-foreground">Single matchday to all users</div>
-              </div>
-              {mode === 'MATCHDAY_ALL_USERS' ? <Badge tone="info">Selected</Badge> : null}
-            </div>
-            <div className="mt-3 text-sm text-muted-foreground">
-              Includes Picks, Leaderboard, and Metadata sheets.
-            </div>
-            <Button
-              className="mt-4"
-              variant={mode === 'MATCHDAY_ALL_USERS' ? 'primary' : 'secondary'}
-              onClick={() => setMode('MATCHDAY_ALL_USERS')}
-            >
-              Use Mode 2
-            </Button>
-          </Card>
+              <div className="mt-3 text-xs text-muted-foreground">{preset.description}</div>
+              <Button
+                className="mt-4"
+                size="sm"
+                variant={selectedPresetId === preset.id ? 'primary' : 'secondary'}
+                onClick={() => setSelectedPresetId(preset.id)}
+              >
+                Select preset
+              </Button>
+            </Card>
+          ))}
         </div>
       </PageHeroPanel>
 
@@ -1392,97 +1802,248 @@ export default function AdminExportsPage() {
         </Alert>
       ) : null}
 
-      {mode === 'USER_ALL_MATCHDAYS' ? (
-        <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-          <div className="grid gap-4">
-            <SelectField
-              label="User"
-              value={selectedUserId}
-              onChange={(event) => setSelectedUserId(event.target.value)}
-            >
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} ({user.email ?? user.id}) - {user.picksCount} picks
-                </option>
-              ))}
-            </SelectField>
+      <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+        <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-4">
+            {(selectedPreset.requires === 'user' || selectedPreset.requires === 'both') ? (
+              <SelectField
+                label="User"
+                value={selectedUserId}
+                onChange={(event) => setSelectedUserId(event.target.value)}
+              >
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.email ?? user.id}) - {user.picksCount} picks
+                  </option>
+                ))}
+              </SelectField>
+            ) : null}
 
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs text-muted-foreground">
-                Primary action exports Picks + GroupOutcomes + Bracket + Metadata for the selected user.
-              </div>
+            {(selectedPreset.requires === 'matchday' || selectedPreset.requires === 'both') ? (
+              <SelectField
+                label="Matchday"
+                value={selectedMatchday}
+                onChange={(event) => setSelectedMatchday(event.target.value)}
+              >
+                {matchdays.map((matchday) => (
+                  <option key={matchday} value={matchday}>
+                    {matchday}
+                  </option>
+                ))}
+              </SelectField>
+            ) : null}
+
+            {noDataHint ? (
+              <Alert tone="warning" title="No data">
+                {noDataHint}
+              </Alert>
+            ) : (
+              <PanelState
+                className="text-xs"
+                message="Data found for this preset. Download will include only rows that match this selection."
+                tone="loading"
+              />
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
-                loading={exportStatus === 'exporting'}
-                onClick={() => void handleExport('USER_PICKS')}
+                disabled={exportStatus === 'exporting'}
+                onClick={() => void runExport(selectedPresetId)}
               >
-                Download User Picks Export
+                {selectedPreset.primaryActionLabel}
               </Button>
+              <Button size="sm" variant="secondary" onClick={() => setFieldPreviewOpen(true)}>
+                Preview fields
+              </Button>
+              <Badge tone={exportStatus === 'exporting' ? 'warning' : 'secondary'}>
+                {exportStatus === 'exporting' ? 'Preparing export' : 'Ready'}
+              </Badge>
             </div>
-
-            <DetailsDisclosure title="Additional downloads">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            {exportStatus === 'exporting' || exportProgress > 0 ? (
+              <div className="space-y-1">
                 <div className="text-xs text-muted-foreground">
-                  Optional secondary export with user results snapshots across all matchdays.
+                  {exportStatus === 'exporting' ? 'Batch export in progress...' : 'Batch export complete'}
                 </div>
+                <Progress
+                  value={exportProgress}
+                  intent={exportStatus === 'exporting' ? 'momentum' : 'success'}
+                  size="sm"
+                  aria-label="Export batch progress"
+                />
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-2xl border border-border/60 bg-card p-4">
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preset summary</div>
+            <div className="mt-2 text-base font-semibold text-foreground">{selectedPreset.label}</div>
+            <div className="mt-1 text-sm text-muted-foreground">{selectedPreset.description}</div>
+            <div className="mt-2 text-xs text-muted-foreground">{selectedPreset.includeSummary}</div>
+
+            <div className="mt-3 space-y-2">
+              {selectedPresetFieldPreview.map((sheet) => (
+                <div key={`${selectedPresetId}-${sheet.sheet}`} className="rounded-xl border border-border/60 bg-bg2/40 p-2">
+                  <div className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground">
+                    {sheet.sheet}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {sheet.columns.slice(0, 3).join(', ')}
+                    {sheet.columns.length > 3 ? ' ...' : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <DetailsDisclosure title="Advanced exports" meta="Optional">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(selectedPreset.requires === 'user' || selectedPreset.requires === 'both') ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={exportStatus === 'exporting'}
+              onClick={() =>
+                void runExport('USER_PICKS_WORKBOOK', {
+                  intentOverride: 'USER_RESULTS',
+                  overrideLabel: 'User results workbook'
+                })
+              }
+            >
+              Download user results workbook
+            </Button>
+          ) : null}
+
+          {(selectedPreset.requires === 'matchday' || selectedPreset.requires === 'both') && selectedPresetId !== 'MATCHDAY_LEADERBOARD_SNAPSHOT' ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={exportStatus === 'exporting'}
+              onClick={() => void runExport('MATCHDAY_LEADERBOARD_SNAPSHOT')}
+            >
+              Download matchday leaderboard snapshot
+            </Button>
+          ) : null}
+
+          {(selectedPreset.requires === 'matchday' || selectedPreset.requires === 'both') && selectedPresetId === 'MATCHDAY_LEADERBOARD_SNAPSHOT' ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={exportStatus === 'exporting'}
+              onClick={() => void runExport('MATCHDAY_PICKS_WORKBOOK')}
+            >
+              Download matchday picks workbook
+            </Button>
+          ) : null}
+        </div>
+      </DetailsDisclosure>
+
+      <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div>
+            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Export history</div>
+            <div className="text-sm text-muted-foreground">Current browser session only.</div>
+          </div>
+          {exportHistory.length > 0 ? (
+            <Badge tone="secondary">{exportHistory.length} runs</Badge>
+          ) : null}
+        </div>
+
+        {exportHistory.length === 0 ? (
+          <PanelState message="No exports yet in this session." tone="empty" />
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Preset</th>
+                <th>Status</th>
+                <th>Rows</th>
+                <th>Duration</th>
+                <th>File</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {exportHistory.map((entry) => (
+                <tr key={entry.id}>
+                  <td>{new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td className="font-semibold text-foreground">{entry.presetLabel}</td>
+                  <td>
+                    <Badge tone={entry.status === 'success' ? 'success' : 'danger'}>
+                      {entry.status === 'success' ? 'Success' : 'Failed'}
+                    </Badge>
+                  </td>
+                  <td>{entry.rowCount}</td>
+                  <td>{(entry.durationMs / 1000).toFixed(1)}s</td>
+                  <td className="max-w-[260px] truncate">{entry.fileName}</td>
+                  <td>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setSelectedPresetId(entry.presetId)
+                        if (entry.selectedUserId) setSelectedUserId(entry.selectedUserId)
+                        if (entry.selectedMatchday) setSelectedMatchday(entry.selectedMatchday)
+                      }}
+                    >
+                      Reuse preset
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card>
+
+      <Sheet open={fieldPreviewOpen} onOpenChange={setFieldPreviewOpen}>
+        <SheetContent side="right" className="w-[96vw] max-w-3xl">
+          <SheetHeader>
+            <SheetTitle>Field Preview</SheetTitle>
+            <SheetDescription>{selectedPreset.label}</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-3 px-4 py-3">
+            {selectedPresetFieldPreview.length === 0 ? (
+              <PanelState message="No field preview is available for this preset." tone="empty" />
+            ) : (
+              <Table>
+                <thead>
+                  <tr>
+                    <th>Sheet</th>
+                    <th>Columns included</th>
+                    <th>Row source</th>
+                    <th>Date scope</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedPresetFieldPreview.map((sheet) => (
+                    <tr key={`${selectedPreset.id}-${sheet.sheet}`}>
+                      <td className="font-semibold text-foreground">{sheet.sheet}</td>
+                      <td>{sheet.columns.join(', ')}</td>
+                      <td>{sheet.rowSource}</td>
+                      <td>{sheet.dateScope}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+          </div>
+          <SheetFooter>
+            <div className="flex w-full justify-end">
                 <Button
                   size="sm"
                   variant="secondary"
-                  loading={exportStatus === 'exporting'}
-                  onClick={() => void handleExport('USER_RESULTS')}
+                  onClick={() => setFieldPreviewOpen(false)}
                 >
-                  Download User Results Export
+                  Close
                 </Button>
-              </div>
-            </DetailsDisclosure>
-          </div>
-        </Card>
-      ) : (
-        <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-          <div className="grid gap-4">
-            <SelectField
-              label="Matchday"
-              value={selectedMatchday}
-              onChange={(event) => setSelectedMatchday(event.target.value)}
-            >
-              {matchdays.map((matchday) => (
-                <option key={matchday} value={matchday}>
-                  {matchday}
-                </option>
-              ))}
-            </SelectField>
-
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs text-muted-foreground">
-                Primary action exports all users picks for the selected matchday.
-              </div>
-              <Button
-                size="sm"
-                loading={exportStatus === 'exporting'}
-                onClick={() => void handleExport('MATCHDAY_PICKS')}
-              >
-                Download Matchday Picks Export
-              </Button>
             </div>
-
-            <DetailsDisclosure title="Additional downloads">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs text-muted-foreground">
-                  Optional secondary export with leaderboard snapshot for the selected matchday.
-                </div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  loading={exportStatus === 'exporting'}
-                  onClick={() => void handleExport('MATCHDAY_LEADERBOARD')}
-                >
-                  Download Matchday Leaderboard Snapshot
-                </Button>
-              </div>
-            </DetailsDisclosure>
-          </div>
-        </Card>
-      )}
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

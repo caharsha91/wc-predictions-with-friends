@@ -4,11 +4,14 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import type { Match } from '../../../types/matches'
 import type { Pick } from '../../../types/picks'
+import type { LeaderboardFile } from '../../../types/leaderboard'
+import type { PicksFile } from '../../../types/picks'
+import type { MembersFile } from '../../../types/members'
 
 const fixtures = vi.hoisted(() => {
   const state = {
     mode: 'pending' as 'pending' | 'complete' | 'empty',
-    nowIso: '2026-06-12T12:00:00.000Z'
+    nowIso: '2026-06-15T12:00:00.000Z'
   }
 
   const matches: Match[] = [
@@ -59,7 +62,71 @@ const fixtures = vi.hoisted(() => {
     updatedAt: '2026-06-01T00:00:00.000Z'
   }
 
-  return { state, matches, completedPick }
+  const leaderboard: LeaderboardFile = {
+    lastUpdated: '2026-06-15T12:00:00.000Z',
+    entries: [
+      {
+        member: { id: 'user-2', name: 'Rival Above' },
+        totalPoints: 120,
+        exactPoints: 30,
+        resultPoints: 60,
+        knockoutPoints: 10,
+        bracketPoints: 20,
+        exactCount: 10,
+        picksCount: 100
+      },
+      {
+        member: { id: 'user-1', name: 'You' },
+        totalPoints: 116,
+        exactPoints: 29,
+        resultPoints: 59,
+        knockoutPoints: 8,
+        bracketPoints: 20,
+        exactCount: 9,
+        picksCount: 99
+      },
+      {
+        member: { id: 'user-3', name: 'Rival Below' },
+        totalPoints: 112,
+        exactPoints: 28,
+        resultPoints: 56,
+        knockoutPoints: 8,
+        bracketPoints: 20,
+        exactCount: 9,
+        picksCount: 97
+      }
+    ]
+  }
+
+  const picksFile: PicksFile = {
+    picks: [
+      {
+        userId: 'user-2',
+        updatedAt: '2026-06-15T11:45:00.000Z',
+        picks: [completedPick]
+      },
+      {
+        userId: 'user-3',
+        updatedAt: '2026-06-15T11:30:00.000Z',
+        picks: []
+      },
+      {
+        userId: 'user-1',
+        updatedAt: '2026-06-15T11:50:00.000Z',
+        picks: [completedPick]
+      }
+    ]
+  }
+
+  const members: MembersFile = {
+    members: [
+      { id: 'user-1', name: 'You' },
+      { id: 'user-2', name: 'Rival Above' },
+      { id: 'user-3', name: 'Rival Below' }
+    ]
+  }
+
+  return { state, matches, completedPick, leaderboard, picksFile, members }
 })
 
 vi.mock('../../hooks/useNow', () => ({
@@ -68,6 +135,12 @@ vi.mock('../../hooks/useNow', () => ({
 
 vi.mock('../../hooks/useViewerId', () => ({
   useViewerId: () => 'user-1'
+}))
+
+vi.mock('../../../lib/data', () => ({
+  fetchLeaderboard: vi.fn(async () => fixtures.leaderboard),
+  fetchPicks: vi.fn(async () => fixtures.picksFile),
+  fetchMembers: vi.fn(async () => fixtures.members)
 }))
 
 vi.mock('../../hooks/usePicksData', () => ({
@@ -164,8 +237,9 @@ function renderPage() {
 describe('PlayPage action center', () => {
   beforeEach(() => {
     window.localStorage.removeItem('wc-demo-scenario')
+    window.localStorage.removeItem('wc-play-rank-momentum:default:user-1')
     fixtures.state.mode = 'pending'
-    fixtures.state.nowIso = '2026-06-12T12:00:00.000Z'
+    fixtures.state.nowIso = '2026-06-15T12:00:00.000Z'
     fixtures.matches[0].status = 'SCHEDULED'
     fixtures.matches[1].status = 'SCHEDULED'
     fixtures.matches[2].status = 'SCHEDULED'
@@ -174,7 +248,11 @@ describe('PlayPage action center', () => {
     fixtures.matches[3].awayTeam.code = 'B2'
   })
 
-  it('renders compact group stage section above picks action center', () => {
+  it('renders compact group stage section above picks action center', async () => {
+    window.localStorage.setItem(
+      'wc-play-rank-momentum:default:user-1',
+      JSON.stringify({ rank: 5, updatedAt: '2026-06-14T12:00:00.000Z' })
+    )
     renderPage()
 
     expect(screen.getByText(/^Group stage$/i)).toBeInTheDocument()
@@ -182,6 +260,12 @@ describe('PlayPage action center', () => {
     expect(screen.getByRole('button', { name: /continue group stage/i })).toBeInTheDocument()
     expect(screen.getAllByText(/pending/i).length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: /play center/i })).toBeInTheDocument()
+    expect(await screen.findByText(/you gained \+3 rank since last update/i)).toBeInTheDocument()
+    expect(await screen.findByText(/^Rivalry$/i)).toBeInTheDocument()
+    expect((await screen.findAllByText(/Rival Above/i)).length).toBeGreaterThan(0)
+    expect((await screen.findAllByText(/Rival Below/i)).length).toBeGreaterThan(0)
+    expect(await screen.findByText(/4 pts to catch/i)).toBeInTheDocument()
+    expect(await screen.findByText(/4 pts cushion/i)).toBeInTheDocument()
   })
 
   it('routes group stage CTA to /play/group-stage', () => {
@@ -215,10 +299,21 @@ describe('PlayPage action center', () => {
   it('renders queue and editor inline in one section for pending picks', () => {
     renderPage()
 
-    expect(screen.getByRole('button', { name: /^continue$/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /next one/i })).toBeInTheDocument()
-    expect(screen.getByText(/closing soon/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /next pending pick/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /more/i })).toBeInTheDocument()
+    expect(screen.getAllByText(/closing soon/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/wizard flow mock/i)).toBeInTheDocument()
+  })
+
+  it('renders filter chips in priority order', () => {
+    renderPage()
+
+    const order = screen
+      .getAllByRole('button')
+      .map((button) => button.textContent?.trim() ?? '')
+      .filter((label) => ['Live', 'Closing soon', 'Unpicked', 'All'].includes(label))
+
+    expect(order.slice(0, 4)).toEqual(['Live', 'Closing soon', 'Unpicked', 'All'])
   })
 
   it('updates inline editor context when selecting a queue row action', () => {
@@ -232,13 +327,59 @@ describe('PlayPage action center', () => {
     expect(screen.getByTestId('wizard-active')).toHaveTextContent('m-open-2')
   })
 
-  it('shows only the next upcoming matchday in locks-next queue and removes duplicate top review shortcuts', () => {
+  it('shows triaged queue list and removes duplicate top review shortcuts', () => {
     renderPage()
 
     expect(screen.queryByRole('button', { name: /pick: /i })).not.toBeInTheDocument()
     expect(screen.getByText('BRA vs NED')).toBeInTheDocument()
     expect(screen.getByText('CIV vs ECU')).toBeInTheDocument()
+    expect(screen.getByText('USA vs PAR')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /high swing/i })).not.toBeInTheDocument()
+  })
+
+  it('shows live matches only when ongoing by status or kickoff fallback', () => {
+    fixtures.state.nowIso = '2026-06-15T19:00:00.000Z'
+    fixtures.matches[0].status = 'SCHEDULED'
+    fixtures.matches[1].status = 'IN_PLAY'
+    fixtures.matches[2].status = 'SCHEDULED'
+
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: /^live$/i }))
+    expect(screen.getByText('BRA vs NED')).toBeInTheDocument()
+    expect(screen.getByText('CIV vs ECU')).toBeInTheDocument()
     expect(screen.queryByText('USA vs PAR')).not.toBeInTheDocument()
+  })
+
+  it('auto-falls back to next filter priority when current filter has no items', () => {
+    fixtures.state.nowIso = '2026-06-12T12:00:00.000Z'
+    fixtures.matches[0].status = 'SCHEDULED'
+    fixtures.matches[1].status = 'SCHEDULED'
+    fixtures.matches[2].status = 'SCHEDULED'
+
+    renderPage()
+
+    const liveButton = screen.getByRole('button', { name: /^live$/i })
+    const closingSoonButton = screen.getByRole('button', { name: /closing soon/i })
+    const unpickedButton = screen.getByRole('button', { name: /^unpicked$/i })
+    expect(liveButton).toBeDisabled()
+    expect(closingSoonButton).toBeDisabled()
+    expect(unpickedButton).toBeEnabled()
+
+    fireEvent.click(liveButton)
+    fireEvent.click(closingSoonButton)
+
+    expect(screen.getByText('BRA vs NED')).toBeInTheDocument()
+    expect(screen.getByText('CIV vs ECU')).toBeInTheDocument()
+    expect(screen.queryByText(/nothing closing soon/i)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/^Unpicked$/i).length).toBeGreaterThan(0)
+  })
+
+  it('renders collapsible friend activity panel with computed entries', async () => {
+    renderPage()
+
+    expect(await screen.findByText(/^Friend activity$/i)).toBeInTheDocument()
+    expect(await screen.findByText(/2 recent/i)).toBeInTheDocument()
   })
 
   it('shows all-caught-up state when there are no upcoming picks', () => {

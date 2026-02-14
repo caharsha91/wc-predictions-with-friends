@@ -56,6 +56,36 @@ Demo snapshot data lives in per-scenario folders under `public/data/demo/scenari
 - Styling: Tailwind + shadcn/ui components, with remaining page-specific styles in `src/ui/styles.css`.
 - UI primitives: reusable components are in `src/ui/components/ui/` and app-specific components in `src/ui/components/`.
 
+## UI Toast Contract
+
+- Provider/hook: use existing `ToastProvider` + `useToast` (`src/ui/hooks/useToast.tsx`).
+- Placement: fixed top-right stack for all routes; do not add route-level overrides.
+- Max visible stack: 4 toasts. New toasts beyond this should replace the oldest visible item.
+- Tone mapping:
+  - `success`: completed mutation/export
+  - `danger`: failed mutation/export
+  - `warning`: partial/degraded completion
+  - `info`: non-blocking status
+- Trust-signal metadata for mutating actions:
+  - include `entityCount` when available (e.g., `Saved 12 picks`, `Updated 3 players`, `Exported 142 rows`)
+  - include `durationMs` for batch operations when measurable
+- Theming: use existing theme tokens/variables only; no hardcoded hex/rgb colors.
+
+## UI Feature Flags (Dev/Demo)
+
+- Source: `src/ui/lib/featureFlags.ts`
+- Flags:
+  - `navSimplification`
+  - `playSocialSignals`
+  - `leaderboardStory`
+  - `adminConsoleTabs`
+  - `exportsOutcomeFirst`
+- Scope: flag overrides are only enabled in dev builds or `/demo/*` routes.
+- Query param toggles:
+  - `?ff=navSimplification,playSocialSignals`
+  - `?ff.navSimplification=true`
+- localStorage override key: `wc-ui-feature-flags` (JSON object of boolean keys).
+
 ## Dev
 
 1. Install Node.js (v20+ recommended)

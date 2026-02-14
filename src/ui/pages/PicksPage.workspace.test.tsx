@@ -149,11 +149,11 @@ function renderAt(path: string) {
 }
 
 describe('PicksPage inline finished matches', () => {
-  it('renders read-only detail shell with header picks link and embedded lists', () => {
+  it('renders read-only detail shell with header play-center link and embedded lists', () => {
     renderAt('/play/picks')
 
     expect(screen.queryByText('Next lock')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /back to picks/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /back to play center/i })).toBeInTheDocument()
     expect(screen.getByText('Open now')).toBeInTheDocument()
     expect(screen.getByText('Finished matches')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
@@ -209,11 +209,11 @@ describe('PicksPage inline finished matches', () => {
     expect(screen.getByText(/picks wizard quick editor mock/i)).toBeInTheDocument()
   })
 
-  it('keeps a header picks link available', () => {
+  it('keeps a header play-center link available', () => {
     renderAt('/play/picks')
 
-    const picksLink = screen.getByRole('link', { name: /back to picks/i })
-    expect(picksLink).toHaveAttribute('href', '/play/picks')
+    const picksLink = screen.getByRole('link', { name: /back to play center/i })
+    expect(picksLink).toHaveAttribute('href', '/play')
   })
 
   it('renders classic page-number controls for finished matches', async () => {

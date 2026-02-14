@@ -263,6 +263,7 @@ function ReadOnlyMatchList({
 }
 
 export default function PicksPage() {
+  // QA-SMOKE: route=/play/picks and /demo/play/picks ; checklist-id=smoke-picks-detail
   const location = useLocation()
   const navigate = useNavigate()
   const now = useNow()
@@ -408,8 +409,8 @@ export default function PicksPage() {
         kicker="Reference"
         meta={
           <div className="flex items-start gap-3 text-right">
-            <ButtonLink to={toPlayPath('picks')} size="sm" variant="primary">
-              Back to Picks
+            <ButtonLink to={toPlayPath()} size="sm" variant="primary">
+              Back to Play Center
             </ButtonLink>
             <div className="text-xs text-muted-foreground" data-last-updated="true">
               <div className="uppercase tracking-[0.2em]">Last updated</div>

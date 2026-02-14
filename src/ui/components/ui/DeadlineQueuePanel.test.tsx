@@ -41,4 +41,29 @@ describe('DeadlineQueuePanel', () => {
     expect(screen.getByText(/closing soon/i)).toBeInTheDocument()
     expect(screen.getByText(/aaa vs bbb/i)).toBeInTheDocument()
   })
+
+  it('paginates with first, prev, and next controls', () => {
+    render(
+      <DeadlineQueuePanel
+        pageSize={3}
+        items={[
+          { id: 'match-1', label: 'AAA vs BBB', status: 'Needs pick' },
+          { id: 'match-2', label: 'CCC vs DDD', status: 'Needs pick' },
+          { id: 'match-3', label: 'EEE vs FFF', status: 'Needs pick' },
+          { id: 'match-4', label: 'GGG vs HHH', status: 'Needs pick' }
+        ]}
+      />
+    )
+
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument()
+    expect(screen.queryByText(/ggg vs hhh/i)).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^next$/i }))
+    expect(screen.getByText(/page 2 of 2/i)).toBeInTheDocument()
+    expect(screen.getByText(/ggg vs hhh/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^first$/i }))
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument()
+    expect(screen.queryByText(/ggg vs hhh/i)).not.toBeInTheDocument()
+  })
 })

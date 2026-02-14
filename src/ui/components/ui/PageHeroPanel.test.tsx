@@ -1,11 +1,17 @@
+import type { ReactElement } from 'react'
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import PageHeroPanel from './PageHeroPanel'
 
+function renderWithRouter(node: ReactElement) {
+  return render(<MemoryRouter>{node}</MemoryRouter>)
+}
+
 describe('PageHeroPanel', () => {
   it('renders title, subtitle, and meta content', () => {
-    render(
+    renderWithRouter(
       <PageHeroPanel
         kicker="Test"
         title="Hero Title"
@@ -21,7 +27,7 @@ describe('PageHeroPanel', () => {
   })
 
   it('renders merged content children', () => {
-    render(
+    renderWithRouter(
       <PageHeroPanel title="Title" showMobileNav={false}>
         <div>Top content area</div>
       </PageHeroPanel>
@@ -31,7 +37,7 @@ describe('PageHeroPanel', () => {
   })
 
   it('renders mobile nav trigger when enabled', () => {
-    render(
+    renderWithRouter(
       <PageHeroPanel title="Title" mobileNav={<button type="button">Mobile menu</button>}>
         <div>Content</div>
       </PageHeroPanel>
@@ -40,4 +46,3 @@ describe('PageHeroPanel', () => {
     expect(screen.getByRole('button', { name: /mobile menu/i })).toBeInTheDocument()
   })
 })
-
