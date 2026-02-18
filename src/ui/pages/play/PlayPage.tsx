@@ -846,9 +846,14 @@ export default function PlayPage() {
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Group stage</div>
-                          <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('group-stage'))}>
-                            {groupStageCtaLabel}
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('group-stage'))}>
+                              {groupStageCtaLabel}
+                            </Button>
+                            <Button size="sm" variant="secondary" onClick={() => navigate(toPlayPath('league'))}>
+                              Open League
+                            </Button>
+                          </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge tone={groupCompletion.groupsDone === groupCompletion.groupsTotal ? 'success' : 'warning'}>

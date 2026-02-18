@@ -1,0 +1,762 @@
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+
+import type { GroupPrediction } from '../../../types/bracket'
+import type { BestThirdStatus, GroupPlacementStatus } from '../../../lib/groupStageSnapshot'
+import type { Team } from '../../../types/matches'
+import { GROUP_STAGE_GROUP_CODES, type GroupStageQueryState } from '../../lib/groupStageFilters'
+import { cn } from '../../lib/utils'
+import { Badge } from '../ui/Badge'
+import { Button, ButtonLink } from '../ui/Button'
+import { Card } from '../ui/Card'
+
+export type GroupStageDenseRow = {
+  groupId: string
+  teams: Team[]
+  prediction: GroupPrediction
+  complete: boolean
+  actualTopTwo: string[]
+  finishedCount: number
+  totalCount: number
+  firstResult: GroupPlacementStatus
+  secondResult: GroupPlacementStatus
+  rowResult: GroupPlacementStatus
+}
+
+type GroupStageRowDraft = {
+  first: string
+  second: string
+}
+
+export type LeaderboardCardRow = {
+  id: string
+  name: string
+  rank: number
+  points: number
+  movement?: number
+  deltaPoints?: number
+  isYou: boolean
+}
+
+type BestThirdSlot = {
+  index: number
+  code: string
+  status: BestThirdStatus
+  options: Team[]
+}
+
+type DashboardToolbarProps = {
+  playCenterPath: string
+  leaderboardPath: string
+  picksLastSavedLabel: string
+  scoringSnapshotLabel: string
+}
+
+export function DashboardToolbar({
+  playCenterPath,
+  leaderboardPath,
+  picksLastSavedLabel,
+  scoringSnapshotLabel
+}: DashboardToolbarProps) {
+  return (
+    <Card className="rounded-xl border border-border bg-card/90 px-4 py-2 shadow-[var(--shadow1)] xl:h-14 xl:py-0">
+      <div className="flex h-full items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-base font-semibold tracking-tight text-foreground">Group Stage Dashboard</div>
+          <div className="truncate text-[11px] text-muted-foreground">Updates daily from published snapshots.</div>
+        </div>
+
+        <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-background/50 p-1">
+          <ButtonLink to={playCenterPath} size="sm" variant="pill" className="h-8 rounded-lg px-3 text-[12px]">
+            Play Center
+          </ButtonLink>
+          <ButtonLink to={leaderboardPath} size="sm" variant="pillSecondary" className="h-8 rounded-lg px-3 text-[12px]">
+            Leaderboard
+          </ButtonLink>
+        </div>
+
+        <div className="hidden min-w-0 max-w-[34ch] items-center gap-2 text-[11px] text-muted-foreground lg:flex">
+          <span className="truncate whitespace-nowrap">Saved {picksLastSavedLabel}</span>
+          <span className="h-3 w-px bg-border" aria-hidden="true" />
+          <span className="truncate whitespace-nowrap">Snapshot {scoringSnapshotLabel}</span>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+type StatusBarProps = {
+  groupsDone: number
+  groupsTotal: number
+  bestThirdDone: number
+  bestThirdTotal: number
+  closesLabel: string
+  stateLabel: string
+}
+
+export function StatusBar({
+  groupsDone,
+  groupsTotal,
+  bestThirdDone,
+  bestThirdTotal,
+  closesLabel,
+  stateLabel
+}: StatusBarProps) {
+  return (
+    <Card className="rounded-xl border border-border bg-card/70 px-2 xl:h-8">
+      <div className="flex h-full items-center gap-2 overflow-hidden">
+        <Badge tone={groupsDone === groupsTotal && groupsTotal > 0 ? 'success' : 'warning'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
+          Groups {groupsDone}/{groupsTotal}
+        </Badge>
+        <Badge tone={bestThirdDone === bestThirdTotal ? 'success' : 'warning'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
+          Best Thirds {bestThirdDone}/{bestThirdTotal}
+        </Badge>
+        <Badge tone="info" className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
+          Closes {closesLabel}
+        </Badge>
+        <Badge tone={stateLabel === 'Final' ? 'success' : 'secondary'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
+          State {stateLabel}
+        </Badge>
+      </div>
+    </Card>
+  )
+}
+
+function statusDotClass(row: GroupStageDenseRow, groupClosedByTime: boolean): string {
+  if (row.complete) return 'bg-success'
+  if (groupClosedByTime) return 'bg-warn'
+  return 'bg-info'
+}
+
+function rowSurfaceClass(result: GroupPlacementStatus): string {
+  if (result === 'correct') return 'bg-success/10'
+  if (result === 'incorrect') return 'bg-destructive/10'
+  if (result === 'locked') return 'bg-warn/10'
+  return 'bg-background/40'
+}
+
+function formatTeamLabel(code: string | undefined, teams: Team[]): string {
+  if (!code) return 'Select team'
+  const team = teams.find((entry) => entry.code === code)
+  return team ? `${team.code} · ${team.name}` : code
+}
+
+function resolveRowDelta({
+  row,
+  first,
+  second,
+  groupQualifierPoints
+}: {
+  row: GroupStageDenseRow
+  first: string
+  second: string
+  groupQualifierPoints: number
+}): number {
+  if (row.complete) {
+    let earned = 0
+    if (first && first === row.actualTopTwo[0]) earned += groupQualifierPoints
+    if (second && second === row.actualTopTwo[1]) earned += groupQualifierPoints
+    return earned
+  }
+
+  let potential = 0
+  if (first) potential += groupQualifierPoints
+  if (second) potential += groupQualifierPoints
+  return potential
+}
+
+type GroupPicksDenseTableProps = {
+  rows: GroupStageDenseRow[]
+  groupFilter: GroupStageQueryState['group']
+  focusFilter: GroupStageQueryState['focus']
+  showPoints: boolean
+  isReadOnly: boolean
+  groupClosedByTime: boolean
+  groupQualifierPoints: number
+  tableStatusLabel: string
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error' | 'locked'
+  rowDrafts: Record<string, GroupStageRowDraft>
+  onGroupFilterChange: (value: GroupStageQueryState['group']) => void
+  onFocusFilterChange: (value: GroupStageQueryState['focus']) => void
+  onTogglePoints: () => void
+  onPickChange: (row: GroupStageDenseRow, field: 'first' | 'second', value: string) => void
+  onRowSave: (row: GroupStageDenseRow) => void
+  onRowCancel: (groupId: string) => void
+}
+
+export function GroupPicksDenseTable({
+  rows,
+  groupFilter,
+  focusFilter,
+  showPoints,
+  isReadOnly,
+  groupClosedByTime,
+  groupQualifierPoints,
+  tableStatusLabel,
+  saveStatus,
+  rowDrafts,
+  onGroupFilterChange,
+  onFocusFilterChange,
+  onTogglePoints,
+  onPickChange,
+  onRowSave,
+  onRowCancel
+}: GroupPicksDenseTableProps) {
+  const gridColumnsClass = 'grid grid-cols-[84px_minmax(0,1fr)_minmax(0,1fr)_140px] items-center gap-3'
+
+  return (
+    <Card className="min-h-0 rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="flex h-10 flex-wrap items-center gap-2 border-b border-border/60 px-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-foreground">Group Picks</div>
+          <div className="ml-auto flex items-center gap-2">
+            <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <span className="uppercase tracking-wide">Group</span>
+              <select
+                value={groupFilter}
+                onChange={(event) => onGroupFilterChange(event.target.value as GroupStageQueryState['group'])}
+                className="h-8 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="all">All</option>
+                {GROUP_STAGE_GROUP_CODES.map((groupId) => (
+                  <option key={`group-filter-${groupId}`} value={groupId}>
+                    {groupId}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="hidden items-center gap-1 text-[11px] text-muted-foreground md:flex">
+              <span className="uppercase tracking-wide">Focus</span>
+              <select
+                value={focusFilter}
+                onChange={(event) => onFocusFilterChange(event.target.value as GroupStageQueryState['focus'])}
+                className="h-8 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="all">Both</option>
+                <option value="1st">1st</option>
+                <option value="2nd">2nd</option>
+              </select>
+            </label>
+
+            <Button
+              size="sm"
+              variant={showPoints ? 'primary' : 'secondary'}
+              className="h-8 rounded-lg px-2 text-[12px]"
+              onClick={onTogglePoints}
+            >
+              Points {showPoints ? 'On' : 'Off'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex h-7 items-center justify-between border-b border-border/50 px-3 text-[11px] uppercase tracking-wide text-muted-foreground">
+          <span>Table {tableStatusLabel}</span>
+          {isReadOnly ? <span>{groupClosedByTime ? 'Locked' : 'Final recap'}</span> : null}
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <div className="hidden h-full min-h-0 overflow-auto md:block">
+            <div className="min-w-[760px]">
+              <div className={cn(gridColumnsClass, 'h-7 px-2 text-[11px] uppercase tracking-wide text-muted-foreground')}>
+                <div>Group</div>
+                <div className={focusFilter === '2nd' ? 'opacity-55' : undefined}>1st Pick</div>
+                <div className={focusFilter === '1st' ? 'opacity-55' : undefined}>2nd Pick</div>
+                <div className="text-right">Actions</div>
+              </div>
+
+              <div className="divide-y divide-border/45">
+                {rows.map((row) => {
+                  const persistedFirst = row.prediction.first ?? ''
+                  const persistedSecond = row.prediction.second ?? ''
+                  const draft = rowDrafts[row.groupId]
+                  const effectiveFirst = draft?.first ?? persistedFirst
+                  const effectiveSecond = draft?.second ?? persistedSecond
+                  const rowHasUnsavedChanges = Boolean(
+                    draft && (draft.first !== persistedFirst || draft.second !== persistedSecond)
+                  )
+                  const rowIsValid = Boolean(effectiveFirst) && Boolean(effectiveSecond) && effectiveFirst !== effectiveSecond
+                  const rowDelta = resolveRowDelta({
+                    row,
+                    first: effectiveFirst,
+                    second: effectiveSecond,
+                    groupQualifierPoints
+                  })
+
+                  return (
+                    <div
+                      key={`desktop-group-row-${row.groupId}`}
+                      className={cn(
+                        gridColumnsClass,
+                        rowSurfaceClass(row.rowResult),
+                        'h-10 px-2 transition-colors hover:bg-background/80 focus-within:bg-background/80 focus-within:ring-1 focus-within:ring-ring'
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-7 w-10 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
+                          {row.groupId}
+                        </span>
+                        <span className={cn('h-2 w-2 rounded-full', statusDotClass(row, groupClosedByTime))} aria-hidden="true" />
+                      </div>
+
+                      <div className={cn('min-w-0', focusFilter === '2nd' ? 'opacity-55' : undefined)}>
+                        {isReadOnly ? (
+                          <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveFirst || undefined, row.teams)}</div>
+                        ) : (
+                          <select
+                            value={effectiveFirst}
+                            className="h-8 w-full min-w-0 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            onChange={(event) => onPickChange(row, 'first', event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Escape') {
+                                event.preventDefault()
+                                onRowCancel(row.groupId)
+                              }
+                              if (event.key === 'Enter') {
+                                event.preventDefault()
+                                onRowSave(row)
+                              }
+                            }}
+                            disabled={isReadOnly}
+                          >
+                            <option value="">Select team</option>
+                            {row.teams.map((team) => (
+                              <option key={`${row.groupId}-first-${team.code}`} value={team.code}>
+                                {team.code} · {team.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      <div className={cn('min-w-0', focusFilter === '1st' ? 'opacity-55' : undefined)}>
+                        {isReadOnly ? (
+                          <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveSecond || undefined, row.teams)}</div>
+                        ) : (
+                          <select
+                            value={effectiveSecond}
+                            className="h-8 w-full min-w-0 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            onChange={(event) => onPickChange(row, 'second', event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Escape') {
+                                event.preventDefault()
+                                onRowCancel(row.groupId)
+                              }
+                              if (event.key === 'Enter') {
+                                event.preventDefault()
+                                onRowSave(row)
+                              }
+                            }}
+                            disabled={isReadOnly}
+                          >
+                            <option value="">Select team</option>
+                            {row.teams.map((team) => (
+                              <option key={`${row.groupId}-second-${team.code}`} value={team.code}>
+                                {team.code} · {team.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2">
+                        {showPoints && rowDelta !== 0 ? (
+                          <span className="inline-flex h-5 min-w-9 items-center justify-center rounded-full border border-border bg-background px-1.5 text-[11px] font-medium text-muted-foreground">
+                            +{rowDelta}
+                          </span>
+                        ) : (
+                          <span className="inline-flex h-5 min-w-9" aria-hidden="true" />
+                        )}
+
+                        <div
+                          className={cn(
+                            'flex items-center justify-end gap-1 transition-opacity',
+                            rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
+                          )}
+                        >
+                          <Button
+                            size="sm"
+                            className="h-7 rounded-lg px-3 text-[12px]"
+                            loading={saveStatus === 'saving'}
+                            disabled={!rowHasUnsavedChanges || !rowIsValid || isReadOnly}
+                            onClick={() => onRowSave(row)}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-7 w-7 rounded-lg px-0 text-[12px]"
+                            onClick={() => onRowCancel(row.groupId)}
+                            aria-label={`Cancel edits for group ${row.groupId}`}
+                          >
+                            x
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {rows.length === 0 ? (
+                  <div className="h-10 px-3 text-[12px] text-muted-foreground">No groups match the selected filter.</div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 overflow-auto p-2 md:hidden">
+            {rows.map((row) => {
+              const persistedFirst = row.prediction.first ?? ''
+              const persistedSecond = row.prediction.second ?? ''
+              const draft = rowDrafts[row.groupId]
+              const effectiveFirst = draft?.first ?? persistedFirst
+              const effectiveSecond = draft?.second ?? persistedSecond
+              const rowHasUnsavedChanges = Boolean(draft && (draft.first !== persistedFirst || draft.second !== persistedSecond))
+              const rowIsValid = Boolean(effectiveFirst) && Boolean(effectiveSecond) && effectiveFirst !== effectiveSecond
+              const rowDelta = resolveRowDelta({
+                row,
+                first: effectiveFirst,
+                second: effectiveSecond,
+                groupQualifierPoints
+              })
+
+              return (
+                <div key={`mobile-group-row-${row.groupId}`} className={cn('rounded-lg border border-border bg-background/40 p-2', rowSurfaceClass(row.rowResult))}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex h-7 w-10 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
+                        {row.groupId}
+                      </span>
+                      <span className={cn('h-2.5 w-2.5 rounded-full', statusDotClass(row, groupClosedByTime))} aria-hidden="true" />
+                    </div>
+                    {showPoints && rowDelta !== 0 ? (
+                      <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border px-2 text-[11px] text-muted-foreground">
+                        +{rowDelta}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-2 grid gap-2">
+                    <label className="grid gap-1 text-[11px] text-muted-foreground">
+                      1st Pick
+                      {isReadOnly ? (
+                        <div className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground">
+                          {formatTeamLabel(effectiveFirst || undefined, row.teams)}
+                        </div>
+                      ) : (
+                        <select
+                          value={effectiveFirst}
+                          className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          onChange={(event) => onPickChange(row, 'first', event.target.value)}
+                        >
+                          <option value="">Select team</option>
+                          {row.teams.map((team) => (
+                            <option key={`mobile-${row.groupId}-first-${team.code}`} value={team.code}>
+                              {team.code} · {team.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </label>
+
+                    <label className="grid gap-1 text-[11px] text-muted-foreground">
+                      2nd Pick
+                      {isReadOnly ? (
+                        <div className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground">
+                          {formatTeamLabel(effectiveSecond || undefined, row.teams)}
+                        </div>
+                      ) : (
+                        <select
+                          value={effectiveSecond}
+                          className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          onChange={(event) => onPickChange(row, 'second', event.target.value)}
+                        >
+                          <option value="">Select team</option>
+                          {row.teams.map((team) => (
+                            <option key={`mobile-${row.groupId}-second-${team.code}`} value={team.code}>
+                              {team.code} · {team.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </label>
+                  </div>
+
+                  {!isReadOnly ? (
+                    <div className="mt-2 flex min-h-10 items-center justify-end">
+                      <div className={cn('flex items-center gap-2 transition-opacity', rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0')}>
+                        <Button
+                          size="sm"
+                          className="h-10 rounded-lg px-3 text-[12px]"
+                          loading={saveStatus === 'saving'}
+                          disabled={!rowHasUnsavedChanges || !rowIsValid}
+                          onClick={() => onRowSave(row)}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-10 rounded-lg px-3 text-[12px]"
+                          onClick={() => onRowCancel(row.groupId)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })}
+
+            {rows.length === 0 ? (
+              <div className="rounded-lg border border-border bg-background/40 px-3 py-2 text-[12px] text-muted-foreground">
+                No groups match the selected filter.
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+type BestThirdPicksCompactProps = {
+  slots: BestThirdSlot[]
+  selectedCount: number
+  totalCount: number
+  selectedCodes: string[]
+  statusLabel: string
+  defaultCollapsed: boolean
+  isReadOnly: boolean
+  isDirty: boolean
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error' | 'locked'
+  warning?: ReactNode
+  resolveTeamLabel: (code: string | undefined) => string
+  onSlotChange: (index: number, value: string) => void
+  onSave: () => void
+}
+
+function bestThirdSurfaceClass(status: BestThirdStatus): string {
+  if (status === 'qualified') return 'bg-success/10'
+  if (status === 'missed') return 'bg-destructive/10'
+  if (status === 'locked') return 'bg-warn/10'
+  return 'bg-background/40'
+}
+
+function bestThirdStatusText(status: BestThirdStatus): string {
+  if (status === 'qualified') return 'Qualified'
+  if (status === 'missed') return 'Missed'
+  if (status === 'locked') return 'Locked'
+  return 'Pending'
+}
+
+export function BestThirdPicksCompact({
+  slots,
+  selectedCount,
+  totalCount,
+  selectedCodes,
+  statusLabel,
+  defaultCollapsed,
+  isReadOnly,
+  isDirty,
+  saveStatus,
+  warning,
+  resolveTeamLabel,
+  onSlotChange,
+  onSave
+}: BestThirdPicksCompactProps) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed)
+
+  useEffect(() => {
+    setCollapsed(defaultCollapsed)
+  }, [defaultCollapsed])
+
+  return (
+    <Card className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex h-10 items-center gap-2 border-b border-border/60 px-3">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-semibold text-foreground">Best 3rd Picks - Selected {selectedCount}/{totalCount}</div>
+        </div>
+
+        <div className="hidden min-w-0 max-w-[14rem] items-center gap-1 overflow-hidden lg:flex">
+          {selectedCodes.slice(0, 6).map((code) => (
+            <span key={`best-third-chip-${code}`} className="inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] text-muted-foreground">
+              {code}
+            </span>
+          ))}
+          {selectedCodes.length > 6 ? (
+            <span className="inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] text-muted-foreground">+{selectedCodes.length - 6}</span>
+          ) : null}
+        </div>
+
+        <Badge tone={statusLabel === 'Final' ? 'success' : statusLabel === 'Locked' ? 'locked' : 'warning'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
+          {statusLabel}
+        </Badge>
+
+        {!isReadOnly && isDirty ? (
+          <Button size="sm" className="h-8 rounded-lg px-3 text-[12px]" loading={saveStatus === 'saving'} onClick={onSave}>
+            Save
+          </Button>
+        ) : null}
+
+        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-lg px-0 text-[13px]" onClick={() => setCollapsed((current) => !current)} aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}>
+          {collapsed ? 'v' : '^'}
+        </Button>
+      </div>
+
+      {!collapsed ? (
+        <div className="max-h-72 overflow-y-auto p-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {slots.map((slot) => (
+              <div key={`best-third-slot-${slot.index}`} className={cn('rounded-lg border border-border px-2 py-1.5', bestThirdSurfaceClass(slot.status))}>
+                <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Slot {slot.index + 1}</div>
+                {isReadOnly ? (
+                  <div className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground sm:h-8 sm:leading-8">
+                    {resolveTeamLabel(slot.code || undefined)}
+                  </div>
+                ) : (
+                  <select
+                    className="h-10 w-full rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8"
+                    value={slot.code}
+                    onChange={(event) => onSlotChange(slot.index, event.target.value)}
+                  >
+                    <option value="">Select</option>
+                    {slot.options.map((team) => (
+                      <option key={`best-third-option-${slot.index}-${team.code}`} value={team.code}>
+                        {team.code} · {team.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <div className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">{bestThirdStatusText(slot.status)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {warning ? <div className="px-2 pb-2 text-[12px]">{warning}</div> : null}
+    </Card>
+  )
+}
+
+type RightRailStickyProps = {
+  children: ReactNode
+}
+
+export function RightRailSticky({ children }: RightRailStickyProps) {
+  return <aside className="max-xl:static xl:sticky xl:top-[calc(56px+32px+20px)] xl:self-start">{children}</aside>
+}
+
+type LeaderboardCardCuratedProps = {
+  rows: LeaderboardCardRow[]
+  snapshotLabel: string
+  topCount: 3 | 5
+  title: string
+}
+
+function movementLabel(movement: number | undefined): string {
+  if (typeof movement !== 'number' || movement === 0) return '-'
+  return movement > 0 ? `up ${movement}` : `down ${Math.abs(movement)}`
+}
+
+function curateRows(rows: LeaderboardCardRow[], topCount: number): LeaderboardCardRow[] {
+  const ranked = [...rows].sort((a, b) => a.rank - b.rank)
+  if (ranked.length <= topCount + 4) return ranked
+
+  const curated: LeaderboardCardRow[] = []
+  const seen = new Set<string>()
+
+  const add = (row: LeaderboardCardRow) => {
+    if (seen.has(row.id)) return
+    seen.add(row.id)
+    curated.push(row)
+  }
+
+  ranked.slice(0, topCount).forEach(add)
+
+  const youIndex = ranked.findIndex((row) => row.isYou)
+  if (youIndex >= 0) {
+    const start = Math.max(0, youIndex - 2)
+    const end = Math.min(ranked.length - 1, youIndex + 2)
+    for (let index = start; index <= end; index += 1) {
+      add(ranked[index])
+    }
+  }
+
+  ranked
+    .filter((row) => typeof row.movement === 'number' && row.movement !== 0)
+    .sort((a, b) => {
+      const absDelta = Math.abs(b.movement ?? 0) - Math.abs(a.movement ?? 0)
+      if (absDelta !== 0) return absDelta
+      return a.rank - b.rank
+    })
+    .slice(0, 2)
+    .forEach(add)
+
+  const targetCount = Math.min(ranked.length, topCount + 6)
+  if (curated.length < targetCount) {
+    for (const row of ranked) {
+      add(row)
+      if (curated.length >= targetCount) break
+    }
+  }
+
+  return curated
+}
+
+export function LeaderboardCardCurated({ rows, snapshotLabel, topCount, title }: LeaderboardCardCuratedProps) {
+  const [showFull, setShowFull] = useState(false)
+
+  const rankedRows = useMemo(() => [...rows].sort((a, b) => a.rank - b.rank), [rows])
+  const curatedRows = useMemo(() => curateRows(rankedRows, topCount), [rankedRows, topCount])
+  const displayRows = showFull ? rankedRows : curatedRows
+
+  return (
+    <Card className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
+        <div className="min-w-0">
+          <div className="truncate text-[13px] font-semibold text-foreground">{title}</div>
+          <div className="truncate text-[10px] text-muted-foreground">As of {snapshotLabel}</div>
+        </div>
+
+        {rows.length > curatedRows.length ? (
+          <Button size="sm" variant="ghost" className="h-7 rounded-lg px-2 text-[11px]" onClick={() => setShowFull((current) => !current)}>
+            {showFull ? 'Hide full' : 'View full'}
+          </Button>
+        ) : null}
+      </div>
+
+      <div className={cn('space-y-1 p-2', showFull ? 'max-h-72 overflow-y-auto pr-1' : undefined)}>
+        {displayRows.map((row) => (
+          <div
+            key={`leaderboard-row-${row.id}`}
+            className={cn(
+              'flex h-9 items-center justify-between rounded-lg border border-border px-3 text-[12px] transition-colors hover:bg-background/70',
+              row.isYou ? 'bg-background/80 ring-1 ring-ring/50' : 'bg-background/35'
+            )}
+          >
+            <div className="min-w-0">
+              <div className="truncate font-medium text-foreground">#{row.rank} {row.name}</div>
+              <div className="text-[10px] text-muted-foreground">Move {movementLabel(row.movement)}{row.isYou ? ' · You' : ''}</div>
+            </div>
+
+            <div className="text-right text-[11px] text-muted-foreground">
+              <div className="tabular-nums text-foreground">{row.points} pts</div>
+              {typeof row.deltaPoints === 'number' ? (
+                <div className="tabular-nums">{row.deltaPoints >= 0 ? '+' : ''}{row.deltaPoints}</div>
+              ) : null}
+            </div>
+          </div>
+        ))}
+
+        {rows.length === 0 ? (
+          <div className="rounded-lg border border-border bg-background/35 px-3 py-2 text-[12px] text-muted-foreground">
+            No leaderboard snapshot rows available.
+          </div>
+        ) : null}
+      </div>
+    </Card>
+  )
+}

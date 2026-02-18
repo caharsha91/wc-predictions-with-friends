@@ -3,9 +3,8 @@ import { cva } from 'class-variance-authority'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { fetchLeaderboard, fetchMatches, fetchPicks, fetchScoring } from '../../lib/data'
-import { buildGroupStandingsSnapshot } from '../../lib/groupStageSnapshot'
-import { isMatchLocked, getLockTime } from '../../lib/matches'
+import { fetchPicks, fetchScoring } from '../../lib/data'
+import { getLockTime, isMatchLocked } from '../../lib/matches'
 import { getPredictedWinner } from '../../lib/picks'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import type { Match } from '../../types/matches'
@@ -23,9 +22,11 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTi
 import { LEADERBOARD_LIST_PAGE_SIZE } from '../constants/pagination'
 import { useAuthState } from '../hooks/useAuthState'
 import { useNow } from '../hooks/useNow'
+import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
 import { formatUtcAndLocalDeadline } from '../lib/deadline'
+import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys, resolveLeaderboardUserContext } from '../lib/leaderboardContext'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { cn } from '../lib/utils'
@@ -82,9 +83,6 @@ type LoadState =
   | { status: 'error'; message: string }
   | {
       status: 'ready'
-      entries: LeaderboardEntry[]
-      lastUpdated: string
-      matches: Match[]
       picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[]
       scoring: ScoringConfig
     }
@@ -320,6 +318,7 @@ export default function LeaderboardPage() {
   const [simulatorOpen, setSimulatorOpen] = useState(false)
   const [whatIfDrafts, setWhatIfDrafts] = useState<Record<string, WhatIfDraft>>({})
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const publishedSnapshot = usePublishedSnapshot()
   const currentRowRef = useRef<HTMLDivElement | null>(null)
   const playRoot = mode === 'demo' ? '/demo/play' : '/play'
 
@@ -337,19 +336,10 @@ export default function LeaderboardPage() {
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [leaderboardFile, matchesFile, picksFile, scoring] = await Promise.all([
-          fetchLeaderboard({ mode }),
-          fetchMatches({ mode }),
-          fetchPicks({ mode }),
-          fetchScoring({ mode })
-        ])
+        const [picksFile, scoring] = await Promise.all([fetchPicks({ mode }), fetchScoring({ mode })])
         if (canceled) return
-        const sorted = [...leaderboardFile.entries].sort((a, b) => b.totalPoints - a.totalPoints)
         setState({
           status: 'ready',
-          entries: sorted,
-          lastUpdated: leaderboardFile.lastUpdated,
-          matches: matchesFile.matches,
           picksDocs: picksFile.picks,
           scoring
         })
@@ -364,51 +354,58 @@ export default function LeaderboardPage() {
     }
   }, [mode])
 
+  const leaderboardPresentation = useMemo(() => {
+    if (publishedSnapshot.state.status !== 'ready') return null
+    return buildLeaderboardPresentation({
+      snapshotTimestamp: publishedSnapshot.state.snapshotTimestamp,
+      groupStageComplete: publishedSnapshot.state.groupStageComplete,
+      projectedGroupStagePointsByUser: publishedSnapshot.state.projectedGroupStagePointsByUser,
+      leaderboardRows: publishedSnapshot.state.leaderboardRows
+    })
+  }, [publishedSnapshot.state])
+
+  const leaderboardRows = leaderboardPresentation?.rows ?? []
+  const groupStageComplete = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state.groupStageComplete : false
+  const snapshotTimestamp = leaderboardPresentation?.snapshotTimestamp ?? ''
+  const isFrozen = leaderboardPresentation?.isFrozen ?? true
+
   useEffect(() => {
-    if (state.status !== 'ready') return
+    if (state.status !== 'ready' || !snapshotTimestamp) return
     const currentSnapshot: RankSnapshot = {
-      lastUpdated: state.lastUpdated,
-      ranks: buildRankSnapshot(state.entries)
+      lastUpdated: snapshotTimestamp,
+      ranks: buildRankSnapshot(leaderboardRows)
     }
     const previousSnapshot = readRankSnapshot(mode)
     const previous =
-      previousSnapshot && previousSnapshot.lastUpdated !== state.lastUpdated
+      previousSnapshot && previousSnapshot.lastUpdated !== snapshotTimestamp
         ? previousSnapshot.ranks
         : null
     setPreviousRanks(previous)
     writeRankSnapshot(mode, currentSnapshot)
-  }, [mode, state])
+  }, [leaderboardRows, mode, snapshotTimestamp, state.status])
 
   const swingOpportunities = useMemo(() => {
-    if (state.status !== 'ready') return []
-    return buildSwingOpportunities(state.matches, state.picksDocs, now)
-  }, [now, state])
-
-  const groupStageComplete = useMemo(() => {
-    if (state.status !== 'ready') return false
-    const groupsInMatches = new Set(state.matches.filter((match) => match.stage === 'Group' && match.group).map((match) => match.group as string))
-    if (groupsInMatches.size === 0) return false
-    const standings = buildGroupStandingsSnapshot(state.matches)
-    return standings.completeGroups.size === groupsInMatches.size
-  }, [state])
+    if (state.status !== 'ready' || publishedSnapshot.state.status !== 'ready') return []
+    return buildSwingOpportunities(publishedSnapshot.state.matches, state.picksDocs, now)
+  }, [now, publishedSnapshot.state, state])
 
   const summary = useMemo(() => {
     if (state.status !== 'ready') return null
-    const leader = state.entries[0] ?? null
-    const userContext = resolveLeaderboardUserContext(state.entries, viewerKeys)
+    const leader = leaderboardRows[0] ?? null
+    const userContext = resolveLeaderboardUserContext(leaderboardRows, viewerKeys)
     const currentRank = userContext?.current.rank ?? null
     const current = userContext?.current.entry ?? null
-    const count = state.entries.length
+    const count = leaderboardRows.length
     const avg = (value: number) => (count > 0 ? Math.round(value / count) : 0)
-    const sumTotal = state.entries.reduce((sum, entry) => sum + entry.totalPoints, 0)
-    const sumExact = state.entries.reduce((sum, entry) => sum + entry.exactPoints, 0)
-    const sumOutcome = state.entries.reduce((sum, entry) => sum + entry.resultPoints, 0)
-    const sumKo = state.entries.reduce((sum, entry) => sum + entry.knockoutPoints, 0)
-    const sumBracket = state.entries.reduce((sum, entry) => sum + entry.bracketPoints, 0)
+    const sumTotal = leaderboardRows.reduce((sum, entry) => sum + entry.totalPoints, 0)
+    const sumExact = leaderboardRows.reduce((sum, entry) => sum + entry.exactPoints, 0)
+    const sumOutcome = leaderboardRows.reduce((sum, entry) => sum + entry.resultPoints, 0)
+    const sumKo = leaderboardRows.reduce((sum, entry) => sum + entry.knockoutPoints, 0)
+    const sumBracket = leaderboardRows.reduce((sum, entry) => sum + entry.bracketPoints, 0)
 
     const maxBy = (selector: (entry: LeaderboardEntry) => number) => {
-      if (state.entries.length === 0) return null
-      return state.entries.reduce((best, entry) => (selector(entry) > selector(best) ? entry : best), state.entries[0])
+      if (leaderboardRows.length === 0) return null
+      return leaderboardRows.reduce((best, entry) => (selector(entry) > selector(best) ? entry : best), leaderboardRows[0])
     }
     const maxTotal = maxBy((entry) => entry.totalPoints)
     const maxExact = maxBy((entry) => entry.exactPoints)
@@ -427,7 +424,7 @@ export default function LeaderboardPage() {
         : null
     const gapToLeader = leader && current ? Math.max(0, leader.totalPoints - current.totalPoints) : null
 
-    const thirdPlace = state.entries.length >= 3 ? state.entries[2] : null
+    const thirdPlace = leaderboardRows.length >= 3 ? leaderboardRows[2] : null
     const targetPoints = thirdPlace ? thirdPlace.totalPoints + 1 : null
     const pointsToTop3 = targetPoints !== null && current ? Math.max(0, targetPoints - current.totalPoints) : null
 
@@ -457,17 +454,17 @@ export default function LeaderboardPage() {
         bracket: maxBracket ? { value: maxBracket.bracketPoints, name: maxBracket.member.name } : null
       }
     }
-  }, [state, swingOpportunities.length, viewerKeys])
+  }, [leaderboardRows, state.status, swingOpportunities.length, viewerKeys])
 
   const socialBadgesByUser = useMemo(() => {
-    if (state.status !== 'ready') return new Map<string, SocialBadge[]>()
-    return buildSocialBadgeMap(state.matches, state.picksDocs)
-  }, [state])
+    if (state.status !== 'ready' || publishedSnapshot.state.status !== 'ready') return new Map<string, SocialBadge[]>()
+    return buildSocialBadgeMap(publishedSnapshot.state.matches, state.picksDocs)
+  }, [publishedSnapshot.state, state])
 
   const socialBadgesByEntry = useMemo(() => {
     if (state.status !== 'ready') return new Map<string, SocialBadge[]>()
     const byEntry = new Map<string, SocialBadge[]>()
-    for (const entry of state.entries) {
+    for (const entry of leaderboardRows) {
       const entryKey = getEntryIdentityKey(entry)
       const seenKinds = new Set<SocialBadge['kind']>()
       const badges: SocialBadge[] = []
@@ -481,14 +478,14 @@ export default function LeaderboardPage() {
       byEntry.set(entryKey, badges)
     }
     return byEntry
-  }, [socialBadgesByUser, state])
+  }, [leaderboardRows, socialBadgesByUser, state.status])
 
   const whatIfMatches = useMemo(() => {
-    if (state.status !== 'ready') return []
-    return state.matches
+    if (publishedSnapshot.state.status !== 'ready') return []
+    return publishedSnapshot.state.matches
       .filter((match) => match.status !== 'FINISHED')
       .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())
-  }, [state])
+  }, [publishedSnapshot.state])
 
   useEffect(() => {
     if (state.status !== 'ready') return
@@ -521,16 +518,16 @@ export default function LeaderboardPage() {
   }, [whatIfDrafts])
 
   const projectedRows = useMemo(() => {
-    if (state.status !== 'ready') return []
+    if (state.status !== 'ready' || publishedSnapshot.state.status !== 'ready' || isFrozen) return []
     if (Object.keys(simulatedOutcomes).length === 0) return []
     return buildProjectedLeaderboard(
-      state.entries,
-      state.matches,
+      leaderboardRows,
+      publishedSnapshot.state.matches,
       state.picksDocs,
       state.scoring,
       simulatedOutcomes
     )
-  }, [simulatedOutcomes, state])
+  }, [isFrozen, leaderboardRows, publishedSnapshot.state, simulatedOutcomes, state])
 
   const projectedYou = useMemo(() => {
     for (const row of projectedRows) {
@@ -542,11 +539,11 @@ export default function LeaderboardPage() {
   const currentRankByKey = useMemo(() => {
     if (state.status !== 'ready') return new Map<string, number>()
     const ranks = new Map<string, number>()
-    for (let index = 0; index < state.entries.length; index += 1) {
-      ranks.set(getEntryIdentityKey(state.entries[index]), index + 1)
+    for (let index = 0; index < leaderboardRows.length; index += 1) {
+      ranks.set(getEntryIdentityKey(leaderboardRows[index]), index + 1)
     }
     return ranks
-  }, [state])
+  }, [leaderboardRows, state.status])
 
   function toggleWhatIfMatch(matchId: string) {
     setWhatIfDrafts((current) => {
@@ -603,8 +600,13 @@ export default function LeaderboardPage() {
   }
 
   useEffect(() => {
+    if (!isFrozen) return
+    setSimulatorOpen(false)
+  }, [isFrozen])
+
+  useEffect(() => {
     setPage(1)
-  }, [state.status === 'ready' ? state.entries.length : 0])
+  }, [leaderboardRows.length])
 
   useEffect(() => {
     const row = currentRowRef.current
@@ -625,29 +627,35 @@ export default function LeaderboardPage() {
     )
     observer.observe(row)
     return () => observer.disconnect()
-  }, [page, state.status === 'ready' ? state.entries.length : 0])
+  }, [leaderboardRows.length, page])
 
-  if (state.status === 'loading') {
+  if (state.status === 'loading' || publishedSnapshot.state.status === 'loading') {
     return <LeaderboardSkeleton />
   }
 
-  if (state.status === 'error') {
+  if (state.status === 'error' || publishedSnapshot.state.status === 'error') {
+    const errorMessage =
+      state.status === 'error'
+        ? state.message
+        : publishedSnapshot.state.status === 'error'
+          ? publishedSnapshot.state.message
+          : 'Unknown error'
     return (
       <Alert tone="danger" title="Unable to load leaderboard">
-        {state.message}
+        {errorMessage}
       </Alert>
     )
   }
 
-  const totalPages = Math.max(1, Math.ceil(state.entries.length / LEADERBOARD_LIST_PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(leaderboardRows.length / LEADERBOARD_LIST_PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
   const start = (safePage - 1) * LEADERBOARD_LIST_PAGE_SIZE
-  const pageRows = state.entries.slice(start, start + LEADERBOARD_LIST_PAGE_SIZE)
+  const pageRows = leaderboardRows.slice(start, start + LEADERBOARD_LIST_PAGE_SIZE)
 
   const closestAboveKey = summary?.closestAbove ? getEntryIdentityKey(summary.closestAbove) : null
   const closestBelowKey = summary?.closestBelow ? getEntryIdentityKey(summary.closestBelow) : null
 
-  const podiumEntries = state.entries.slice(0, 3)
+  const podiumEntries = leaderboardRows.slice(0, 3)
   const centerPodiumEntry = podiumEntries[0] ?? null
   const leftPodiumEntry = podiumEntries[1] ?? null
   const rightPodiumEntry = podiumEntries[2] ?? null
@@ -685,7 +693,7 @@ export default function LeaderboardPage() {
         meta={
           <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
             <div className="uppercase tracking-[0.2em]">Last updated</div>
-            <div className="text-sm font-semibold text-foreground">{formatTime(state.lastUpdated)}</div>
+            <div className="text-sm font-semibold text-foreground">{formatTime(snapshotTimestamp)}</div>
             <div className="mt-1 text-[11px]">
               {groupStageComplete
                 ? 'Group-stage scoring is included in this official snapshot.'
@@ -775,7 +783,10 @@ export default function LeaderboardPage() {
                 <Button size="sm" onClick={() => navigate(playRoot)}>
                   Open Play Center
                 </Button>
-                <Button size="sm" variant="secondary" onClick={() => setSimulatorOpen(true)}>
+                <Button size="sm" variant="secondary" onClick={() => navigate(`${playRoot}/group-stage`)}>
+                  Open Group Stage
+                </Button>
+                <Button size="sm" variant="secondary" disabled={isFrozen} onClick={() => setSimulatorOpen(true)}>
                   Open What-If Simulator
                 </Button>
                 <Button size="sm" variant="secondary" onClick={openAdvancedMetrics}>
@@ -786,6 +797,12 @@ export default function LeaderboardPage() {
           </Card>
         </div>
       </PageHeroPanel>
+
+      {isFrozen ? (
+        <Alert tone="info" title="Leaderboard is frozen for group-stage scoring">
+          Official group-stage scoring publishes after completion and appears on the next daily snapshot.
+        </Alert>
+      ) : null}
 
       <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
         <div className="mb-3 text-xs text-muted-foreground">
@@ -894,10 +911,10 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        {state.entries.length > LEADERBOARD_LIST_PAGE_SIZE ? (
+        {leaderboardRows.length > LEADERBOARD_LIST_PAGE_SIZE ? (
           <div className="mt-4 flex items-center justify-between gap-2">
             <div className="text-xs text-muted-foreground">
-              Showing {start + 1}-{Math.min(start + LEADERBOARD_LIST_PAGE_SIZE, state.entries.length)} of {state.entries.length}
+              Showing {start + 1}-{Math.min(start + LEADERBOARD_LIST_PAGE_SIZE, leaderboardRows.length)} of {leaderboardRows.length}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -1008,14 +1025,23 @@ export default function LeaderboardPage() {
         ) : null}
       </div>
 
-      <Sheet open={simulatorOpen} onOpenChange={setSimulatorOpen}>
+      <Sheet open={!isFrozen && simulatorOpen} onOpenChange={setSimulatorOpen}>
         <SheetContent side="right" className="w-[96vw] max-w-2xl p-0">
           <SheetHeader>
             <SheetTitle>What-If Simulator</SheetTitle>
             <SheetDescription>
-              Model hypothetical upcoming match results and preview projected ranks.
+              {isFrozen
+                ? 'Projected leaderboard values are hidden while group-stage scoring is frozen.'
+                : 'Model hypothetical upcoming match results and preview projected ranks.'}
             </SheetDescription>
           </SheetHeader>
+          {isFrozen ? (
+            <div className="p-4">
+              <Alert tone="info" title="Projections unavailable during freeze">
+                Official group-stage scoring publishes after completion and appears on the next daily snapshot.
+              </Alert>
+            </div>
+          ) : (
           <div className="space-y-4 p-4">
             <div className="rounded-xl border border-dashed border-[var(--border-accent)] bg-[var(--accent-soft)]/35 p-3">
               <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Simulation mode</div>
@@ -1164,6 +1190,7 @@ export default function LeaderboardPage() {
               )}
             </div>
           </div>
+          )}
           <div className="border-t border-border/60 p-4">
             <SheetClose asChild>
               <Button variant="secondary">Close</Button>
