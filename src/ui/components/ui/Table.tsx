@@ -2,11 +2,20 @@ import type { TableHTMLAttributes } from 'react'
 
 import { cn } from '../../lib/utils'
 
-type TableProps = TableHTMLAttributes<HTMLTableElement>
+type TableProps = TableHTMLAttributes<HTMLTableElement> & {
+  containerClassName?: string
+  unframed?: boolean
+}
 
-export default function Table({ className, ...props }: TableProps) {
+export default function Table({ className, containerClassName, unframed = false, ...props }: TableProps) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-border bg-card shadow-[var(--shadow0)]">
+    <div
+      className={cn(
+        'w-full min-w-0 overflow-x-auto',
+        unframed ? null : 'rounded-lg border border-border bg-card shadow-[var(--shadow0)]',
+        containerClassName
+      )}
+    >
       <table
         {...props}
         className={cn(

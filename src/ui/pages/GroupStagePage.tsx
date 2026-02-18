@@ -410,36 +410,36 @@ export default function GroupStagePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeroPanel
-        kicker="Group stage"
-        title="Group Stage Detail"
-        subtitle="Compact table view of picks and published outcomes. Scores refresh daily from published snapshots."
-        meta={
-          <div className="flex items-start gap-3 text-right">
-            <ButtonLink to={toPlayPath()} size="sm" variant="primary">
-              Back to Play Center
-            </ButtonLink>
-            <div className="space-y-2 text-xs text-muted-foreground">
-              <div data-last-updated="true">
-                <div className="uppercase tracking-[0.2em]">Picks last saved</div>
-                <div className="text-sm font-semibold text-foreground">
-                  {formatTime(groupStage.data.updatedAt)}
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)]">
+      <div className="min-w-0 space-y-6">
+        <PageHeroPanel
+          kicker="Group stage"
+          title="Group Stage Detail"
+          subtitle="Compact table view of picks and published outcomes. Scores refresh daily from published snapshots."
+          meta={
+            <div className="flex items-start gap-3 text-right">
+              <ButtonLink to={toPlayPath()} size="sm" variant="primary">
+                Back to Play Center
+              </ButtonLink>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <div data-last-updated="true">
+                  <div className="uppercase tracking-[0.2em]">Picks last saved</div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {formatTime(groupStage.data.updatedAt)}
+                  </div>
                 </div>
-              </div>
-              <div data-last-updated="true">
-                <div className="uppercase tracking-[0.2em]">Scoring snapshot</div>
-                <div className="text-sm font-semibold text-foreground">
-                  {formatTime(scoringSnapshotTimestamp)}
+                <div data-last-updated="true">
+                  <div className="uppercase tracking-[0.2em]">Scoring snapshot</div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {formatTime(scoringSnapshotTimestamp)}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        }
-      >
-        <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
+          }
+        >
+          <div className="min-w-0 space-y-5">
+            <div className="flex min-h-9 flex-wrap items-center gap-2">
               <Badge tone={completion.groupsDone === groupIds.length && groupIds.length > 0 ? 'success' : 'warning'}>
                 Groups {completion.groupsDone}/{groupIds.length}
               </Badge>
@@ -451,13 +451,13 @@ export default function GroupStagePage() {
               </Badge>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-bg2/40 p-2">
+            <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border/70 bg-bg2/40 p-3">
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="uppercase tracking-[0.16em]">Group</span>
                 <select
                   value={queryState.group}
                   onChange={(event) => updateQueryState({ group: event.target.value as GroupStageQueryState['group'] })}
-                  className="h-8 rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                  className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
                 >
                   <option value="all">All</option>
                   {GROUP_STAGE_GROUP_CODES.map((groupId) => (
@@ -471,7 +471,7 @@ export default function GroupStagePage() {
                 <select
                   value={queryState.focus}
                   onChange={(event) => updateQueryState({ focus: event.target.value as GroupStageQueryState['focus'] })}
-                  className="h-8 rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                  className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
                 >
                   <option value="all">Both</option>
                   <option value="1st">1st</option>
@@ -484,7 +484,7 @@ export default function GroupStagePage() {
                 <select
                   value={queryState.status}
                   onChange={(event) => updateQueryState({ status: event.target.value as GroupStageQueryState['status'] })}
-                  className="h-8 rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                  className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
                 >
                   <option value="all">All</option>
                   <option value="pending">Pending</option>
@@ -500,7 +500,7 @@ export default function GroupStagePage() {
                 <select
                   value={viewControlValue}
                   onChange={(event) => updateQueryState({ view: event.target.value as GroupStageQueryState['view'] })}
-                  className="h-8 rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                  className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
                 >
                   <option value="groups">Groups</option>
                   <option value="best3">Best 3rd</option>
@@ -510,6 +510,7 @@ export default function GroupStagePage() {
               <Button
                 size="sm"
                 variant={showPoints ? 'primary' : 'secondary'}
+                className="h-9"
                 onClick={() => updateQueryState({ points: showPoints ? 'off' : 'on' })}
               >
                 Points {showPoints ? 'On' : 'Off'}
@@ -533,26 +534,31 @@ export default function GroupStagePage() {
               </Alert>
             ) : null}
 
-            <Table className="[&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:tracking-[0.14em]">
-              <thead>
-                <tr>
-                  <th>Group</th>
-                  {showFirstPlacementColumn ? (
-                    <th className={cn(!isMobile && queryState.focus === '1st' ? 'bg-[rgba(var(--primary-rgb),0.08)]' : undefined)}>
-                      1st
-                    </th>
-                  ) : null}
-                  {showSecondPlacementColumn ? (
-                    <th className={cn(!isMobile && queryState.focus === '2nd' ? 'bg-[rgba(var(--primary-rgb),0.08)]' : undefined)}>
-                      2nd
-                    </th>
-                  ) : null}
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((row) => {
+            <div className="min-w-0">
+              <Table
+                unframed
+                containerClassName="min-w-0"
+                className="[&_td]:px-2 [&_td]:py-2 [&_th]:px-2 [&_th]:py-2 [&_th]:tracking-[0.14em] [&_th]:h-10 [&_th]:align-middle"
+              >
+                <thead>
+                  <tr>
+                    <th>Group</th>
+                    {showFirstPlacementColumn ? (
+                      <th className={cn(!isMobile && queryState.focus === '1st' ? 'bg-[rgba(var(--primary-rgb),0.08)]' : undefined)}>
+                        1st
+                      </th>
+                    ) : null}
+                    {showSecondPlacementColumn ? (
+                      <th className={cn(!isMobile && queryState.focus === '2nd' ? 'bg-[rgba(var(--primary-rgb),0.08)]' : undefined)}>
+                        2nd
+                      </th>
+                    ) : null}
+                    <th className="w-[150px] text-center">Status</th>
+                    <th className="w-[168px] text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRows.map((row) => {
                   const statusLabel = row.complete ? 'Final' : groupClosedByTime ? 'Locked' : 'Pending'
                   const rowIsEditing = inlineRowDraft?.groupId === row.groupId
                   const rowDraft = rowIsEditing ? inlineRowDraft : null
@@ -704,17 +710,17 @@ export default function GroupStagePage() {
                         ? renderPlacementCell('2nd', row.prediction.second, row.actualTopTwo[1], row.secondResult)
                         : null}
 
-                      <td>
-                        <div className="flex flex-wrap items-center gap-2">
+                      <td className="w-[150px] align-top">
+                        <div className="flex min-h-9 flex-wrap items-center justify-center gap-2">
                           <Badge tone={row.complete ? 'success' : groupClosedByTime ? 'locked' : 'secondary'}>{statusLabel}</Badge>
                           {row.complete ? <Badge tone={groupResultTone(row.rowResult)}>{groupResultLabel(row.rowResult)}</Badge> : null}
                         </div>
                       </td>
 
-                      <td>
+                      <td className="w-[168px] align-top">
                         {!groupClosed ? (
                           rowIsEditing ? (
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex min-h-9 flex-wrap items-center justify-end gap-2">
                               <Button
                                 size="sm"
                                 loading={groupStage.saveStatus === 'saving'}
@@ -743,6 +749,7 @@ export default function GroupStagePage() {
                             <Button
                               size="sm"
                               variant="secondary"
+                              className="ml-auto flex"
                               onClick={() => startInlineRowEdit(row)}
                             >
                               Edit
@@ -752,21 +759,21 @@ export default function GroupStagePage() {
                       </td>
                     </tr>
                   )
-                })}
-                {filteredRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={showFirstPlacementColumn && showSecondPlacementColumn ? 5 : 4} className="text-center text-xs text-muted-foreground">
-                      No groups match the selected filters.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </Table>
+                  })}
+                  {filteredRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={showFirstPlacementColumn && showSecondPlacementColumn ? 5 : 4} className="text-center text-xs text-muted-foreground">
+                        No groups match the selected filters.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </Table>
+            </div>
           </div>
-        </Card>
-      </PageHeroPanel>
+        </PageHeroPanel>
 
-      <Card className="rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
+      <Card className="min-w-0 rounded-2xl border-border/60 bg-transparent p-4 sm:p-5">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-sm font-semibold text-foreground">Group standings snapshot</div>
@@ -828,7 +835,7 @@ export default function GroupStagePage() {
         </div>
       </Card>
 
-      <div ref={bestThirdSectionRef} tabIndex={-1} className="outline-none">
+      <div ref={bestThirdSectionRef} tabIndex={-1} className="min-w-0 outline-none">
         <Card
           className={cn(
             'rounded-2xl border-border/60 bg-transparent p-4 sm:p-5',
@@ -885,8 +892,8 @@ export default function GroupStagePage() {
                       onChange={(event) => groupStage.setBestThird(index, event.target.value)}
                     >
                       <option value="">Select team</option>
-                      {bestThirdCandidatesForIndex(index).map((team) => (
-                        <option key={`inline-best-third-${index}-${team.code}`} value={team.code}>
+                      {bestThirdCandidatesForIndex(index).map((team, candidateIndex) => (
+                        <option key={`inline-best-third-${index}-${team.code}-${candidateIndex}`} value={team.code}>
                           {team.name}
                         </option>
                       ))}
@@ -929,6 +936,7 @@ export default function GroupStagePage() {
           ) : null}
         </div>
         </Card>
+      </div>
       </div>
     </div>
   )
