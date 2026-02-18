@@ -59,6 +59,16 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['theme']);
     }
 
+    function groupStageLockDeadlineUtc() {
+      // First group kickoff is 2026-06-11T19:00:00Z; lock opens 30 minutes earlier.
+      // TODO(vLater): move this deadline to shared tournament config once rules can read that source.
+      return timestamp.date(2026, 6, 11) + duration.value(18, 'h') + duration.value(30, 'm');
+    }
+
+    function isBeforeGroupStageLock() {
+      return request.time < groupStageLockDeadlineUtc();
+    }
+
     match /leagues/{leagueId} {
       allow read, write: if false;
 
@@ -83,7 +93,8 @@ service cloud.firestore {
         allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
           && isSelf(userId)
-          && request.resource.data.userId == request.auth.uid;
+          && request.resource.data.userId == request.auth.uid
+          && isBeforeGroupStageLock();
       }
 
       match /bracket-knockout/{userId} {

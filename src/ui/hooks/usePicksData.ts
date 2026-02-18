@@ -8,6 +8,7 @@ import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 import { useAuthState } from './useAuthState'
 import { useCurrentUser } from './useCurrentUser'
+import { useDemoScenarioState } from './useDemoScenarioState'
 import { useRouteDataMode } from './useRouteDataMode'
 import { useViewerId } from './useViewerId'
 
@@ -21,6 +22,7 @@ export function usePicksData() {
   const currentUser = useCurrentUser()
   const mode = useRouteDataMode()
   const isDemoMode = mode === 'demo'
+  const demoScenario = useDemoScenarioState()
   const userId = useViewerId()
   const [state, setState] = useState<PicksLoadState>({ status: 'loading' })
   const [picks, setPicks] = useState<Pick[]>(() => loadLocalPicks(userId, mode))
@@ -37,6 +39,7 @@ export function usePicksData() {
     async function load() {
       if (hasFirebase && authState.status === 'loading') return
       setState({ status: 'loading' })
+      setPicks(loadLocalPicks(userId, mode))
       try {
         const matchesFile = await fetchMatches({ mode })
         if (canceled) return
@@ -79,7 +82,7 @@ export function usePicksData() {
     return () => {
       canceled = true
     }
-  }, [authState.status, firestoreEnabled, mode, userId])
+  }, [authState.status, demoScenario, firestoreEnabled, mode, userId])
 
   function updatePicks(nextPicks: Pick[]) {
     setPicks(nextPicks)

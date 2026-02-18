@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FirebaseError } from 'firebase/app'
 
 import { loadLocalBracketPrediction, saveLocalBracketPrediction } from '../../lib/bracket'
 import { fetchBracketPredictions } from '../../lib/data'
 import { fetchUserGroupStageDoc, saveUserGroupStageDoc } from '../../lib/firestoreData'
 import { hasFirebase } from '../../lib/firebase'
+import { getGroupOutcomesLockTime } from '../../lib/matches'
 import type { GroupPrediction } from '../../types/bracket'
 import type { Match } from '../../types/matches'
 import { useAuthState } from './useAuthState'
 import { useCurrentUser } from './useCurrentUser'
+import { useDemoScenarioState } from './useDemoScenarioState'
 import { useRouteDataMode } from './useRouteDataMode'
 import { useViewerId } from './useViewerId'
 
@@ -23,6 +26,12 @@ type GroupStageData = {
   bestThirds: string[]
   updatedAt: string
 }
+
+type GroupStageSaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'locked'
+
+type GroupStageSaveResult =
+  | { ok: true }
+  | { ok: false; reason: 'locked' | 'error' }
 
 function buildGroupIds(matches: Match[]): string[] {
   const ids = new Set<string>()
@@ -88,12 +97,15 @@ export function useGroupStageData(matches: Match[]) {
   const currentUser = useCurrentUser()
   const mode = useRouteDataMode()
   const isDemoMode = mode === 'demo'
+  const demoScenario = useDemoScenarioState()
   const userId = useViewerId()
   const groupIds = useMemo(() => buildGroupIds(matches), [matches])
+  const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
 
   const [loadState, setLoadState] = useState<GroupStageLoadState>({ status: 'loading' })
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [saveStatus, setSaveStatus] = useState<GroupStageSaveStatus>('idle')
   const [data, setData] = useState<GroupStageData>(() => createEmptyData(groupIds))
+  const [forcedLocked, setForcedLocked] = useState(false)
 
   const firestoreEnabled =
     !isDemoMode &&
@@ -101,12 +113,15 @@ export function useGroupStageData(matches: Match[]) {
     authState.status === 'ready' &&
     !!authState.user &&
     currentUser?.isMember === true
+  const isTimeLocked = groupLockTime ? Date.now() >= groupLockTime.getTime() : false
+  const isLocked = forcedLocked || isTimeLocked
 
   useEffect(() => {
     let canceled = false
 
     async function load() {
       if (groupIds.length === 0) {
+        setForcedLocked(false)
         setData(createEmptyData([]))
         setLoadState({ status: 'ready' })
         return
@@ -114,8 +129,14 @@ export function useGroupStageData(matches: Match[]) {
       if (hasFirebase && authState.status === 'loading') return
 
       setLoadState({ status: 'loading' })
+      setSaveStatus('idle')
+      setForcedLocked(false)
       const slotCount = DEFAULT_BEST_THIRD_SLOTS
       const empty = createEmptyData(groupIds)
+      setData({
+        ...empty,
+        bestThirds: normalizeBestThirds(empty.bestThirds, slotCount)
+      })
 
       try {
         let next: GroupStageData | null = null
@@ -179,10 +200,11 @@ export function useGroupStageData(matches: Match[]) {
     return () => {
       canceled = true
     }
-  }, [authState.status, firestoreEnabled, groupIds, mode, userId])
+  }, [authState.status, demoScenario, firestoreEnabled, groupIds, mode, userId])
 
   const setGroupPick = useCallback(
     (groupId: string, field: 'first' | 'second', value: string) => {
+      if (isLocked) return
       setData((current) => {
         const nextGroups = {
           ...current.groups,
@@ -211,11 +233,12 @@ export function useGroupStageData(matches: Match[]) {
       })
       setSaveStatus('idle')
     },
-    [mode, userId]
+    [isLocked, mode, userId]
   )
 
   const setBestThird = useCallback(
     (index: number, value: string) => {
+      if (isLocked) return
       setData((current) => {
         const slotCount = Math.max(DEFAULT_BEST_THIRD_SLOTS, current.bestThirds.length)
         const nextBestThirds = normalizeBestThirds(current.bestThirds, slotCount)
@@ -231,24 +254,34 @@ export function useGroupStageData(matches: Match[]) {
       })
       setSaveStatus('idle')
     },
-    [mode, userId]
+    [isLocked, mode, userId]
   )
 
-  const save = useCallback(async () => {
+  const save = useCallback(async (): Promise<GroupStageSaveResult> => {
+    if (isLocked) {
+      setForcedLocked(true)
+      setSaveStatus('locked')
+      return { ok: false, reason: 'locked' }
+    }
+
     setSaveStatus('saving')
     try {
       saveLocalGroupStage(userId, data, mode)
       if (firestoreEnabled) {
-        // TODO(v1.1 GS-004): enforce post-lock write rejection in client+backend save path.
         await saveUserGroupStageDoc(userId, data.groups, data.bestThirds)
       }
       setSaveStatus('saved')
-      return true
-    } catch {
+      return { ok: true }
+    } catch (error) {
+      if (error instanceof FirebaseError && error.code === 'permission-denied') {
+        setForcedLocked(true)
+        setSaveStatus('locked')
+        return { ok: false, reason: 'locked' }
+      }
       setSaveStatus('error')
-      return false
+      return { ok: false, reason: 'error' }
     }
-  }, [data, firestoreEnabled, mode, userId])
+  }, [data, firestoreEnabled, isLocked, mode, userId])
 
   return {
     loadState,
@@ -258,6 +291,7 @@ export function useGroupStageData(matches: Match[]) {
     setBestThird,
     save,
     saveStatus,
-    canPersistFirestore: firestoreEnabled
+    canPersistFirestore: firestoreEnabled,
+    isLocked
   }
 }

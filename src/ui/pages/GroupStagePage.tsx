@@ -149,7 +149,8 @@ export default function GroupStagePage() {
   const groupIds = groupStage.groupIds
   const bestThirds = normalizeBestThirds(groupStage.data.bestThirds)
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
-  const groupClosed = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
+  const groupClosedByTime = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
+  const groupClosed = groupClosedByTime || groupStage.isLocked
 
   const completion = useMemo(() => {
     const groupsDone = getCompletionCount(groupStage.data.groups, groupIds)
@@ -294,6 +295,11 @@ export default function GroupStagePage() {
             {groupClosed ? (
               <Alert tone="info" title="Group stage is closed">
                 Detail view only. Selections are visible with embedded standings below.
+              </Alert>
+            ) : null}
+            {groupStage.saveStatus === 'locked' ? (
+              <Alert tone="warning" title="Lock enforced">
+                Group-stage edits are blocked after lock. Refresh daily snapshots to review updated outcomes.
               </Alert>
             ) : null}
             <div className="text-xs text-muted-foreground">
@@ -572,14 +578,23 @@ export default function GroupStagePage() {
               <Button
                 size="sm"
                 onClick={async () => {
-                  const ok = await groupStage.save()
+                  const result = await groupStage.save()
                   showToast({
-                    tone: ok ? 'success' : 'danger',
-                    title: ok ? 'Group picks saved' : 'Save failed',
-                    message: ok ? 'Your group-stage edits were saved.' : 'Unable to save group-stage edits.'
+                    tone: result.ok ? 'success' : result.reason === 'locked' ? 'warning' : 'danger',
+                    title: result.ok
+                      ? 'Group picks saved'
+                      : result.reason === 'locked'
+                        ? 'Group stage locked'
+                        : 'Save failed',
+                    message: result.ok
+                      ? 'Your group-stage edits were saved.'
+                      : result.reason === 'locked'
+                        ? 'Post-lock edits are not allowed.'
+                        : 'Unable to save group-stage edits.'
                   })
                 }}
                 loading={groupStage.saveStatus === 'saving'}
+                disabled={groupClosed}
               >
                 Save group picks
               </Button>

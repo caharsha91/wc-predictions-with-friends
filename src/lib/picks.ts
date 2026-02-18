@@ -10,27 +10,68 @@ import type { Match } from '../types/matches'
 import type { DataMode } from './dataMode'
 
 const STORAGE_PREFIX = 'wc-picks'
+const DEMO_SCENARIO_STORAGE_KEY = 'wc-demo-scenario'
+const DEMO_SCENARIOS = new Set([
+  'pre-group',
+  'mid-group',
+  'end-group-draw-confirmed',
+  'mid-knockout',
+  'world-cup-final-pending'
+])
+
+function readDemoScenarioId(): string {
+  if (typeof window === 'undefined') return 'pre-group'
+  const raw = window.localStorage.getItem(DEMO_SCENARIO_STORAGE_KEY)?.trim() ?? ''
+  return DEMO_SCENARIOS.has(raw) ? raw : 'pre-group'
+}
+
+function getLegacyDemoStorageKey(userId: string): string {
+  return `${STORAGE_PREFIX}:demo:${userId}`
+}
+
+function parseStoredPicks(raw: string | null): Pick[] | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as { picks?: Pick[] }
+    return Array.isArray(parsed.picks) ? parsed.picks : []
+  } catch {
+    return null
+  }
+}
 
 export function getLocalStorageKey(userId: string, mode: DataMode = 'default'): string {
+  if (mode === 'demo') {
+    return `${STORAGE_PREFIX}:${mode}:${readDemoScenarioId()}:${userId}`
+  }
   return `${STORAGE_PREFIX}:${mode}:${userId}`
 }
 
 export function loadLocalPicks(userId: string, mode: DataMode = 'default'): Pick[] {
   if (typeof window === 'undefined') return []
-  const raw = window.localStorage.getItem(getLocalStorageKey(userId, mode))
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw) as { picks?: Pick[] }
-    return Array.isArray(parsed.picks) ? parsed.picks : []
-  } catch {
-    return []
+  const scopedKey = getLocalStorageKey(userId, mode)
+  const scoped = parseStoredPicks(window.localStorage.getItem(scopedKey))
+  if (scoped !== null) return scoped
+
+  if (mode === 'demo') {
+    const legacyKey = getLegacyDemoStorageKey(userId)
+    const legacy = parseStoredPicks(window.localStorage.getItem(legacyKey))
+    if (legacy !== null) {
+      window.localStorage.setItem(scopedKey, JSON.stringify({ picks: legacy }))
+      window.localStorage.removeItem(legacyKey)
+      return legacy
+    }
   }
+
+  return []
 }
 
 export function saveLocalPicks(userId: string, picks: Pick[], mode: DataMode = 'default'): void {
   if (typeof window === 'undefined') return
   const payload = JSON.stringify({ picks })
   window.localStorage.setItem(getLocalStorageKey(userId, mode), payload)
+  if (mode === 'demo') {
+    window.localStorage.removeItem(getLegacyDemoStorageKey(userId))
+  }
 }
 
 export function getOutcomeFromScores(

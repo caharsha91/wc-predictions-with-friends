@@ -22,7 +22,7 @@ import {
   writeDemoScenario,
   writeDemoViewerId
 } from '../lib/demoControls'
-import { clearDemoLocalStorage } from '../lib/demoStorage'
+import { clearDemoLocalStorage, emitDemoScenarioChanged } from '../lib/demoStorage'
 import { useToast } from '../hooks/useToast'
 
 type LoadState =
@@ -152,8 +152,10 @@ export default function DemoControlsPage() {
 
   function applyScenario() {
     if (!scenarioNow) return
+    const previousScenario = readDemoScenario()
     writeDemoScenario(selectedScenario)
     writeDemoNowOverride(scenarioNow.toISOString())
+    emitDemoScenarioChanged(previousScenario, selectedScenario)
     emitControlsChanged()
     showToast({ tone: 'success', title: 'Scenario applied', message: selectedScenario })
   }

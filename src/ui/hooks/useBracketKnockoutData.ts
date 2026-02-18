@@ -15,6 +15,7 @@ import type { Match, MatchWinner } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 import { useAuthState } from './useAuthState'
 import { useCurrentUser } from './useCurrentUser'
+import { useDemoScenarioState } from './useDemoScenarioState'
 import { useRouteDataMode } from './useRouteDataMode'
 import { useViewerId } from './useViewerId'
 
@@ -75,6 +76,7 @@ export function useBracketKnockoutData() {
   const currentUser = useCurrentUser()
   const mode = useRouteDataMode()
   const isDemoMode = mode === 'demo'
+  const demoScenario = useDemoScenarioState()
   const userId = useViewerId()
 
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' })
@@ -94,6 +96,7 @@ export function useBracketKnockoutData() {
     async function load() {
       if (hasFirebase && authState.status === 'loading') return
       setLoadState({ status: 'loading' })
+      setKnockout({})
       try {
         const matchesFile = await fetchMatches({ mode })
         if (canceled) return
@@ -139,7 +142,7 @@ export function useBracketKnockoutData() {
     return () => {
       canceled = true
     }
-  }, [authState.status, firestoreEnabled, mode, userId])
+  }, [authState.status, demoScenario, firestoreEnabled, mode, userId])
 
   const totalMatches = useMemo(() => {
     if (loadState.status !== 'ready') return 0

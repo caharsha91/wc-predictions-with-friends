@@ -1,3 +1,5 @@
+export const DEMO_SCENARIO_CHANGED_EVENT = 'wc-demo-scenario-changed'
+
 const DEMO_KEY_PREFIXES = [
   'wc-cache:demo:',
   'wc-picks:demo:',
@@ -13,6 +15,19 @@ const DEMO_KEY_PREFIXES = [
 
 function isDemoStorageKey(key: string): boolean {
   return DEMO_KEY_PREFIXES.some((prefix) => key.startsWith(prefix))
+}
+
+export function emitDemoScenarioChanged(previousScenario: string, nextScenario: string): void {
+  if (typeof window === 'undefined') return
+  if (!previousScenario || !nextScenario || previousScenario === nextScenario) return
+  window.dispatchEvent(
+    new CustomEvent(DEMO_SCENARIO_CHANGED_EVENT, {
+      detail: {
+        previousScenario,
+        nextScenario
+      }
+    })
+  )
 }
 
 export function clearDemoLocalStorage(): void {
