@@ -239,6 +239,7 @@ export function useGroupStageData(matches: Match[]) {
     try {
       saveLocalGroupStage(userId, data, mode)
       if (firestoreEnabled) {
+        // TODO(v1.1 GS-004): enforce post-lock write rejection in client+backend save path.
         await saveUserGroupStageDoc(userId, data.groups, data.bestThirds)
       }
       setSaveStatus('saved')

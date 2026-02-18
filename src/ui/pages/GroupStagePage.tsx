@@ -2,6 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import { fetchBestThirdQualifiers } from '../../lib/data'
+import {
+  BEST_THIRD_SLOT_COUNT,
+  buildGroupStandingsSnapshot,
+  hasExactBestThirdSelection,
+  normalizeTeamCodes,
+  resolveBestThirdStatus,
+  resolveGroupPlacementStatus,
+  resolveGroupRowStatus,
+  type BestThirdStatus,
+  type GroupPlacementStatus
+} from '../../lib/groupStageSnapshot'
 import { getGroupOutcomesLockTime } from '../../lib/matches'
 import type { GroupPrediction } from '../../types/bracket'
 import type { Match, Team } from '../../types/matches'
@@ -20,17 +31,7 @@ import { usePicksData } from '../hooks/usePicksData'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 
-const BEST_THIRD_SLOTS = 8
-
-type GroupStanding = {
-  code: string
-  points: number
-  gd: number
-  ga: number
-  gf: number
-}
-
-type PredictionResult = 'correct' | 'wrong' | 'pending'
+const BEST_THIRD_SLOTS = BEST_THIRD_SLOT_COUNT
 
 function formatTime(iso?: string): string {
   if (!iso) return '—'
@@ -75,94 +76,45 @@ function getCompletionCount(groups: Record<string, GroupPrediction>, groupIds: s
   }
   return complete
 }
-
-function computeGroupStandings(matches: Match[]): {
-  standingsByGroup: Map<string, GroupStanding[]>
-  completeGroups: Set<string>
-  totalMatchesByGroup: Map<string, number>
-  finishedMatchesByGroup: Map<string, number>
-} {
-  const tables = new Map<string, Map<string, GroupStanding>>()
-  const totalPerGroup = new Map<string, number>()
-  const finishedPerGroup = new Map<string, number>()
-
-  for (const match of matches) {
-    if (match.stage !== 'Group' || !match.group) continue
-    totalPerGroup.set(match.group, (totalPerGroup.get(match.group) ?? 0) + 1)
-
-    const groupTable = tables.get(match.group) ?? new Map<string, GroupStanding>()
-    if (!groupTable.has(match.homeTeam.code)) {
-      groupTable.set(match.homeTeam.code, { code: match.homeTeam.code, points: 0, gd: 0, ga: 0, gf: 0 })
-    }
-    if (!groupTable.has(match.awayTeam.code)) {
-      groupTable.set(match.awayTeam.code, { code: match.awayTeam.code, points: 0, gd: 0, ga: 0, gf: 0 })
-    }
-    tables.set(match.group, groupTable)
-
-    if (match.status !== 'FINISHED' || !match.score) continue
-
-    finishedPerGroup.set(match.group, (finishedPerGroup.get(match.group) ?? 0) + 1)
-
-    const home = groupTable.get(match.homeTeam.code)
-    const away = groupTable.get(match.awayTeam.code)
-    if (!home || !away) continue
-
-    home.gf += match.score.home
-    home.ga += match.score.away
-    away.gf += match.score.away
-    away.ga += match.score.home
-    home.gd += match.score.home - match.score.away
-    away.gd += match.score.away - match.score.home
-
-    if (match.score.home > match.score.away) {
-      home.points += 3
-    } else if (match.score.home < match.score.away) {
-      away.points += 3
-    } else {
-      home.points += 1
-      away.points += 1
-    }
-  }
-
-  const standingsByGroup = new Map<string, GroupStanding[]>()
-  for (const [groupId, table] of tables.entries()) {
-    const sorted = [...table.values()].sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points
-      if (b.gd !== a.gd) return b.gd - a.gd
-      if (b.gf !== a.gf) return b.gf - a.gf
-      return a.code.localeCompare(b.code)
-    })
-    standingsByGroup.set(groupId, sorted)
-  }
-
-  const completeGroups = new Set<string>()
-  for (const [groupId, total] of totalPerGroup.entries()) {
-    if ((finishedPerGroup.get(groupId) ?? 0) >= total) completeGroups.add(groupId)
-  }
-
-  return {
-    standingsByGroup,
-    completeGroups,
-    totalMatchesByGroup: totalPerGroup,
-    finishedMatchesByGroup: finishedPerGroup
-  }
-}
-
-function resultTone(status: PredictionResult): 'success' | 'danger' | 'secondary' {
+function groupResultTone(status: GroupPlacementStatus): 'success' | 'danger' | 'secondary' | 'locked' {
   if (status === 'correct') return 'success'
-  if (status === 'wrong') return 'danger'
+  if (status === 'incorrect') return 'danger'
+  if (status === 'locked') return 'locked'
   return 'secondary'
 }
 
-function resultLabel(status: PredictionResult): string {
-  if (status === 'correct') return 'Correct'
-  if (status === 'wrong') return 'Wrong'
+function groupResultLabel(status: GroupPlacementStatus): string {
+  if (status === 'correct') return 'Correct (Exact)'
+  if (status === 'incorrect') return 'Incorrect'
+  if (status === 'locked') return 'Locked'
   return 'Pending'
 }
 
-function resultSurfaceClass(status: PredictionResult): string {
+function groupResultSurfaceClass(status: GroupPlacementStatus): string {
   if (status === 'correct') return 'bg-[rgba(var(--primary-rgb),0.08)]'
-  if (status === 'wrong') return 'bg-[rgba(var(--danger-rgb),0.08)]'
+  if (status === 'incorrect') return 'bg-[rgba(var(--danger-rgb),0.08)]'
+  if (status === 'locked') return 'bg-[rgba(var(--warning-rgb),0.08)]'
+  return 'bg-bg2/40'
+}
+
+function bestThirdResultTone(status: BestThirdStatus): 'success' | 'danger' | 'secondary' | 'locked' {
+  if (status === 'qualified') return 'success'
+  if (status === 'missed') return 'danger'
+  if (status === 'locked') return 'locked'
+  return 'secondary'
+}
+
+function bestThirdResultLabel(status: BestThirdStatus): string {
+  if (status === 'qualified') return 'Qualified'
+  if (status === 'missed') return 'Missed'
+  if (status === 'locked') return 'Locked'
+  return 'Pending'
+}
+
+function bestThirdResultSurfaceClass(status: BestThirdStatus): string {
+  if (status === 'qualified') return 'bg-[rgba(var(--primary-rgb),0.08)]'
+  if (status === 'missed') return 'bg-[rgba(var(--danger-rgb),0.08)]'
+  if (status === 'locked') return 'bg-[rgba(var(--warning-rgb),0.08)]'
   return 'bg-bg2/40'
 }
 
@@ -185,6 +137,7 @@ export default function GroupStagePage() {
   const [qualifiersState, setQualifiersState] = useState<{
     status: 'loading' | 'ready' | 'error'
     qualifiers: string[]
+    updatedAt?: string
     message?: string
   }>({ status: 'loading', qualifiers: [] })
 
@@ -200,14 +153,26 @@ export default function GroupStagePage() {
 
   const completion = useMemo(() => {
     const groupsDone = getCompletionCount(groupStage.data.groups, groupIds)
-    const bestThirdDone = bestThirds.filter(Boolean).length
-    return { groupsDone, bestThirdDone }
+    const bestThirdDone = normalizeTeamCodes(bestThirds).length
+    return { groupsDone, bestThirdDone, bestThirdSelectionValid: hasExactBestThirdSelection(bestThirds) }
   }, [bestThirds, groupIds, groupStage.data.groups])
 
-  const standings = useMemo(() => computeGroupStandings(matches), [matches])
+  const standings = useMemo(() => buildGroupStandingsSnapshot(matches), [matches])
   const qualifiersSet = useMemo(() => new Set(qualifiersState.qualifiers), [qualifiersState.qualifiers])
-  const groupsFinal = completion.groupsDone === groupIds.length && groupIds.length > 0
+  const groupsFinal = groupIds.length > 0 && standings.completeGroups.size === groupIds.length
   const bestThirdsFinal = groupsFinal && qualifiersState.qualifiers.length >= BEST_THIRD_SLOTS
+  const scoringSnapshotTimestamp = useMemo(() => {
+    if (picksState.state.status !== 'ready') return ''
+    const timestamps = [picksState.state.lastUpdated, qualifiersState.updatedAt].filter(Boolean) as string[]
+    if (timestamps.length === 0) return ''
+    return timestamps.reduce((latest, next) => {
+      const latestTime = new Date(latest).getTime()
+      const nextTime = new Date(next).getTime()
+      if (!Number.isFinite(latestTime)) return next
+      if (!Number.isFinite(nextTime)) return latest
+      return nextTime > latestTime ? next : latest
+    })
+  }, [picksState.state, qualifiersState.updatedAt])
   const [quickEditorTarget, setQuickEditorTarget] = useState<{ kind: 'group'; groupId: string } | { kind: 'best-third' } | null>(null)
   const [showStandingsDetails, setShowStandingsDetails] = useState(false)
   const bestThirdCandidatesForIndex = useMemo(() => (index: number) => {
@@ -235,11 +200,15 @@ export default function GroupStagePage() {
       try {
         const result = await fetchBestThirdQualifiers({ mode })
         if (canceled) return
-        setQualifiersState({ status: 'ready', qualifiers: result.qualifiers ?? [] })
+        setQualifiersState({
+          status: 'ready',
+          qualifiers: normalizeTeamCodes(result.qualifiers ?? []),
+          updatedAt: result.updatedAt
+        })
       } catch (error) {
         if (canceled) return
         const message = error instanceof Error ? error.message : 'Unknown error'
-        setQualifiersState({ status: 'error', qualifiers: [], message })
+        setQualifiersState({ status: 'error', qualifiers: [], message, updatedAt: undefined })
       }
     }
     void loadQualifiers()
@@ -283,16 +252,24 @@ export default function GroupStagePage() {
         <PageHeroPanel
         kicker="Group stage"
         title="Group Stage Detail"
-        subtitle="Read-only group predictions and standings. Use Play Center for guided edits."
+        subtitle="Review picks and published group-stage outcomes. Scores refresh daily from published snapshots."
         meta={
           <div className="flex items-start gap-3 text-right">
             <ButtonLink to={toPlayPath()} size="sm" variant="primary">
               Back to Play Center
             </ButtonLink>
-            <div className="text-xs text-muted-foreground" data-last-updated="true">
-              <div className="uppercase tracking-[0.2em]">Last updated</div>
-              <div className="text-sm font-semibold text-foreground">
-                {formatTime(picksState.state.lastUpdated)}
+            <div className="space-y-2 text-xs text-muted-foreground">
+              <div data-last-updated="true">
+                <div className="uppercase tracking-[0.2em]">Picks last saved</div>
+                <div className="text-sm font-semibold text-foreground">
+                  {formatTime(groupStage.data.updatedAt)}
+                </div>
+              </div>
+              <div data-last-updated="true">
+                <div className="uppercase tracking-[0.2em]">Scoring snapshot</div>
+                <div className="text-sm font-semibold text-foreground">
+                  {formatTime(scoringSnapshotTimestamp)}
+                </div>
               </div>
             </div>
           </div>
@@ -319,6 +296,9 @@ export default function GroupStagePage() {
                 Detail view only. Selections are visible with embedded standings below.
               </Alert>
             ) : null}
+            <div className="text-xs text-muted-foreground">
+              Group chips use exact placement only: `Correct (Exact)` requires matching both 1st and 2nd positions.
+            </div>
 
             <Table>
               <thead>
@@ -342,48 +322,46 @@ export default function GroupStagePage() {
                   const finishedCount = standings.finishedMatchesByGroup.get(groupId) ?? 0
                   const totalCount = standings.totalMatchesByGroup.get(groupId) ?? 0
 
-                  const firstResult: PredictionResult = !complete
-                    ? 'pending'
-                    : prediction.first === actualTopTwo[0]
-                      ? 'correct'
-                      : 'wrong'
-                  const secondResult: PredictionResult = !complete
-                    ? 'pending'
-                    : prediction.second === actualTopTwo[1]
-                      ? 'correct'
-                      : 'wrong'
-                  const rowResult: PredictionResult = !complete
-                    ? 'pending'
-                    : firstResult === 'correct' && secondResult === 'correct'
-                      ? 'correct'
-                      : 'wrong'
-                  const statusLabel = complete ? 'Final' : 'Incomplete'
+                  const firstResult = resolveGroupPlacementStatus(complete, groupClosed, prediction.first, actualTopTwo[0])
+                  const secondResult = resolveGroupPlacementStatus(complete, groupClosed, prediction.second, actualTopTwo[1])
+                  const rowResult = resolveGroupRowStatus(complete, groupClosed, firstResult, secondResult)
+                  const statusLabel = complete ? 'Final' : groupClosed ? 'Locked' : 'Pending'
 
                   return (
-                    <tr key={groupId} className={resultSurfaceClass(rowResult)}>
+                    <tr key={groupId} className={groupResultSurfaceClass(rowResult)}>
                       <td>
                         <div className="font-semibold text-foreground">Group {groupId}</div>
                         <div className="text-xs text-muted-foreground">{finishedCount}/{totalCount} matches finished</div>
                       </td>
                       <td>
-                        <Badge tone={complete ? 'success' : 'secondary'}>{statusLabel}</Badge>
+                        <Badge tone={complete ? 'success' : groupClosed ? 'locked' : 'secondary'}>{statusLabel}</Badge>
                       </td>
                       <td>{formatTeam(prediction.first, teams)}</td>
                       <td>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge tone={resultTone(firstResult)}>{resultLabel(firstResult)}</Badge>
-                          {firstResult === 'correct' ? null : (
+                          <Badge tone={groupResultTone(firstResult)}>{groupResultLabel(firstResult)}</Badge>
+                          {complete && firstResult === 'incorrect' ? (
                             <span className="text-xs text-muted-foreground">Actual: {actualTopTwo[0] ?? '—'}</span>
-                          )}
+                          ) : null}
+                          {!complete ? (
+                            <span className="text-xs text-muted-foreground">
+                              {groupClosed ? 'Locked until final snapshot.' : 'Awaiting final snapshot.'}
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                       <td>{formatTeam(prediction.second, teams)}</td>
                       <td>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge tone={resultTone(secondResult)}>{resultLabel(secondResult)}</Badge>
-                          {secondResult === 'correct' ? null : (
+                          <Badge tone={groupResultTone(secondResult)}>{groupResultLabel(secondResult)}</Badge>
+                          {complete && secondResult === 'incorrect' ? (
                             <span className="text-xs text-muted-foreground">Actual: {actualTopTwo[1] ?? '—'}</span>
-                          )}
+                          ) : null}
+                          {!complete ? (
+                            <span className="text-xs text-muted-foreground">
+                              {groupClosed ? 'Locked until final snapshot.' : 'Awaiting final snapshot.'}
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                       <td>
@@ -469,8 +447,8 @@ export default function GroupStagePage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-sm font-semibold text-foreground">Best 8 third-place qualifiers</div>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={bestThirdsFinal ? 'success' : 'secondary'}>
-                  {bestThirdsFinal ? 'Final' : 'Incomplete'}
+                <Badge tone={bestThirdsFinal ? 'success' : groupClosed ? 'locked' : 'secondary'}>
+                  {bestThirdsFinal ? 'Final' : groupClosed ? 'Locked' : 'Pending'}
                 </Badge>
                 {!groupClosed ? (
                   <Button size="sm" variant="secondary" onClick={() => setQuickEditorTarget({ kind: 'best-third' })}>
@@ -479,6 +457,15 @@ export default function GroupStagePage() {
                 ) : null}
               </div>
             </div>
+            <div className="text-xs text-muted-foreground">
+              Select exactly 8 unique teams. Best-3rds correctness is membership-only (`Qualified`/`Missed`) after the
+              published final snapshot.
+            </div>
+            {!completion.bestThirdSelectionValid ? (
+              <Alert tone="warning" title="Best thirds incomplete">
+                Select exactly {BEST_THIRD_SLOTS} unique teams to complete this section.
+              </Alert>
+            ) : null}
             {qualifiersState.status === 'ready' ? (
               <div className="text-xs text-muted-foreground">
                 Actual qualifiers: {qualifiersState.qualifiers.length > 0 ? qualifiersState.qualifiers.join(', ') : '—'}
@@ -491,20 +478,22 @@ export default function GroupStagePage() {
             ) : null}
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {bestThirds.map((teamCode, index) => {
-                const qualifierResult: PredictionResult = !bestThirdsFinal
-                  ? 'pending'
-                  : teamCode && qualifiersSet.has(teamCode)
-                    ? 'correct'
-                    : 'wrong'
+                const qualifierResult = resolveBestThirdStatus(
+                  bestThirdsFinal,
+                  groupClosed,
+                  completion.bestThirdSelectionValid,
+                  teamCode,
+                  qualifiersSet
+                )
                 return (
                   <div
                     key={`best-third-${index}`}
-                    className={`rounded-xl border border-border/70 px-3 py-2 ${resultSurfaceClass(qualifierResult)}`}
+                    className={`rounded-xl border border-border/70 px-3 py-2 ${bestThirdResultSurfaceClass(qualifierResult)}`}
                   >
                     <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Slot {index + 1}</div>
                     <div className="text-sm font-semibold text-foreground">Pick: {teamCode || '—'}</div>
                     <div className="mt-1">
-                      <Badge tone={resultTone(qualifierResult)}>{resultLabel(qualifierResult)}</Badge>
+                      <Badge tone={bestThirdResultTone(qualifierResult)}>{bestThirdResultLabel(qualifierResult)}</Badge>
                     </div>
                   </div>
                 )

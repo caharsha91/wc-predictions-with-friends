@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { fetchLeaderboard, fetchMatches, fetchPicks, fetchScoring } from '../../lib/data'
+import { buildGroupStandingsSnapshot } from '../../lib/groupStageSnapshot'
 import { isMatchLocked, getLockTime } from '../../lib/matches'
 import { getPredictedWinner } from '../../lib/picks'
 import type { LeaderboardEntry } from '../../types/leaderboard'
@@ -319,6 +320,7 @@ export default function LeaderboardPage() {
   const [whatIfDrafts, setWhatIfDrafts] = useState<Record<string, WhatIfDraft>>({})
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const currentRowRef = useRef<HTMLDivElement | null>(null)
+  const playRoot = mode === 'demo' ? '/demo/play' : '/play'
 
   const viewerKeys = useMemo(() => {
     return buildViewerKeySet([userId, authState.user?.uid, authState.user?.email])
@@ -380,6 +382,14 @@ export default function LeaderboardPage() {
     if (state.status !== 'ready') return []
     return buildSwingOpportunities(state.matches, state.picksDocs, now)
   }, [now, state])
+
+  const groupStageComplete = useMemo(() => {
+    if (state.status !== 'ready') return false
+    const groupsInMatches = new Set(state.matches.filter((match) => match.stage === 'Group' && match.group).map((match) => match.group as string))
+    if (groupsInMatches.size === 0) return false
+    const standings = buildGroupStandingsSnapshot(state.matches)
+    return standings.completeGroups.size === groupsInMatches.size
+  }, [state])
 
   const summary = useMemo(() => {
     if (state.status !== 'ready') return null
@@ -670,11 +680,16 @@ export default function LeaderboardPage() {
       <PageHeroPanel
         kicker="Standings"
         title="Leaderboard"
-        subtitle="Live broadcast mode for the private league race."
+        subtitle="Published leaderboard snapshot for the private league race. Scores refresh daily."
         meta={
           <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
             <div className="uppercase tracking-[0.2em]">Last updated</div>
             <div className="text-sm font-semibold text-foreground">{formatTime(state.lastUpdated)}</div>
+            <div className="mt-1 text-[11px]">
+              {groupStageComplete
+                ? 'Group-stage scoring is included in this official snapshot.'
+                : 'Official group-stage scoring is frozen until completion.'}
+            </div>
           </div>
         }
       >
@@ -756,7 +771,7 @@ export default function LeaderboardPage() {
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Button size="sm" onClick={() => navigate('/play')}>
+                <Button size="sm" onClick={() => navigate(playRoot)}>
                   Open Play Center
                 </Button>
                 <Button size="sm" variant="secondary" onClick={() => setSimulatorOpen(true)}>
@@ -772,6 +787,9 @@ export default function LeaderboardPage() {
       </PageHeroPanel>
 
       <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+        <div className="mb-3 text-xs text-muted-foreground">
+          Group-stage bracket points use exact-order 1st/2nd picks and best-3rds membership-only (8 teams). Scores refresh daily.
+        </div>
         <div className="overflow-x-auto">
           <div className="min-w-[1050px] space-y-2">
             <div className="grid grid-cols-[88px_96px_minmax(220px,1fr)_96px_96px_96px_96px_96px] gap-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-muted-foreground">
