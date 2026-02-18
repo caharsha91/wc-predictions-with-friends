@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { GroupPrediction } from '../../../types/bracket'
 import type { BestThirdStatus, GroupPlacementStatus } from '../../../lib/groupStageSnapshot'
 import type { Team } from '../../../types/matches'
-import { GROUP_STAGE_GROUP_CODES, type GroupStageQueryState } from '../../lib/groupStageFilters'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/Badge'
 import { Button, ButtonLink } from '../ui/Button'
@@ -61,7 +60,7 @@ export function DashboardToolbar({
     <Card className="rounded-xl border border-border bg-card/90 px-4 py-2 shadow-[var(--shadow1)] xl:h-14 xl:py-0">
       <div className="flex h-full items-center gap-3">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-base font-semibold tracking-tight text-foreground">Group Stage Dashboard</div>
+          <div className="truncate text-base font-semibold tracking-tight text-foreground">Group stage</div>
           <div className="truncate text-[11px] text-muted-foreground">Updates daily from published snapshots.</div>
         </div>
 
@@ -102,8 +101,8 @@ export function StatusBar({
   stateLabel
 }: StatusBarProps) {
   return (
-    <Card className="rounded-xl border border-border bg-card/70 px-2 xl:h-8">
-      <div className="flex h-full items-center gap-2 overflow-hidden">
+    <Card className="rounded-xl border border-border bg-card/70 px-3 py-1.5 xl:h-9 xl:py-0">
+      <div className="flex h-full items-center gap-2.5 overflow-hidden">
         <Badge tone={groupsDone === groupsTotal && groupsTotal > 0 ? 'success' : 'warning'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
           Groups {groupsDone}/{groupsTotal}
         </Badge>
@@ -119,12 +118,6 @@ export function StatusBar({
       </div>
     </Card>
   )
-}
-
-function statusDotClass(row: GroupStageDenseRow, groupClosedByTime: boolean): string {
-  if (row.complete) return 'bg-success'
-  if (groupClosedByTime) return 'bg-warn'
-  return 'bg-info'
 }
 
 function rowSurfaceClass(result: GroupPlacementStatus): string {
@@ -164,19 +157,31 @@ function resolveRowDelta({
   return potential
 }
 
+function markerMeta(result: GroupPlacementStatus): { icon: string; code: string; tooltip: string } {
+  if (result === 'correct') return { icon: '✓', code: 'OK', tooltip: 'Correct' }
+  if (result === 'incorrect') return { icon: '×', code: 'NO', tooltip: 'Incorrect' }
+  if (result === 'locked') return { icon: '🔒', code: 'LCK', tooltip: 'Locked' }
+  return { icon: '⏳', code: 'PEN', tooltip: 'Pending' }
+}
+
+function placementTone(result: GroupPlacementStatus): string {
+  if (result === 'correct') return 'text-foreground'
+  if (result === 'incorrect') return 'text-foreground'
+  if (result === 'locked') return 'text-muted-foreground'
+  return 'text-muted-foreground'
+}
+
 type GroupPicksDenseTableProps = {
   rows: GroupStageDenseRow[]
-  groupFilter: GroupStageQueryState['group']
-  focusFilter: GroupStageQueryState['focus']
   showPoints: boolean
   isReadOnly: boolean
   groupClosedByTime: boolean
   groupQualifierPoints: number
   tableStatusLabel: string
+  pointsContextLabel: string
   saveStatus: 'idle' | 'saving' | 'saved' | 'error' | 'locked'
+  savedRowGroupId: string | null
   rowDrafts: Record<string, GroupStageRowDraft>
-  onGroupFilterChange: (value: GroupStageQueryState['group']) => void
-  onFocusFilterChange: (value: GroupStageQueryState['focus']) => void
   onTogglePoints: () => void
   onPickChange: (row: GroupStageDenseRow, field: 'first' | 'second', value: string) => void
   onRowSave: (row: GroupStageDenseRow) => void
@@ -185,59 +190,28 @@ type GroupPicksDenseTableProps = {
 
 export function GroupPicksDenseTable({
   rows,
-  groupFilter,
-  focusFilter,
   showPoints,
   isReadOnly,
   groupClosedByTime,
   groupQualifierPoints,
   tableStatusLabel,
+  pointsContextLabel,
   saveStatus,
+  savedRowGroupId,
   rowDrafts,
-  onGroupFilterChange,
-  onFocusFilterChange,
   onTogglePoints,
   onPickChange,
   onRowSave,
   onRowCancel
 }: GroupPicksDenseTableProps) {
-  const gridColumnsClass = 'grid grid-cols-[84px_minmax(0,1fr)_minmax(0,1fr)_140px] items-center gap-3'
+  const gridColumnsClass = 'grid grid-cols-[88px_minmax(0,1fr)_minmax(0,1fr)_150px] items-center gap-3.5'
 
   return (
-    <Card className="min-h-0 rounded-xl border border-border bg-card overflow-hidden">
+    <Card className="h-full min-h-0 rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex h-10 flex-wrap items-center gap-2 border-b border-border/60 px-3">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-foreground">Group Picks</div>
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Group Picks</div>
           <div className="ml-auto flex items-center gap-2">
-            <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <span className="uppercase tracking-wide">Group</span>
-              <select
-                value={groupFilter}
-                onChange={(event) => onGroupFilterChange(event.target.value as GroupStageQueryState['group'])}
-                className="h-8 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="all">All</option>
-                {GROUP_STAGE_GROUP_CODES.map((groupId) => (
-                  <option key={`group-filter-${groupId}`} value={groupId}>
-                    {groupId}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="hidden items-center gap-1 text-[11px] text-muted-foreground md:flex">
-              <span className="uppercase tracking-wide">Focus</span>
-              <select
-                value={focusFilter}
-                onChange={(event) => onFocusFilterChange(event.target.value as GroupStageQueryState['focus'])}
-                className="h-8 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="all">Both</option>
-                <option value="1st">1st</option>
-                <option value="2nd">2nd</option>
-              </select>
-            </label>
-
             <Button
               size="sm"
               variant={showPoints ? 'primary' : 'secondary'}
@@ -249,18 +223,36 @@ export function GroupPicksDenseTable({
           </div>
         </div>
 
-        <div className="flex h-7 items-center justify-between border-b border-border/50 px-3 text-[11px] uppercase tracking-wide text-muted-foreground">
-          <span>Table {tableStatusLabel}</span>
-          {isReadOnly ? <span>{groupClosedByTime ? 'Locked' : 'Final recap'}</span> : null}
+        <div className="flex h-9 items-center gap-3 border-b border-border/50 px-3 text-[11px] uppercase tracking-wide text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-2 truncate">
+            <span className="truncate">Table {tableStatusLabel}</span>
+            <Badge
+              tone={tableStatusLabel === 'Final' ? 'success' : 'warning'}
+              title={tableStatusLabel === 'Final' ? 'Finalized scoring.' : 'Points are potential until groups finalize.'}
+              className="h-5 px-1.5 text-[9px] normal-case tracking-normal"
+            >
+              {tableStatusLabel === 'Final' ? 'FINAL' : 'PENDING'}
+            </Badge>
+            {isReadOnly ? <span className="truncate">{groupClosedByTime ? 'Locked' : 'Final recap'}</span> : null}
+          </div>
+
+          {showPoints ? (
+            <div className="ml-auto flex min-w-0 items-center gap-2 overflow-hidden text-[10px] leading-none md:text-[11px]">
+              <span className="truncate">{pointsContextLabel}</span>
+              <span className="truncate whitespace-nowrap" title="Correct / Incorrect / Pending / Locked">
+                ✓ OK × NO ⏳ PEN 🔒 LCK
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <div className="min-h-0 flex-1 overflow-hidden">
           <div className="hidden h-full min-h-0 overflow-auto md:block">
             <div className="min-w-[760px]">
-              <div className={cn(gridColumnsClass, 'h-7 px-2 text-[11px] uppercase tracking-wide text-muted-foreground')}>
+              <div className={cn(gridColumnsClass, 'h-8 px-3 text-[11px] uppercase tracking-wide text-muted-foreground')}>
                 <div>Group</div>
-                <div className={focusFilter === '2nd' ? 'opacity-55' : undefined}>1st Pick</div>
-                <div className={focusFilter === '1st' ? 'opacity-55' : undefined}>2nd Pick</div>
+                <div>1st Pick</div>
+                <div>2nd Pick</div>
                 <div className="text-right">Actions</div>
               </div>
 
@@ -288,96 +280,134 @@ export function GroupPicksDenseTable({
                       className={cn(
                         gridColumnsClass,
                         rowSurfaceClass(row.rowResult),
-                        'h-10 px-2 transition-colors hover:bg-background/80 focus-within:bg-background/80 focus-within:ring-1 focus-within:ring-ring'
+                        'h-11 px-3 transition-colors hover:bg-background/80 focus-within:bg-background/80 focus-within:ring-1 focus-within:ring-ring',
+                        rowHasUnsavedChanges ? 'ring-1 ring-ring/35' : undefined
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex h-7 w-10 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
+                        <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
                           {row.groupId}
                         </span>
-                        <span className={cn('h-2 w-2 rounded-full', statusDotClass(row, groupClosedByTime))} aria-hidden="true" />
                       </div>
 
-                      <div className={cn('min-w-0', focusFilter === '2nd' ? 'opacity-55' : undefined)}>
-                        {isReadOnly ? (
-                          <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveFirst || undefined, row.teams)}</div>
-                        ) : (
-                          <select
-                            value={effectiveFirst}
-                            className="h-8 w-full min-w-0 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            onChange={(event) => onPickChange(row, 'first', event.target.value)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Escape') {
-                                event.preventDefault()
-                                onRowCancel(row.groupId)
-                              }
-                              if (event.key === 'Enter') {
-                                event.preventDefault()
-                                onRowSave(row)
-                              }
-                            }}
-                            disabled={isReadOnly}
-                          >
-                            <option value="">Select team</option>
-                            {row.teams.map((team) => (
-                              <option key={`${row.groupId}-first-${team.code}`} value={team.code}>
-                                {team.code} · {team.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          {isReadOnly ? (
+                            <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveFirst || undefined, row.teams)}</div>
+                          ) : (
+                            <select
+                              value={effectiveFirst}
+                              className="h-9 w-full min-w-0 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
+                              onChange={(event) => onPickChange(row, 'first', event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Escape') {
+                                  event.preventDefault()
+                                  onRowCancel(row.groupId)
+                                }
+                                if (event.key === 'Enter') {
+                                  event.preventDefault()
+                                  onRowSave(row)
+                                }
+                              }}
+                              disabled={isReadOnly}
+                            >
+                              <option value="">Select team</option>
+                              {row.teams.map((team) => (
+                                <option key={`${row.groupId}-first-${team.code}`} value={team.code}>
+                                  {team.code} · {team.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {effectiveFirst ? (
+                            <span
+                              title={markerMeta(row.firstResult).tooltip}
+                              className={cn(
+                                'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none md:text-[11px]',
+                                placementTone(row.firstResult)
+                              )}
+                            >
+                              <span aria-hidden="true">{markerMeta(row.firstResult).icon}</span>
+                              <span>{markerMeta(row.firstResult).code}</span>
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
 
-                      <div className={cn('min-w-0', focusFilter === '1st' ? 'opacity-55' : undefined)}>
-                        {isReadOnly ? (
-                          <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveSecond || undefined, row.teams)}</div>
-                        ) : (
-                          <select
-                            value={effectiveSecond}
-                            className="h-8 w-full min-w-0 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            onChange={(event) => onPickChange(row, 'second', event.target.value)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Escape') {
-                                event.preventDefault()
-                                onRowCancel(row.groupId)
-                              }
-                              if (event.key === 'Enter') {
-                                event.preventDefault()
-                                onRowSave(row)
-                              }
-                            }}
-                            disabled={isReadOnly}
-                          >
-                            <option value="">Select team</option>
-                            {row.teams.map((team) => (
-                              <option key={`${row.groupId}-second-${team.code}`} value={team.code}>
-                                {team.code} · {team.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          {isReadOnly ? (
+                            <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveSecond || undefined, row.teams)}</div>
+                          ) : (
+                            <select
+                              value={effectiveSecond}
+                              className="h-9 w-full min-w-0 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
+                              onChange={(event) => onPickChange(row, 'second', event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Escape') {
+                                  event.preventDefault()
+                                  onRowCancel(row.groupId)
+                                }
+                                if (event.key === 'Enter') {
+                                  event.preventDefault()
+                                  onRowSave(row)
+                                }
+                              }}
+                              disabled={isReadOnly}
+                            >
+                              <option value="">Select team</option>
+                              {row.teams.map((team) => (
+                                <option key={`${row.groupId}-second-${team.code}`} value={team.code}>
+                                  {team.code} · {team.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {effectiveSecond ? (
+                            <span
+                              title={markerMeta(row.secondResult).tooltip}
+                              className={cn(
+                                'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none md:text-[11px]',
+                                placementTone(row.secondResult)
+                              )}
+                            >
+                              <span aria-hidden="true">{markerMeta(row.secondResult).icon}</span>
+                              <span>{markerMeta(row.secondResult).code}</span>
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-end gap-2">
                         {showPoints && rowDelta !== 0 ? (
-                          <span className="inline-flex h-5 min-w-9 items-center justify-center rounded-full border border-border bg-background px-1.5 text-[11px] font-medium text-muted-foreground">
+                          <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border bg-background px-1.5 text-[11px] font-medium text-muted-foreground">
                             +{rowDelta}
                           </span>
                         ) : (
-                          <span className="inline-flex h-5 min-w-9" aria-hidden="true" />
+                          <span className="inline-flex h-6 min-w-10" aria-hidden="true" />
                         )}
 
-                        <div
-                          className={cn(
-                            'flex items-center justify-end gap-1 transition-opacity',
-                            rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
-                          )}
-                        >
+                        <div className="flex min-w-[142px] items-center justify-end gap-1.5">
+                          {rowHasUnsavedChanges ? (
+                            <span title="Unsaved changes" className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
+                              Edited
+                            </span>
+                          ) : null}
+                          {!rowHasUnsavedChanges && savedRowGroupId === row.groupId ? (
+                            <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
+                              Saved
+                            </span>
+                          ) : null}
                           <Button
                             size="sm"
-                            className="h-7 rounded-lg px-3 text-[12px]"
                             loading={saveStatus === 'saving'}
                             disabled={!rowHasUnsavedChanges || !rowIsValid || isReadOnly}
+                            tabIndex={rowHasUnsavedChanges ? 0 : -1}
+                            aria-hidden={!rowHasUnsavedChanges}
+                            className={cn(
+                              'h-8 rounded-lg px-3 text-[12px]',
+                              rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
+                            )}
                             onClick={() => onRowSave(row)}
                           >
                             Save
@@ -385,7 +415,12 @@ export function GroupPicksDenseTable({
                           <Button
                             size="sm"
                             variant="secondary"
-                            className="h-7 w-7 rounded-lg px-0 text-[12px]"
+                            tabIndex={rowHasUnsavedChanges ? 0 : -1}
+                            aria-hidden={!rowHasUnsavedChanges}
+                            className={cn(
+                              'h-8 w-8 rounded-lg px-0 text-[12px]',
+                              rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
+                            )}
                             onClick={() => onRowCancel(row.groupId)}
                             aria-label={`Cancel edits for group ${row.groupId}`}
                           >
@@ -398,13 +433,13 @@ export function GroupPicksDenseTable({
                 })}
 
                 {rows.length === 0 ? (
-                  <div className="h-10 px-3 text-[12px] text-muted-foreground">No groups match the selected filter.</div>
+                  <div className="h-10 px-3 text-[12px] text-muted-foreground">No groups available.</div>
                 ) : null}
               </div>
             </div>
           </div>
 
-          <div className="space-y-2 overflow-auto p-2 md:hidden">
+          <div className="space-y-2 overflow-auto p-2.5 md:hidden">
             {rows.map((row) => {
               const persistedFirst = row.prediction.first ?? ''
               const persistedSecond = row.prediction.second ?? ''
@@ -427,7 +462,6 @@ export function GroupPicksDenseTable({
                       <span className="inline-flex h-7 w-10 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
                         {row.groupId}
                       </span>
-                      <span className={cn('h-2.5 w-2.5 rounded-full', statusDotClass(row, groupClosedByTime))} aria-hidden="true" />
                     </div>
                     {showPoints && rowDelta !== 0 ? (
                       <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border px-2 text-[11px] text-muted-foreground">
@@ -436,49 +470,65 @@ export function GroupPicksDenseTable({
                     ) : null}
                   </div>
 
-                  <div className="mt-2 grid gap-2">
+                  <div className="mt-2.5 grid gap-2.5">
                     <label className="grid gap-1 text-[11px] text-muted-foreground">
                       1st Pick
-                      {isReadOnly ? (
-                        <div className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground">
-                          {formatTeamLabel(effectiveFirst || undefined, row.teams)}
-                        </div>
-                      ) : (
-                        <select
-                          value={effectiveFirst}
-                          className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          onChange={(event) => onPickChange(row, 'first', event.target.value)}
-                        >
-                          <option value="">Select team</option>
-                          {row.teams.map((team) => (
-                            <option key={`mobile-${row.groupId}-first-${team.code}`} value={team.code}>
-                              {team.code} · {team.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {isReadOnly ? (
+                          <div className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground">
+                            {formatTeamLabel(effectiveFirst || undefined, row.teams)}
+                          </div>
+                        ) : (
+                          <select
+                            value={effectiveFirst}
+                            className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
+                            onChange={(event) => onPickChange(row, 'first', event.target.value)}
+                          >
+                            <option value="">Select team</option>
+                            {row.teams.map((team) => (
+                              <option key={`mobile-${row.groupId}-first-${team.code}`} value={team.code}>
+                                {team.code} · {team.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        {effectiveFirst ? (
+                          <span title={markerMeta(row.firstResult).tooltip} className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none">
+                            <span aria-hidden="true">{markerMeta(row.firstResult).icon}</span>
+                            <span>{markerMeta(row.firstResult).code}</span>
+                          </span>
+                        ) : null}
+                      </div>
                     </label>
 
                     <label className="grid gap-1 text-[11px] text-muted-foreground">
                       2nd Pick
-                      {isReadOnly ? (
-                        <div className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground">
-                          {formatTeamLabel(effectiveSecond || undefined, row.teams)}
-                        </div>
-                      ) : (
-                        <select
-                          value={effectiveSecond}
-                          className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                          onChange={(event) => onPickChange(row, 'second', event.target.value)}
-                        >
-                          <option value="">Select team</option>
-                          {row.teams.map((team) => (
-                            <option key={`mobile-${row.groupId}-second-${team.code}`} value={team.code}>
-                              {team.code} · {team.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {isReadOnly ? (
+                          <div className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground">
+                            {formatTeamLabel(effectiveSecond || undefined, row.teams)}
+                          </div>
+                        ) : (
+                          <select
+                            value={effectiveSecond}
+                            className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
+                            onChange={(event) => onPickChange(row, 'second', event.target.value)}
+                          >
+                            <option value="">Select team</option>
+                            {row.teams.map((team) => (
+                              <option key={`mobile-${row.groupId}-second-${team.code}`} value={team.code}>
+                                {team.code} · {team.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        {effectiveSecond ? (
+                          <span title={markerMeta(row.secondResult).tooltip} className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none">
+                            <span aria-hidden="true">{markerMeta(row.secondResult).icon}</span>
+                            <span>{markerMeta(row.secondResult).code}</span>
+                          </span>
+                        ) : null}
+                      </div>
                     </label>
                   </div>
 
@@ -511,7 +561,7 @@ export function GroupPicksDenseTable({
 
             {rows.length === 0 ? (
               <div className="rounded-lg border border-border bg-background/40 px-3 py-2 text-[12px] text-muted-foreground">
-                No groups match the selected filter.
+                No groups available.
               </div>
             ) : null}
           </div>
@@ -545,8 +595,8 @@ function bestThirdSurfaceClass(status: BestThirdStatus): string {
 }
 
 function bestThirdStatusText(status: BestThirdStatus): string {
-  if (status === 'qualified') return 'Qualified'
-  if (status === 'missed') return 'Missed'
+  if (status === 'qualified') return 'Correct'
+  if (status === 'missed') return 'Incorrect'
   if (status === 'locked') return 'Locked'
   return 'Pending'
 }
@@ -576,7 +626,7 @@ export function BestThirdPicksCompact({
     <Card className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex h-10 items-center gap-2 border-b border-border/60 px-3">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold text-foreground">Best 3rd Picks - Selected {selectedCount}/{totalCount}</div>
+          <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">Best 3rd Picks - Selected {selectedCount}/{totalCount}</div>
         </div>
 
         <div className="hidden min-w-0 max-w-[14rem] items-center gap-1 overflow-hidden lg:flex">
@@ -600,24 +650,24 @@ export function BestThirdPicksCompact({
           </Button>
         ) : null}
 
-        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-lg px-0 text-[13px]" onClick={() => setCollapsed((current) => !current)} aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}>
+        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-lg px-0 text-[13px] lg:hidden" onClick={() => setCollapsed((current) => !current)} aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}>
           {collapsed ? 'v' : '^'}
         </Button>
       </div>
 
       {!collapsed ? (
-        <div className="max-h-72 overflow-y-auto p-2">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="p-3 max-md:max-h-72 max-md:overflow-y-auto">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {slots.map((slot) => (
-              <div key={`best-third-slot-${slot.index}`} className={cn('rounded-lg border border-border px-2 py-1.5', bestThirdSurfaceClass(slot.status))}>
-                <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">Slot {slot.index + 1}</div>
+              <div key={`best-third-slot-${slot.index}`} className={cn('rounded-lg border border-border px-2.5 py-2', bestThirdSurfaceClass(slot.status))}>
+                <div className="mb-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">Slot {slot.index + 1}</div>
                 {isReadOnly ? (
-                  <div className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground sm:h-8 sm:leading-8">
+                  <div className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground sm:h-9 sm:leading-9">
                     {resolveTeamLabel(slot.code || undefined)}
                   </div>
                 ) : (
                   <select
-                    className="h-10 w-full rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-8"
+                    className="h-10 w-full rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9"
                     value={slot.code}
                     onChange={(event) => onSlotChange(slot.index, event.target.value)}
                   >
@@ -629,14 +679,14 @@ export function BestThirdPicksCompact({
                     ))}
                   </select>
                 )}
-                <div className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">{bestThirdStatusText(slot.status)}</div>
+                <div className="mt-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">{bestThirdStatusText(slot.status)}</div>
               </div>
             ))}
           </div>
         </div>
       ) : null}
 
-      {warning ? <div className="px-2 pb-2 text-[12px]">{warning}</div> : null}
+      {warning ? <div className="px-3 pb-3 text-[12px]">{warning}</div> : null}
     </Card>
   )
 }
@@ -646,7 +696,7 @@ type RightRailStickyProps = {
 }
 
 export function RightRailSticky({ children }: RightRailStickyProps) {
-  return <aside className="max-xl:static xl:sticky xl:top-[calc(56px+32px+20px)] xl:self-start">{children}</aside>
+  return <aside className="max-xl:static xl:sticky xl:top-[calc(var(--toolbar-h,56px)+var(--meta-h,32px)+20px)] xl:self-start">{children}</aside>
 }
 
 type LeaderboardCardCuratedProps = {
@@ -711,13 +761,22 @@ export function LeaderboardCardCurated({ rows, snapshotLabel, topCount, title }:
 
   const rankedRows = useMemo(() => [...rows].sort((a, b) => a.rank - b.rank), [rows])
   const curatedRows = useMemo(() => curateRows(rankedRows, topCount), [rankedRows, topCount])
-  const displayRows = showFull ? rankedRows : curatedRows
+  const topRows = useMemo(() => rankedRows.slice(0, topCount), [rankedRows, topCount])
+  const topHasYou = topRows.some((row) => row.isYou)
+  const youRow = rankedRows.find((row) => row.isYou) ?? null
+  const curatedWithoutYou = useMemo(() => curatedRows.filter((row) => !row.isYou), [curatedRows])
+  const shouldPinYouInCurated = !showFull && !topHasYou && Boolean(youRow)
+  const displayRows = showFull
+    ? rankedRows
+    : shouldPinYouInCurated
+      ? [...curatedWithoutYou, ...(youRow ? [youRow] : [])]
+      : curatedRows
 
   return (
     <Card className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
         <div className="min-w-0">
-          <div className="truncate text-[13px] font-semibold text-foreground">{title}</div>
+          <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{title}</div>
           <div className="truncate text-[10px] text-muted-foreground">As of {snapshotLabel}</div>
         </div>
 
@@ -728,25 +787,33 @@ export function LeaderboardCardCurated({ rows, snapshotLabel, topCount, title }:
         ) : null}
       </div>
 
-      <div className={cn('space-y-1 p-2', showFull ? 'max-h-72 overflow-y-auto pr-1' : undefined)}>
-        {displayRows.map((row) => (
-          <div
-            key={`leaderboard-row-${row.id}`}
-            className={cn(
-              'flex h-9 items-center justify-between rounded-lg border border-border px-3 text-[12px] transition-colors hover:bg-background/70',
-              row.isYou ? 'bg-background/80 ring-1 ring-ring/50' : 'bg-background/35'
-            )}
-          >
-            <div className="min-w-0">
-              <div className="truncate font-medium text-foreground">#{row.rank} {row.name}</div>
-              <div className="text-[10px] text-muted-foreground">Move {movementLabel(row.movement)}{row.isYou ? ' · You' : ''}</div>
-            </div>
+      <div className={cn('space-y-1.5 p-3', showFull ? 'max-h-72 overflow-y-auto pr-1' : undefined)}>
+        {displayRows.map((row, index) => (
+          <div key={`leaderboard-row-wrap-${row.id}`}>
+            {shouldPinYouInCurated && row.isYou && index > 0 ? <div className="my-1 h-px bg-border/70" aria-hidden="true" /> : null}
+            <div
+              key={`leaderboard-row-${row.id}`}
+              className={cn(
+                'flex h-10 items-center justify-between rounded-lg border border-border px-3 text-[12px] transition-colors hover:bg-background/70',
+                row.isYou ? 'bg-background/80 ring-1 ring-ring/50' : 'bg-background/35'
+              )}
+            >
+              <div className="min-w-0">
+                <div className="truncate font-medium text-foreground">#{row.rank} {row.name}</div>
+                <div className="text-[10px] text-muted-foreground">
+                  Move {movementLabel(row.movement)}
+                  {row.isYou ? (
+                    <span className="ml-1 rounded-full border border-border px-1 py-0.5 text-[9px] uppercase tracking-[0.12em]">You</span>
+                  ) : null}
+                </div>
+              </div>
 
-            <div className="text-right text-[11px] text-muted-foreground">
-              <div className="tabular-nums text-foreground">{row.points} pts</div>
-              {typeof row.deltaPoints === 'number' ? (
-                <div className="tabular-nums">{row.deltaPoints >= 0 ? '+' : ''}{row.deltaPoints}</div>
-              ) : null}
+              <div className="text-right text-[11px] text-muted-foreground">
+                <div className="tabular-nums text-foreground">{row.points} pts</div>
+                {typeof row.deltaPoints === 'number' ? (
+                  <div className="tabular-nums">{row.deltaPoints >= 0 ? '+' : ''}{row.deltaPoints}</div>
+                ) : null}
+              </div>
             </div>
           </div>
         ))}

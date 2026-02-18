@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { fetchScoring } from '../../lib/data'
@@ -39,9 +39,11 @@ import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { formatUtcAndLocalDeadline } from '../lib/deadline'
+import { cn } from '../lib/utils'
 import {
   patchGroupStageSearch,
   readGroupStageQueryState,
+  stripLegacyGroupStageParams,
   type GroupStageQueryState
 } from '../lib/groupStageFilters'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
@@ -117,7 +119,6 @@ export default function GroupStagePage() {
   const now = useNow({ tickMs: 30_000 })
   const isMobile = useMediaQuery('(max-width: 767px)')
   const prefersDenseTopFive = useMediaQuery('(min-height: 1340px)')
-  const collapseBestThirdByDefault = useMediaQuery('(max-height: 1080px)')
   const picksState = usePicksData()
   const publishedSnapshot = usePublishedSnapshot()
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
@@ -125,9 +126,23 @@ export default function GroupStagePage() {
   const [groupQualifierPoints, setGroupQualifierPoints] = useState(DEFAULT_GROUP_QUALIFIER_POINTS)
   const [selectedStandingsGroup, setSelectedStandingsGroup] = useState<string>('A')
   const [rowDrafts, setRowDrafts] = useState<Record<string, RowDraft>>({})
+  const [savedRowGroupId, setSavedRowGroupId] = useState<string | null>(null)
+  const savedRowTimerRef = useRef<number | null>(null)
   const [lastPersistedBestThirds, setLastPersistedBestThirds] = useState<string[]>([])
 
   const queryState = useMemo(() => readGroupStageQueryState(location.search), [location.search])
+
+  useEffect(() => {
+    const cleaned = stripLegacyGroupStageParams(location.search)
+    if (cleaned === location.search) return
+    navigate(
+      {
+        pathname: location.pathname,
+        search: cleaned
+      },
+      { replace: true }
+    )
+  }, [location.pathname, location.search, navigate])
 
   const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
   const toPlayPath = (segment?: 'picks') =>
@@ -227,6 +242,7 @@ export default function GroupStagePage() {
   }, [snapshotReady])
 
   const tableStatusLabel = groupsFinal ? 'Final' : 'Pending'
+  const pointsContextLabel = groupsFinal ? 'Final points' : 'Potential points'
 
   const rows = useMemo<GroupStageDenseRow[]>(() => {
     return groupIds.map((groupId) => {
@@ -265,13 +281,6 @@ export default function GroupStagePage() {
     standings.standingsByGroup,
     standings.totalMatchesByGroup
   ])
-
-  const filteredRows = useMemo(() => {
-    return rows.filter((row) => {
-      if (queryState.group !== 'all' && row.groupId !== queryState.group) return false
-      return true
-    })
-  }, [queryState.group, rows])
 
   const hasUnsavedRowDrafts = useMemo(() => {
     for (const [groupId, draft] of Object.entries(rowDrafts)) {
@@ -364,11 +373,11 @@ export default function GroupStagePage() {
 
   const saveRowDraft = useCallback(
     async (row: GroupStageDenseRow) => {
-      if (isReadOnly) return
+      if (isReadOnly) return false
       const draft = rowDrafts[row.groupId]
-      if (!draft) return
+      if (!draft) return false
       const rowIsValid = Boolean(draft.first) && Boolean(draft.second) && draft.first !== draft.second
-      if (!rowIsValid) return
+      if (!rowIsValid) return false
 
       const updatedGroups = {
         ...groupStage.data.groups,
@@ -398,7 +407,17 @@ export default function GroupStagePage() {
       if (result.ok) {
         discardRowDraft(row.groupId)
         setLastPersistedBestThirds(normalizeBestThirds(groupStage.data.bestThirds))
+        setSavedRowGroupId(row.groupId)
+        if (savedRowTimerRef.current !== null && typeof window !== 'undefined') {
+          window.clearTimeout(savedRowTimerRef.current)
+        }
+        if (typeof window !== 'undefined') {
+          savedRowTimerRef.current = window.setTimeout(() => {
+            setSavedRowGroupId((current) => (current === row.groupId ? null : current))
+          }, 2500)
+        }
       }
+      return result.ok
     },
     [discardRowDraft, groupStage, isReadOnly, rowDrafts, showToast]
   )
@@ -434,12 +453,8 @@ export default function GroupStagePage() {
       setSelectedStandingsGroup(saved)
       return
     }
-    if (queryState.group !== 'all' && groupIds.includes(queryState.group)) {
-      setSelectedStandingsGroup(queryState.group)
-      return
-    }
     setSelectedStandingsGroup(groupIds[0])
-  }, [groupIds, mode, queryState.group])
+  }, [groupIds, mode])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -451,6 +466,14 @@ export default function GroupStagePage() {
     if (groupStage.loadState.status !== 'ready') return
     setLastPersistedBestThirds(normalizeBestThirds(groupStage.data.bestThirds))
   }, [groupStage.loadState.status, mode])
+
+  useEffect(() => {
+    return () => {
+      if (savedRowTimerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(savedRowTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     let canceled = false
@@ -615,34 +638,32 @@ export default function GroupStagePage() {
     )
   }
 
-  const groupPicksPanel = (
-    <>
-      {groupStage.saveStatus === 'locked' ? (
-        <Alert tone="warning" title="Lock enforced">
-          Group-stage edits are blocked after lock.
-        </Alert>
-      ) : null}
-      <GroupPicksDenseTable
-        rows={filteredRows}
-        groupFilter={queryState.group}
-        focusFilter={queryState.focus}
-        showPoints={queryState.points === 'on'}
-        isReadOnly={isReadOnly}
-        groupClosedByTime={groupClosedByTime}
-        groupQualifierPoints={groupQualifierPoints}
-        tableStatusLabel={tableStatusLabel}
-        saveStatus={groupStage.saveStatus}
-        rowDrafts={rowDrafts}
-        onGroupFilterChange={(group) => updateQueryState({ group })}
-        onFocusFilterChange={(focus) => updateQueryState({ focus })}
-        onTogglePoints={() => updateQueryState({ points: queryState.points === 'on' ? 'off' : 'on' })}
-        onPickChange={handleRowPickChange}
-        onRowSave={(row) => {
-          void saveRowDraft(row)
-        }}
-        onRowCancel={discardRowDraft}
-      />
-    </>
+  const groupPicksAlert =
+    groupStage.saveStatus === 'locked' ? (
+      <Alert tone="warning" title="Lock enforced">
+        Group-stage edits are blocked after lock.
+      </Alert>
+    ) : null
+
+  const groupPicksTable = (
+    <GroupPicksDenseTable
+      rows={rows}
+      showPoints={queryState.points === 'on'}
+      isReadOnly={isReadOnly}
+      groupClosedByTime={groupClosedByTime}
+      groupQualifierPoints={groupQualifierPoints}
+      tableStatusLabel={tableStatusLabel}
+      pointsContextLabel={pointsContextLabel}
+      saveStatus={groupStage.saveStatus}
+      savedRowGroupId={savedRowGroupId}
+      rowDrafts={rowDrafts}
+      onTogglePoints={() => updateQueryState({ points: queryState.points === 'on' ? 'off' : 'on' })}
+      onPickChange={handleRowPickChange}
+      onRowSave={(row) => {
+        void saveRowDraft(row)
+      }}
+      onRowCancel={discardRowDraft}
+    />
   )
 
   const bestThirdPanel = (
@@ -652,7 +673,7 @@ export default function GroupStagePage() {
       totalCount={BEST_THIRD_SLOTS}
       selectedCodes={selectedBestThirds}
       statusLabel={bestThirdsFinal ? 'Final' : groupClosedByTime ? 'Locked' : 'Pending'}
-      defaultCollapsed={collapseBestThirdByDefault || isMobile}
+      defaultCollapsed={isMobile}
       isReadOnly={isReadOnly}
       isDirty={bestThirdDirty}
       saveStatus={groupStage.saveStatus}
@@ -676,13 +697,13 @@ export default function GroupStagePage() {
   const standingsPanel = (
     <Card className="min-h-0 rounded-xl border border-border bg-card overflow-hidden">
       <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
-        <div className="text-[13px] font-semibold text-foreground">Standings</div>
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Standings</div>
         <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
           <span className="uppercase tracking-wide">Group</span>
           <select
             value={selectedStandingsGroup}
             onChange={(event) => setSelectedStandingsGroup(event.target.value)}
-            className="h-8 rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="h-8 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
           >
             {groupIds.map((groupId) => (
               <option key={`standings-group-${groupId}`} value={groupId}>
@@ -693,10 +714,10 @@ export default function GroupStagePage() {
         </label>
       </div>
 
-      <div className="min-h-0 overflow-auto p-2">
+      <div className="min-h-0 overflow-auto p-3">
         <Table
           unframed
-          className="[&_th]:h-7 [&_th]:px-2 [&_th]:py-0 [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-8 [&_td]:px-2 [&_td]:py-0 [&_td]:text-[12px]"
+          className="[&_th]:h-8 [&_th]:px-2 [&_th]:py-0 [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-9 [&_td]:px-2 [&_td]:py-0 [&_td]:text-[12px]"
         >
           <thead>
             <tr>
@@ -711,12 +732,19 @@ export default function GroupStagePage() {
               const pickedFirst = selectedGroupPrediction.first === entry.code
               const pickedSecond = selectedGroupPrediction.second === entry.code
               return (
-                <tr key={`group-standing-${selectedStandingsGroup}-${entry.code}`} className={pickedFirst || pickedSecond ? 'bg-background/70' : undefined}>
+                <tr
+                  key={`group-standing-${selectedStandingsGroup}-${entry.code}`}
+                  className={cn(
+                    pickedFirst || pickedSecond
+                      ? 'bg-background/80 ring-1 ring-border'
+                      : 'hover:bg-background/45 transition-colors'
+                  )}
+                >
                   <td>
-                    <div className="flex items-center gap-1.5">
-                      <span>{entry.code}</span>
-                      {pickedFirst ? <Badge tone="info" className="px-1 py-0 text-[9px] tracking-[0.12em]">1st</Badge> : null}
-                      {pickedSecond ? <Badge tone="secondary" className="px-1 py-0 text-[9px] tracking-[0.12em]">2nd</Badge> : null}
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate">{entry.code}</span>
+                      {pickedFirst ? <Badge tone="info" className="px-1 py-0 text-[9px] tracking-[0.12em]">Your 1st</Badge> : null}
+                      {pickedSecond ? <Badge tone="secondary" className="px-1 py-0 text-[9px] tracking-[0.12em]">Your 2nd</Badge> : null}
                     </div>
                   </td>
                   <td>{entry.points}</td>
@@ -739,8 +767,8 @@ export default function GroupStagePage() {
   )
 
   return (
-    <div className="p-4 xl:h-[calc(100vh-8.4rem)] xl:overflow-hidden">
-      <div className="flex flex-col gap-2.5 xl:h-full xl:overflow-hidden">
+    <div className="h-full min-h-0 overflow-hidden">
+      <div className="mx-auto flex h-full w-full max-w-[1760px] min-h-0 flex-col gap-3 p-3 sm:p-4 xl:p-5">
         <DashboardToolbar
           playCenterPath={toPlayPath()}
           leaderboardPath={`${playRoot}/league`}
@@ -757,7 +785,7 @@ export default function GroupStagePage() {
           stateLabel={groupsFinal ? 'Final' : 'Pending'}
         />
 
-        <div className="md:hidden">
+        <div className="md:hidden min-h-0">
           <Tabs defaultValue="picks">
             <div className="sticky top-0 z-10 bg-background/95 py-1 backdrop-blur-sm">
               <TabsList className="grid h-10 w-full grid-cols-4 rounded-lg border border-border bg-card p-1">
@@ -769,7 +797,8 @@ export default function GroupStagePage() {
             </div>
 
             <TabsContent value="picks" className="mt-2 space-y-2.5">
-              {groupPicksPanel}
+              {groupPicksAlert}
+              {groupPicksTable}
             </TabsContent>
             <TabsContent value="leaderboard" className="mt-2">
               <LeaderboardCardCurated
@@ -788,21 +817,24 @@ export default function GroupStagePage() {
           </Tabs>
         </div>
 
-        <div className="hidden gap-3 md:grid xl:min-h-0 xl:flex-1 xl:grid-cols-[1fr_clamp(320px,24vw,360px)]">
-          <div className="flex flex-col gap-3 xl:min-h-0 xl:overflow-hidden">
-            <div className="xl:min-h-0 xl:flex-1">{groupPicksPanel}</div>
-            {bestThirdPanel}
+        <div className="hidden min-h-0 flex-1 gap-3 overflow-hidden md:grid xl:gap-4 xl:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
+          <div className="flex min-h-0 flex-col gap-3 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col gap-2.5">
+              {groupPicksAlert}
+              <div className="min-h-0 flex-1">{groupPicksTable}</div>
+            </div>
+            <div className="shrink-0">{bestThirdPanel}</div>
           </div>
 
           <RightRailSticky>
-            <div className="grid gap-3 xl:max-h-[calc(100vh-8.4rem-56px-32px-20px)] xl:overflow-hidden">
+            <div className="right-rail flex max-w-full flex-col gap-3 xl:max-w-[420px]">
+              {standingsPanel}
               <LeaderboardCardCurated
                 rows={leaderboardRowsForCard}
                 snapshotLabel={formatTime(scoringSnapshotTimestamp)}
                 topCount={prefersDenseTopFive ? 5 : 3}
                 title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
               />
-              {standingsPanel}
             </div>
           </RightRailSticky>
         </div>
