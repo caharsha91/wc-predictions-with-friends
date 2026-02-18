@@ -25,6 +25,7 @@ import { useAuthState } from '../hooks/useAuthState'
 import { useNow } from '../hooks/useNow'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
+import { formatUtcAndLocalDeadline } from '../lib/deadline'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys, resolveLeaderboardUserContext } from '../lib/leaderboardContext'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { cn } from '../lib/utils'
@@ -958,7 +959,7 @@ export default function LeaderboardPage() {
                     <Badge tone="warning">Swing {Math.round(opportunity.swingScore * 100)}</Badge>
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    Locks {formatTime(opportunity.lockUtc)} · Kick {formatTime(opportunity.kickoffUtc)}
+                    Locks {formatUtcAndLocalDeadline(opportunity.lockUtc)} · Kick {formatTime(opportunity.kickoffUtc)}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     {opportunity.consensusTeam && opportunity.consensusPct !== null

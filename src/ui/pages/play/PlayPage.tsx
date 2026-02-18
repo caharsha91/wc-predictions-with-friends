@@ -36,6 +36,7 @@ import { usePicksData } from '../../hooks/usePicksData'
 import { useRouteDataMode } from '../../hooks/useRouteDataMode'
 import { useToast } from '../../hooks/useToast'
 import { useViewerId } from '../../hooks/useViewerId'
+import { formatUtcAndLocalDeadline } from '../../lib/deadline'
 import type { PlayCenterState } from '../../lib/nextActionResolver'
 
 const EMPTY_MATCHES: Match[] = []
@@ -59,8 +60,7 @@ function formatClosesAt(utcIso?: string): string {
 }
 
 function formatLockSubline(utcIso: string): string {
-  const time = new Date(utcIso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-  return `Closes ${time}`
+  return `Closes ${formatUtcAndLocalDeadline(utcIso)}`
 }
 
 function formatClosesChip(utcIso: string, now: Date): string {
@@ -834,7 +834,7 @@ export default function PlayPage() {
                       : "You're chill. No open picks."}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {nextLockUtc ? `Locks at ${formatDateTime(nextLockUtc)}` : 'No upcoming lock'}
+                    {nextLockUtc ? `Locks at ${formatUtcAndLocalDeadline(nextLockUtc)}` : 'No upcoming lock'}
                   </div>
                 </div>
               </Card>
@@ -862,7 +862,7 @@ export default function PlayPage() {
                           </Badge>
                           {groupLockTime ? (
                             <Badge tone={groupClosed ? 'locked' : 'info'}>
-                              {groupClosed ? 'Closed' : `Closes ${formatDateTime(groupLockTime.toISOString())}`}
+                              {groupClosed ? 'Closed' : 'Closes'} {formatUtcAndLocalDeadline(groupLockTime.toISOString())}
                             </Badge>
                           ) : null}
                         </div>
@@ -969,7 +969,7 @@ export default function PlayPage() {
                           <div className="text-xs text-muted-foreground">Upcoming matches and prediction entry in one flow.</div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge tone="warning">Closes {statusChip.text}</Badge>
+                          <Badge tone="warning">Closes {nextLockUtc ? formatUtcAndLocalDeadline(nextLockUtc) : '—'}</Badge>
                           <Badge tone={pendingOpenMatches.length > 0 ? 'warning' : 'success'}>
                             {pendingOpenMatches.length > 0 ? `Pending ${pendingOpenMatches.length}` : 'All set'}
                           </Badge>
