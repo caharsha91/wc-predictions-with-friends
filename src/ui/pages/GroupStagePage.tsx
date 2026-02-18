@@ -21,7 +21,6 @@ import { Badge } from '../components/ui/Badge'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import { useGroupStageData } from '../hooks/useGroupStageData'
@@ -55,6 +54,12 @@ type GroupStageTableRow = {
   firstResult: GroupPlacementStatus
   secondResult: GroupPlacementStatus
   rowResult: GroupPlacementStatus
+}
+
+type InlineRowDraft = {
+  groupId: string
+  first: string
+  second: string
 }
 
 function formatTime(iso?: string): string {
@@ -183,20 +188,9 @@ export default function GroupStagePage() {
     message?: string
   }>({ status: 'loading', qualifiers: [] })
   const [groupQualifierPoints, setGroupQualifierPoints] = useState(DEFAULT_GROUP_QUALIFIER_POINTS)
+  const [inlineRowDraft, setInlineRowDraft] = useState<InlineRowDraft | null>(null)
 
   const queryState = useMemo(() => readGroupStageQueryState(location.search), [location.search])
-
-  const updateQueryState = useCallback((patch: Partial<GroupStageQueryState>) => {
-    const nextSearch = patchGroupStageSearch(location.search, patch)
-    if (nextSearch === location.search) return
-    navigate(
-      {
-        pathname: location.pathname,
-        search: nextSearch
-      },
-      { replace: false }
-    )
-  }, [location.pathname, location.search, navigate])
 
   const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
   const toPlayPath = (segment?: 'picks') =>
@@ -231,7 +225,6 @@ export default function GroupStagePage() {
       return nextTime > latestTime ? next : latest
     })
   }, [picksState.state, qualifiersState.updatedAt])
-  const [quickEditorTarget, setQuickEditorTarget] = useState<{ kind: 'group'; groupId: string } | { kind: 'best-third' } | null>(null)
   const [showStandingsDetails, setShowStandingsDetails] = useState(getDefaultShowStandingsDetails)
 
   const rows = useMemo<GroupStageTableRow[]>(() => {
@@ -269,6 +262,49 @@ export default function GroupStagePage() {
       return matchesStatusFilter(queryState.status, row)
     })
   }, [queryState.group, queryState.status, rows])
+
+  const hasUnsavedInlineRowChanges = useMemo(() => {
+    if (!inlineRowDraft) return false
+    const persisted = groupStage.data.groups[inlineRowDraft.groupId] ?? {}
+    return (persisted.first ?? '') !== inlineRowDraft.first || (persisted.second ?? '') !== inlineRowDraft.second
+  }, [groupStage.data.groups, inlineRowDraft])
+
+  const discardInlineRowDraft = useCallback(() => {
+    setInlineRowDraft(null)
+  }, [])
+
+  const confirmDiscardInlineRowDraft = useCallback(() => {
+    if (!hasUnsavedInlineRowChanges) return true
+    if (typeof window === 'undefined') return true
+    const shouldDiscard = window.confirm('Discard unsaved inline edits for this group?')
+    if (!shouldDiscard) return false
+    discardInlineRowDraft()
+    return true
+  }, [discardInlineRowDraft, hasUnsavedInlineRowChanges])
+
+  const updateQueryState = useCallback((patch: Partial<GroupStageQueryState>) => {
+    const nextSearch = patchGroupStageSearch(location.search, patch)
+    if (nextSearch === location.search) return
+    if (!confirmDiscardInlineRowDraft()) return
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch
+      },
+      { replace: false }
+    )
+  }, [confirmDiscardInlineRowDraft, location.pathname, location.search, navigate])
+
+  const startInlineRowEdit = useCallback((row: GroupStageTableRow) => {
+    if (groupClosed) return
+    if (inlineRowDraft?.groupId === row.groupId) return
+    if (!confirmDiscardInlineRowDraft()) return
+    setInlineRowDraft({
+      groupId: row.groupId,
+      first: row.prediction.first ?? '',
+      second: row.prediction.second ?? ''
+    })
+  }, [confirmDiscardInlineRowDraft, groupClosed, inlineRowDraft?.groupId])
 
   const showFirstPlacementColumn = !isMobile || queryState.focus !== '2nd'
   const showSecondPlacementColumn = !isMobile || queryState.focus !== '1st'
@@ -336,6 +372,17 @@ export default function GroupStagePage() {
     node.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' })
     node.focus({ preventScroll: true })
   }, [queryState.view, qualifiersState.status])
+
+  useEffect(() => {
+    if (!inlineRowDraft) return
+    if (groupClosed) {
+      discardInlineRowDraft()
+      return
+    }
+    if (!groupStage.data.groups[inlineRowDraft.groupId]) {
+      discardInlineRowDraft()
+    }
+  }, [discardInlineRowDraft, groupClosed, groupStage.data.groups, inlineRowDraft])
 
   if (picksState.state.status === 'loading' || groupStage.loadState.status === 'loading') {
     return (
@@ -501,12 +548,57 @@ export default function GroupStagePage() {
                     </th>
                   ) : null}
                   <th>Status</th>
-                  <th>Edit</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRows.map((row) => {
                   const statusLabel = row.complete ? 'Final' : groupClosedByTime ? 'Locked' : 'Pending'
+                  const rowIsEditing = inlineRowDraft?.groupId === row.groupId
+                  const rowDraft = rowIsEditing ? inlineRowDraft : null
+                  const rowHasUnsavedChanges =
+                    rowIsEditing &&
+                    rowDraft !== null &&
+                    ((row.prediction.first ?? '') !== rowDraft.first || (row.prediction.second ?? '') !== rowDraft.second)
+                  const rowIsValid =
+                    rowIsEditing &&
+                    rowDraft !== null &&
+                    Boolean(rowDraft.first) &&
+                    Boolean(rowDraft.second) &&
+                    rowDraft.first !== rowDraft.second
+
+                  const saveRow = async () => {
+                    if (!rowIsEditing || !rowDraft || !rowHasUnsavedChanges || !rowIsValid || groupClosed) return
+                    const updatedGroups = {
+                      ...groupStage.data.groups,
+                      [row.groupId]: {
+                        ...(groupStage.data.groups[row.groupId] ?? {}),
+                        first: rowDraft.first || undefined,
+                        second: rowDraft.second || undefined
+                      }
+                    }
+                    const result = await groupStage.save({
+                      ...groupStage.data,
+                      groups: updatedGroups,
+                      updatedAt: new Date().toISOString()
+                    })
+                    showToast({
+                      tone: result.ok ? 'success' : result.reason === 'locked' ? 'warning' : 'danger',
+                      title: result.ok
+                        ? `Group ${row.groupId} saved`
+                        : result.reason === 'locked'
+                          ? 'Group stage locked'
+                          : 'Save failed',
+                      message: result.ok
+                        ? 'Inline group edits were saved.'
+                        : result.reason === 'locked'
+                          ? 'Post-lock edits are not allowed.'
+                          : 'Unable to save inline group edits.'
+                    })
+                    if (result.ok) {
+                      discardInlineRowDraft()
+                    }
+                  }
 
                   const renderPlacementCell = (
                     placementLabel: '1st' | '2nd',
@@ -527,7 +619,45 @@ export default function GroupStagePage() {
                     return (
                       <td className={cn('align-top', emphasisClass)}>
                         <div className="space-y-1">
-                          <div className="text-sm font-semibold text-foreground">Pick: {formatTeam(predictedCode, row.teams)}</div>
+                          {rowIsEditing && rowDraft ? (
+                            <label className="space-y-1 text-xs text-muted-foreground">
+                              <span className="uppercase tracking-[0.12em]">{placementLabel} pick</span>
+                              <select
+                                className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                                value={placementLabel === '1st' ? rowDraft.first : rowDraft.second}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Escape') {
+                                    event.preventDefault()
+                                    discardInlineRowDraft()
+                                  } else if (event.key === 'Enter') {
+                                    event.preventDefault()
+                                    void saveRow()
+                                  }
+                                }}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  setInlineRowDraft((current) => {
+                                    if (!current || current.groupId !== row.groupId) return current
+                                    if (placementLabel === '1st') {
+                                      const second = current.second === value ? '' : current.second
+                                      return { ...current, first: value, second }
+                                    }
+                                    const first = current.first === value ? '' : current.first
+                                    return { ...current, second: value, first }
+                                  })
+                                }}
+                              >
+                                <option value="">Select team</option>
+                                {row.teams.map((team) => (
+                                  <option key={`${row.groupId}-inline-${placementLabel}-${team.code}`} value={team.code}>
+                                    {team.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          ) : (
+                            <div className="text-sm font-semibold text-foreground">Pick: {formatTeam(predictedCode, row.teams)}</div>
+                          )}
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge tone={groupResultTone(status)}>{groupResultLabel(status)}</Badge>
                             {row.complete ? (
@@ -541,9 +671,16 @@ export default function GroupStagePage() {
                             )}
                           </div>
                           {showPoints ? (
-                            <div className="text-[11px] text-muted-foreground">
-                              {row.complete ? `Points +${earnedPoints}` : `Potential +${potentialPoints}`}
-                            </div>
+                            <details className="text-[11px] text-muted-foreground">
+                              <summary className="cursor-pointer list-none font-medium text-foreground/85">
+                                {row.complete ? `Points +${earnedPoints}` : `Potential +${potentialPoints}`}
+                              </summary>
+                              <div className="pt-1 text-muted-foreground">
+                                {row.complete
+                                  ? `Why: +${groupQualifierPoints} only when the predicted ${placementLabel} is exact in the published final snapshot.`
+                                  : `Why: exact-order points lock in only after a published final snapshot for this group.`}
+                              </div>
+                            </details>
                           ) : null}
                         </div>
                       </td>
@@ -576,9 +713,41 @@ export default function GroupStagePage() {
 
                       <td>
                         {!groupClosed ? (
-                          <Button size="sm" variant="secondary" onClick={() => setQuickEditorTarget({ kind: 'group', groupId: row.groupId })}>
-                            Edit
-                          </Button>
+                          rowIsEditing ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                size="sm"
+                                loading={groupStage.saveStatus === 'saving'}
+                                disabled={!rowHasUnsavedChanges || !rowIsValid || groupClosed}
+                                onClick={() => {
+                                  void saveRow()
+                                }}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={discardInlineRowDraft}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Escape') {
+                                    event.preventDefault()
+                                    discardInlineRowDraft()
+                                  }
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => startInlineRowEdit(row)}
+                            >
+                              Edit
+                            </Button>
+                          )
                         ) : null}
                       </td>
                     </tr>
@@ -673,11 +842,6 @@ export default function GroupStagePage() {
               <Badge tone={bestThirdsFinal ? 'success' : groupClosedByTime ? 'locked' : 'secondary'}>
                 {bestThirdsFinal ? 'Final' : groupClosedByTime ? 'Locked' : 'Pending'}
               </Badge>
-              {!groupClosed ? (
-                <Button size="sm" variant="secondary" onClick={() => setQuickEditorTarget({ kind: 'best-third' })}>
-                  Edit
-                </Button>
-              ) : null}
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
@@ -714,7 +878,22 @@ export default function GroupStagePage() {
                   className={`rounded-xl border border-border/70 px-3 py-2 ${bestThirdResultSurfaceClass(qualifierResult)}`}
                 >
                   <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Slot {index + 1}</div>
-                  <div className="text-sm font-semibold text-foreground">Pick: {teamCode || '—'}</div>
+                  {!groupClosed ? (
+                    <select
+                      className="mt-1 h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
+                      value={teamCode ?? ''}
+                      onChange={(event) => groupStage.setBestThird(index, event.target.value)}
+                    >
+                      <option value="">Select team</option>
+                      {bestThirdCandidatesForIndex(index).map((team) => (
+                        <option key={`inline-best-third-${index}-${team.code}`} value={team.code}>
+                          {team.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="text-sm font-semibold text-foreground">Pick: {teamCode || '—'}</div>
+                  )}
                   <div className="mt-1">
                     <Badge tone={bestThirdResultTone(qualifierResult)}>{bestThirdResultLabel(qualifierResult)}</Badge>
                   </div>
@@ -722,108 +901,35 @@ export default function GroupStagePage() {
               )
             })}
           </div>
-        </div>
-        </Card>
-      </div>
-
-      <Sheet open={quickEditorTarget !== null} onOpenChange={(open) => !open && setQuickEditorTarget(null)}>
-        <SheetContent side="right" className="w-[96vw] max-w-xl p-0">
-          <SheetHeader>
-            <SheetTitle>Quick edit</SheetTitle>
-            <SheetDescription>
-              {quickEditorTarget?.kind === 'group'
-                ? `Group ${quickEditorTarget.groupId} qualifiers`
-                : 'Best 8 third-place qualifiers'}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="space-y-4 p-4">
-            {quickEditorTarget?.kind === 'group' ? (
-              <>
-                <label className="space-y-1 text-xs text-muted-foreground">
-                  <span>{`Group ${quickEditorTarget.groupId} • 1st`}</span>
-                  <select
-                    className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
-                    value={(groupStage.data.groups[quickEditorTarget.groupId] ?? {}).first ?? ''}
-                    onChange={(event) => groupStage.setGroupPick(quickEditorTarget.groupId, 'first', event.target.value)}
-                  >
-                    <option value="">Select team</option>
-                    {(groupTeams[quickEditorTarget.groupId] ?? []).map((team) => (
-                      <option key={`${quickEditorTarget.groupId}-drawer-first-${team.code}`} value={team.code}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="space-y-1 text-xs text-muted-foreground">
-                  <span>{`Group ${quickEditorTarget.groupId} • 2nd`}</span>
-                  <select
-                    className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
-                    value={(groupStage.data.groups[quickEditorTarget.groupId] ?? {}).second ?? ''}
-                    onChange={(event) => groupStage.setGroupPick(quickEditorTarget.groupId, 'second', event.target.value)}
-                  >
-                    <option value="">Select team</option>
-                    {(groupTeams[quickEditorTarget.groupId] ?? []).map((team) => (
-                      <option key={`${quickEditorTarget.groupId}-drawer-second-${team.code}`} value={team.code}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            ) : (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {bestThirds.map((teamCode, index) => (
-                  <label key={`drawer-best-third-${index}`} className="space-y-1 text-xs text-muted-foreground">
-                    <span>{`Best third #${index + 1}`}</span>
-                    <select
-                      className="h-9 w-full rounded-lg border border-border/70 bg-bg px-2 text-sm text-foreground"
-                      value={teamCode ?? ''}
-                      onChange={(event) => groupStage.setBestThird(index, event.target.value)}
-                    >
-                      <option value="">Select team</option>
-                      {bestThirdCandidatesForIndex(index).map((team) => (
-                        <option key={`drawer-best-third-${index}-${team.code}`} value={team.code}>
-                          {team.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ))}
-              </div>
-            )}
+          {!groupClosed ? (
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
+                loading={groupStage.saveStatus === 'saving'}
                 onClick={async () => {
                   const result = await groupStage.save()
                   showToast({
                     tone: result.ok ? 'success' : result.reason === 'locked' ? 'warning' : 'danger',
                     title: result.ok
-                      ? 'Group picks saved'
+                      ? 'Best-third picks saved'
                       : result.reason === 'locked'
                         ? 'Group stage locked'
                         : 'Save failed',
                     message: result.ok
-                      ? 'Your group-stage edits were saved.'
+                      ? 'Best-third picks were saved.'
                       : result.reason === 'locked'
                         ? 'Post-lock edits are not allowed.'
-                        : 'Unable to save group-stage edits.'
+                        : 'Unable to save best-third picks.'
                   })
                 }}
-                loading={groupStage.saveStatus === 'saving'}
-                disabled={groupClosed}
               >
-                Save group picks
+                Save best-thirds
               </Button>
             </div>
-          </div>
-          <div className="border-t border-border/60 p-4">
-            <SheetClose asChild>
-              <Button variant="secondary">Close</Button>
-            </SheetClose>
-          </div>
-        </SheetContent>
-      </Sheet>
+          ) : null}
+        </div>
+        </Card>
+      </div>
     </div>
   )
 }

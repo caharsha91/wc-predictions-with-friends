@@ -257,7 +257,14 @@ export function useGroupStageData(matches: Match[]) {
     [isLocked, mode, userId]
   )
 
-  const save = useCallback(async (): Promise<GroupStageSaveResult> => {
+  const save = useCallback(async (nextData?: GroupStageData): Promise<GroupStageSaveResult> => {
+    const resolvedData = nextData
+      ? {
+          ...nextData,
+          updatedAt: nextData.updatedAt || new Date().toISOString()
+        }
+      : data
+
     if (isLocked) {
       setForcedLocked(true)
       setSaveStatus('locked')
@@ -266,9 +273,12 @@ export function useGroupStageData(matches: Match[]) {
 
     setSaveStatus('saving')
     try {
-      saveLocalGroupStage(userId, data, mode)
+      saveLocalGroupStage(userId, resolvedData, mode)
       if (firestoreEnabled) {
-        await saveUserGroupStageDoc(userId, data.groups, data.bestThirds)
+        await saveUserGroupStageDoc(userId, resolvedData.groups, resolvedData.bestThirds)
+      }
+      if (nextData) {
+        setData(resolvedData)
       }
       setSaveStatus('saved')
       return { ok: true }
