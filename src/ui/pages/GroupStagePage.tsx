@@ -39,6 +39,7 @@ import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { formatUtcAndLocalDeadline } from '../lib/deadline'
+import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { cn } from '../lib/utils'
 import {
   patchGroupStageSearch,
@@ -773,7 +774,7 @@ export default function GroupStagePage() {
           playCenterPath={toPlayPath()}
           leaderboardPath={`${playRoot}/league`}
           picksLastSavedLabel={formatTime(groupStage.data.updatedAt)}
-          scoringSnapshotLabel={formatTime(scoringSnapshotTimestamp)}
+          scoringSnapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
         />
 
         <StatusBar
@@ -803,7 +804,7 @@ export default function GroupStagePage() {
             <TabsContent value="leaderboard" className="mt-2">
               <LeaderboardCardCurated
                 rows={leaderboardRowsForCard}
-                snapshotLabel={formatTime(scoringSnapshotTimestamp)}
+                snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
                 topCount={3}
                 title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
               />
@@ -831,7 +832,7 @@ export default function GroupStagePage() {
               {standingsPanel}
               <LeaderboardCardCurated
                 rows={leaderboardRowsForCard}
-                snapshotLabel={formatTime(scoringSnapshotTimestamp)}
+                snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
                 topCount={prefersDenseTopFive ? 5 : 3}
                 title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
               />

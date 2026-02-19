@@ -10,10 +10,14 @@ const DEMO_KEY_PREFIXES = [
   'wc-member-cache:demo',
   'wc-demo-scenario',
   'wc-demo-now-override',
+  'wc-demo-phase-override',
   'wc-demo-viewer-id'
 ]
 
+const DEMO_EXACT_KEYS = ['demo:lastRoute', 'demo:rivalUserIds']
+
 function isDemoStorageKey(key: string): boolean {
+  if (DEMO_EXACT_KEYS.includes(key)) return true
   return DEMO_KEY_PREFIXES.some((prefix) => key.startsWith(prefix))
 }
 

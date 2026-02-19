@@ -3,16 +3,7 @@ import type { MutableRefObject } from 'react'
 import { Badge } from './ui/Badge'
 import { Card } from './ui/Card'
 import type { ProjectedImpactRow } from '../lib/projectedImpact'
-
-function formatTime(iso?: string): string {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 
 function rankMovementLabel(deltaRank: number): string {
   if (deltaRank > 0) return `↑ ${deltaRank}`
@@ -43,7 +34,7 @@ export default function ProjectedImpactPanel({
           <Badge tone="info">Projected</Badge>
         </div>
         <div className="text-xs text-muted-foreground">
-          As of {formatTime(snapshotTimestamp)} · Updates daily
+          As of {formatSnapshotTimestamp(snapshotTimestamp)} · Updates daily
         </div>
         <div className="max-h-[calc(100vh-16rem)] space-y-2 overflow-y-auto pr-1">
           {sortedRows.slice(0, 12).map((row) => (

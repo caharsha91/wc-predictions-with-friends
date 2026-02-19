@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 
 import App from './ui/App'
+import { TournamentPhaseProvider } from './ui/context/TournamentPhaseContext'
 import { ToastProvider } from './ui/hooks/useToast'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { applyInitialTheme } from './theme/themeState'
@@ -14,9 +15,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
       <ToastProvider>
-        <HashRouter>
-          <App />
-        </HashRouter>
+        <TournamentPhaseProvider>
+          <HashRouter>
+            <App />
+          </HashRouter>
+        </TournamentPhaseProvider>
       </ToastProvider>
     </ThemeProvider>
   </React.StrictMode>

@@ -1,4 +1,5 @@
 import type { Match, MatchStage } from '../types/matches'
+import { resolveTournamentDeadlines } from './tournamentDeadlines'
 
 const stageSortOrder: Record<MatchStage, number> = {
   Group: 1,
@@ -139,14 +140,16 @@ export function getGroupOutcomesLockTime(
   matches: Match[],
   offsetMinutes: number = GROUP_OUTCOMES_LOCK_OFFSET_MINUTES
 ): Date | null {
-  const groupKickoffs = matches
-    .filter((match) => match.stage === 'Group')
-    .map((match) => new Date(match.kickoffUtc).getTime())
-    .filter((value) => Number.isFinite(value))
+  const deadlines = resolveTournamentDeadlines(matches)
+  const groupStageDeadlineMs = new Date(deadlines.groupStageDeadlineUtc).getTime()
+  if (!Number.isFinite(groupStageDeadlineMs)) return null
 
-  if (groupKickoffs.length === 0) return null
-  const firstKickoff = Math.min(...groupKickoffs)
-  return new Date(firstKickoff - offsetMinutes * 60 * 1000)
+  if (offsetMinutes === GROUP_OUTCOMES_LOCK_OFFSET_MINUTES) {
+    return new Date(groupStageDeadlineMs)
+  }
+
+  const deltaMinutes = GROUP_OUTCOMES_LOCK_OFFSET_MINUTES - offsetMinutes
+  return new Date(groupStageDeadlineMs + deltaMinutes * 60 * 1000)
 }
 
 export function isMatchLocked(kickoffUtc: string, now: Date = new Date()): boolean {

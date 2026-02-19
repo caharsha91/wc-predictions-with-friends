@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { GroupPrediction } from '../../../types/bracket'
 import type { BestThirdStatus, GroupPlacementStatus } from '../../../lib/groupStageSnapshot'
 import type { Team } from '../../../types/matches'
+import { SNAPSHOT_UNAVAILABLE_LABEL } from '../../lib/snapshotStamp'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/Badge'
 import { Button, ButtonLink } from '../ui/Button'
@@ -777,7 +778,9 @@ export function LeaderboardCardCurated({ rows, snapshotLabel, topCount, title }:
       <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
         <div className="min-w-0">
           <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{title}</div>
-          <div className="truncate text-[10px] text-muted-foreground">As of {snapshotLabel}</div>
+          <div className="truncate text-[10px] text-muted-foreground">
+            {snapshotLabel === SNAPSHOT_UNAVAILABLE_LABEL ? snapshotLabel : `As of ${snapshotLabel}`}
+          </div>
         </div>
 
         {rows.length > curatedRows.length ? (

@@ -29,6 +29,7 @@ import { formatUtcAndLocalDeadline } from '../lib/deadline'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys, resolveLeaderboardUserContext } from '../lib/leaderboardContext'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
+import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { cn } from '../lib/utils'
 import { buildProjectedLeaderboard, type SimulatedMatchOutcome } from '../lib/whatIfSimulator'
 
@@ -693,7 +694,7 @@ export default function LeaderboardPage() {
         meta={
           <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
             <div className="uppercase tracking-[0.2em]">Last updated</div>
-            <div className="text-sm font-semibold text-foreground">{formatTime(snapshotTimestamp)}</div>
+            <div className="text-sm font-semibold text-foreground">{formatSnapshotTimestamp(snapshotTimestamp)}</div>
             <div className="mt-1 text-[11px]">
               {groupStageComplete
                 ? 'Group-stage scoring is included in this official snapshot.'

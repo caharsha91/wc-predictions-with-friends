@@ -5,6 +5,14 @@ export type DemoScenarioId =
   | 'mid-knockout'
   | 'world-cup-final-pending'
 
+export type DemoTournamentPhase =
+  | 'PRE_GROUP'
+  | 'GROUP_OPEN'
+  | 'GROUP_LOCKED'
+  | 'KO_OPEN'
+  | 'KO_LOCKED'
+  | 'FINAL'
+
 export const DEMO_SCENARIO_OPTIONS: Array<{ id: DemoScenarioId; label: string }> = [
   { id: 'pre-group', label: 'Pre group stage' },
   { id: 'mid-group', label: 'Mid group stage' },
@@ -15,6 +23,7 @@ export const DEMO_SCENARIO_OPTIONS: Array<{ id: DemoScenarioId; label: string }>
 
 export const DEMO_SCENARIO_STORAGE_KEY = 'wc-demo-scenario'
 export const DEMO_NOW_OVERRIDE_STORAGE_KEY = 'wc-demo-now-override'
+export const DEMO_PHASE_OVERRIDE_STORAGE_KEY = 'wc-demo-phase-override'
 export const DEMO_VIEWER_ID_STORAGE_KEY = 'wc-demo-viewer-id'
 
 export function readDemoScenario(): DemoScenarioId {
@@ -54,6 +63,33 @@ export function writeDemoNowOverride(value: string): void {
 export function clearDemoNowOverride(): void {
   if (typeof window === 'undefined') return
   window.localStorage.removeItem(DEMO_NOW_OVERRIDE_STORAGE_KEY)
+}
+
+function isDemoTournamentPhase(value: string | null): value is DemoTournamentPhase {
+  return (
+    value === 'PRE_GROUP' ||
+    value === 'GROUP_OPEN' ||
+    value === 'GROUP_LOCKED' ||
+    value === 'KO_OPEN' ||
+    value === 'KO_LOCKED' ||
+    value === 'FINAL'
+  )
+}
+
+export function readDemoPhaseOverride(): DemoTournamentPhase | null {
+  if (typeof window === 'undefined') return null
+  const raw = window.localStorage.getItem(DEMO_PHASE_OVERRIDE_STORAGE_KEY)
+  return isDemoTournamentPhase(raw) ? raw : null
+}
+
+export function writeDemoPhaseOverride(value: DemoTournamentPhase): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(DEMO_PHASE_OVERRIDE_STORAGE_KEY, value)
+}
+
+export function clearDemoPhaseOverride(): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem(DEMO_PHASE_OVERRIDE_STORAGE_KEY)
 }
 
 export function readDemoViewerId(): string | null {

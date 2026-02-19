@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react'
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { useEffect, type ReactNode } from 'react'
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 
+import { getCurrentAppPathname, isDemoPath } from '../lib/dataMode'
 import { hasFirebase } from '../lib/firebase'
+import { writeDemoLastRoute } from './lib/demoPersistence'
 import { Card } from './components/ui/Card'
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
@@ -143,6 +145,14 @@ function DemoAdminGate() {
 }
 
 export default function App() {
+  const location = useLocation()
+
+  useEffect(() => {
+    const pathname = getCurrentAppPathname()
+    if (!isDemoPath(pathname)) return
+    writeDemoLastRoute(pathname)
+  }, [location.pathname])
+
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
@@ -158,6 +168,10 @@ export default function App() {
             <Route path="bracket" element={<BracketPage />} />
             <Route path="league" element={<LeaderboardPage />} />
           </Route>
+          <Route path="group-stage/:groupId" element={<GroupStagePage />} />
+          <Route path="match-picks" element={<PicksPage />} />
+          <Route path="knockout-bracket" element={<BracketPage />} />
+          <Route path="leaderboard" element={<LeaderboardPage />} />
 
           <Route element={<AdminGate />}>
             <Route path="admin" element={<AdminConsolePage />} />
@@ -174,6 +188,10 @@ export default function App() {
             <Route path="bracket" element={<BracketPage />} />
             <Route path="league" element={<LeaderboardPage />} />
           </Route>
+          <Route path="group-stage/:groupId" element={<GroupStagePage />} />
+          <Route path="match-picks" element={<PicksPage />} />
+          <Route path="knockout-bracket" element={<BracketPage />} />
+          <Route path="leaderboard" element={<LeaderboardPage />} />
           <Route path="admin">
             <Route index element={<AdminConsolePage />} />
             <Route path="controls" element={<Navigate to="/demo/admin?tab=demo#demo" replace />} />

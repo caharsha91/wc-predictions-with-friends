@@ -18,6 +18,7 @@ import { usePicksData } from '../hooks/usePicksData'
 import { useToast } from '../hooks/useToast'
 import { readDemoScenario } from '../lib/demoControls'
 import { resolveKnockoutActivation } from '../lib/knockoutActivation'
+import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 
 const STAGE_LABELS: Record<KnockoutStage, string> = {
   R32: 'Round of 32',
@@ -197,7 +198,7 @@ export default function BracketPage() {
             </ButtonLink>
             <div className="text-xs text-muted-foreground" data-last-updated="true">
               <div className="uppercase tracking-[0.2em]">Last updated</div>
-              <div className="text-sm font-semibold text-foreground">{formatTime(latestUpdated)}</div>
+              <div className="text-sm font-semibold text-foreground">{formatSnapshotTimestamp(latestUpdated)}</div>
             </div>
           </div>
         }
