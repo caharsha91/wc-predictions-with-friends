@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
+import { doc, getDoc } from 'firebase/firestore'
+import { FirebaseError } from 'firebase/app'
 
 import { fetchMatches, fetchPicks } from '../../lib/data'
 import { fetchUserPicksDoc, saveUserPicksDoc } from '../../lib/firestoreData'
-import { hasFirebase } from '../../lib/firebase'
+import { firebaseAuth, firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import { getUserPicksFromFile, loadLocalPicks, saveLocalPicks } from '../../lib/picks'
 import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 import { useAuthState } from './useAuthState'
-import { useCurrentUser } from './useCurrentUser'
+import { refreshCurrentUser, useCurrentUser } from './useCurrentUser'
 import { useDemoScenarioState } from './useDemoScenarioState'
 import { useRouteDataMode } from './useRouteDataMode'
 import { useViewerId } from './useViewerId'
@@ -33,27 +35,41 @@ export function usePicksData() {
     authState.status === 'ready' &&
     !!authState.user &&
     currentUser?.isMember === true
+  const isLiveMode = !isDemoMode && hasFirebase
+
+  async function resolveCanonicalUserId(fallbackUserId: string): Promise<string> {
+    if (!isLiveMode || !firebaseDb) return fallbackUserId
+    const email = firebaseAuth?.currentUser?.email?.toLowerCase() ?? null
+    if (!email) return fallbackUserId
+    try {
+      const snapshot = await getDoc(doc(firebaseDb, 'leagues', getLeagueId(), 'members', email))
+      if (!snapshot.exists()) return fallbackUserId
+      const data = snapshot.data() as { id?: unknown }
+      const canonicalId = typeof data.id === 'string' ? data.id.trim() : ''
+      return canonicalId || fallbackUserId
+    } catch {
+      return fallbackUserId
+    }
+  }
 
   useEffect(() => {
     let canceled = false
     async function load() {
       if (hasFirebase && authState.status === 'loading') return
       setState({ status: 'loading' })
-      setPicks(loadLocalPicks(userId, mode))
+      setPicks(isLiveMode ? [] : loadLocalPicks(userId, mode))
       try {
         const matchesFile = await fetchMatches({ mode })
         if (canceled) return
 
-        let nextPicks: Pick[] | null = null
+        let nextPicks: Pick[] = []
         if (firestoreEnabled) {
-          const remote = await fetchUserPicksDoc(userId)
-          if (remote !== null) {
-            nextPicks = remote
-            saveLocalPicks(userId, remote, mode)
-          }
-        }
-
-        if (nextPicks === null) {
+          const canonicalUserId = await resolveCanonicalUserId(userId)
+          const remote = await fetchUserPicksDoc(canonicalUserId)
+          nextPicks = remote ?? []
+          // Keep local cache aligned with Firestore truth in live mode.
+          saveLocalPicks(canonicalUserId, nextPicks, mode)
+        } else if (!isLiveMode) {
           const stored = loadLocalPicks(userId, mode)
           if (stored.length > 0) {
             nextPicks = stored
@@ -63,8 +79,8 @@ export function usePicksData() {
           }
         }
 
-        setPicks(nextPicks ?? [])
-        if (nextPicks && nextPicks.length > 0) {
+        setPicks(nextPicks)
+        if (!isLiveMode && nextPicks.length > 0) {
           saveLocalPicks(userId, nextPicks, mode)
         }
         setSaveStatus('idle')
@@ -82,7 +98,7 @@ export function usePicksData() {
     return () => {
       canceled = true
     }
-  }, [authState.status, demoScenario, firestoreEnabled, mode, userId])
+  }, [authState.status, demoScenario, firestoreEnabled, isLiveMode, mode, userId])
 
   function updatePicks(nextPicks: Pick[]) {
     setPicks(nextPicks)
@@ -91,14 +107,33 @@ export function usePicksData() {
   }
 
   async function savePicks(nextPicks?: Pick[]) {
-    if (!firestoreEnabled) return
-    const payload = nextPicks ?? picks
+    if (!firestoreEnabled) {
+      if (isLiveMode) {
+        setSaveStatus('error')
+        throw new Error('Unable to save picks: Firestore write is not enabled for this user.')
+      }
+      return
+    }
+    const canonicalUserId = await resolveCanonicalUserId(userId)
+    const payload = (nextPicks ?? picks).map((pick) => ({
+      ...pick,
+      userId: canonicalUserId
+    }))
     setSaveStatus('saving')
     try {
-      await saveUserPicksDoc(userId, payload)
+      await saveUserPicksDoc(canonicalUserId, payload)
+      if (canonicalUserId !== userId) {
+        refreshCurrentUser()
+      }
       setSaveStatus('saved')
-    } catch {
+    } catch (error) {
+      console.error('savePicks failed', error)
       setSaveStatus('error')
+      if (error instanceof FirebaseError && error.code === 'permission-denied') {
+        refreshCurrentUser()
+      }
+      if (error instanceof Error) throw error
+      throw new Error('Unable to save picks.')
     }
   }
 

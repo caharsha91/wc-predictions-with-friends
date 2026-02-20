@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { collection, getDocs } from 'firebase/firestore'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { fetchLeaderboard, fetchMembers, fetchPicks } from '../../../lib/data'
+import { fetchLeaderboard, fetchMembers } from '../../../lib/data'
+import { firebaseDb, getLeagueId, hasFirebase } from '../../../lib/firebase'
 import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, getLockTimePstForDateKey, isMatchLocked } from '../../../lib/matches'
 import { findPick, isPickComplete } from '../../../lib/picks'
 import type { LeaderboardEntry } from '../../../types/leaderboard'
@@ -256,8 +258,6 @@ function buildSocialSignals(
   const memberNameById = new Map<string, string>()
   for (const member of members) {
     memberNameById.set(member.id.toLowerCase(), member.name)
-    if (member.uid) memberNameById.set(member.uid.toLowerCase(), member.name)
-    if (member.email) memberNameById.set(member.email.toLowerCase(), member.name)
   }
   for (const entry of sortedEntries) {
     for (const key of resolveLeaderboardIdentityKeys(entry)) {
@@ -326,21 +326,64 @@ export default function PlayPage() {
     let canceled = false
 
     async function loadSignals() {
-      const [leaderboardResult, picksResult, membersResult] = await Promise.allSettled([
-        fetchLeaderboard({ mode }),
-        fetchPicks({ mode }),
-        fetchMembers({ mode })
-      ])
-      if (canceled) return
+      let leaderboardEntries: LeaderboardEntry[] = []
+      let leaderboardUpdatedAt: string | null = null
+      let picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[] = []
+      let members: Member[] = []
 
-      const leaderboardEntries =
-        leaderboardResult.status === 'fulfilled' ? leaderboardResult.value.entries : []
-      const leaderboardUpdatedAt =
-        leaderboardResult.status === 'fulfilled' ? leaderboardResult.value.lastUpdated : null
-      const picksDocs =
-        picksResult.status === 'fulfilled' ? picksResult.value.picks : []
-      const members =
-        membersResult.status === 'fulfilled' ? membersResult.value.members : []
+      if (mode === 'default' && hasFirebase && firebaseDb) {
+        const db = firebaseDb
+        const [leaderboardResult, picksResult, membersResult] = await Promise.allSettled([
+          fetchLeaderboard({ mode }),
+          getDocs(collection(db, 'leagues', getLeagueId(), 'picks')),
+          getDocs(collection(db, 'leagues', getLeagueId(), 'members'))
+        ])
+        if (canceled) return
+
+        if (leaderboardResult.status === 'fulfilled') {
+          leaderboardEntries = leaderboardResult.value.entries
+          leaderboardUpdatedAt = leaderboardResult.value.lastUpdated
+        }
+        if (picksResult.status === 'fulfilled') {
+          picksDocs = picksResult.value.docs.map((docSnap) => {
+            const data = docSnap.data() as { userId?: unknown; picks?: unknown; updatedAt?: unknown }
+            return {
+              userId: (typeof data.userId === 'string' && data.userId.trim()) || docSnap.id,
+              picks: Array.isArray(data.picks) ? (data.picks as Pick[]) : [],
+              updatedAt:
+                typeof data.updatedAt === 'string' && data.updatedAt.trim()
+                  ? data.updatedAt
+                  : new Date(0).toISOString()
+            }
+          })
+        }
+        if (membersResult.status === 'fulfilled') {
+          const nextMembers: Member[] = []
+          for (const docSnap of membersResult.value.docs) {
+            const data = docSnap.data() as { id?: unknown; name?: unknown; email?: unknown }
+            const id = typeof data.id === 'string' ? data.id.trim() : ''
+            if (!id) continue
+            nextMembers.push({
+              id,
+              name: typeof data.name === 'string' && data.name.trim() ? data.name : id,
+              email: typeof data.email === 'string' ? data.email : undefined
+            })
+          }
+          members = nextMembers
+        }
+      } else {
+        const [leaderboardResult, membersResult] = await Promise.allSettled([
+          fetchLeaderboard({ mode }),
+          fetchMembers({ mode })
+        ])
+        if (canceled) return
+
+        if (leaderboardResult.status === 'fulfilled') {
+          leaderboardEntries = leaderboardResult.value.entries
+          leaderboardUpdatedAt = leaderboardResult.value.lastUpdated
+        }
+        if (membersResult.status === 'fulfilled') members = membersResult.value.members
+      }
 
       setSocialSignals(
         buildSocialSignals(

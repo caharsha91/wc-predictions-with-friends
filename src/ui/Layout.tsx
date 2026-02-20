@@ -1,4 +1,4 @@
-import { useEffect, type MouseEvent } from 'react'
+import { useEffect, useRef, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 
@@ -17,7 +17,9 @@ import {
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useEasterEggs } from './hooks/useEasterEggs'
+import { useRouteDataMode } from './hooks/useRouteDataMode'
 import { useToast } from './hooks/useToast'
+import { useViewerId } from './hooks/useViewerId'
 import {
   DEMO_SCENARIO_STORAGE_KEY,
   readDemoNowOverride,
@@ -28,6 +30,8 @@ import {
   writeDemoViewerId
 } from './lib/demoControls'
 import { clearDemoLocalStorage } from './lib/demoStorage'
+import { resolvePersistableLastRoute } from './lib/lastRoute'
+import { writeUserProfile } from './lib/profilePersistence'
 import { cn } from './lib/utils'
 import { ADMIN_NAV, DEMO_ADMIN_NAV, DEMO_MAIN_NAV, MAIN_NAV, type NavItem } from './nav'
 
@@ -46,7 +50,7 @@ function getInitials(name?: string | null, email?: string | null) {
 }
 
 function isAppContentRoute(pathname: string) {
-  if (pathname === '/') return true
+  if (pathname === '/' || pathname === '/demo') return true
   return APP_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
@@ -72,24 +76,46 @@ function SidebarNavSection({
         {items.map((item) => {
           const Icon = item.icon
           return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-xl border text-sm font-semibold transition',
-                  compact ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
-                  isActive
-                    ? 'border-[var(--sidebar-border)] bg-[var(--sidebar-nav-active-bg)] text-[var(--sidebar-nav-foreground)]'
-                    : 'border-transparent text-[var(--sidebar-nav-muted)] hover:border-[var(--sidebar-border)] hover:bg-[var(--sidebar-nav-hover-bg)] hover:text-[var(--sidebar-nav-foreground)]'
-                )
-              }
-              aria-label={item.label}
-            >
-              <Icon size={16} />
-              <span className={compact ? 'sr-only' : undefined}>{item.label}</span>
-            </NavLink>
+            <div key={item.to} className="space-y-1">
+              <NavLink
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 rounded-xl border text-sm font-semibold transition',
+                    compact ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
+                    isActive
+                      ? 'border-[var(--sidebar-border)] bg-[var(--sidebar-nav-active-bg)] text-[var(--sidebar-nav-foreground)]'
+                      : 'border-transparent text-[var(--sidebar-nav-muted)] hover:border-[var(--sidebar-border)] hover:bg-[var(--sidebar-nav-hover-bg)] hover:text-[var(--sidebar-nav-foreground)]'
+                  )
+                }
+                aria-label={item.label}
+              >
+                <Icon size={16} />
+                <span className={compact ? 'sr-only' : undefined}>{item.label}</span>
+              </NavLink>
+              {!compact && item.children?.length ? (
+                <div className="ml-9 grid gap-1">
+                  {item.children.map((child) => (
+                    <NavLink
+                      key={child.to}
+                      to={child.to}
+                      end={child.end}
+                      className={({ isActive }) =>
+                        cn(
+                          'rounded-md border px-2.5 py-1.5 text-xs font-medium transition',
+                          isActive
+                            ? 'border-[var(--sidebar-border)] bg-[var(--sidebar-nav-active-bg)] text-[var(--sidebar-nav-foreground)]'
+                            : 'border-transparent text-[var(--sidebar-nav-muted)] hover:border-[var(--sidebar-border)] hover:bg-[var(--sidebar-nav-hover-bg)] hover:text-[var(--sidebar-nav-foreground)]'
+                        )
+                      }
+                    >
+                      {child.label}
+                    </NavLink>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           )
         })}
       </div>
@@ -178,20 +204,21 @@ function SidebarAccountMenu({
 
 function toDemoPath(pathname: string): string {
   if (pathname.startsWith('/demo/')) return pathname
-  if (pathname === '/play') return '/demo/play'
+  if (pathname === '/' || pathname === '/play') return '/demo'
   if (pathname.startsWith('/play/')) return pathname.replace('/play/', '/demo/play/')
   if (pathname === '/admin') return '/demo/admin'
   if (pathname.startsWith('/admin/')) return '/demo/admin'
-  return '/demo/play'
+  return '/demo'
 }
 
 function toDefaultPath(pathname: string): string {
+  if (pathname === '/demo') return '/'
   if (!pathname.startsWith('/demo/')) return pathname
-  if (pathname === '/demo/play') return '/play'
+  if (pathname === '/demo/play') return '/'
   if (pathname.startsWith('/demo/play/')) return pathname.replace('/demo/play/', '/play/')
   if (pathname === '/demo/admin') return '/admin'
   if (pathname.startsWith('/demo/admin/')) return '/admin'
-  return '/play'
+  return '/'
 }
 
 async function ensureDemoDefaults(): Promise<void> {
@@ -241,10 +268,15 @@ function DemoBanner() {
 function LayoutFrame() {
   const navigate = useNavigate()
   const location = useLocation()
+  const mode = useRouteDataMode()
   const user = useCurrentUser()
+  const viewerId = useViewerId()
   const authState = useAuthState()
   const { showToast } = useToast()
   const canAccessAdmin = user?.isAdmin === true
+  const routeSaveTimerRef = useRef<number | null>(null)
+  const queuedRouteRef = useRef<string | null>(null)
+  const persistedRouteRef = useRef<string | null>(null)
   const {
     sidebarCompact,
     popHighlightActive,
@@ -310,6 +342,71 @@ function LayoutFrame() {
   const isDemoRoute = isDemoPath(location.pathname)
   const mainNavItems = isDemoRoute ? DEMO_MAIN_NAV : MAIN_NAV
   const adminNavItems = isDemoRoute ? DEMO_ADMIN_NAV : ADMIN_NAV
+
+  useEffect(() => {
+    queuedRouteRef.current = null
+    persistedRouteRef.current = null
+    if (routeSaveTimerRef.current !== null) {
+      window.clearTimeout(routeSaveTimerRef.current)
+      routeSaveTimerRef.current = null
+    }
+  }, [mode, viewerId, authState.user?.email])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const flushQueuedRoute = (route: string) => {
+      void writeUserProfile(mode, viewerId, { lastRoute: route }, authState.user?.email ?? null)
+        .then(() => {
+          persistedRouteRef.current = route
+        })
+        .catch(() => {
+          // best effort persistence; never block UI
+        })
+    }
+
+    const canPersistForUser = !(mode === 'default' && hasFirebase && (!authState.user || user?.isMember !== true))
+    if (!viewerId || !canPersistForUser) return
+
+    const nextRoute = resolvePersistableLastRoute(location.pathname, location.search, mode)
+    if (!nextRoute) {
+      const queuedRoute = queuedRouteRef.current
+      if (queuedRoute && routeSaveTimerRef.current !== null) {
+        window.clearTimeout(routeSaveTimerRef.current)
+        routeSaveTimerRef.current = null
+        queuedRouteRef.current = null
+        flushQueuedRoute(queuedRoute)
+      }
+      return
+    }
+
+    if (nextRoute === persistedRouteRef.current || nextRoute === queuedRouteRef.current) return
+
+    queuedRouteRef.current = nextRoute
+    if (routeSaveTimerRef.current !== null) {
+      window.clearTimeout(routeSaveTimerRef.current)
+    }
+    routeSaveTimerRef.current = window.setTimeout(() => {
+      void writeUserProfile(mode, viewerId, { lastRoute: nextRoute }, authState.user?.email ?? null)
+        .then(() => {
+          persistedRouteRef.current = nextRoute
+        })
+        .catch(() => {
+          // best effort persistence; never block UI
+        })
+        .finally(() => {
+          if (queuedRouteRef.current === nextRoute) queuedRouteRef.current = null
+        })
+    }, 1200)
+  }, [authState.user, location.pathname, location.search, mode, user?.isMember, viewerId])
+
+  useEffect(() => {
+    return () => {
+      if (routeSaveTimerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(routeSaveTimerRef.current)
+        routeSaveTimerRef.current = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!isDemoRoute || typeof window === 'undefined') return

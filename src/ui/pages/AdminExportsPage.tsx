@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore'
+import { collection, getDocs } from 'firebase/firestore'
 import writeXlsxFile, { type Cell, type Columns, type SheetData } from 'write-excel-file'
 
 import { combineBracketPredictions } from '../../lib/bracket'
@@ -87,15 +87,10 @@ type SnapshotBundle = {
   members: ExportMember[]
   bestThirdQualifiers: string[]
   offlineLastUpdated: string
-  uidBackfill: {
-    updated: number
-    unresolved: number
-  }
 }
 
 type ExportMember = Member & {
   docId?: string
-  uid?: string
 }
 
 type UserOption = {
@@ -873,7 +868,7 @@ function buildMatchdayPicksRows(
   for (const member of bundle.members) {
     userNameById.set(normalizeKey(member.id), member.name || member.id)
     if (member.email) userNameById.set(normalizeKey(member.email), member.name || member.email)
-    if (member.uid) userNameById.set(normalizeKey(member.uid), member.name || member.uid)
+    if (member.authUid) userNameById.set(normalizeKey(member.authUid), member.name || member.authUid)
   }
 
   const rows: SheetSpec['rows'] = []
@@ -1142,115 +1137,23 @@ async function loadMembersForMode(dataMode: DataMode): Promise<ExportMember[]> {
         const data = docSnap.data() as Partial<ExportMember>
         const email = (data.email ?? docSnap.id).toLowerCase()
       const id =
-        typeof data.uid === 'string' && data.uid.trim()
-          ? data.uid
-          : typeof data.id === 'string' && data.id.trim()
-            ? data.id
-            : email
-        return {
-          id,
-          docId: docSnap.id,
-          name: data.name ?? email,
-          email,
-          uid: typeof data.uid === 'string' && data.uid.trim() ? data.uid : undefined,
-          isAdmin: data.isAdmin === true,
-          isMember: true
+        typeof data.id === 'string' && data.id.trim()
+          ? data.id
+          : email
+      return {
+        id,
+        docId: docSnap.id,
+        name: data.name ?? email,
+        email,
+        authUid: typeof data.authUid === 'string' && data.authUid.trim() ? data.authUid : undefined,
+        isAdmin: data.isAdmin === true,
+        isMember: true
       } satisfies ExportMember
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown Firestore error.'
     throw new Error(`Failed to read members from Firestore. ${message}`)
   }
-}
-
-function inferUidCandidate(
-  member: ExportMember,
-  picksFile: PicksFile,
-  bracketFile: BracketPredictionsFile
-): string | null {
-  if (member.uid?.trim()) return null
-
-  const signalIds = dedupeIds([
-    member.id,
-    member.docId,
-    member.email
-  ])
-
-  // Deterministic: any non-email identity already attached to member metadata.
-  for (const signal of signalIds) {
-    if (!looksLikeEmail(signal)) {
-      return signal
-    }
-  }
-
-  // Deterministic: legacy picks doc keyed by email with picks whose userId is a uid.
-  const emailSignals = signalIds.filter((value) => looksLikeEmail(value))
-  const pickDocsByEmail = picksFile.picks.filter((docEntry) =>
-    emailSignals.some((email) => sameUser(docEntry.userId, email))
-  )
-  const embeddedUserIds = dedupeIds(
-    pickDocsByEmail.flatMap((docEntry) => (docEntry.picks ?? []).map((pick) => pick.userId))
-  ).filter((value) => !looksLikeEmail(value))
-  if (embeddedUserIds.length === 1) return embeddedUserIds[0]
-
-  return null
-}
-
-async function autoBackfillMemberUids(
-  members: ExportMember[],
-  picksFile: PicksFile,
-  bracketFile: BracketPredictionsFile,
-  dataMode: DataMode
-): Promise<{ members: ExportMember[]; updated: number; unresolved: number }> {
-  if (dataMode === 'demo') return { members, updated: 0, unresolved: 0 }
-  if (!hasFirebase || !firebaseDb) return { members, updated: 0, unresolved: 0 }
-
-  const leagueId = getLeagueId()
-  const patchedMembers: ExportMember[] = []
-  const writes: Array<Promise<void>> = []
-  let updated = 0
-  let unresolved = 0
-
-  for (const member of members) {
-    const candidateUid = inferUidCandidate(member, picksFile, bracketFile)
-    if (!candidateUid) {
-      if (!member.uid?.trim()) unresolved += 1
-      patchedMembers.push(member)
-      continue
-    }
-
-    const docId = member.docId ?? member.email ?? member.id
-    const normalizedDocId = (docId ?? '').toLowerCase()
-    if (!normalizedDocId) {
-      unresolved += 1
-      patchedMembers.push(member)
-      continue
-    }
-
-    if (member.uid?.trim() === candidateUid) {
-      patchedMembers.push(member)
-      continue
-    }
-
-    updated += 1
-    patchedMembers.push({ ...member, uid: candidateUid, id: candidateUid })
-    writes.push(
-      setDoc(
-        doc(firebaseDb, 'leagues', leagueId, 'members', normalizedDocId),
-        {
-          uid: candidateUid,
-          updatedAt: new Date().toISOString()
-        },
-        { merge: true }
-      )
-    )
-  }
-
-  if (writes.length > 0) {
-    await Promise.all(writes)
-  }
-
-  return { members: patchedMembers, updated, unresolved }
 }
 
 async function loadBundle(): Promise<SnapshotBundle> {
@@ -1268,7 +1171,6 @@ async function loadBundleForMode(dataMode: DataMode): Promise<SnapshotBundle> {
       loadMembersForMode(dataMode)
     ])
   const { picksFile, bracketFile } = picksAndBracket
-  const uidBackfill = await autoBackfillMemberUids(members, picksFile, bracketFile, dataMode)
 
   const picksUpdates = picksFile.picks.map((entry) => entry.updatedAt)
   const groupUpdates = bracketFile.group.map((entry) => entry.updatedAt)
@@ -1288,13 +1190,9 @@ async function loadBundleForMode(dataMode: DataMode): Promise<SnapshotBundle> {
     picksFile,
     bracketFile,
     leaderboardFile,
-    members: uidBackfill.members,
+    members,
     bestThirdQualifiers: bestThirdFile.qualifiers,
-    offlineLastUpdated,
-    uidBackfill: {
-      updated: uidBackfill.updated,
-      unresolved: uidBackfill.unresolved
-    }
+    offlineLastUpdated
   }
 }
 
@@ -1795,12 +1693,6 @@ export default function AdminExportsPage() {
           ))}
         </div>
       </PageHeroPanel>
-
-      {state.bundle.uidBackfill.updated > 0 ? (
-        <Alert tone="success" title="UID mapping auto-fixed">
-          Updated {state.bundle.uidBackfill.updated} member record(s) with inferred Firebase UID mappings.
-        </Alert>
-      ) : null}
 
       <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">

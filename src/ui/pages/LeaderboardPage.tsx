@@ -1,9 +1,11 @@
 import * as ProgressPrimitive from '@radix-ui/react-progress'
 import { cva } from 'class-variance-authority'
+import { collection, getDocs } from 'firebase/firestore'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { fetchPicks, fetchScoring } from '../../lib/data'
+import { fetchScoring } from '../../lib/data'
+import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import { getLockTime, isMatchLocked } from '../../lib/matches'
 import { getPredictedWinner } from '../../lib/picks'
 import type { LeaderboardEntry } from '../../types/leaderboard'
@@ -20,7 +22,6 @@ import PageHeroPanel from '../components/ui/PageHeroPanel'
 import ScoreStepper from '../components/ui/ScoreStepper'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import { LEADERBOARD_LIST_PAGE_SIZE } from '../constants/pagination'
-import { useAuthState } from '../hooks/useAuthState'
 import { useNow } from '../hooks/useNow'
 import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
@@ -125,10 +126,6 @@ function formatTime(iso: string): string {
 function getEntryIdentityKey(entry: LeaderboardEntry): string {
   const id = entry.member.id?.trim().toLowerCase()
   if (id) return `id:${id}`
-  const uid = entry.member.uid?.trim().toLowerCase()
-  if (uid) return `uid:${uid}`
-  const email = entry.member.email?.trim().toLowerCase()
-  if (email) return `email:${email}`
   return `name:${entry.member.name.trim().toLowerCase()}`
 }
 
@@ -309,7 +306,6 @@ export default function LeaderboardPage() {
   // QA-SMOKE: route=/play/league and /demo/play/league ; checklist-id=smoke-leaderboard
   const navigate = useNavigate()
   const userId = useViewerId()
-  const authState = useAuthState()
   const mode = useRouteDataMode()
   const now = useNow()
   const [page, setPage] = useState(1)
@@ -324,8 +320,8 @@ export default function LeaderboardPage() {
   const playRoot = mode === 'demo' ? '/demo/play' : '/play'
 
   const viewerKeys = useMemo(() => {
-    return buildViewerKeySet([userId, authState.user?.uid, authState.user?.email])
-  }, [authState.user?.email, authState.user?.uid, userId])
+    return buildViewerKeySet([userId])
+  }, [userId])
 
   function isCurrentUserEntry(entry: LeaderboardEntry): boolean {
     const context = resolveLeaderboardUserContext([entry], viewerKeys)
@@ -337,11 +333,34 @@ export default function LeaderboardPage() {
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [picksFile, scoring] = await Promise.all([fetchPicks({ mode }), fetchScoring({ mode })])
+        const scoring = await fetchScoring({ mode })
         if (canceled) return
+        let picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[] = []
+
+        if (mode === 'default' && hasFirebase && firebaseDb) {
+          try {
+            const picksSnap = await getDocs(collection(firebaseDb, 'leagues', getLeagueId(), 'picks'))
+            if (canceled) return
+            picksDocs = picksSnap.docs.map((docSnap) => {
+              const data = docSnap.data() as { userId?: unknown; picks?: unknown; updatedAt?: unknown }
+              return {
+                userId: (typeof data.userId === 'string' && data.userId.trim()) || docSnap.id,
+                picks: Array.isArray(data.picks) ? (data.picks as Pick[]) : [],
+                updatedAt:
+                  typeof data.updatedAt === 'string' && data.updatedAt.trim()
+                    ? data.updatedAt
+                    : new Date(0).toISOString()
+              }
+            })
+          } catch {
+            // Best effort only. Some viewers may not have list access.
+            picksDocs = []
+          }
+        }
+
         setState({
           status: 'ready',
-          picksDocs: picksFile.picks,
+          picksDocs,
           scoring
         })
       } catch (error) {

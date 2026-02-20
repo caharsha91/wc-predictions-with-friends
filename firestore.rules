@@ -9,54 +9,78 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email is string;
     }
 
-    function rawEmail() {
-      return hasEmail() ? request.auth.token.email : '__missing__';
-    }
-
     function normalizedEmail() {
       return hasEmail() ? request.auth.token.email.lower() : '__missing__';
     }
 
     function isAllowlisted(leagueId) {
       return hasEmail()
-        && (
-          exists(
-            /databases/$(database)/documents/leagues/$(leagueId)/members/$(rawEmail())
-          )
-          || exists(
-            /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
-          )
+        && exists(
+          /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
         );
     }
 
     function isAdmin(leagueId) {
       return hasEmail()
-        && (
-          (exists(
-            /databases/$(database)/documents/leagues/$(leagueId)/members/$(rawEmail())
-          )
-            && get(
-              /databases/$(database)/documents/leagues/$(leagueId)/members/$(rawEmail())
-            ).data.isAdmin == true)
-          || (exists(
-            /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
-          )
-            && get(
-              /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
-            ).data.isAdmin == true)
-        );
+        && exists(
+          /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
+        )
+        && get(
+          /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
+        ).data.isAdmin == true;
     }
 
-    function isSelf(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    function selfMemberId(leagueId) {
+      return hasEmail()
+        && exists(
+          /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
+        )
+        ? get(
+          /databases/$(database)/documents/leagues/$(leagueId)/members/$(normalizedEmail())
+        ).data.id
+        : '__missing__';
+    }
+
+    function isSelfMember(leagueId, userId) {
+      return hasEmail() && selfMemberId(leagueId) is string && selfMemberId(leagueId) == userId;
     }
 
     function isSelfEmail(email) {
-      return hasEmail() && (rawEmail() == email || normalizedEmail() == email);
+      return hasEmail() && normalizedEmail() == email;
     }
 
-    function isThemeOnlyUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['theme']);
+    function isValidMemberSelfMutableUpdate(email) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'theme',
+          'lastRoute',
+          'rivalUserIds',
+          'updatedAt',
+          'authUid',
+          'email',
+          'displayName',
+          'photoURL'
+        ])
+        && (!('lastRoute' in request.resource.data)
+          || request.resource.data.lastRoute == null
+          || request.resource.data.lastRoute is string)
+        && (!('rivalUserIds' in request.resource.data)
+          || (
+            request.resource.data.rivalUserIds is list
+            && request.resource.data.rivalUserIds.size() <= 3
+          ))
+        && (!('authUid' in request.resource.data) || request.resource.data.authUid is string)
+        && (!('email' in request.resource.data)
+          || (
+            request.resource.data.email is string
+            && (
+              request.resource.data.email == email
+              || request.resource.data.email.lower() == email.lower()
+            )
+          ))
+        && (!('displayName' in request.resource.data) || request.resource.data.displayName is string)
+        && (!('photoURL' in request.resource.data)
+          || request.resource.data.photoURL == null
+          || request.resource.data.photoURL is string);
     }
 
     function groupStageLockDeadlineUtc() {
@@ -73,37 +97,37 @@ service cloud.firestore {
       allow read, write: if false;
 
       match /members/{email} {
-        allow get: if isSelfEmail(email);
-        allow list: if isAdmin(leagueId);
+        allow get, list: if isAllowlisted(leagueId);
         allow create, update: if isAdmin(leagueId)
-          || (isAllowlisted(leagueId) && isSelfEmail(email) && isThemeOnlyUpdate());
+          || (isAllowlisted(leagueId) && isSelfEmail(email) && isValidMemberSelfMutableUpdate(email));
         allow delete: if isAdmin(leagueId);
       }
 
       match /picks/{userId} {
-        allow get: if (isAllowlisted(leagueId) && isSelf(userId)) || isAdmin(leagueId);
+        allow get: if (isAllowlisted(leagueId) && isSelfMember(leagueId, userId)) || isAdmin(leagueId);
         allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
-          && isSelf(userId)
-          && request.resource.data.userId == request.auth.uid;
+          && isSelfMember(leagueId, userId)
+          && request.resource.data.userId == userId;
       }
 
       match /bracket-group/{userId} {
-        allow get: if (isAllowlisted(leagueId) && isSelf(userId)) || isAdmin(leagueId);
+        allow get: if (isAllowlisted(leagueId) && isSelfMember(leagueId, userId)) || isAdmin(leagueId);
         allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
-          && isSelf(userId)
-          && request.resource.data.userId == request.auth.uid
+          && isSelfMember(leagueId, userId)
+          && request.resource.data.userId == userId
           && isBeforeGroupStageLock();
       }
 
       match /bracket-knockout/{userId} {
-        allow get: if (isAllowlisted(leagueId) && isSelf(userId)) || isAdmin(leagueId);
+        allow get: if (isAllowlisted(leagueId) && isSelfMember(leagueId, userId)) || isAdmin(leagueId);
         allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
-          && isSelf(userId)
-          && request.resource.data.userId == request.auth.uid;
+          && isSelfMember(leagueId, userId)
+          && request.resource.data.userId == userId;
       }
     }
+
   }
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { fetchScoring } from '../../lib/data'
 import {
@@ -16,10 +16,13 @@ import type { GroupPrediction } from '../../types/bracket'
 import type { Match, Team } from '../../types/matches'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
-import { Card } from '../components/ui/Card'
+import { Button } from '../components/ui/Button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs'
+import ExportMenuV2 from '../components/v2/ExportMenuV2'
+import V2Card from '../components/v2/V2Card'
 import {
   BestThirdPicksCompact,
   DashboardToolbar,
@@ -30,6 +33,7 @@ import {
   type GroupStageDenseRow,
   type LeaderboardCardRow
 } from '../components/group-stage/GroupStageDashboardComponents'
+import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useGroupStageData } from '../hooks/useGroupStageData'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
@@ -42,6 +46,7 @@ import { formatUtcAndLocalDeadline } from '../lib/deadline'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { cn } from '../lib/utils'
 import {
+  GROUP_STAGE_GROUP_CODES,
   patchGroupStageSearch,
   readGroupStageQueryState,
   stripLegacyGroupStageParams,
@@ -53,12 +58,14 @@ import { buildProjectedImpactRows } from '../lib/projectedImpact'
 const BEST_THIRD_SLOTS = BEST_THIRD_SLOT_COUNT
 const DEFAULT_GROUP_QUALIFIER_POINTS = 3
 const EMPTY_MATCHES: Match[] = []
-const STANDINGS_GROUP_STORAGE_KEY = 'wc-group-stage-standings-group'
+const GROUP_ID_PATTERN = /^[A-L]$/
 
 type RowDraft = {
   first: string
   second: string
 }
+
+type GroupJumpStatus = 'complete' | 'incomplete' | 'locked'
 
 function formatTime(iso?: string): string {
   if (!iso) return '—'
@@ -110,12 +117,66 @@ function formatTeam(code: string | undefined, teams: Team[]): string {
   return team ? `${team.code} · ${team.name}` : code
 }
 
+function normalizeRouteGroupId(value: string | undefined): string | null {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toUpperCase()
+  if (!GROUP_ID_PATTERN.test(normalized)) return null
+  return normalized
+}
+
+function getGroupJumpStatus(
+  groupId: string,
+  groups: Record<string, GroupPrediction>,
+  isLocked: boolean
+): GroupJumpStatus {
+  if (isLocked) return 'locked'
+  const pick = groups[groupId] ?? {}
+  if (pick.first && pick.second && pick.first !== pick.second) return 'complete'
+  return 'incomplete'
+}
+
+function groupJumpStatusLabel(status: GroupJumpStatus): string {
+  if (status === 'locked') return 'Locked'
+  if (status === 'complete') return 'Complete'
+  return 'Incomplete'
+}
+
+function groupJumpStatusClass(status: GroupJumpStatus): string {
+  if (status === 'locked') return 'border-[rgba(var(--warn-rgb),0.46)] text-foreground'
+  if (status === 'complete') return 'border-[rgba(var(--primary-rgb),0.5)] text-foreground'
+  return 'border-border text-muted-foreground'
+}
+
+function csvEscape(value: string): string {
+  if (!/[",\n]/.test(value)) return value
+  return `"${value.replace(/"/g, '""')}"`
+}
+
+function rowsToCsv(rows: string[][]): string {
+  return rows.map((row) => row.map((value) => csvEscape(value)).join(',')).join('\n')
+}
+
+function downloadCsvFile(fileName: string, content: string) {
+  if (typeof window === 'undefined') return
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
+  const url = window.URL.createObjectURL(blob)
+  const anchor = window.document.createElement('a')
+  anchor.href = url
+  anchor.download = fileName
+  window.document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  window.URL.revokeObjectURL(url)
+}
+
 export default function GroupStagePage() {
   // QA-SMOKE: route=/play/group-stage and /demo/play/group-stage ; checklist-id=smoke-group-stage-detail
   const navigate = useNavigate()
   const location = useLocation()
+  const { groupId: routeGroupIdParam } = useParams<{ groupId?: string }>()
   const mode = useRouteDataMode()
   const viewerId = useViewerId()
+  const phaseState = useTournamentPhaseState()
   const { showToast } = useToast()
   const now = useNow({ tickMs: 30_000 })
   const isMobile = useMediaQuery('(max-width: 767px)')
@@ -130,8 +191,11 @@ export default function GroupStagePage() {
   const [savedRowGroupId, setSavedRowGroupId] = useState<string | null>(null)
   const savedRowTimerRef = useRef<number | null>(null)
   const [lastPersistedBestThirds, setLastPersistedBestThirds] = useState<string[]>([])
+  const [groupJumpOpen, setGroupJumpOpen] = useState(false)
 
   const queryState = useMemo(() => readGroupStageQueryState(location.search), [location.search])
+  const groupRouteBase = mode === 'demo' ? '/demo/group-stage' : '/group-stage'
+  const routeGroupId = useMemo(() => normalizeRouteGroupId(routeGroupIdParam), [routeGroupIdParam])
 
   useEffect(() => {
     const cleaned = stripLegacyGroupStageParams(location.search)
@@ -144,6 +208,25 @@ export default function GroupStagePage() {
       { replace: true }
     )
   }, [location.pathname, location.search, navigate])
+
+  const navigateToGroup = useCallback(
+    (groupId: string, replace = false) => {
+      if (!GROUP_ID_PATTERN.test(groupId)) return
+      navigate(
+        {
+          pathname: `${groupRouteBase}/${groupId}`,
+          search: location.search
+        },
+        { replace }
+      )
+    },
+    [groupRouteBase, location.search, navigate]
+  )
+
+  useEffect(() => {
+    if (routeGroupId) return
+    navigateToGroup('A', true)
+  }, [navigateToGroup, routeGroupId])
 
   const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
   const toPlayPath = (segment?: 'picks') =>
@@ -221,15 +304,11 @@ export default function GroupStagePage() {
   const finalGroupStageRows = useMemo(() => {
     if (!snapshotReady) return []
     const pointsByUser = snapshotReady.projectedGroupStagePointsByUser
-    const resolvePoints = (member: { id?: string; uid?: string; email?: string }) => {
-      const keys = [member.id, member.uid, member.email]
-        .map((value) => value?.trim().toLowerCase())
-        .filter((value): value is string => Boolean(value))
-      for (const key of keys) {
-        const value = pointsByUser[key]
-        if (typeof value === 'number' && Number.isFinite(value)) return value
-      }
-      return 0
+    const resolvePoints = (member: { id?: string }) => {
+      const key = member.id?.trim().toLowerCase()
+      if (!key) return 0
+      const value = pointsByUser[key]
+      return typeof value === 'number' && Number.isFinite(value) ? value : 0
     }
     return snapshotReady.leaderboardRows
       .map((entry) => ({
@@ -282,6 +361,18 @@ export default function GroupStagePage() {
     standings.standingsByGroup,
     standings.totalMatchesByGroup
   ])
+  const activeGroupId = routeGroupId ?? 'A'
+  const rowsForActiveGroup = useMemo(
+    () => rows.filter((row) => row.groupId === activeGroupId),
+    [activeGroupId, rows]
+  )
+  const groupJumpStatuses = useMemo(() => {
+    const statuses = new Map<string, GroupJumpStatus>()
+    for (const groupId of GROUP_STAGE_GROUP_CODES) {
+      statuses.set(groupId, getGroupJumpStatus(groupId, groupStage.data.groups, groupClosed))
+    }
+    return statuses
+  }, [groupClosed, groupStage.data.groups])
 
   const hasUnsavedRowDrafts = useMemo(() => {
     for (const [groupId, draft] of Object.entries(rowDrafts)) {
@@ -443,25 +534,8 @@ export default function GroupStagePage() {
   )
 
   useEffect(() => {
-    if (groupIds.length === 0) return
-    const key = `${STANDINGS_GROUP_STORAGE_KEY}:${mode}`
-    if (typeof window === 'undefined') {
-      setSelectedStandingsGroup(groupIds[0])
-      return
-    }
-    const saved = window.localStorage.getItem(key)?.trim().toUpperCase()
-    if (saved && groupIds.includes(saved)) {
-      setSelectedStandingsGroup(saved)
-      return
-    }
-    setSelectedStandingsGroup(groupIds[0])
-  }, [groupIds, mode])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!selectedStandingsGroup) return
-    window.localStorage.setItem(`${STANDINGS_GROUP_STORAGE_KEY}:${mode}`, selectedStandingsGroup)
-  }, [mode, selectedStandingsGroup])
+    setSelectedStandingsGroup(routeGroupId ?? 'A')
+  }, [routeGroupId])
 
   useEffect(() => {
     if (groupStage.loadState.status !== 'ready') return
@@ -547,15 +621,13 @@ export default function GroupStagePage() {
   const leaderboardRowsForCard = useMemo<LeaderboardCardRow[]>(() => {
     if (isFinalResultsMode) {
       return finalGroupStageRows.map((row, index) => {
-        const keys = [row.entry.member.id, row.entry.member.uid, row.entry.member.email]
-          .map((value) => value?.trim().toLowerCase())
-          .filter((value): value is string => Boolean(value))
+        const key = row.entry.member.id?.trim().toLowerCase() ?? ''
         return {
-          id: row.entry.member.id || row.entry.member.uid || row.entry.member.email || row.entry.member.name,
+          id: row.entry.member.id || row.entry.member.name,
           name: row.entry.member.name,
           rank: index + 1,
           points: row.points,
-          isYou: keys.includes(viewerId.trim().toLowerCase())
+          isYou: key.length > 0 && key === viewerId.trim().toLowerCase()
         }
       })
     }
@@ -580,6 +652,7 @@ export default function GroupStagePage() {
   }, [finalGroupStageRows, frozenLeaderboardRows, isFinalResultsMode, projectedImpactRows, viewerId])
 
   const selectedGroupPrediction = groupStage.data.groups[selectedStandingsGroup] ?? {}
+  const showExportMenu = !isMobile && phaseState.lockFlags.exportsVisible
 
   const saveBestThirdSelections = useCallback(async () => {
     const result = await groupStage.save()
@@ -600,6 +673,35 @@ export default function GroupStagePage() {
       setLastPersistedBestThirds(normalizeBestThirds(groupStage.data.bestThirds))
     }
   }, [groupStage, showToast])
+
+  const handleDownloadGroupStageCsv = useCallback(() => {
+    const exportedAt = new Date().toISOString()
+    const snapshotAsOf = snapshotReady?.snapshotTimestamp ?? ''
+    const rows: string[][] = [
+      ['exportedAt', exportedAt],
+      ['snapshotAsOf', snapshotAsOf || 'Snapshot unavailable'],
+      ['viewerUserId', viewerId],
+      ['mode', mode === 'demo' ? 'demo' : 'prod'],
+      [],
+      ['groupId', 'first', 'second']
+    ]
+
+    for (const groupId of GROUP_STAGE_GROUP_CODES) {
+      const prediction = groupStage.data.groups[groupId] ?? {}
+      rows.push([groupId, prediction.first ?? '', prediction.second ?? ''])
+    }
+
+    rows.push([])
+    rows.push(['bestThirdSlot', 'teamCode'])
+    for (let index = 0; index < BEST_THIRD_SLOTS; index += 1) {
+      rows.push([String(index + 1), bestThirds[index] ?? ''])
+    }
+
+    const safeViewerId = viewerId.replace(/[^a-z0-9_-]/gi, '-').toLowerCase()
+    const stamp = exportedAt.replace(/[:.]/g, '-')
+    const fileName = `group-stage-${safeViewerId || 'viewer'}-${stamp}.csv`
+    downloadCsvFile(fileName, rowsToCsv(rows))
+  }, [bestThirds, groupStage.data.groups, mode, snapshotReady?.snapshotTimestamp, viewerId])
 
   if (
     picksState.state.status === 'loading' ||
@@ -648,7 +750,7 @@ export default function GroupStagePage() {
 
   const groupPicksTable = (
     <GroupPicksDenseTable
-      rows={rows}
+      rows={rowsForActiveGroup}
       showPoints={queryState.points === 'on'}
       isReadOnly={isReadOnly}
       groupClosedByTime={groupClosedByTime}
@@ -696,23 +798,12 @@ export default function GroupStagePage() {
   )
 
   const standingsPanel = (
-    <Card className="min-h-0 rounded-xl border border-border bg-card overflow-hidden">
+    <V2Card className="min-h-0 rounded-xl overflow-hidden">
       <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
         <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Standings</div>
-        <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
-          <span className="uppercase tracking-wide">Group</span>
-          <select
-            value={selectedStandingsGroup}
-            onChange={(event) => setSelectedStandingsGroup(event.target.value)}
-            className="h-8 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
-          >
-            {groupIds.map((groupId) => (
-              <option key={`standings-group-${groupId}`} value={groupId}>
-                {groupId}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Badge tone="secondary" className="h-7 rounded-full px-2 text-[11px] normal-case tracking-normal">
+          Group {selectedStandingsGroup}
+        </Badge>
       </div>
 
       <div className="min-h-0 overflow-auto p-3">
@@ -764,7 +855,7 @@ export default function GroupStagePage() {
           </tbody>
         </Table>
       </div>
-    </Card>
+    </V2Card>
   )
 
   return (
@@ -785,6 +876,84 @@ export default function GroupStagePage() {
           closesLabel={formatUtcAndLocalDeadline(groupLockTime?.toISOString())}
           stateLabel={groupsFinal ? 'Final' : 'Pending'}
         />
+
+        <V2Card className="sticky top-0 z-20 rounded-xl px-2 py-2 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <div className="shrink-0 px-2 text-[11px] uppercase tracking-wide text-muted-foreground">Groups</div>
+            <div className="min-w-0 flex-1 overflow-x-auto">
+              <div className="flex min-w-max items-center gap-1.5 pr-1">
+                {GROUP_STAGE_GROUP_CODES.map((groupId) => {
+                  const status = groupJumpStatuses.get(groupId) ?? 'incomplete'
+                  return (
+                    <Button
+                      key={`group-pill-${groupId}`}
+                      size="sm"
+                      variant={groupId === activeGroupId ? 'primary' : 'secondary'}
+                      className={cn(
+                        'h-8 rounded-full px-3 text-[12px]',
+                        groupId !== activeGroupId ? groupJumpStatusClass(status) : undefined
+                      )}
+                      onClick={() => navigateToGroup(groupId)}
+                    >
+                      {groupId}
+                    </Button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {showExportMenu ? (
+              <ExportMenuV2
+                scopeLabel="Group rankings + best-third selections (you only)"
+                snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
+                lockMessage="Post-lock exports only. CSV format."
+                onDownloadCsv={handleDownloadGroupStageCsv}
+              />
+            ) : null}
+
+            {isMobile ? (
+              <Sheet open={groupJumpOpen} onOpenChange={setGroupJumpOpen}>
+                <SheetTrigger asChild>
+                  <Button size="sm" variant="secondary" className="h-8 rounded-lg px-3 text-[12px]">
+                    Jump
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom">
+                  <SheetHeader>
+                    <SheetTitle>Jump to group</SheetTitle>
+                    <div className="mt-1 text-xs text-muted-foreground">Route and standings stay synced to the selected group.</div>
+                  </SheetHeader>
+                  <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">
+                    {GROUP_STAGE_GROUP_CODES.map((groupId) => {
+                      const status = groupJumpStatuses.get(groupId) ?? 'incomplete'
+                      return (
+                        <button
+                          key={`jump-group-${groupId}`}
+                          type="button"
+                          className={cn(
+                            'rounded-lg border px-2 py-2 text-left transition hover:bg-background/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                            groupId === activeGroupId
+                              ? 'border-[rgba(var(--primary-rgb),0.5)] bg-[rgba(var(--primary-rgb),0.16)]'
+                              : 'border-border bg-background/40'
+                          )}
+                          onClick={() => {
+                            navigateToGroup(groupId)
+                            setGroupJumpOpen(false)
+                          }}
+                        >
+                          <div className="text-sm font-semibold text-foreground">Group {groupId}</div>
+                          <div className={cn('mt-1 text-[11px]', status === 'incomplete' ? 'text-muted-foreground' : 'text-foreground')}>
+                            {groupJumpStatusLabel(status)}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            ) : null}
+          </div>
+        </V2Card>
 
         <div className="md:hidden min-h-0">
           <Tabs defaultValue="picks">

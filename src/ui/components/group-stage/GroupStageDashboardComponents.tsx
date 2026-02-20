@@ -7,7 +7,7 @@ import { SNAPSHOT_UNAVAILABLE_LABEL } from '../../lib/snapshotStamp'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/Badge'
 import { Button, ButtonLink } from '../ui/Button'
-import { Card } from '../ui/Card'
+import V2Card from '../v2/V2Card'
 
 export type GroupStageDenseRow = {
   groupId: string
@@ -58,7 +58,7 @@ export function DashboardToolbar({
   scoringSnapshotLabel
 }: DashboardToolbarProps) {
   return (
-    <Card className="rounded-xl border border-border bg-card/90 px-4 py-2 shadow-[var(--shadow1)] xl:h-14 xl:py-0">
+    <V2Card className="rounded-xl px-4 py-2 xl:h-14 xl:py-0">
       <div className="flex h-full items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="truncate text-base font-semibold tracking-tight text-foreground">Group stage</div>
@@ -80,7 +80,7 @@ export function DashboardToolbar({
           <span className="truncate whitespace-nowrap">Snapshot {scoringSnapshotLabel}</span>
         </div>
       </div>
-    </Card>
+    </V2Card>
   )
 }
 
@@ -102,7 +102,7 @@ export function StatusBar({
   stateLabel
 }: StatusBarProps) {
   return (
-    <Card className="rounded-xl border border-border bg-card/70 px-3 py-1.5 xl:h-9 xl:py-0">
+    <V2Card className="rounded-xl px-3 py-1.5 xl:h-9 xl:py-0">
       <div className="flex h-full items-center gap-2.5 overflow-hidden">
         <Badge tone={groupsDone === groupsTotal && groupsTotal > 0 ? 'success' : 'warning'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
           Groups {groupsDone}/{groupsTotal}
@@ -117,7 +117,7 @@ export function StatusBar({
           State {stateLabel}
         </Badge>
       </div>
-    </Card>
+    </V2Card>
   )
 }
 
@@ -208,7 +208,7 @@ export function GroupPicksDenseTable({
   const gridColumnsClass = 'grid grid-cols-[88px_minmax(0,1fr)_minmax(0,1fr)_150px] items-center gap-3.5'
 
   return (
-    <Card className="h-full min-h-0 rounded-xl border border-border bg-card overflow-hidden">
+    <V2Card className="h-full min-h-0 rounded-xl overflow-hidden">
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex h-10 flex-wrap items-center gap-2 border-b border-border/60 px-3">
           <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Group Picks</div>
@@ -568,7 +568,7 @@ export function GroupPicksDenseTable({
           </div>
         </div>
       </div>
-    </Card>
+    </V2Card>
   )
 }
 
@@ -624,7 +624,7 @@ export function BestThirdPicksCompact({
   }, [defaultCollapsed])
 
   return (
-    <Card className="rounded-xl border border-border bg-card overflow-hidden">
+    <V2Card className="rounded-xl overflow-hidden">
       <div className="flex h-10 items-center gap-2 border-b border-border/60 px-3">
         <div className="min-w-0 flex-1">
           <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">Best 3rd Picks - Selected {selectedCount}/{totalCount}</div>
@@ -688,7 +688,7 @@ export function BestThirdPicksCompact({
       ) : null}
 
       {warning ? <div className="px-3 pb-3 text-[12px]">{warning}</div> : null}
-    </Card>
+    </V2Card>
   )
 }
 
@@ -774,7 +774,7 @@ export function LeaderboardCardCurated({ rows, snapshotLabel, topCount, title }:
       : curatedRows
 
   return (
-    <Card className="rounded-xl border border-border bg-card overflow-hidden">
+    <V2Card className="rounded-xl overflow-hidden">
       <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
         <div className="min-w-0">
           <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{title}</div>
@@ -827,6 +827,6 @@ export function LeaderboardCardCurated({ rows, snapshotLabel, topCount, title }:
           </div>
         ) : null}
       </div>
-    </Card>
+    </V2Card>
   )
 }

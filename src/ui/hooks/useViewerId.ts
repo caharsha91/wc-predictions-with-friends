@@ -2,26 +2,28 @@ import { useEffect, useState } from 'react'
 
 import { CURRENT_USER_ID } from '../../lib/constants'
 import { getCurrentAppPathname, isDemoPath } from '../../lib/dataMode'
-import { useAuthState } from './useAuthState'
 import { readDemoViewerId } from '../lib/demoControls'
+import { useCurrentUser } from './useCurrentUser'
 
 export function useViewerId() {
-  const { user } = useAuthState()
+  const user = useCurrentUser()
   const [viewerId, setViewerId] = useState<string>(() => {
+    const currentMemberId = user?.id ?? CURRENT_USER_ID
     if (typeof window !== 'undefined' && isDemoPath(getCurrentAppPathname())) {
-      return readDemoViewerId() ?? user?.uid ?? CURRENT_USER_ID
+      return readDemoViewerId() ?? currentMemberId
     }
-    return user?.uid ?? CURRENT_USER_ID
+    return currentMemberId
   })
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const sync = () => {
+      const currentMemberId = user?.id ?? CURRENT_USER_ID
       if (!isDemoPath(getCurrentAppPathname())) {
-        setViewerId(user?.uid ?? CURRENT_USER_ID)
+        setViewerId(currentMemberId)
         return
       }
-      setViewerId(readDemoViewerId() ?? user?.uid ?? CURRENT_USER_ID)
+      setViewerId(readDemoViewerId() ?? currentMemberId)
     }
     sync()
     window.addEventListener('storage', sync)
@@ -32,7 +34,7 @@ export function useViewerId() {
       window.removeEventListener('wc-demo-controls-changed', sync as EventListener)
       window.removeEventListener('hashchange', sync)
     }
-  }, [user?.uid])
+  }, [user?.id])
 
   return viewerId
 }

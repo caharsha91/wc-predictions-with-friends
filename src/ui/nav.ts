@@ -11,10 +11,26 @@ export type NavItem = {
   label: string
   icon: (props: { size?: number }) => JSX.Element
   end?: boolean
+  children?: Array<{
+    to: string
+    label: string
+    end?: boolean
+  }>
 }
 
 export const MAIN_NAV: NavItem[] = [
-  { to: '/play', label: 'Play', icon: HomeIcon, end: true },
+  {
+    to: '/',
+    label: 'Play',
+    icon: HomeIcon,
+    end: true,
+    children: [
+      { to: '/group-stage', label: 'Group Stage' },
+      { to: '/match-picks', label: 'Match Picks' },
+      { to: '/knockout-bracket', label: 'Knockout Bracket' },
+      { to: '/leaderboard', label: 'Leaderboard' }
+    ]
+  },
   { to: '/play/league', label: 'League', icon: TrophyIcon }
 ]
 
@@ -23,7 +39,18 @@ export const ADMIN_NAV: NavItem[] = [
 ]
 
 export const DEMO_MAIN_NAV: NavItem[] = [
-  { to: '/demo/play', label: 'Play', icon: HomeIcon, end: true },
+  {
+    to: '/demo',
+    label: 'Play',
+    icon: HomeIcon,
+    end: true,
+    children: [
+      { to: '/demo/group-stage', label: 'Group Stage' },
+      { to: '/demo/match-picks', label: 'Match Picks' },
+      { to: '/demo/knockout-bracket', label: 'Knockout Bracket' },
+      { to: '/demo/leaderboard', label: 'Leaderboard' }
+    ]
+  },
   { to: '/demo/play/league', label: 'League', icon: TrophyIcon }
 ]
 

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { collection, getDocs } from 'firebase/firestore'
 
 import { combineBracketPredictions } from '../../lib/bracket'
 import { fetchBestThirdQualifiers, fetchBracketPredictions, fetchLeaderboard, fetchMatches, fetchScoring } from '../../lib/data'
+import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import {
   buildGroupStandingsSnapshot,
   hasExactBestThirdSelection,
@@ -52,6 +54,68 @@ function sortLeaderboardRows(entries: LeaderboardEntry[]): LeaderboardEntry[] {
   })
 }
 
+type ProjectedGroupPrediction = {
+  userId: string
+  groups: Record<string, { first?: string; second?: string }>
+  bestThirds?: string[]
+}
+
+async function fetchProjectedGroupPredictions(mode: 'default' | 'demo'): Promise<ProjectedGroupPrediction[]> {
+  if (mode === 'demo') {
+    const bracketFile = await fetchBracketPredictions({ mode })
+    return combineBracketPredictions(bracketFile).map((prediction) => ({
+      userId: prediction.userId,
+      groups: prediction.groups ?? {},
+      bestThirds: prediction.bestThirds ?? []
+    }))
+  }
+
+  if (!hasFirebase || !firebaseDb) {
+    const bracketFile = await fetchBracketPredictions({ mode })
+    return combineBracketPredictions(bracketFile).map((prediction) => ({
+      userId: prediction.userId,
+      groups: prediction.groups ?? {},
+      bestThirds: prediction.bestThirds ?? []
+    }))
+  }
+
+  try {
+    const snapshot = await getDocs(collection(firebaseDb, 'leagues', getLeagueId(), 'bracket-group'))
+    return snapshot.docs.map((docSnap) => {
+      const data = docSnap.data() as {
+        userId?: unknown
+        groups?: unknown
+        bestThirds?: unknown
+      }
+      return {
+        userId:
+          typeof data.userId === 'string' && data.userId.trim()
+            ? data.userId.trim()
+            : docSnap.id,
+        groups:
+          typeof data.groups === 'object' && data.groups !== null
+            ? (data.groups as Record<string, { first?: string; second?: string }>)
+            : {},
+        bestThirds: Array.isArray(data.bestThirds)
+          ? data.bestThirds.filter((value): value is string => typeof value === 'string')
+          : []
+      }
+    })
+  } catch (error) {
+    // Non-admin users may not have list access to all bracket-group docs.
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      typeof (error as { code?: unknown }).code === 'string' &&
+      String((error as { code: string }).code).includes('permission-denied')
+    ) {
+      return []
+    }
+    throw error
+  }
+}
+
 function buildProjectedGroupStagePointsByUser({
   matches,
   qualifiers,
@@ -63,7 +127,7 @@ function buildProjectedGroupStagePointsByUser({
   matches: Match[]
   qualifiers: string[]
   leaderboardRows: LeaderboardEntry[]
-  bracketPredictions: ReturnType<typeof combineBracketPredictions>
+  bracketPredictions: ProjectedGroupPrediction[]
   groupQualifierPoints: number
   thirdQualifierPoints: number
 }): Record<string, number> {
@@ -100,10 +164,6 @@ function buildProjectedGroupStagePointsByUser({
   for (const row of leaderboardRows) {
     const idKey = normalizeKey(row.member.id)
     if (idKey && typeof pointsByKey[idKey] !== 'number') pointsByKey[idKey] = 0
-    const emailKey = normalizeKey(row.member.email)
-    if (emailKey && typeof pointsByKey[emailKey] !== 'number') pointsByKey[emailKey] = 0
-    const uidKey = normalizeKey(row.member.uid)
-    if (uidKey && typeof pointsByKey[uidKey] !== 'number') pointsByKey[uidKey] = 0
   }
 
   return pointsByKey
@@ -118,12 +178,12 @@ export function usePublishedSnapshot() {
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [leaderboardFile, matchesFile, bestThirdFile, bracketFile, scoring] = await Promise.all([
+        const [leaderboardFile, matchesFile, bestThirdFile, scoring, bracketPredictions] = await Promise.all([
           fetchLeaderboard({ mode }),
           fetchMatches({ mode }),
           fetchBestThirdQualifiers({ mode }),
-          fetchBracketPredictions({ mode }),
-          fetchScoring({ mode })
+          fetchScoring({ mode }),
+          fetchProjectedGroupPredictions(mode)
         ])
         if (canceled) return
 
@@ -139,7 +199,7 @@ export function usePublishedSnapshot() {
           matches: matchesFile.matches,
           qualifiers: bestThirdFile.qualifiers ?? [],
           leaderboardRows,
-          bracketPredictions: combineBracketPredictions(bracketFile),
+          bracketPredictions,
           groupQualifierPoints: scoring.bracket.groupQualifiers ?? 0,
           thirdQualifierPoints: scoring.bracket.thirdPlaceQualifiers ?? scoring.bracket.groupQualifiers ?? 0
         })
@@ -170,4 +230,3 @@ export function usePublishedSnapshot() {
 
   return useMemo(() => ({ state }), [state])
 }
-

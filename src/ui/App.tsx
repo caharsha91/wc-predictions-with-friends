@@ -1,9 +1,7 @@
-import { useEffect, type ReactNode } from 'react'
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import type { ReactNode } from 'react'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
-import { getCurrentAppPathname, isDemoPath } from '../lib/dataMode'
 import { hasFirebase } from '../lib/firebase'
-import { writeDemoLastRoute } from './lib/demoPersistence'
 import { Card } from './components/ui/Card'
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
@@ -14,7 +12,9 @@ import BracketPage from './pages/BracketPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
+import GroupStageEntryPage from './pages/GroupStageEntryPage'
 import GroupStagePage from './pages/GroupStagePage'
+import LandingPage from './pages/LandingPage'
 import PicksPage from './pages/PicksPage'
 import PlayPage from './pages/play/PlayPage'
 
@@ -145,22 +145,14 @@ function DemoAdminGate() {
 }
 
 export default function App() {
-  const location = useLocation()
-
-  useEffect(() => {
-    const pathname = getCurrentAppPathname()
-    if (!isDemoPath(pathname)) return
-    writeDemoLastRoute(pathname)
-  }, [location.pathname])
-
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="/play" replace />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="access-denied" element={<AccessDeniedPage />} />
 
         <Route element={<MemberGate />}>
+          <Route index element={<LandingPage />} />
           <Route path="play">
             <Route index element={<PlayPage />} />
             <Route path="picks" element={<PicksPage />} />
@@ -169,6 +161,7 @@ export default function App() {
             <Route path="league" element={<LeaderboardPage />} />
           </Route>
           <Route path="group-stage/:groupId" element={<GroupStagePage />} />
+          <Route path="group-stage" element={<GroupStageEntryPage />} />
           <Route path="match-picks" element={<PicksPage />} />
           <Route path="knockout-bracket" element={<BracketPage />} />
           <Route path="leaderboard" element={<LeaderboardPage />} />
@@ -181,6 +174,7 @@ export default function App() {
         </Route>
 
         <Route path="demo" element={<DemoAdminGate />}>
+          <Route index element={<LandingPage />} />
           <Route path="play">
             <Route index element={<PlayPage />} />
             <Route path="picks" element={<PicksPage />} />
@@ -189,6 +183,7 @@ export default function App() {
             <Route path="league" element={<LeaderboardPage />} />
           </Route>
           <Route path="group-stage/:groupId" element={<GroupStagePage />} />
+          <Route path="group-stage" element={<GroupStageEntryPage />} />
           <Route path="match-picks" element={<PicksPage />} />
           <Route path="knockout-bracket" element={<BracketPage />} />
           <Route path="leaderboard" element={<LeaderboardPage />} />

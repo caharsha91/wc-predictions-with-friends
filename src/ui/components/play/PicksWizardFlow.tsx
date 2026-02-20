@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { collection, getDocs } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
 
-import { fetchPicks } from '../../../lib/data'
+import { firebaseDb, getLeagueId, hasFirebase } from '../../../lib/firebase'
 import { getLockTime, isMatchLocked } from '../../../lib/matches'
 import { findPick, isPickComplete, upsertPick } from '../../../lib/picks'
 import type { Match } from '../../../types/matches'
@@ -170,10 +171,24 @@ export default function PicksWizardFlow({
   useEffect(() => {
     let canceled = false
     async function loadSnapshotPicks() {
-      try {
-        const file = await fetchPicks({ mode })
+      if (mode !== 'default' || !hasFirebase || !firebaseDb) {
         if (canceled) return
-        setSnapshotPicks(file.picks.map((entry) => ({ userId: entry.userId, picks: entry.picks })))
+        setSnapshotPicks([])
+        return
+      }
+
+      try {
+        const picksSnap = await getDocs(collection(firebaseDb, 'leagues', getLeagueId(), 'picks'))
+        if (canceled) return
+        setSnapshotPicks(
+          picksSnap.docs.map((docSnap) => {
+            const data = docSnap.data() as { userId?: unknown; picks?: unknown }
+            return {
+              userId: (typeof data.userId === 'string' && data.userId.trim()) || docSnap.id,
+              picks: Array.isArray(data.picks) ? (data.picks as Pick[]) : []
+            }
+          })
+        )
       } catch {
         if (!canceled) setSnapshotPicks([])
       }

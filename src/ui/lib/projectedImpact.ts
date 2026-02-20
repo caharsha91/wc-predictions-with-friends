@@ -17,7 +17,7 @@ function normalizeKey(value: string | null | undefined): string | null {
 }
 
 function getEntryUserId(entry: LeaderboardEntry): string {
-  return entry.member.id || entry.member.uid || entry.member.email || entry.member.name
+  return entry.member.id || entry.member.name
 }
 
 function resolveDeltaPoints(
@@ -85,4 +85,3 @@ export function buildProjectedImpactRows({
     }
   })
 }
-

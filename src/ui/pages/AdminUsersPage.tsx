@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { collection, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore'
+import { collection, deleteField, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore'
 
 import { fetchMembers } from '../../lib/data'
 import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
@@ -17,9 +17,11 @@ import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 
 type MemberEntry = {
-  id: string
+  docId: string
   email: string
+  memberId: string
   name?: string
+  authUid?: string
   isAdmin?: boolean
 }
 
@@ -28,12 +30,30 @@ type LoadState =
   | { status: 'error'; message: string }
   | { status: 'ready'; entries: MemberEntry[] }
 
+function looksLikeEmail(value: string): boolean {
+  if (!value) return false
+  return value.includes('@')
+}
+
+function createMemberId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return `member-${globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 20)}`
+  }
+  const timeToken = Date.now().toString(36)
+  const randomToken = Math.random().toString(36).slice(2, 12)
+  return `member-${timeToken}${randomToken}`
+}
+
 function mapMemberToEntry(member: Member): MemberEntry {
   const email = member.email?.toLowerCase() ?? `${member.id}@local`
+  const memberId = member.id?.trim() || ''
+  const authUid = member.authUid?.trim() || undefined
   return {
-    id: email,
+    docId: email,
     email,
+    memberId,
     name: member.name,
+    authUid,
     isAdmin: member.isAdmin === true
   }
 }
@@ -56,6 +76,7 @@ export default function AdminUsersPage() {
   const [memberMutationProgress, setMemberMutationProgress] = useState(0)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [memberId, setMemberId] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const { showToast } = useToast()
   const leagueId = useMemo(() => getLeagueId(), [])
@@ -76,10 +97,18 @@ export default function AdminUsersPage() {
           if (canceled) return
           const entries = snapshot.docs.map((docSnap) => {
             const data = docSnap.data() as Partial<MemberEntry>
+            const storedMemberId =
+              (typeof (data as { id?: unknown }).id === 'string' && ((data as { id: string }).id).trim()) ||
+              ''
+            const storedAuthUid =
+              (typeof (data as { authUid?: unknown }).authUid === 'string' && ((data as { authUid: string }).authUid).trim()) ||
+              undefined
             return {
-              id: docSnap.id,
+              docId: docSnap.id,
               email: (data.email ?? docSnap.id).toLowerCase(),
+              memberId: storedMemberId,
               name: data.name,
+              authUid: storedAuthUid,
               isAdmin: data.isAdmin === true
             } satisfies MemberEntry
           })
@@ -106,6 +135,7 @@ export default function AdminUsersPage() {
     setEditing(null)
     setName('')
     setEmail('')
+    setMemberId(createMemberId())
     setIsAdmin(false)
     setFormStatus('idle')
     setEditorOpen(true)
@@ -115,6 +145,7 @@ export default function AdminUsersPage() {
     setEditing(entry)
     setName(entry.name ?? '')
     setEmail(entry.email)
+    setMemberId(entry.memberId || createMemberId())
     setIsAdmin(Boolean(entry.isAdmin))
     setFormStatus('idle')
     setEditorOpen(true)
@@ -128,8 +159,17 @@ export default function AdminUsersPage() {
     }
 
     const normalizedEmail = email.trim().toLowerCase()
+    const resolvedMemberId = memberId.trim() || editing?.memberId || createMemberId()
     if (!normalizedEmail) {
       showToast({ title: 'Validation error', message: 'Email is required.', tone: 'warning' })
+      return
+    }
+    if (!resolvedMemberId) {
+      showToast({ title: 'Validation error', message: 'Member ID could not be generated.', tone: 'warning' })
+      return
+    }
+    if (looksLikeEmail(resolvedMemberId)) {
+      showToast({ title: 'Validation error', message: 'Member ID cannot be an email.', tone: 'warning' })
       return
     }
 
@@ -137,26 +177,32 @@ export default function AdminUsersPage() {
     setMemberMutationProgress(20)
     try {
       const ref = doc(firebaseDb, 'leagues', leagueId, 'members', normalizedEmail)
+      const trimmedName = name.trim()
+      const payload: Record<string, unknown> = {
+        email: normalizedEmail,
+        id: resolvedMemberId,
+        uid: deleteField(),
+        isAdmin,
+        createdAt: serverTimestamp()
+      }
+      if (trimmedName) payload.name = trimmedName
       await setDoc(
         ref,
-        {
-          email: normalizedEmail,
-          name: name.trim() || undefined,
-          isAdmin,
-          createdAt: serverTimestamp()
-        },
+        payload,
         { merge: true }
       )
 
       setState((current) => {
         if (current.status !== 'ready') return current
         const nextEntry: MemberEntry = {
-          id: normalizedEmail,
+          docId: normalizedEmail,
           email: normalizedEmail,
-          name: name.trim() || undefined,
+          memberId: resolvedMemberId,
+          name: trimmedName || undefined,
+          authUid: editing?.authUid,
           isAdmin
         }
-        const rest = current.entries.filter((entry) => entry.id !== normalizedEmail)
+        const rest = current.entries.filter((entry) => entry.docId !== normalizedEmail)
         return { status: 'ready', entries: sortEntries([nextEntry, ...rest]) }
       })
       setFormStatus('idle')
@@ -239,7 +285,7 @@ export default function AdminUsersPage() {
             </thead>
             <tbody>
               {entries.map((entry) => (
-                <tr key={entry.id}>
+                <tr key={entry.docId}>
                   <td className="font-semibold text-foreground">{entry.name || 'Unnamed user'}</td>
                   <td>{entry.email}</td>
                   <td>{entry.isAdmin ? <Badge tone="info">Admin</Badge> : <Badge>Member</Badge>}</td>
@@ -284,6 +330,25 @@ export default function AdminUsersPage() {
               disabled={!canManageMembers || Boolean(editing)}
               placeholder="member@example.com"
               required
+            />
+            <InputField
+              id="member-id"
+              label="Member ID"
+              value={memberId}
+              onChange={(event) => setMemberId(event.target.value)}
+              disabled={!canManageMembers}
+              placeholder="Auto-generated member identity"
+              helperText="Auto-generated app identity used for picks, bracket, leaderboard, and rivals."
+              required
+            />
+            <InputField
+              id="member-auth-uid"
+              label="Auth UID"
+              value={editing?.authUid ?? ''}
+              readOnly
+              disabled
+              placeholder="Not set"
+              helperText="Firebase Auth metadata (read-only). App identity uses Member ID only."
             />
             <label className="flex items-center gap-2 text-sm text-foreground">
               <input

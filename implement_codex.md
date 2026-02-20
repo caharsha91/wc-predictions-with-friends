@@ -1,5 +1,5 @@
 # WC Predictions v2 - Codex Execution Spec (Implementation-Friendly)
-_Last updated: 2026-02-19_
+_Last updated: 2026-02-20_
 
 ## 1) Delivery target (in-place v2)
 
@@ -236,6 +236,13 @@ Suggested profile shape:
 - `lastRoute: string` (example `/group-stage/H`)
 - `rivalUserIds: string[]` (max 3)
 - `updatedAt: timestamp`
+
+Future identity migration note (non-blocking for v2 scope):
+
+- Keep current v2 delivery scope unchanged.
+- Plan a staged migration of `leagues/{leagueId}/members` doc IDs from email-keyed IDs to UID-keyed IDs.
+- Migration must use dual-read/dual-write/backfill cutover sequencing to avoid access regressions.
+- Do not block chunks 0-10 on this migration.
 
 ### 5.2 Demo mode
 
@@ -825,6 +832,12 @@ Manual simulation checklist:
 
 ### 8.2 Chunked delivery (same scope, normalized dependency order)
 
+Cross-chunk implementation guardrail (applies to Chunks 2-10):
+
+- As each screen is modified in its chunk, apply Chunk 1 primitives/tokens (`PageHeaderV2`, `V2Card`, shared motion/typography + theme tokens) to the touched UI.
+- Do not add new ad-hoc visual styles on touched surfaces; use the shared token/primitives system.
+- Preserve in-place scope: only the surfaces touched by the active chunk must be brought to token/primitives consistency in that chunk.
+
 Chunk 0 - Guardrails and config:
 
 - Confirm single sources for deadlines, snapshot formatting, demo mode, `tournamentPhase` source
@@ -833,32 +846,45 @@ Chunk 0 - Guardrails and config:
 - Define demo persistence contract (what persists, scope, and reset behavior)
 - Confirm in-place v2 always-on activation contract
 - Acceptance: `npm run build` passes and existing flows continue to work
+- Closure status (2026-02-20): complete for touched surfaces; route/tokens/contrast guards and production build pass
 
 Chunk 1 - Theme tokens and v2 primitives:
 
-- Wash/glow tokens for light/dark
-- `PageHeaderV2`, `V2Card`, shared motion/typography rules
-- Acceptance: both themes show subtle wash/glow using tokens only
+- Normalize blended surface tokens for light/dark (surface blend, border intensity, text luminance, glow caps)
+- Upgrade shared `PageHeaderV2` and `V2Card` to variant-driven primitives (`hero/section`, `default/hero/tile/panel/subtle`)
+- Keep touched-screen styling token-driven; avoid ad-hoc per-card color literals
+- Acceptance: both themes show restrained wash/glow using shared primitives and tokens only
 
 Chunk 2 - Landing v2 + profile persistence:
 
-- Build landing hub
+- Build landing hub with layout conformation (shell rhythm + blended visual system on Landing)
 - Implement profile read/write for `lastRoute` + `rivalUserIds`
 - `lastRoute` policy: clear only when stored route is invalid or unauthorized
-- Acceptance: `/` is default post-login; Continue fallback to `/` clears invalid/unauthorized `lastRoute` only; rivals edit only on Landing with cap 3 and persistence
+- Add Landing visual fidelity pass scope: atmospheric canvas, 4-card row on desktop, split snapshot hero (literal podium + compact standings), compact rivals control, and aligned rules card
+- Acceptance: `/` is default post-login; Continue fallback to `/` clears invalid/unauthorized `lastRoute` only; rivals edit only on Landing with cap 3 and persistence; snapshot stamp/fallback remains visible in Landing snapshot surfaces
 
 Chunk 3 - Route tracking:
 
 - Debounced per-user `lastRoute` persistence
 - `lastRoute` clear behavior aligns with Landing policy (clear only on invalid/unauthorized)
 - Acceptance: navigating to `/group-stage/H` then `Continue` returns to `/group-stage/H`; valid stored routes are not cleared
+- Closure status (2026-02-20): complete; Landing continue behavior preserves `missing` vs `invalid/unauthorized` clear policy
 
 Chunk 4 - Group Stage shell and group navigation:
 
 - Route redirect behavior
 - Tabs/jump/status
 - Per-surface `ExportMenuV2` wiring for Group Stage (desktop-only, post-lock)
-- Acceptance: tabs and jump update URL/state correctly on desktop and mobile
+- Sidebar/nav default adjustment: `Play` opens Landing (`/` and `/demo`) while preserving `/play` and `/demo/play` route compatibility
+- Acceptance: tabs and jump update URL/state correctly on desktop and mobile; Play nav target defaults to Landing across desktop and mobile nav surfaces
+
+Chunk 0-4 closure notes (2026-02-20):
+
+- Chunk 0: guardrails revalidated in touched routes; build + token + contrast + route guards passing.
+- Chunk 1: shared v2 primitive variants and blended token primitives applied; Landing now consumes upgraded primitives.
+- Chunk 2: Landing fidelity pass delivered with split snapshot hero, podium/list composition, and restrained blended atmosphere.
+- Chunk 3: `lastRoute` continue/clear policy confirmed (valid/missing/invalid/unauthorized behavior unchanged by visual updates).
+- Chunk 4: Play default nav target moved to Landing roots for desktop/mobile nav while legacy `/play` routes remain usable.
 
 Chunk 5 - Group ranking DnD:
 
@@ -898,12 +924,15 @@ Chunk 9 - Knockout Bracket v2:
 Chunk 10 - Final polish:
 
 - spacing, hierarchy, micro-interactions
+- Cross-surface consistency pass for layout, typography, interface behavior, and overall look/feel across Landing, Group Stage, Match Picks, Knockout Bracket, and Leaderboard (desktop and mobile).
 - Rival Mode behavior consistency and secrecy validation
+- Dedicated Landing Rivals UX review/update (loading/empty/error/saving states, cap-3 messaging, selection/removal affordances, mobile ergonomics)
 - Enforce CSV-only exports across all surfaces
 - Remove JSON/PNG export options everywhere
 - Confirm at least one Rival Mode overlay per supported page
 - Fill remaining missing UX states
-- Acceptance: visual polish is consistent; exports are CSV-only; rival behavior remains post-lock/read-only; required Rival Mode overlays and missing UX states are complete
+- Add a documented staged plan for members identity migration (email-keyed member doc IDs -> UID-keyed member doc IDs) as a post-v2 follow-up.
+- Acceptance: cross-surface layout/typography/interaction/look-and-feel consistency is complete; visual polish is consistent; exports are CSV-only; rival behavior remains post-lock/read-only; required Rival Mode overlays and missing UX states are complete
 
 Global Rival Mode acceptance checklist:
 

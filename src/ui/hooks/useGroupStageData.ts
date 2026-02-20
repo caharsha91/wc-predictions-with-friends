@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FirebaseError } from 'firebase/app'
+import { doc, getDoc } from 'firebase/firestore'
 
 import { loadLocalBracketPrediction, saveLocalBracketPrediction } from '../../lib/bracket'
 import { fetchBracketPredictions } from '../../lib/data'
 import { fetchUserGroupStageDoc, saveUserGroupStageDoc } from '../../lib/firestoreData'
-import { hasFirebase } from '../../lib/firebase'
+import { firebaseAuth, firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import { getGroupOutcomesLockTime } from '../../lib/matches'
 import type { GroupPrediction } from '../../types/bracket'
 import type { Match } from '../../types/matches'
 import { useAuthState } from './useAuthState'
-import { useCurrentUser } from './useCurrentUser'
+import { refreshCurrentUser, useCurrentUser } from './useCurrentUser'
 import { useDemoScenarioState } from './useDemoScenarioState'
 import { useRouteDataMode } from './useRouteDataMode'
 import { useViewerId } from './useViewerId'
@@ -113,8 +114,24 @@ export function useGroupStageData(matches: Match[]) {
     authState.status === 'ready' &&
     !!authState.user &&
     currentUser?.isMember === true
+  const isLiveMode = !isDemoMode && hasFirebase
   const isTimeLocked = groupLockTime ? Date.now() >= groupLockTime.getTime() : false
   const isLocked = forcedLocked || isTimeLocked
+
+  async function resolveCanonicalUserId(fallbackUserId: string): Promise<string> {
+    if (!isLiveMode || !firebaseDb) return fallbackUserId
+    const email = firebaseAuth?.currentUser?.email?.toLowerCase() ?? null
+    if (!email) return fallbackUserId
+    try {
+      const snapshot = await getDoc(doc(firebaseDb, 'leagues', getLeagueId(), 'members', email))
+      if (!snapshot.exists()) return fallbackUserId
+      const data = snapshot.data() as { id?: unknown }
+      const canonicalId = typeof data.id === 'string' ? data.id.trim() : ''
+      return canonicalId || fallbackUserId
+    } catch {
+      return fallbackUserId
+    }
+  }
 
   useEffect(() => {
     let canceled = false
@@ -142,17 +159,22 @@ export function useGroupStageData(matches: Match[]) {
         let next: GroupStageData | null = null
 
         if (firestoreEnabled) {
-          const remote = await fetchUserGroupStageDoc(userId)
+          const canonicalUserId = await resolveCanonicalUserId(userId)
+          const remote = await fetchUserGroupStageDoc(canonicalUserId)
           if (remote) {
             next = {
               groups: normalizeGroups(remote.groups ?? {}, groupIds),
               bestThirds: normalizeBestThirds(remote.bestThirds ?? [], slotCount),
               updatedAt: new Date().toISOString()
             }
+          } else {
+            next = {
+              groups: normalizeGroups({}, groupIds),
+              bestThirds: normalizeBestThirds([], slotCount),
+              updatedAt: new Date().toISOString()
+            }
           }
-        }
-
-        if (!next) {
+        } else if (!isLiveMode) {
           const local = loadLocalBracketPrediction(userId, mode)
           if (local && hasAnyGroupSelection(local.groups ?? {}, local.bestThirds ?? [])) {
             next = {
@@ -163,7 +185,7 @@ export function useGroupStageData(matches: Match[]) {
           }
         }
 
-        if (!next) {
+        if (!next && !isLiveMode) {
           const seed = await fetchBracketPredictions({ mode })
           const seedDoc = seed.group.find((entry) => entry.userId === userId) ?? seed.group[0]
           if (seedDoc) {
@@ -200,7 +222,7 @@ export function useGroupStageData(matches: Match[]) {
     return () => {
       canceled = true
     }
-  }, [authState.status, demoScenario, firestoreEnabled, groupIds, mode, userId])
+  }, [authState.status, demoScenario, firestoreEnabled, groupIds, isLiveMode, mode, userId])
 
   const setGroupPick = useCallback(
     (groupId: string, field: 'first' | 'second', value: string) => {
@@ -272,10 +294,17 @@ export function useGroupStageData(matches: Match[]) {
     }
 
     setSaveStatus('saving')
+    if (!firestoreEnabled && isLiveMode) {
+      setSaveStatus('error')
+      return { ok: false, reason: 'error' }
+    }
+
     try {
-      saveLocalGroupStage(userId, resolvedData, mode)
+      const canonicalUserId = await resolveCanonicalUserId(userId)
+      saveLocalGroupStage(canonicalUserId, resolvedData, mode)
       if (firestoreEnabled) {
-        await saveUserGroupStageDoc(userId, resolvedData.groups, resolvedData.bestThirds)
+        await saveUserGroupStageDoc(canonicalUserId, resolvedData.groups, resolvedData.bestThirds)
+        if (canonicalUserId !== userId) refreshCurrentUser()
       }
       if (nextData) {
         setData(resolvedData)
@@ -283,15 +312,15 @@ export function useGroupStageData(matches: Match[]) {
       setSaveStatus('saved')
       return { ok: true }
     } catch (error) {
-      if (error instanceof FirebaseError && error.code === 'permission-denied') {
-        setForcedLocked(true)
-        setSaveStatus('locked')
-        return { ok: false, reason: 'locked' }
+      if (error instanceof FirebaseError) {
+        console.error('saveGroupStage failed', error.code, error.message)
+        if (error.code === 'permission-denied') refreshCurrentUser()
       }
+      else console.error('saveGroupStage failed', error)
       setSaveStatus('error')
       return { ok: false, reason: 'error' }
     }
-  }, [data, firestoreEnabled, isLocked, mode, userId])
+  }, [data, firestoreEnabled, isLiveMode, isLocked, mode, userId])
 
   return {
     loadState,

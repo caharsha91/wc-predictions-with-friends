@@ -20,8 +20,9 @@ const refreshListeners = new Set<RefreshListener>()
 const MEMBER_CACHE_TTL_MS = 30 * 60 * 1000
 
 type MemberCache = {
-  uid: string | null
+  authUid: string | null
   email: string | null
+  memberId: string | null
   user: Member | null
   isMember: boolean
   savedAt: number
@@ -79,9 +80,9 @@ function clearCache(cacheKey?: string) {
   }
 }
 
-function isCacheValid(cache: MemberCache | null, uid: string | null, email: string | null) {
+function isCacheValid(cache: MemberCache | null, authUid: string | null, email: string | null) {
   if (!cache) return false
-  if (cache.uid !== uid) return false
+  if (cache.authUid !== authUid) return false
   if (cache.email !== email) return false
   return Date.now() - cache.savedAt < MEMBER_CACHE_TTL_MS
 }
@@ -131,9 +132,10 @@ export function useCurrentUser() {
               setState({
                 status: 'ready',
                 user: {
-                  id: user.uid,
+                  id: '',
                   name: user.displayName || user.email || 'User',
                   email: user.email || undefined,
+                  authUid: user.uid || undefined,
                   isMember: false
                 }
               })
@@ -152,15 +154,17 @@ export function useCurrentUser() {
             const leagueId = getLeagueId()
             if (!normalizedEmail) {
               const fallbackUser: Member = {
-                id: user.uid,
+                id: '',
                 name: user.displayName || user.email || 'User',
                 email: user.email || undefined,
+                authUid: user.uid || undefined,
                 isAdmin: false,
                 isMember: false
               }
               const payload: MemberCache = {
-                uid: user.uid,
+                authUid: user.uid,
                 email: normalizedEmail,
+                memberId: null,
                 user: fallbackUser,
                 isMember: false,
                 savedAt: Date.now()
@@ -171,21 +175,25 @@ export function useCurrentUser() {
             const memberRef = doc(firebaseDb, 'leagues', leagueId, 'members', normalizedEmail)
             const memberSnap = await getDoc(memberRef)
             const memberData = memberSnap.exists() ? (memberSnap.data() as Member) : null
+            const memberId = (typeof memberData?.id === 'string' && memberData.id.trim()) || ''
+            const authUid = (typeof memberData?.authUid === 'string' && memberData.authUid.trim()) || ''
             const memberIsAdmin = memberData?.isAdmin === true
-            const isMember = memberSnap.exists()
+            const isMember = memberSnap.exists() && memberId.length > 0
             const fallbackName = memberData?.name ?? user.displayName ?? user.email ?? 'User'
             const fallbackEmail = memberData?.email ?? user.email ?? undefined
+
             const resolvedUser: Member = {
-              ...(memberData ?? {}),
-              id: user.uid,
+              id: memberId,
+              authUid: authUid || undefined,
               name: fallbackName,
               email: fallbackEmail,
               isAdmin: memberIsAdmin,
               isMember
             }
             const payload: MemberCache = {
-              uid: user.uid,
+              authUid: user.uid,
               email: normalizedEmail,
+              memberId: memberId || null,
               user: resolvedUser,
               isMember,
               savedAt: Date.now()

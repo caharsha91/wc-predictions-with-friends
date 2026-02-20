@@ -127,6 +127,10 @@
     radial-gradient(1200px 420px at 70% -10%, rgba(110, 106, 210, 0.08), transparent 60%),
     radial-gradient(900px 320px at 15% -8%, rgba(154, 68, 178, 0.06), transparent 64%);
   --bg-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 35%);
+  --v2-wash-from: rgba(255, 255, 255, 0.95);
+  --v2-wash-via: rgba(246, 242, 252, 0.93);
+  --v2-wash-to: rgba(236, 229, 249, 0.9);
+  --v2-glow-color: rgba(var(--primary-rgb), 0.26);
 }
 
 :root[data-mode='dark'] {
@@ -256,4 +260,8 @@
     radial-gradient(900px 320px at 15% -10%, rgba(154, 68, 178, 0.2), transparent 64%),
     radial-gradient(760px 260px at 50% 100%, rgba(34, 211, 238, 0.08), transparent 70%);
   --bg-overlay: linear-gradient(180deg, rgba(23, 26, 43, 0.28), transparent 34%);
+  --v2-wash-from: rgba(37, 41, 64, 0.96);
+  --v2-wash-via: rgba(43, 47, 72, 0.94);
+  --v2-wash-to: rgba(55, 59, 88, 0.92);
+  --v2-glow-color: rgba(var(--primary-rgb), 0.34);
 }

@@ -4,7 +4,7 @@ import path from 'node:path'
 const ROOT = process.cwd()
 const SRC_UI_DIR = path.join(ROOT, 'src', 'ui')
 const LEGACY_ROUTE_REGEX =
-  /(["'`])(\/(?:picks(?:\/wizard)?|group-stage|results|bracket|leaderboard|players|exports))\1/g
+  /(["'`])(\/(?:picks(?:\/wizard)?|results|players|exports))\1/g
 
 async function listFiles(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true })
@@ -47,7 +47,7 @@ async function main() {
   }
 
   if (violations.length > 0) {
-    console.error('Legacy route guard failed. Use canonical /play/* or /admin/* routes in UI code.\n')
+    console.error('Legacy route guard failed. Use canonical v2 route literals in UI code.\n')
     for (const violation of violations) {
       console.error(violation)
     }

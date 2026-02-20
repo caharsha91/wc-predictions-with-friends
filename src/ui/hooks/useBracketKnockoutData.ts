@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FirebaseError } from 'firebase/app'
+import { doc, getDoc } from 'firebase/firestore'
 
 import {
   combineBracketPredictions,
@@ -10,11 +12,11 @@ import {
   fetchUserBracketKnockoutDoc,
   saveUserBracketKnockoutDoc
 } from '../../lib/firestoreData'
-import { hasFirebase } from '../../lib/firebase'
+import { firebaseAuth, firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import type { Match, MatchWinner } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 import { useAuthState } from './useAuthState'
-import { useCurrentUser } from './useCurrentUser'
+import { refreshCurrentUser, useCurrentUser } from './useCurrentUser'
 import { useDemoScenarioState } from './useDemoScenarioState'
 import { useRouteDataMode } from './useRouteDataMode'
 import { useViewerId } from './useViewerId'
@@ -89,6 +91,22 @@ export function useBracketKnockoutData() {
     authState.status === 'ready' &&
     !!authState.user &&
     currentUser?.isMember === true
+  const isLiveMode = !isDemoMode && hasFirebase
+
+  async function resolveCanonicalUserId(fallbackUserId: string): Promise<string> {
+    if (!isLiveMode || !firebaseDb) return fallbackUserId
+    const email = firebaseAuth?.currentUser?.email?.toLowerCase() ?? null
+    if (!email) return fallbackUserId
+    try {
+      const snapshot = await getDoc(doc(firebaseDb, 'leagues', getLeagueId(), 'members', email))
+      if (!snapshot.exists()) return fallbackUserId
+      const data = snapshot.data() as { id?: unknown }
+      const canonicalId = typeof data.id === 'string' ? data.id.trim() : ''
+      return canonicalId || fallbackUserId
+    } catch {
+      return fallbackUserId
+    }
+  }
 
   useEffect(() => {
     let canceled = false
@@ -103,18 +121,19 @@ export function useBracketKnockoutData() {
 
         let nextKnockout: KnockoutState | null = null
         if (firestoreEnabled) {
-          const remote = await fetchUserBracketKnockoutDoc(userId)
-          if (remote) nextKnockout = remote
+          const canonicalUserId = await resolveCanonicalUserId(userId)
+          const remote = await fetchUserBracketKnockoutDoc(canonicalUserId)
+          nextKnockout = remote ?? {}
         }
 
-        if (!nextKnockout) {
+        if (!nextKnockout && !isLiveMode) {
           const local = loadLocalBracketPrediction(userId, mode)
           if (local?.knockout && Object.keys(local.knockout).length > 0) {
             nextKnockout = local.knockout
           }
         }
 
-        if (!nextKnockout) {
+        if (!nextKnockout && !isLiveMode) {
           const seed = await fetchBracketPredictions({ mode })
           const combined = combineBracketPredictions(seed)
           const fallback = combined.find((entry) => entry.userId === userId) ?? combined[0]
@@ -142,7 +161,7 @@ export function useBracketKnockoutData() {
     return () => {
       canceled = true
     }
-  }, [authState.status, demoScenario, firestoreEnabled, mode, userId])
+  }, [authState.status, demoScenario, firestoreEnabled, isLiveMode, mode, userId])
 
   const totalMatches = useMemo(() => {
     if (loadState.status !== 'ready') return 0
@@ -185,18 +204,28 @@ export function useBracketKnockoutData() {
 
   const save = useCallback(async () => {
     setSaveStatus('saving')
-    try {
-      persistLocalKnockout(userId, knockout, mode)
-      if (firestoreEnabled) {
-        await saveUserBracketKnockoutDoc(userId, knockout)
-      }
-      setSaveStatus('saved')
-      return true
-    } catch {
+    if (!firestoreEnabled && isLiveMode) {
       setSaveStatus('error')
       return false
     }
-  }, [firestoreEnabled, knockout, mode, userId])
+    try {
+      const canonicalUserId = await resolveCanonicalUserId(userId)
+      persistLocalKnockout(canonicalUserId, knockout, mode)
+      if (firestoreEnabled) {
+        await saveUserBracketKnockoutDoc(canonicalUserId, knockout)
+        if (canonicalUserId !== userId) refreshCurrentUser()
+      }
+      setSaveStatus('saved')
+      return true
+    } catch (error) {
+      console.error('saveKnockout failed', error)
+      if (error instanceof FirebaseError && error.code === 'permission-denied') {
+        refreshCurrentUser()
+      }
+      setSaveStatus('error')
+      return false
+    }
+  }, [firestoreEnabled, isLiveMode, knockout, mode, userId])
 
   return {
     loadState,

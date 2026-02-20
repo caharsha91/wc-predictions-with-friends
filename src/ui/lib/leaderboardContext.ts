@@ -12,11 +12,8 @@ export type LeaderboardUserContext = {
 }
 
 export function resolveLeaderboardIdentityKeys(entry: LeaderboardEntry): string[] {
-  const keys: string[] = []
-  if (entry.member.id) keys.push(entry.member.id.toLowerCase())
-  if (entry.member.uid) keys.push(entry.member.uid.toLowerCase())
-  if (entry.member.email) keys.push(entry.member.email.toLowerCase())
-  return keys
+  if (!entry.member.id) return []
+  return [entry.member.id.toLowerCase()]
 }
 
 export function buildViewerKeySet(values: Array<string | null | undefined>): Set<string> {
