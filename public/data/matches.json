@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-02-19T06:15:12.395Z",
+  "lastUpdated": "2026-02-20T06:09:27.964Z",
   "matches": [
     {
       "id": "537327",
@@ -158,7 +158,7 @@
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "CIV",
-        "name": "Côte d'Ivoire"
+        "name": "Ivory Coast"
       },
       "awayTeam": {
         "code": "ECU",
@@ -522,7 +522,7 @@
       },
       "awayTeam": {
         "code": "CIV",
-        "name": "Côte d'Ivoire"
+        "name": "Ivory Coast"
       },
       "group": "E"
     },
@@ -837,7 +837,7 @@
       },
       "awayTeam": {
         "code": "CIV",
-        "name": "Côte d'Ivoire"
+        "name": "Ivory Coast"
       },
       "group": "E"
     },
