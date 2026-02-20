@@ -17,10 +17,8 @@ import type { Match, Team } from '../../types/matches'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import V2Card from '../components/v2/V2Card'
 import {
@@ -135,12 +133,6 @@ function getGroupJumpStatus(
   return 'incomplete'
 }
 
-function groupJumpStatusLabel(status: GroupJumpStatus): string {
-  if (status === 'locked') return 'Locked'
-  if (status === 'complete') return 'Complete'
-  return 'Incomplete'
-}
-
 function groupJumpStatusClass(status: GroupJumpStatus): string {
   if (status === 'locked') return 'border-[rgba(var(--warn-rgb),0.46)] text-foreground'
   if (status === 'complete') return 'border-[rgba(var(--primary-rgb),0.5)] text-foreground'
@@ -179,8 +171,7 @@ export default function GroupStagePage() {
   const phaseState = useTournamentPhaseState()
   const { showToast } = useToast()
   const now = useNow({ tickMs: 30_000 })
-  const isMobile = useMediaQuery('(max-width: 767px)')
-  const prefersDenseTopFive = useMediaQuery('(min-height: 1340px)')
+  const isDesktopViewport = useMediaQuery('(min-width: 768px)')
   const picksState = usePicksData()
   const publishedSnapshot = usePublishedSnapshot()
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
@@ -191,7 +182,6 @@ export default function GroupStagePage() {
   const [savedRowGroupId, setSavedRowGroupId] = useState<string | null>(null)
   const savedRowTimerRef = useRef<number | null>(null)
   const [lastPersistedBestThirds, setLastPersistedBestThirds] = useState<string[]>([])
-  const [groupJumpOpen, setGroupJumpOpen] = useState(false)
 
   const queryState = useMemo(() => readGroupStageQueryState(location.search), [location.search])
   const groupRouteBase = mode === 'demo' ? '/demo/group-stage' : '/group-stage'
@@ -652,7 +642,7 @@ export default function GroupStagePage() {
   }, [finalGroupStageRows, frozenLeaderboardRows, isFinalResultsMode, projectedImpactRows, viewerId])
 
   const selectedGroupPrediction = groupStage.data.groups[selectedStandingsGroup] ?? {}
-  const showExportMenu = !isMobile && phaseState.lockFlags.exportsVisible
+  const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
 
   const saveBestThirdSelections = useCallback(async () => {
     const result = await groupStage.save()
@@ -776,7 +766,7 @@ export default function GroupStagePage() {
       totalCount={BEST_THIRD_SLOTS}
       selectedCodes={selectedBestThirds}
       statusLabel={bestThirdsFinal ? 'Final' : groupClosedByTime ? 'Locked' : 'Pending'}
-      defaultCollapsed={isMobile}
+      defaultCollapsed={false}
       isReadOnly={isReadOnly}
       isDirty={bestThirdDirty}
       saveStatus={groupStage.saveStatus}
@@ -859,8 +849,8 @@ export default function GroupStagePage() {
   )
 
   return (
-    <div className="h-full min-h-0 overflow-hidden">
-      <div className="mx-auto flex h-full w-full max-w-[1760px] min-h-0 flex-col gap-3 p-3 sm:p-4 xl:p-5">
+    <div className="w-full">
+      <div className="flex w-full flex-col gap-3 p-3 sm:p-4 xl:p-5">
         <DashboardToolbar
           playCenterPath={toPlayPath()}
           leaderboardPath={`${playRoot}/league`}
@@ -910,90 +900,16 @@ export default function GroupStagePage() {
                 onDownloadCsv={handleDownloadGroupStageCsv}
               />
             ) : null}
-
-            {isMobile ? (
-              <Sheet open={groupJumpOpen} onOpenChange={setGroupJumpOpen}>
-                <SheetTrigger asChild>
-                  <Button size="sm" variant="secondary" className="h-8 rounded-lg px-3 text-[12px]">
-                    Jump
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom">
-                  <SheetHeader>
-                    <SheetTitle>Jump to group</SheetTitle>
-                    <div className="mt-1 text-xs text-muted-foreground">Route and standings stay synced to the selected group.</div>
-                  </SheetHeader>
-                  <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3">
-                    {GROUP_STAGE_GROUP_CODES.map((groupId) => {
-                      const status = groupJumpStatuses.get(groupId) ?? 'incomplete'
-                      return (
-                        <button
-                          key={`jump-group-${groupId}`}
-                          type="button"
-                          className={cn(
-                            'rounded-lg border px-2 py-2 text-left transition hover:bg-background/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-                            groupId === activeGroupId
-                              ? 'border-[rgba(var(--primary-rgb),0.5)] bg-[rgba(var(--primary-rgb),0.16)]'
-                              : 'border-border bg-background/40'
-                          )}
-                          onClick={() => {
-                            navigateToGroup(groupId)
-                            setGroupJumpOpen(false)
-                          }}
-                        >
-                          <div className="text-sm font-semibold text-foreground">Group {groupId}</div>
-                          <div className={cn('mt-1 text-[11px]', status === 'incomplete' ? 'text-muted-foreground' : 'text-foreground')}>
-                            {groupJumpStatusLabel(status)}
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </SheetContent>
-              </Sheet>
-            ) : null}
           </div>
         </V2Card>
 
-        <div className="md:hidden min-h-0">
-          <Tabs defaultValue="picks">
-            <div className="sticky top-0 z-10 bg-background/95 py-1 backdrop-blur-sm">
-              <TabsList className="grid h-10 w-full grid-cols-4 rounded-lg border border-border bg-card p-1">
-                <TabsTrigger value="picks" className="h-8 rounded-lg px-2 text-[11px] tracking-wide">Picks</TabsTrigger>
-                <TabsTrigger value="leaderboard" className="h-8 rounded-lg px-2 text-[11px] tracking-wide">Leaderboard</TabsTrigger>
-                <TabsTrigger value="standings" className="h-8 rounded-lg px-2 text-[11px] tracking-wide">Standings</TabsTrigger>
-                <TabsTrigger value="best3" className="h-8 rounded-lg px-2 text-[11px] tracking-wide">Best 3rd</TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="picks" className="mt-2 space-y-2.5">
+        <div className="grid gap-3 xl:gap-4 xl:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="space-y-2.5">
               {groupPicksAlert}
               {groupPicksTable}
-            </TabsContent>
-            <TabsContent value="leaderboard" className="mt-2">
-              <LeaderboardCardCurated
-                rows={leaderboardRowsForCard}
-                snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
-                topCount={3}
-                title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
-              />
-            </TabsContent>
-            <TabsContent value="standings" className="mt-2">
-              {standingsPanel}
-            </TabsContent>
-            <TabsContent value="best3" className="mt-2">
-              {bestThirdPanel}
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        <div className="hidden min-h-0 flex-1 gap-3 overflow-hidden md:grid xl:gap-4 xl:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
-          <div className="flex min-h-0 flex-col gap-3 overflow-hidden">
-            <div className="flex min-h-0 flex-1 flex-col gap-2.5">
-              {groupPicksAlert}
-              <div className="min-h-0 flex-1">{groupPicksTable}</div>
             </div>
-            <div className="shrink-0">{bestThirdPanel}</div>
+            {bestThirdPanel}
           </div>
 
           <RightRailSticky>
@@ -1002,7 +918,7 @@ export default function GroupStagePage() {
               <LeaderboardCardCurated
                 rows={leaderboardRowsForCard}
                 snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
-                topCount={prefersDenseTopFive ? 5 : 3}
+                topCount={3}
                 title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
               />
             </div>

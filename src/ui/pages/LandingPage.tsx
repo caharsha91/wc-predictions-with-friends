@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../lib/matches'
+import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../lib/matches'
 import { findPick, isPickComplete } from '../../lib/picks'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import type { Match } from '../../types/matches'
@@ -13,10 +13,9 @@ import {
   BracketIcon,
   CalendarIcon,
   ResultsIcon,
-  TrophyIcon
+  UsersIcon
 } from '../components/Icons'
 import LeaderboardPodium, { type LeaderboardPodiumRow } from '../components/v2/LeaderboardPodium'
-import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import ProfileAvatar from '../components/v2/ProfileAvatar'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
 import V2Card from '../components/v2/V2Card'
@@ -41,7 +40,7 @@ import {
 } from '../lib/profilePersistence'
 import { cn } from '../lib/utils'
 
-type EntryTileKey = 'group-stage' | 'match-picks' | 'knockout-bracket' | 'leaderboard'
+type EntryTileKey = 'group-stage' | 'match-picks' | 'knockout-bracket'
 type PillTone = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'secondary' | 'locked'
 
 type EntryTile = {
@@ -65,11 +64,24 @@ type SnapshotRow = {
   isViewer: boolean
 }
 
+type RivalListRow = SnapshotRow & {
+  kind: 'viewer' | 'selected' | 'fallback'
+  slotNumber: number | null
+  selectedIndex: number | null
+}
+
 type QueueMatch = {
   match: Match
   lockTime: Date
   locked: boolean
   complete: boolean
+}
+
+type MatchdayWindow = {
+  dateLabel: string
+  total: number
+  picked: number
+  pending: number
 }
 
 const ENTRY_TILES: EntryTile[] = [
@@ -90,12 +102,6 @@ const ENTRY_TILES: EntryTile[] = [
     label: 'Knockout Bracket',
     description: 'Lock your knockout path round by round.',
     icon: BracketIcon
-  },
-  {
-    key: 'leaderboard',
-    label: 'Main Leaderboard',
-    description: 'See where you stand in the latest snapshot.',
-    icon: TrophyIcon
   }
 ]
 
@@ -110,12 +116,253 @@ function normalizeRivalUserIds(nextRivals: string[]): string[] {
   return [...ordered]
 }
 
+function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] {
+  const viewerKey = normalizeKey(viewerId)
+  return normalizeRivalUserIds(nextRivals.filter((rivalId) => normalizeKey(rivalId) !== viewerKey))
+}
+
 function normalizeKey(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase()
 }
 
+function arraysEqual(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) return false
+  }
+  return true
+}
+
+function hasSeenIdentity(
+  seenIds: Set<string>,
+  seenNames: Set<string>,
+  id: string | null | undefined,
+  name: string | null | undefined
+): boolean {
+  const idKey = normalizeKey(id)
+  if (idKey && seenIds.has(idKey)) return true
+  const nameKey = normalizeKey(name)
+  if (nameKey && seenNames.has(nameKey)) return true
+  return false
+}
+
+function rememberIdentity(
+  seenIds: Set<string>,
+  seenNames: Set<string>,
+  id: string | null | undefined,
+  name: string | null | undefined
+) {
+  const idKey = normalizeKey(id)
+  if (idKey) seenIds.add(idKey)
+  const nameKey = normalizeKey(name)
+  if (nameKey) seenNames.add(nameKey)
+}
+
+function matchesIdentity(
+  candidateId: string | null | undefined,
+  candidateName: string | null | undefined,
+  viewerId: string,
+  viewerName: string
+): boolean {
+  const candidateIdKey = normalizeKey(candidateId)
+  const viewerIdKey = normalizeKey(viewerId)
+  if (candidateIdKey && viewerIdKey && candidateIdKey === viewerIdKey) {
+    return true
+  }
+
+  const candidateNameKey = normalizeKey(candidateName)
+  const viewerNameKey = normalizeKey(viewerName)
+  return Boolean(candidateNameKey && viewerNameKey && candidateNameKey === viewerNameKey)
+}
+
+function registerIdentityIndex(
+  indexByIdentity: Map<string, number>,
+  id: string | null | undefined,
+  name: string | null | undefined,
+  index: number
+) {
+  const idKey = normalizeKey(id)
+  if (idKey && !indexByIdentity.has(`id:${idKey}`)) {
+    indexByIdentity.set(`id:${idKey}`, index)
+  }
+  const nameKey = normalizeKey(name)
+  if (nameKey && !indexByIdentity.has(`name:${nameKey}`)) {
+    indexByIdentity.set(`name:${nameKey}`, index)
+  }
+}
+
+function getIdentityIndex(
+  indexByIdentity: Map<string, number>,
+  id: string | null | undefined,
+  name: string | null | undefined
+): number | null {
+  const idKey = normalizeKey(id)
+  if (idKey) {
+    const byId = indexByIdentity.get(`id:${idKey}`)
+    if (typeof byId === 'number') return byId
+  }
+
+  const nameKey = normalizeKey(name)
+  if (nameKey) {
+    const byName = indexByIdentity.get(`name:${nameKey}`)
+    if (typeof byName === 'number') return byName
+  }
+
+  return null
+}
+
 function normalizeStatus(status: Match['status'] | string): string {
   return String(status || '').toUpperCase()
+}
+
+type ComposeTrackedStandingsIdsInput = {
+  viewerId: string
+  viewerName: string
+  rivalUserIds: string[]
+  rivalMap: Map<string, RivalDirectoryEntry>
+  snapshotRows: LeaderboardEntry[]
+  target?: number
+}
+
+function composeTrackedStandingsIds({
+  viewerId,
+  viewerName,
+  rivalUserIds,
+  rivalMap,
+  snapshotRows,
+  target = 4
+}: ComposeTrackedStandingsIdsInput): string[] {
+  const result: string[] = []
+  const seenIds = new Set<string>()
+  const seenNames = new Set<string>()
+
+  const pushUnique = (id: string, name: string) => {
+    const trimmed = id.trim()
+    if (!trimmed) return
+    if (hasSeenIdentity(seenIds, seenNames, trimmed, name)) return
+    rememberIdentity(seenIds, seenNames, trimmed, name)
+    result.push(trimmed)
+  }
+
+  pushUnique(viewerId, viewerName)
+  for (const rivalId of rivalUserIds) {
+    const rival = rivalMap.get(rivalId) ?? rivalMap.get(normalizeKey(rivalId))
+    pushUnique(rivalId, rival?.displayName ?? rivalId)
+    if (result.length >= target) return result.slice(0, target)
+  }
+
+  if (rivalUserIds.length <= 2) {
+    for (const snapshotRow of snapshotRows) {
+      const candidateId = snapshotRow.member.id?.trim()
+      if (!candidateId) continue
+      pushUnique(candidateId, snapshotRow.member.name || candidateId)
+      if (result.length >= target) break
+    }
+  }
+
+  return result.slice(0, target)
+}
+
+type SanitizeRivalUserIdsByIdentityInput = {
+  nextRivals: string[]
+  viewerId: string
+  viewerName: string
+  rivalMap: Map<string, RivalDirectoryEntry>
+}
+
+function sanitizeRivalUserIdsByIdentity({
+  nextRivals,
+  viewerId,
+  viewerName,
+  rivalMap
+}: SanitizeRivalUserIdsByIdentityInput): string[] {
+  const normalized = sanitizeRivalUserIds(nextRivals, viewerId)
+  const seenIds = new Set<string>()
+  const seenNames = new Set<string>()
+  rememberIdentity(seenIds, seenNames, viewerId, viewerName)
+
+  const result: string[] = []
+  for (const rivalId of normalized) {
+    const rival = rivalMap.get(rivalId) ?? rivalMap.get(normalizeKey(rivalId))
+    const rivalName = rival?.displayName ?? rivalId
+    if (hasSeenIdentity(seenIds, seenNames, rivalId, rivalName)) continue
+    rememberIdentity(seenIds, seenNames, rivalId, rivalName)
+    result.push(rivalId)
+    if (result.length >= 3) break
+  }
+  return result
+}
+
+function resolveNextPathLabel(route: string | null, mode: 'default' | 'demo'): string {
+  const fallback = 'Group Stage - A'
+  if (!route) return fallback
+
+  let pathname = ''
+  try {
+    const parsed = new URL(route, 'https://wc.local')
+    pathname = parsed.pathname.replace(/\/+$/, '') || '/'
+  } catch {
+    return fallback
+  }
+
+  const normalizedPath = mode === 'demo' && pathname.startsWith('/demo') ? pathname.slice('/demo'.length) || '/' : pathname
+  const groupMatch = normalizedPath.match(/^\/group-stage\/([A-L])$/i)
+  if (groupMatch) return `Group Stage - ${groupMatch[1].toUpperCase()}`
+  if (normalizedPath === '/match-picks') return 'Match Picks'
+  if (normalizedPath === '/leaderboard') return 'Leaderboard'
+  if (normalizedPath === '/knockout-bracket') return 'Knockout Bracket'
+  return fallback
+}
+
+function resolveNextMatchdayWindow(queueMatches: QueueMatch[], now: Date): MatchdayWindow | null {
+  const upcomingUnlocked = queueMatches
+    .filter((entry) => !entry.locked && entry.lockTime.getTime() >= now.getTime())
+    .sort((a, b) => a.lockTime.getTime() - b.lockTime.getTime())
+
+  if (upcomingUnlocked.length === 0) return null
+
+  const groups = new Map<string, QueueMatch[]>()
+  for (const entry of upcomingUnlocked) {
+    const key = getDateKeyInTimeZone(entry.match.kickoffUtc)
+    const bucket = groups.get(key)
+    if (bucket) bucket.push(entry)
+    else groups.set(key, [entry])
+  }
+
+  const firstMatchdayKey = [...groups.keys()].sort()[0]
+  const firstMatchdayEntries = (groups.get(firstMatchdayKey) ?? []).sort(
+    (a, b) => new Date(a.match.kickoffUtc).getTime() - new Date(b.match.kickoffUtc).getTime()
+  )
+  if (firstMatchdayEntries.length === 0) return null
+
+  const firstKickoff = firstMatchdayEntries[0].match.kickoffUtc
+  const dateLabel = new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric'
+  }).format(new Date(firstKickoff))
+
+  const total = firstMatchdayEntries.length
+  const picked = firstMatchdayEntries.filter((entry) => entry.complete).length
+
+  return {
+    dateLabel,
+    total,
+    picked,
+    pending: Math.max(0, total - picked)
+  }
+}
+
+function formatLocalDateTime(input: Date | string): string {
+  const date = typeof input === 'string' ? new Date(input) : input
+  const timestamp = date.getTime()
+  if (!Number.isFinite(timestamp)) return 'Unavailable'
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short'
+  }).format(date)
 }
 
 function isResolvedTeamCode(code?: string): boolean {
@@ -139,43 +386,6 @@ function resolveSnapshotRow(
     points: typeof match?.entry.totalPoints === 'number' ? match.entry.totalPoints : null,
     isViewer
   }
-}
-
-function SnapshotTable({ rows }: { rows: SnapshotRow[] }) {
-  return (
-    <div className="landing-v2-standings-list overflow-hidden rounded-xl border">
-      <div className="grid grid-cols-[minmax(0,1fr)_64px_56px] gap-2 border-b border-border/60 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-        <div>Player</div>
-        <div className="text-right">Rank</div>
-        <div className="text-right">Pts</div>
-      </div>
-      <div className="divide-y divide-border/50">
-        {rows.map((row, index) => (
-          <div
-            key={`${row.id}-${index}`}
-            className={cn(
-              'landing-v2-standings-row grid grid-cols-[minmax(0,1fr)_64px_56px] items-center gap-2 px-3 py-2',
-              row.isViewer && 'landing-v2-standings-row-viewer'
-            )}
-          >
-            <div className="flex min-w-0 items-center gap-2">
-              <ProfileAvatar name={row.name} photoURL={row.photoURL} className="h-7 w-7" />
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-[color:var(--v2-text-strong)]">{row.name}</div>
-                {row.isViewer ? <div className="text-[11px] text-muted-foreground">You</div> : null}
-              </div>
-            </div>
-            <div className="text-right text-xs font-semibold text-[color:var(--v2-text-strong)]">
-              {row.rank ? `#${row.rank}` : '—'}
-            </div>
-            <div className="text-right text-xs font-semibold text-[color:var(--v2-text-strong)]">
-              {row.points ?? '—'}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
 }
 
 function TileProgressPills({ pills }: { pills: TileProgressPill[] }) {
@@ -209,7 +419,6 @@ export default function LandingPage() {
 
   const [lastRoute, setLastRoute] = useState<string | null>(null)
   const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
-  const [isRivalsEditing, setIsRivalsEditing] = useState(false)
   const [rivalQuery, setRivalQuery] = useState('')
   const [profileLoading, setProfileLoading] = useState(true)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -220,6 +429,7 @@ export default function LandingPage() {
 
   const persistQueueRef = useRef<Promise<void>>(Promise.resolve())
   const pendingPersistCountRef = useRef(0)
+  const rivalSearchInputRef = useRef<HTMLInputElement | null>(null)
 
   const isDemoMode = mode === 'demo'
   const routePrefix = isDemoMode ? '/demo' : ''
@@ -239,7 +449,7 @@ export default function LandingPage() {
         const profile = await readUserProfile(mode, memberId, authState.user?.email ?? null)
         if (canceled) return
         setLastRoute(profile.lastRoute)
-        setRivalUserIds(profile.rivalUserIds)
+        setRivalUserIds(sanitizeRivalUserIds(profile.rivalUserIds, viewerId))
       } catch {
         if (canceled) return
         setLastRoute(null)
@@ -253,7 +463,7 @@ export default function LandingPage() {
     return () => {
       canceled = true
     }
-  }, [authState.user?.email, memberId, mode])
+  }, [authState.user?.email, memberId, mode, viewerId])
 
   useEffect(() => {
     let canceled = false
@@ -277,10 +487,6 @@ export default function LandingPage() {
     }
   }, [authState.user?.email, memberId, mode, rivalsReloadCount])
 
-  useEffect(() => {
-    if (!isRivalsEditing) setRivalQuery('')
-  }, [isRivalsEditing])
-
   const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
   const snapshotTimestamp = snapshotReady?.snapshotTimestamp ?? null
 
@@ -300,53 +506,37 @@ export default function LandingPage() {
   }, [snapshotReady])
 
   const rivalMap = useMemo(() => {
-    if (rivalsState.status !== 'ready') return new Map<string, RivalDirectoryEntry>()
-    return new Map(rivalsState.entries.map((entry) => [entry.id, entry]))
+    const map = new Map<string, RivalDirectoryEntry>()
+    if (rivalsState.status !== 'ready') return map
+    for (const entry of rivalsState.entries) {
+      map.set(entry.id, entry)
+      const key = normalizeKey(entry.id)
+      if (key) map.set(key, entry)
+    }
+    return map
   }, [rivalsState])
-
-  const selectedRivalEntries = useMemo(
-    () =>
-      rivalUserIds.map((rivalId) => {
-        const rival = rivalMap.get(rivalId)
-        return {
-          id: rivalId,
-          displayName: rival?.displayName ?? rivalId,
-          photoURL: rival?.photoURL ?? null
-        }
-      }),
-    [rivalMap, rivalUserIds]
-  )
 
   const filteredRivalSuggestions = useMemo(() => {
     if (rivalsState.status !== 'ready') return []
-    const selected = new Set(rivalUserIds)
+    const selectedIds = new Set<string>()
+    const selectedNames = new Set<string>()
+    rememberIdentity(selectedIds, selectedNames, viewerId, viewerName)
+    for (const rivalId of rivalUserIds) {
+      const rival = rivalMap.get(rivalId) ?? rivalMap.get(normalizeKey(rivalId))
+      rememberIdentity(selectedIds, selectedNames, rivalId, rival?.displayName ?? rivalId)
+    }
     const query = rivalQuery.trim().toLowerCase()
     return rivalsState.entries
-      .filter((entry) => !selected.has(entry.id))
+      .filter((entry) => !hasSeenIdentity(selectedIds, selectedNames, entry.id, entry.displayName))
       .filter((entry) => (query ? entry.displayName.toLowerCase().includes(query) : true))
-  }, [rivalQuery, rivalUserIds, rivalsState])
-
-  const selectedSnapshotRows = useMemo(() => {
-    if (rivalUserIds.length === 0) return []
-    const ordered = normalizeRivalUserIds([viewerId, ...rivalUserIds]).slice(0, 4)
-    return ordered.map((id) => {
-      const rival = rivalMap.get(id)
-      return resolveSnapshotRow(
-        id,
-        leaderboardById,
-        id === viewerId ? viewerName : rival?.displayName ?? id,
-        id === viewerId ? viewerPhotoURL : (rival?.photoURL ?? null),
-        id === viewerId
-      )
-    })
-  }, [leaderboardById, rivalMap, rivalUserIds, viewerId, viewerName, viewerPhotoURL])
+  }, [rivalMap, rivalQuery, rivalUserIds, rivalsState, viewerId, viewerName])
 
   const podiumRows = useMemo(() => {
     if (!snapshotReady) return []
     return snapshotReady.leaderboardRows.slice(0, 3).map((entry, index) => {
       const rank = (index + 1) as 1 | 2 | 3
       const rowId = entry.member.id || `podium-${rank}`
-      const isViewer = normalizeKey(rowId) === normalizeKey(viewerId)
+      const isViewer = matchesIdentity(rowId, entry.member.name, viewerId, viewerName)
       const photoURL = isViewer ? viewerPhotoURL : (rivalMap.get(rowId)?.photoURL ?? null)
 
       return {
@@ -358,29 +548,53 @@ export default function LandingPage() {
         isViewer
       } satisfies LeaderboardPodiumRow
     })
-  }, [snapshotReady, rivalMap, viewerId, viewerPhotoURL])
+  }, [snapshotReady, rivalMap, viewerId, viewerName, viewerPhotoURL])
 
-  const viewerSnapshotRow = useMemo(() => {
-    return resolveSnapshotRow(viewerId, leaderboardById, viewerName, viewerPhotoURL, true)
-  }, [leaderboardById, viewerId, viewerName, viewerPhotoURL])
+  const snapshotRows = snapshotReady?.leaderboardRows ?? []
 
-  const topThreePlusViewerRows = useMemo(
-    () => [
-      ...podiumRows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        photoURL: row.photoURL ?? null,
-        rank: row.rank,
-        points: row.points,
-        isViewer: row.isViewer === true
-      })),
-      viewerSnapshotRow
-    ],
-    [podiumRows, viewerSnapshotRow]
+  const trackedStandingsIds = useMemo(
+    () =>
+      composeTrackedStandingsIds({
+        viewerId,
+        viewerName,
+        rivalUserIds,
+        rivalMap,
+        snapshotRows,
+        target: 4
+      }),
+    [rivalMap, rivalUserIds, snapshotRows, viewerId, viewerName]
   )
 
-  const standingsRows = rivalUserIds.length > 0 ? selectedSnapshotRows : topThreePlusViewerRows
-  const standingsTitle = rivalUserIds.length > 0 ? `Rivals (${rivalUserIds.length}/3)` : 'Top 3 + You'
+  const selectedRivalIndexByIdentity = useMemo(() => {
+    const map = new Map<string, number>()
+    rivalUserIds.forEach((id, index) => {
+      const rival = rivalMap.get(id) ?? rivalMap.get(normalizeKey(id))
+      registerIdentityIndex(map, id, rival?.displayName ?? id, index)
+    })
+    return map
+  }, [rivalMap, rivalUserIds])
+
+  const rivalsListRows = useMemo<RivalListRow[]>(() => {
+    return trackedStandingsIds.map((id, index) => {
+      const key = normalizeKey(id)
+      const rival = rivalMap.get(id)
+      const snapshotEntry = leaderboardById.get(key)?.entry
+      const isViewer = matchesIdentity(id, rival?.displayName ?? snapshotEntry?.member.name ?? id, viewerId, viewerName)
+      const fallbackName = isViewer ? viewerName : (rival?.displayName ?? snapshotEntry?.member.name ?? id)
+      const photoURL = isViewer ? viewerPhotoURL : (rival?.photoURL ?? null)
+      const selectedIndex = isViewer ? null : getIdentityIndex(selectedRivalIndexByIdentity, id, fallbackName)
+      const baseRow = resolveSnapshotRow(id, leaderboardById, fallbackName, photoURL, isViewer)
+
+      return {
+        ...baseRow,
+        kind: isViewer ? 'viewer' : selectedIndex !== null ? 'selected' : 'fallback',
+        slotNumber: isViewer ? null : index,
+        selectedIndex
+      }
+    })
+  }, [leaderboardById, rivalMap, selectedRivalIndexByIdentity, trackedStandingsIds, viewerId, viewerName, viewerPhotoURL])
+
+  const isViewerOnPodium = podiumRows.some((row) => row.isViewer)
 
   const groupCompletion = useMemo(() => {
     let groupsDone = 0
@@ -434,23 +648,12 @@ export default function LandingPage() {
     }
   }, [now, queueMatches])
 
+  const nextMatchdayWindow = useMemo(() => resolveNextMatchdayWindow(queueMatches, now), [now, queueMatches])
+
   const knockoutPendingActions = useMemo(
     () => Math.max(0, knockoutData.totalMatches - knockoutData.completeMatches),
     [knockoutData.completeMatches, knockoutData.totalMatches]
   )
-
-  const knockoutPendingOpenActions = useMemo(() => {
-    if (knockoutData.loadState.status !== 'ready') return 0
-    let pending = 0
-    for (const stage of knockoutData.stageOrder) {
-      for (const match of knockoutData.loadState.byStage[stage] ?? []) {
-        if (isMatchLocked(match.kickoffUtc, now)) continue
-        if (knockoutData.knockout[stage]?.[match.id]) continue
-        pending += 1
-      }
-    }
-    return pending
-  }, [knockoutData.knockout, knockoutData.loadState, knockoutData.stageOrder, now])
 
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
   const groupClosed = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
@@ -528,40 +731,40 @@ export default function LandingPage() {
             {
               label: `Picked ${matchWindow48h.picked}/${matchWindow48h.total}`,
               tone: matchWindow48h.pending === 0 ? 'success' : 'info'
-            },
-            {
-              label: `Pending ${matchWindow48h.pending}`,
-              tone: matchWindow48h.pending === 0 ? 'success' : 'warning'
             }
           ]
+        : nextMatchdayWindow
+          ? [
+              { label: `Next matchday ${nextMatchdayWindow.dateLabel}`, tone: 'info' },
+              {
+                label: `Picked ${nextMatchdayWindow.picked}/${nextMatchdayWindow.total}`,
+                tone: nextMatchdayWindow.pending === 0 ? 'success' : 'info'
+              }
+            ]
         : [
-            { label: 'Next 48h clear', tone: 'secondary' },
-            { label: 'Picked 0/0', tone: 'secondary' },
-            { label: 'Pending 0', tone: 'secondary' }
+            { label: 'All locked', tone: 'secondary' },
+            { label: 'Picked 0/0', tone: 'secondary' }
           ]
 
     const knockoutPills: TileProgressPill[] = knockoutLoading
       ? [{ label: 'Updating', tone: 'secondary' }]
-      : [
-          {
-            label: `Pending ${knockoutPendingActions}`,
-            tone: knockoutPendingActions === 0 ? 'success' : 'warning'
-          },
-          {
-            label: `Pending now ${knockoutPendingOpenActions}`,
-            tone: knockoutPendingOpenActions === 0 ? 'secondary' : 'warning'
-          },
-          {
-            label: knockoutActivation.active ? 'Active' : 'Inactive',
-            tone: knockoutActivation.active ? 'info' : 'secondary'
-          }
-        ]
+      : knockoutActivation.active
+        ? [
+            {
+              label: `Picked ${knockoutData.completeMatches}/${knockoutData.totalMatches || 0}`,
+              tone: knockoutPendingActions === 0 ? 'success' : 'info'
+            },
+            {
+              label: 'Active',
+              tone: 'info'
+            }
+          ]
+        : [{ label: 'Inactive', tone: 'secondary' }]
 
     return {
       'group-stage': groupPills,
       'match-picks': matchPills,
-      'knockout-bracket': knockoutPills,
-      leaderboard: [{ label: snapshotTimestamp ? 'Snapshot live' : 'Snapshot unavailable', tone: snapshotTimestamp ? 'info' : 'secondary' }]
+      'knockout-bracket': knockoutPills
     }
   }, [
     groupCompletion.bestThirdDone,
@@ -570,18 +773,60 @@ export default function LandingPage() {
     groupCompletion.pending,
     groupStage.loadState.status,
     knockoutActivation.active,
+    knockoutData.completeMatches,
     knockoutData.loadState.status,
+    knockoutData.totalMatches,
     knockoutPendingActions,
-    knockoutPendingOpenActions,
+    nextMatchdayWindow,
     matchWindow48h.pending,
     matchWindow48h.picked,
     matchWindow48h.total,
-    picksState.state.status,
-    snapshotTimestamp
+    picksState.state.status
   ])
 
+  const continuePreviewRoute = useMemo(() => {
+    const validation = validateLastRoute(lastRoute, mode)
+    if (validation.kind === 'valid') return validation.route
+    return `${routePrefix}/group-stage/A`
+  }, [lastRoute, mode, routePrefix])
+
+  const continuePreviewLabel = useMemo(
+    () => resolveNextPathLabel(continuePreviewRoute, mode),
+    [continuePreviewRoute, mode]
+  )
+
+  const currentTimeLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        hour: 'numeric',
+        minute: '2-digit'
+      }).format(now),
+    [now]
+  )
+
+  const nextOpenQueueMatch = useMemo(() => queueMatches.find((entry) => !entry.locked) ?? null, [queueMatches])
+  const nextMatchLockLabel = useMemo(
+    () => (nextOpenQueueMatch ? formatLocalDateTime(nextOpenQueueMatch.lockTime) : 'No upcoming open locks'),
+    [nextOpenQueueMatch]
+  )
+
+  const groupLockLabel = useMemo(
+    () => (groupLockTime ? formatLocalDateTime(groupLockTime) : 'Group lock unavailable'),
+    [groupLockTime]
+  )
+
+  const knockoutOpenLabel = knockoutActivation.active
+    ? 'Knockout picks are open now.'
+    : 'Knockout picks open once group outcomes lock and matchups are confirmed.'
+
   function persistRivals(nextRivals: string[]) {
-    const normalized = normalizeRivalUserIds(nextRivals)
+    const normalized = sanitizeRivalUserIdsByIdentity({
+      nextRivals,
+      viewerId,
+      viewerName,
+      rivalMap
+    })
+    if (arraysEqual(rivalUserIds, normalized)) return
     setRivalUserIds(normalized)
 
     pendingPersistCountRef.current += 1
@@ -602,6 +847,17 @@ export default function LandingPage() {
 
     persistQueueRef.current = persistQueueRef.current.then(save, save)
   }
+
+  useEffect(() => {
+    const sanitized = sanitizeRivalUserIdsByIdentity({
+      nextRivals: rivalUserIds,
+      viewerId,
+      viewerName,
+      rivalMap
+    })
+    if (arraysEqual(rivalUserIds, sanitized)) return
+    persistRivals(sanitized)
+  }, [rivalMap, rivalUserIds, viewerId, viewerName])
 
   function routeForTile(tileKey: EntryTileKey): string {
     if (tileKey === 'group-stage') return `${routePrefix}/group-stage/A`
@@ -649,7 +905,14 @@ export default function LandingPage() {
   }
 
   function addRival(rivalId: string) {
-    if (rivalUserIds.includes(rivalId)) return
+    const rivalEntry = rivalMap.get(rivalId) ?? rivalMap.get(normalizeKey(rivalId))
+    const rivalName = rivalEntry?.displayName ?? rivalId
+    if (matchesIdentity(rivalId, rivalName, viewerId, viewerName)) return
+    const alreadyTracked = rivalUserIds.some((selectedId) => {
+      const selectedEntry = rivalMap.get(selectedId) ?? rivalMap.get(normalizeKey(selectedId))
+      return matchesIdentity(rivalId, rivalName, selectedId, selectedEntry?.displayName ?? selectedId)
+    })
+    if (alreadyTracked) return
     if (rivalUserIds.length >= 3) return
     persistRivals([...rivalUserIds, rivalId])
   }
@@ -675,14 +938,13 @@ export default function LandingPage() {
     persistRivals([])
   }
 
-  const rivalsInlineEditor = (
-    <div className="landing-v2-rivals-inline space-y-3 rounded-xl border p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Badge tone="secondary" className="landing-v2-progress-pill">
-          {rivalUserIds.length}/3 rivals
-        </Badge>
-        <div className="flex items-center gap-2">
-          {profileSaving ? <span className="text-xs text-muted-foreground">Saving...</span> : null}
+  const rivalsBoard = (
+    <div className="space-y-3">
+      <div className="landing-v2-rivals-header-row flex flex-wrap items-center justify-between gap-2">
+        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-strong)]">Rivals</div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{rivalUserIds.length}/3 selected</span>
+          {profileSaving ? <span>Saving...</span> : null}
           {rivalUserIds.length > 0 ? (
             <Button variant="ghost" size="sm" className="h-7 rounded-md px-2 text-xs" onClick={clearRivals}>
               Clear all
@@ -691,71 +953,92 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <Input
-        value={rivalQuery}
-        onChange={(event) => setRivalQuery(event.target.value)}
-        placeholder="Search players"
-        className="h-8"
-      />
-
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="landing-v2-rivals-pane space-y-2 rounded-lg border border-border/70 bg-background/35 p-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your rivals</div>
-          {selectedRivalEntries.length === 0 ? (
-            <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-xs text-muted-foreground">
-              Choose up to three rivals to track here.
-            </div>
-          ) : (
-            selectedRivalEntries.map((rival, index) => (
-              <div
-                key={rival.id}
-                className="landing-v2-rivals-row flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1.5"
-                data-selected="true"
-              >
-                <ProfileAvatar name={rival.displayName} photoURL={rival.photoURL} className="h-7 w-7" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-foreground">{rival.displayName}</div>
-                  <div className="text-[10px] text-muted-foreground">Rival {index + 1}</div>
+        <div className="landing-v2-rivals-pane space-y-2" data-pane="selected">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your lineup</div>
+          <div className="space-y-2">
+            {rivalsListRows.map((row, index) => {
+              const selectedRivalId = row.selectedIndex !== null ? rivalUserIds[row.selectedIndex] : null
+
+              return (
+                <div
+                  key={`${row.id}-${index}`}
+                  className="landing-v2-rivals-row landing-v2-rival-slot flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1.5"
+                  data-kind={row.kind}
+                >
+                  <ProfileAvatar name={row.name} photoURL={row.photoURL} className="h-8 w-8" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-[color:var(--v2-text-strong)]">{row.name}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {row.kind === 'viewer'
+                        ? 'You'
+                        : row.kind === 'selected' && row.selectedIndex !== null
+                          ? `Rival ${row.selectedIndex + 1}`
+                          : `Snapshot fill${row.slotNumber ? ` • R${row.slotNumber}` : ''}`}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Badge tone={row.rank && row.rank <= 3 ? 'info' : 'secondary'} className="landing-v2-progress-pill !h-5 !px-2 !text-[9px]">
+                      {row.rank ? `#${row.rank}` : '—'}
+                    </Badge>
+                    <Badge tone="secondary" className="landing-v2-progress-pill !h-5 !px-2 !text-[9px]">
+                      {row.points ?? '—'} pts
+                    </Badge>
+                    {row.kind === 'fallback' ? (
+                      <Badge tone="secondary" className="landing-v2-progress-pill !h-5 !px-2 !text-[9px]">
+                        Fill
+                      </Badge>
+                    ) : null}
+                  </div>
+                  {row.kind === 'selected' && row.selectedIndex !== null && selectedRivalId ? (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 rounded px-1.5 text-[10px]"
+                        disabled={profileSaving || row.selectedIndex === 0}
+                        onClick={() => moveRival(selectedRivalId, -1)}
+                      >
+                        Up
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 rounded px-1.5 text-[10px]"
+                        disabled={profileSaving || row.selectedIndex === rivalUserIds.length - 1}
+                        onClick={() => moveRival(selectedRivalId, 1)}
+                      >
+                        Down
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 rounded px-1.5 text-[10px]"
+                        disabled={profileSaving}
+                        onClick={() => removeRival(selectedRivalId)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
-                <Badge tone="secondary" className="landing-v2-progress-pill !h-5 !px-1.5 !text-[9px]">
-                  R{index + 1}
-                </Badge>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 rounded px-1.5 text-[10px]"
-                    disabled={profileSaving || index === 0}
-                    onClick={() => moveRival(rival.id, -1)}
-                  >
-                    Up
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 rounded px-1.5 text-[10px]"
-                    disabled={profileSaving || index === selectedRivalEntries.length - 1}
-                    onClick={() => moveRival(rival.id, 1)}
-                  >
-                    Down
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 rounded px-1.5 text-[10px]"
-                    disabled={profileSaving}
-                    onClick={() => removeRival(rival.id)}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
+              )
+            })}
+          </div>
         </div>
 
-        <div className="landing-v2-rivals-pane space-y-2 rounded-lg border border-border/70 bg-background/35 p-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">People you can add</div>
+        <div className="landing-v2-rivals-pane space-y-2" data-pane="suggested">
+          <div className="space-y-2">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Find players</div>
+            <Input
+              ref={rivalSearchInputRef}
+              value={rivalQuery}
+              onChange={(event) => setRivalQuery(event.target.value)}
+              placeholder="Search players"
+              className="h-8"
+            />
+          </div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Suggestions</div>
           {rivalsState.status === 'loading' ? (
             <div className="space-y-2">
               <div className="h-8 animate-pulse rounded-md border border-border/70 bg-muted/35" />
@@ -786,34 +1069,50 @@ export default function LandingPage() {
           ) : null}
 
           {rivalsState.status === 'ready' && rivalsState.entries.length > 0 && filteredRivalSuggestions.length === 0 ? (
-            <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-xs text-muted-foreground">
-              No players match that search.
-            </div>
-          ) : null}
+              <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-xs text-muted-foreground">
+                No players match that search.
+              </div>
+            ) : null}
 
           {rivalsState.status === 'ready'
-            ? filteredRivalSuggestions.map((entry) => {
-                const capReached = rivalUserIds.length >= 3
-                return (
-                  <div
-                    key={entry.id}
-                    className="landing-v2-rivals-row flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1.5"
-                    data-selected="false"
-                  >
-                    <ProfileAvatar name={entry.displayName} photoURL={entry.photoURL ?? null} className="h-7 w-7" />
-                    <div className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{entry.displayName}</div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="h-6 rounded px-1.5 text-[10px]"
-                      disabled={capReached || profileSaving}
-                      onClick={() => addRival(entry.id)}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                )
-              })
+            ? (
+                <div className="landing-v2-rivals-suggestions-scroll space-y-2">
+                  {filteredRivalSuggestions.map((entry) => {
+                    const capReached = rivalUserIds.length >= 3
+                    return (
+                      <div
+                        key={entry.id}
+                        className="landing-v2-rivals-row flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1.5"
+                        data-kind="suggestion"
+                      >
+                        <ProfileAvatar name={entry.displayName} photoURL={entry.photoURL ?? null} className="h-7 w-7" />
+                        <div className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{entry.displayName}</div>
+                        <div className="group/add relative">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-6 rounded px-1.5 text-[10px]"
+                            disabled={capReached || profileSaving}
+                            onClick={() => addRival(entry.id)}
+                            aria-describedby={capReached ? `rival-cap-tip-${entry.id}` : undefined}
+                          >
+                            Add
+                          </Button>
+                          {capReached ? (
+                            <span
+                              id={`rival-cap-tip-${entry.id}`}
+                              role="tooltip"
+                              className="landing-v2-add-tooltip pointer-events-none absolute right-[calc(100%+0.45rem)] top-1/2 z-20 -translate-y-1/2 opacity-0 transition-all group-hover/add:opacity-100"
+                            >
+                              Max 3 rivals. Remove one first.
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
             : null}
         </div>
       </div>
@@ -822,20 +1121,27 @@ export default function LandingPage() {
 
   return (
     <div className="landing-v2-canvas space-y-4 md:space-y-5">
-      <PageHeaderV2
-        variant="hero"
-        className="landing-v2-hero"
-        kicker="Action hub"
-        title="Play Center"
-        subtitle="Your move."
-        actions={
-          <Button onClick={() => void handleContinue()} loading={profileLoading}>
-            Continue
-          </Button>
-        }
-      />
+      <V2Card tone="hero" className="landing-v2-hero p-4 md:p-5">
+        <div className="landing-v2-hero-grid flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-3">
+            <div className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--v2-text-muted)]">Your move</div>
+            <h1 className="text-[length:var(--v2-h1-size)] font-semibold leading-[var(--line-height-tight)] text-[color:var(--v2-text-strong)]">
+              Play Center
+            </h1>
+            <p className="text-sm text-[color:var(--v2-text-muted)]">Plan your next picks and keep your rivals in view.</p>
+            <div className="landing-v2-hero-cta-cluster space-y-2">
+              <Button onClick={() => void handleContinue()} loading={profileLoading}>
+                Continue: {continuePreviewLabel}
+              </Button>
+            </div>
+          </div>
+          <div className="landing-v2-current-time text-right text-xl font-semibold text-[color:var(--v2-text-strong)]">
+            {currentTimeLabel}
+          </div>
+        </div>
+      </V2Card>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ENTRY_TILES.map((tile) => {
           const Icon = tile.icon
           const pills = tilePillsByKey[tile.key]
@@ -845,21 +1151,19 @@ export default function LandingPage() {
               tone="tile"
               className="landing-v2-card group h-full p-4 transition-all duration-[var(--motion-duration-fast)] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_var(--v2-glow-medium),var(--shadow1)]"
             >
-              <div className="relative z-[1] flex h-full flex-col gap-3">
-                <div className="flex items-start gap-2.5">
-                  <div className="landing-v2-icon-shell inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-foreground">
-                    <Icon size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-base font-semibold text-[color:var(--v2-text-strong)]">{tile.label}</div>
-                    <p className="mt-1 text-sm text-[color:var(--v2-text-muted)]">{tile.description}</p>
-                    <TileProgressPills pills={pills} />
+              <div className="relative z-[1] flex h-full items-stretch gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-base font-semibold text-[color:var(--v2-text-strong)]">{tile.label}</div>
+                  <p className="mt-1 text-sm text-[color:var(--v2-text-muted)]">{tile.description}</p>
+                  <TileProgressPills pills={pills} />
+                  <div className="mt-3 pt-1">
+                    <Button variant="secondary" size="sm" onClick={() => openRoute(routeForTile(tile.key))}>
+                      Open
+                    </Button>
                   </div>
                 </div>
-                <div className="mt-auto pt-1">
-                  <Button variant="secondary" size="sm" onClick={() => openRoute(routeForTile(tile.key))}>
-                    Open
-                  </Button>
+                <div className="landing-v2-card-icon-rail flex w-[96px] shrink-0 items-center justify-center">
+                  <Icon size={50} />
                 </div>
               </div>
             </V2Card>
@@ -871,20 +1175,14 @@ export default function LandingPage() {
         <div className="relative z-[1] space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="v2-heading-h2 text-foreground">Leaderboard Snapshot</h2>
-              <p className="mt-1 text-sm text-[color:var(--v2-text-muted)]">See your latest standing and rival positions.</p>
+              <h2 className="v2-heading-h2 text-foreground">Leaderboard</h2>
             </div>
             <div className="flex items-center gap-2">
               <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot: " className="text-[11px] text-muted-foreground" />
-              <Button
-                variant="pillSecondary"
-                size="sm"
-                className="h-7 rounded-full px-2.5 text-[11px]"
-                onClick={() => setIsRivalsEditing((current) => !current)}
-                disabled={profileLoading}
-              >
-                {isRivalsEditing ? 'Done' : rivalUserIds.length === 0 ? 'Add rivals' : `Rivals (${rivalUserIds.length}/3)`}
-              </Button>
+              <div className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                <UsersIcon size={12} />
+                <span>{rivalUserIds.length}/3 selected</span>
+              </div>
             </div>
           </div>
 
@@ -918,21 +1216,10 @@ export default function LandingPage() {
               <LeaderboardPodium
                 rows={podiumRows}
                 snapshotAvailable={Boolean(snapshotTimestamp)}
-                className="h-full"
+                className={cn('h-full', isViewerOnPodium && 'landing-v2-podium-viewer')}
               />
               <div className="landing-v2-standings-panel space-y-2 rounded-xl border p-3 md:p-3.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-muted)]">
-                    {standingsTitle}
-                  </div>
-                  {isRivalsEditing ? (
-                    <Badge tone="info" className="landing-v2-progress-pill">
-                      Editing
-                    </Badge>
-                  ) : null}
-                </div>
-                {isRivalsEditing ? rivalsInlineEditor : null}
-                <SnapshotTable rows={standingsRows} />
+                {rivalsBoard}
               </div>
             </div>
           ) : null}
@@ -944,15 +1231,23 @@ export default function LandingPage() {
           <h2 className="v2-heading-h2 text-foreground">Rules at a glance</h2>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Group-stage lock: Jun 11, 6:30 PM UTC • Jun 11, 1:30 PM CDT local</span>
+            <span>Picks stay editable until each match lock.</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Rival picks remain hidden until lock.</span>
+            <span>Next match lock: {nextMatchLockLabel}</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Leaderboard updates daily from snapshots.</span>
+            <span>{knockoutOpenLabel}</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
+            <span>Rival picks stay hidden until group lock ({groupLockLabel}).</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
+            <span>Leaderboard reflects published snapshots.</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />

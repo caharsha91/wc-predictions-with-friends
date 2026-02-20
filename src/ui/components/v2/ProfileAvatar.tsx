@@ -1,3 +1,4 @@
+import { UsersIcon } from '../Icons'
 import { cn } from '../../lib/utils'
 
 type ProfileAvatarProps = {
@@ -5,24 +6,6 @@ type ProfileAvatarProps = {
   photoURL?: string | null
   className?: string
   imageClassName?: string
-}
-
-function PersonaGlyph({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="8" r="3" />
-      <path d="M6 19c1.4-2.8 3.8-4.2 6-4.2s4.6 1.4 6 4.2" />
-    </svg>
-  )
 }
 
 export default function ProfileAvatar({ name, photoURL, className, imageClassName }: ProfileAvatarProps) {
@@ -42,12 +25,12 @@ export default function ProfileAvatar({ name, photoURL, className, imageClassNam
   return (
     <span
       className={cn(
-        'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-[color:var(--surface-muted)] text-muted-foreground',
+        'landing-v2-avatar-fallback inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-[color:var(--v2-text-strong)]',
         className
       )}
       aria-label={name}
     >
-      <PersonaGlyph className="h-[62%] w-[62%]" />
+      <UsersIcon className="h-[62%] w-[62%]" />
     </span>
   )
 }

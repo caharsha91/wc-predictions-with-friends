@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from './components/ui/DropdownMenu'
+import { UsersIcon } from './components/Icons'
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useEasterEggs } from './hooks/useEasterEggs'
@@ -35,19 +36,21 @@ import { writeUserProfile } from './lib/profilePersistence'
 import { cn } from './lib/utils'
 import { ADMIN_NAV, DEMO_ADMIN_NAV, DEMO_MAIN_NAV, MAIN_NAV, type NavItem } from './nav'
 
-const APP_ROUTE_PREFIXES = ['/play', '/admin', '/settings', '/demo/play', '/demo/admin']
-
-function getInitials(name?: string | null, email?: string | null) {
-  const base = name || email || ''
-  if (!base) return 'WC'
-  const parts = base.split(' ').filter(Boolean)
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-}
+const APP_ROUTE_PREFIXES = [
+  '/play',
+  '/group-stage',
+  '/match-picks',
+  '/knockout-bracket',
+  '/leaderboard',
+  '/admin',
+  '/settings',
+  '/demo/play',
+  '/demo/group-stage',
+  '/demo/match-picks',
+  '/demo/knockout-bracket',
+  '/demo/leaderboard',
+  '/demo/admin'
+]
 
 function isAppContentRoute(pathname: string) {
   if (pathname === '/' || pathname === '/demo') return true
@@ -124,16 +127,16 @@ function SidebarNavSection({
 }
 
 function SidebarAccountMenu({
-  initials,
   name,
+  photoURL,
   onSignOut,
   onToggleDemoMode,
   canToggleDemoMode,
   isDemoMode,
   compact
 }: {
-  initials: string
   name: string
+  photoURL?: string | null
   onSignOut: () => Promise<void>
   onToggleDemoMode: () => Promise<void>
   canToggleDemoMode: boolean
@@ -155,9 +158,15 @@ function SidebarAccountMenu({
           type="button"
           aria-label="Open account menu"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-[var(--surface-muted)] text-xs font-semibold uppercase text-foreground">
-            {initials}
-          </div>
+          {photoURL ? (
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-bg2">
+              <img src={photoURL} alt={name} className="h-full w-full rounded-full object-cover" loading="lazy" />
+            </span>
+          ) : (
+            <div className="landing-v2-avatar-fallback flex h-8 w-8 items-center justify-center rounded-full border text-[color:var(--v2-text-strong)]">
+              <UsersIcon className="h-[62%] w-[62%]" />
+            </div>
+          )}
           {compact ? null : (
             <>
               <div className="flex-1 pr-2">
@@ -337,7 +346,6 @@ function LayoutFrame() {
     onLastUpdatedTap()
   }
 
-  const initials = getInitials(user?.name, user?.email)
   const appContentRoute = isAppContentRoute(location.pathname)
   const isDemoRoute = isDemoPath(location.pathname)
   const mainNavItems = isDemoRoute ? DEMO_MAIN_NAV : MAIN_NAV
@@ -431,13 +439,13 @@ function LayoutFrame() {
       <div
         data-testid="app-shell-grid"
         className={cn(
-          'min-h-screen md:grid md:h-screen md:overflow-hidden',
+          'min-h-screen md:grid',
           sidebarCompact ? 'md:grid-cols-[96px_minmax(0,1fr)]' : 'md:grid-cols-[320px_minmax(0,1fr)]'
         )}
       >
         <aside
           data-testid="app-shell-sidebar"
-          className="hidden min-h-screen flex-col border-r border-[var(--shell-sidebar-divider)] bg-[var(--sidebar-bg)] px-3 py-4 shadow-[var(--shadow1)] md:flex md:h-screen"
+          className="hidden min-h-screen flex-col border-r border-[var(--shell-sidebar-divider)] bg-[var(--sidebar-bg)] px-3 py-4 shadow-[var(--shadow1)] md:flex"
         >
           <div className="space-y-3 px-1 pb-4">
             <BrandLogo
@@ -477,8 +485,8 @@ function LayoutFrame() {
           <div className="mt-4 shrink-0 space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-3">
             {authState.user ? (
               <SidebarAccountMenu
-                initials={initials}
                 name={user?.name || authState.user.displayName || authState.user.email || 'Signed in'}
+                photoURL={authState.user.photoURL ?? null}
                 onSignOut={handleSignOut}
                 onToggleDemoMode={handleToggleDemoMode}
                 canToggleDemoMode={canAccessAdmin}
@@ -501,7 +509,7 @@ function LayoutFrame() {
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-col md:h-screen md:overflow-hidden">
+        <div className="flex min-w-0 flex-col">
           {isDemoRoute ? <DemoBanner /> : null}
           <main
             data-testid="app-shell-main"

@@ -208,8 +208,8 @@ export function GroupPicksDenseTable({
   const gridColumnsClass = 'grid grid-cols-[88px_minmax(0,1fr)_minmax(0,1fr)_150px] items-center gap-3.5'
 
   return (
-    <V2Card className="h-full min-h-0 rounded-xl overflow-hidden">
-      <div className="flex h-full min-h-0 flex-col">
+    <V2Card className="rounded-xl overflow-hidden">
+      <div className="flex flex-col">
         <div className="flex h-10 flex-wrap items-center gap-2 border-b border-border/60 px-3">
           <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Group Picks</div>
           <div className="ml-auto flex items-center gap-2">
@@ -247,300 +247,167 @@ export function GroupPicksDenseTable({
           ) : null}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <div className="hidden h-full min-h-0 overflow-auto md:block">
-            <div className="min-w-[760px]">
-              <div className={cn(gridColumnsClass, 'h-8 px-3 text-[11px] uppercase tracking-wide text-muted-foreground')}>
-                <div>Group</div>
-                <div>1st Pick</div>
-                <div>2nd Pick</div>
-                <div className="text-right">Actions</div>
-              </div>
-
-              <div className="divide-y divide-border/45">
-                {rows.map((row) => {
-                  const persistedFirst = row.prediction.first ?? ''
-                  const persistedSecond = row.prediction.second ?? ''
-                  const draft = rowDrafts[row.groupId]
-                  const effectiveFirst = draft?.first ?? persistedFirst
-                  const effectiveSecond = draft?.second ?? persistedSecond
-                  const rowHasUnsavedChanges = Boolean(
-                    draft && (draft.first !== persistedFirst || draft.second !== persistedSecond)
-                  )
-                  const rowIsValid = Boolean(effectiveFirst) && Boolean(effectiveSecond) && effectiveFirst !== effectiveSecond
-                  const rowDelta = resolveRowDelta({
-                    row,
-                    first: effectiveFirst,
-                    second: effectiveSecond,
-                    groupQualifierPoints
-                  })
-
-                  return (
-                    <div
-                      key={`desktop-group-row-${row.groupId}`}
-                      className={cn(
-                        gridColumnsClass,
-                        rowSurfaceClass(row.rowResult),
-                        'h-11 px-3 transition-colors hover:bg-background/80 focus-within:bg-background/80 focus-within:ring-1 focus-within:ring-ring',
-                        rowHasUnsavedChanges ? 'ring-1 ring-ring/35' : undefined
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
-                          {row.groupId}
-                        </span>
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          {isReadOnly ? (
-                            <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveFirst || undefined, row.teams)}</div>
-                          ) : (
-                            <select
-                              value={effectiveFirst}
-                              className="h-9 w-full min-w-0 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
-                              onChange={(event) => onPickChange(row, 'first', event.target.value)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Escape') {
-                                  event.preventDefault()
-                                  onRowCancel(row.groupId)
-                                }
-                                if (event.key === 'Enter') {
-                                  event.preventDefault()
-                                  onRowSave(row)
-                                }
-                              }}
-                              disabled={isReadOnly}
-                            >
-                              <option value="">Select team</option>
-                              {row.teams.map((team) => (
-                                <option key={`${row.groupId}-first-${team.code}`} value={team.code}>
-                                  {team.code} · {team.name}
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                          {effectiveFirst ? (
-                            <span
-                              title={markerMeta(row.firstResult).tooltip}
-                              className={cn(
-                                'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none md:text-[11px]',
-                                placementTone(row.firstResult)
-                              )}
-                            >
-                              <span aria-hidden="true">{markerMeta(row.firstResult).icon}</span>
-                              <span>{markerMeta(row.firstResult).code}</span>
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          {isReadOnly ? (
-                            <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveSecond || undefined, row.teams)}</div>
-                          ) : (
-                            <select
-                              value={effectiveSecond}
-                              className="h-9 w-full min-w-0 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
-                              onChange={(event) => onPickChange(row, 'second', event.target.value)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Escape') {
-                                  event.preventDefault()
-                                  onRowCancel(row.groupId)
-                                }
-                                if (event.key === 'Enter') {
-                                  event.preventDefault()
-                                  onRowSave(row)
-                                }
-                              }}
-                              disabled={isReadOnly}
-                            >
-                              <option value="">Select team</option>
-                              {row.teams.map((team) => (
-                                <option key={`${row.groupId}-second-${team.code}`} value={team.code}>
-                                  {team.code} · {team.name}
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                          {effectiveSecond ? (
-                            <span
-                              title={markerMeta(row.secondResult).tooltip}
-                              className={cn(
-                                'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none md:text-[11px]',
-                                placementTone(row.secondResult)
-                              )}
-                            >
-                              <span aria-hidden="true">{markerMeta(row.secondResult).icon}</span>
-                              <span>{markerMeta(row.secondResult).code}</span>
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-end gap-2">
-                        {showPoints && rowDelta !== 0 ? (
-                          <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border bg-background px-1.5 text-[11px] font-medium text-muted-foreground">
-                            +{rowDelta}
-                          </span>
-                        ) : (
-                          <span className="inline-flex h-6 min-w-10" aria-hidden="true" />
-                        )}
-
-                        <div className="flex min-w-[142px] items-center justify-end gap-1.5">
-                          {rowHasUnsavedChanges ? (
-                            <span title="Unsaved changes" className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
-                              Edited
-                            </span>
-                          ) : null}
-                          {!rowHasUnsavedChanges && savedRowGroupId === row.groupId ? (
-                            <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
-                              Saved
-                            </span>
-                          ) : null}
-                          <Button
-                            size="sm"
-                            loading={saveStatus === 'saving'}
-                            disabled={!rowHasUnsavedChanges || !rowIsValid || isReadOnly}
-                            tabIndex={rowHasUnsavedChanges ? 0 : -1}
-                            aria-hidden={!rowHasUnsavedChanges}
-                            className={cn(
-                              'h-8 rounded-lg px-3 text-[12px]',
-                              rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
-                            )}
-                            onClick={() => onRowSave(row)}
-                          >
-                            Save
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            tabIndex={rowHasUnsavedChanges ? 0 : -1}
-                            aria-hidden={!rowHasUnsavedChanges}
-                            className={cn(
-                              'h-8 w-8 rounded-lg px-0 text-[12px]',
-                              rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
-                            )}
-                            onClick={() => onRowCancel(row.groupId)}
-                            aria-label={`Cancel edits for group ${row.groupId}`}
-                          >
-                            x
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {rows.length === 0 ? (
-                  <div className="h-10 px-3 text-[12px] text-muted-foreground">No groups available.</div>
-                ) : null}
-              </div>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <div className="min-w-[760px]">
+            <div className={cn(gridColumnsClass, 'h-8 px-3 text-[11px] uppercase tracking-wide text-muted-foreground')}>
+              <div>Group</div>
+              <div>1st Pick</div>
+              <div>2nd Pick</div>
+              <div className="text-right">Actions</div>
             </div>
-          </div>
 
-          <div className="space-y-2 overflow-auto p-2.5 md:hidden">
-            {rows.map((row) => {
-              const persistedFirst = row.prediction.first ?? ''
-              const persistedSecond = row.prediction.second ?? ''
-              const draft = rowDrafts[row.groupId]
-              const effectiveFirst = draft?.first ?? persistedFirst
-              const effectiveSecond = draft?.second ?? persistedSecond
-              const rowHasUnsavedChanges = Boolean(draft && (draft.first !== persistedFirst || draft.second !== persistedSecond))
-              const rowIsValid = Boolean(effectiveFirst) && Boolean(effectiveSecond) && effectiveFirst !== effectiveSecond
-              const rowDelta = resolveRowDelta({
-                row,
-                first: effectiveFirst,
-                second: effectiveSecond,
-                groupQualifierPoints
-              })
+            <div className="divide-y divide-border/45">
+              {rows.map((row) => {
+                const persistedFirst = row.prediction.first ?? ''
+                const persistedSecond = row.prediction.second ?? ''
+                const draft = rowDrafts[row.groupId]
+                const effectiveFirst = draft?.first ?? persistedFirst
+                const effectiveSecond = draft?.second ?? persistedSecond
+                const rowHasUnsavedChanges = Boolean(
+                  draft && (draft.first !== persistedFirst || draft.second !== persistedSecond)
+                )
+                const rowIsValid = Boolean(effectiveFirst) && Boolean(effectiveSecond) && effectiveFirst !== effectiveSecond
+                const rowDelta = resolveRowDelta({
+                  row,
+                  first: effectiveFirst,
+                  second: effectiveSecond,
+                  groupQualifierPoints
+                })
 
-              return (
-                <div key={`mobile-group-row-${row.groupId}`} className={cn('rounded-lg border border-border bg-background/40 p-2', rowSurfaceClass(row.rowResult))}>
-                  <div className="flex items-center justify-between gap-2">
+                return (
+                  <div
+                    key={`group-row-${row.groupId}`}
+                    className={cn(
+                      gridColumnsClass,
+                      rowSurfaceClass(row.rowResult),
+                      'h-11 px-3 transition-colors hover:bg-background/80 focus-within:bg-background/80 focus-within:ring-1 focus-within:ring-ring',
+                      rowHasUnsavedChanges ? 'ring-1 ring-ring/35' : undefined
+                    )}
+                  >
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex h-7 w-10 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
+                      <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
                         {row.groupId}
                       </span>
                     </div>
-                    {showPoints && rowDelta !== 0 ? (
-                      <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border px-2 text-[11px] text-muted-foreground">
-                        +{rowDelta}
-                      </span>
-                    ) : null}
-                  </div>
 
-                  <div className="mt-2.5 grid gap-2.5">
-                    <label className="grid gap-1 text-[11px] text-muted-foreground">
-                      1st Pick
-                      <div className="flex items-center gap-1.5">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-1.5">
                         {isReadOnly ? (
-                          <div className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground">
-                            {formatTeamLabel(effectiveFirst || undefined, row.teams)}
-                          </div>
+                          <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveFirst || undefined, row.teams)}</div>
                         ) : (
                           <select
                             value={effectiveFirst}
-                            className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
+                            className="h-9 w-full min-w-0 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
                             onChange={(event) => onPickChange(row, 'first', event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Escape') {
+                                event.preventDefault()
+                                onRowCancel(row.groupId)
+                              }
+                              if (event.key === 'Enter') {
+                                event.preventDefault()
+                                onRowSave(row)
+                              }
+                            }}
+                            disabled={isReadOnly}
                           >
                             <option value="">Select team</option>
                             {row.teams.map((team) => (
-                              <option key={`mobile-${row.groupId}-first-${team.code}`} value={team.code}>
+                              <option key={`${row.groupId}-first-${team.code}`} value={team.code}>
                                 {team.code} · {team.name}
                               </option>
                             ))}
                           </select>
                         )}
                         {effectiveFirst ? (
-                          <span title={markerMeta(row.firstResult).tooltip} className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none">
+                          <span
+                            title={markerMeta(row.firstResult).tooltip}
+                            className={cn(
+                              'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none',
+                              placementTone(row.firstResult)
+                            )}
+                          >
                             <span aria-hidden="true">{markerMeta(row.firstResult).icon}</span>
                             <span>{markerMeta(row.firstResult).code}</span>
                           </span>
                         ) : null}
                       </div>
-                    </label>
+                    </div>
 
-                    <label className="grid gap-1 text-[11px] text-muted-foreground">
-                      2nd Pick
-                      <div className="flex items-center gap-1.5">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-1.5">
                         {isReadOnly ? (
-                          <div className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground">
-                            {formatTeamLabel(effectiveSecond || undefined, row.teams)}
-                          </div>
+                          <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveSecond || undefined, row.teams)}</div>
                         ) : (
                           <select
                             value={effectiveSecond}
-                            className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
+                            className="h-9 w-full min-w-0 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
                             onChange={(event) => onPickChange(row, 'second', event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Escape') {
+                                event.preventDefault()
+                                onRowCancel(row.groupId)
+                              }
+                              if (event.key === 'Enter') {
+                                event.preventDefault()
+                                onRowSave(row)
+                              }
+                            }}
+                            disabled={isReadOnly}
                           >
                             <option value="">Select team</option>
                             {row.teams.map((team) => (
-                              <option key={`mobile-${row.groupId}-second-${team.code}`} value={team.code}>
+                              <option key={`${row.groupId}-second-${team.code}`} value={team.code}>
                                 {team.code} · {team.name}
                               </option>
                             ))}
                           </select>
                         )}
                         {effectiveSecond ? (
-                          <span title={markerMeta(row.secondResult).tooltip} className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none">
+                          <span
+                            title={markerMeta(row.secondResult).tooltip}
+                            className={cn(
+                              'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none',
+                              placementTone(row.secondResult)
+                            )}
+                          >
                             <span aria-hidden="true">{markerMeta(row.secondResult).icon}</span>
                             <span>{markerMeta(row.secondResult).code}</span>
                           </span>
                         ) : null}
                       </div>
-                    </label>
-                  </div>
+                    </div>
 
-                  {!isReadOnly ? (
-                    <div className="mt-2 flex min-h-10 items-center justify-end">
-                      <div className={cn('flex items-center gap-2 transition-opacity', rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0')}>
+                    <div className="flex items-center justify-end gap-2">
+                      {showPoints && rowDelta !== 0 ? (
+                        <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border bg-background px-1.5 text-[11px] font-medium text-muted-foreground">
+                          +{rowDelta}
+                        </span>
+                      ) : (
+                        <span className="inline-flex h-6 min-w-10" aria-hidden="true" />
+                      )}
+
+                      <div className="flex min-w-[142px] items-center justify-end gap-1.5">
+                        {rowHasUnsavedChanges ? (
+                          <span title="Unsaved changes" className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
+                            Edited
+                          </span>
+                        ) : null}
+                        {!rowHasUnsavedChanges && savedRowGroupId === row.groupId ? (
+                          <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
+                            Saved
+                          </span>
+                        ) : null}
                         <Button
                           size="sm"
-                          className="h-10 rounded-lg px-3 text-[12px]"
                           loading={saveStatus === 'saving'}
-                          disabled={!rowHasUnsavedChanges || !rowIsValid}
+                          disabled={!rowHasUnsavedChanges || !rowIsValid || isReadOnly}
+                          tabIndex={rowHasUnsavedChanges ? 0 : -1}
+                          aria-hidden={!rowHasUnsavedChanges}
+                          className={cn(
+                            'h-8 rounded-lg px-3 text-[12px]',
+                            rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
+                          )}
                           onClick={() => onRowSave(row)}
                         >
                           Save
@@ -548,23 +415,27 @@ export function GroupPicksDenseTable({
                         <Button
                           size="sm"
                           variant="secondary"
-                          className="h-10 rounded-lg px-3 text-[12px]"
+                          tabIndex={rowHasUnsavedChanges ? 0 : -1}
+                          aria-hidden={!rowHasUnsavedChanges}
+                          className={cn(
+                            'h-8 w-8 rounded-lg px-0 text-[12px]',
+                            rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
+                          )}
                           onClick={() => onRowCancel(row.groupId)}
+                          aria-label={`Cancel edits for group ${row.groupId}`}
                         >
-                          Cancel
+                          x
                         </Button>
                       </div>
                     </div>
-                  ) : null}
-                </div>
-              )
-            })}
+                  </div>
+                )
+              })}
 
-            {rows.length === 0 ? (
-              <div className="rounded-lg border border-border bg-background/40 px-3 py-2 text-[12px] text-muted-foreground">
-                No groups available.
-              </div>
-            ) : null}
+              {rows.length === 0 ? (
+                <div className="h-10 px-3 text-[12px] text-muted-foreground">No groups available.</div>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -630,7 +501,7 @@ export function BestThirdPicksCompact({
           <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">Best 3rd Picks - Selected {selectedCount}/{totalCount}</div>
         </div>
 
-        <div className="hidden min-w-0 max-w-[14rem] items-center gap-1 overflow-hidden lg:flex">
+        <div className="flex min-w-0 max-w-[14rem] items-center gap-1 overflow-hidden">
           {selectedCodes.slice(0, 6).map((code) => (
             <span key={`best-third-chip-${code}`} className="inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] text-muted-foreground">
               {code}
@@ -651,13 +522,13 @@ export function BestThirdPicksCompact({
           </Button>
         ) : null}
 
-        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-lg px-0 text-[13px] lg:hidden" onClick={() => setCollapsed((current) => !current)} aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}>
+        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-lg px-0 text-[13px]" onClick={() => setCollapsed((current) => !current)} aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}>
           {collapsed ? 'v' : '^'}
         </Button>
       </div>
 
       {!collapsed ? (
-        <div className="p-3 max-md:max-h-72 max-md:overflow-y-auto">
+        <div className="p-3">
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {slots.map((slot) => (
               <div key={`best-third-slot-${slot.index}`} className={cn('rounded-lg border border-border px-2.5 py-2', bestThirdSurfaceClass(slot.status))}>

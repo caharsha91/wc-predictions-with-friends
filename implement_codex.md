@@ -860,8 +860,9 @@ Chunk 2 - Landing v2 + profile persistence:
 - Build landing hub with layout conformation (shell rhythm + blended visual system on Landing)
 - Implement profile read/write for `lastRoute` + `rivalUserIds`
 - `lastRoute` policy: clear only when stored route is invalid or unauthorized
-- Add Landing visual fidelity pass scope: atmospheric canvas, 4-card row on desktop, split snapshot hero (literal podium + compact standings), compact rivals control, and aligned rules card
-- Acceptance: `/` is default post-login; Continue fallback to `/` clears invalid/unauthorized `lastRoute` only; rivals edit only on Landing with cap 3 and persistence; snapshot stamp/fallback remains visible in Landing snapshot surfaces
+- Add Landing visual fidelity pass scope: atmospheric canvas, 4-card row on desktop, split snapshot hero (literal podium + compact standings), and aligned rules card
+- Add Landing rivals convergence scope: always-open unified rivals board (selection + reorder + suggestions + tracked standings) with clear live-edit indicator and cap-3 persistence
+- Acceptance: `/` is default post-login; Continue fallback to `/` clears invalid/unauthorized `lastRoute` only; rivals edit only on Landing with cap 3 and persistence; tracked standings supports viewer + up to 3 rivals; snapshot stamp/fallback remains visible in Landing snapshot surfaces
 
 Chunk 3 - Route tracking:
 
@@ -873,18 +874,19 @@ Chunk 3 - Route tracking:
 Chunk 4 - Group Stage shell and group navigation:
 
 - Route redirect behavior
-- Tabs/jump/status
+- Single-DOM adaptive Group Stage layout (no duplicated mobile/desktop render trees for picks/standings/best-third/leaderboard surfaces)
 - Per-surface `ExportMenuV2` wiring for Group Stage (desktop-only, post-lock)
 - Sidebar/nav default adjustment: `Play` opens Landing (`/` and `/demo`) while preserving `/play` and `/demo/play` route compatibility
-- Acceptance: tabs and jump update URL/state correctly on desktop and mobile; Play nav target defaults to Landing across desktop and mobile nav surfaces
+- App shell convergence: remove viewport-locked shell constraints (`md:h-screen` / `md:overflow-hidden`) so touched pages follow full-page scroll baseline
+- Acceptance: group routing/status controls remain correct; Group Stage uses a single adaptive layout flow; Play nav target defaults to Landing across desktop and mobile nav surfaces; shell-level viewport lock removed for touched flows
 
 Chunk 0-4 closure notes (2026-02-20):
 
 - Chunk 0: guardrails revalidated in touched routes; build + token + contrast + route guards passing.
 - Chunk 1: shared v2 primitive variants and blended token primitives applied; Landing now consumes upgraded primitives.
-- Chunk 2: Landing fidelity pass delivered with split snapshot hero, podium/list composition, and restrained blended atmosphere.
+- Chunk 2: Landing fidelity pass delivered with split snapshot hero, podium/list composition, restrained blended atmosphere, and always-open unified rivals board with live-edit indicator.
 - Chunk 3: `lastRoute` continue/clear policy confirmed (valid/missing/invalid/unauthorized behavior unchanged by visual updates).
-- Chunk 4: Play default nav target moved to Landing roots for desktop/mobile nav while legacy `/play` routes remain usable.
+- Chunk 4: Group Stage moved to single adaptive render flow and shell viewport lock removed for touched flows; Play default nav target moved to Landing roots while legacy `/play` routes remain usable.
 
 Chunk 5 - Group ranking DnD:
 
