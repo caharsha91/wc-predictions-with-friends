@@ -4,17 +4,18 @@ Simple World Cup predictions app for a private league with my friends: picks, po
 
 ## App Flow (Current)
 
-- `/` redirects to `/play`
-- `/play` play center workspace (default member entry)
-- `/play/picks` picks detail (read-only + embedded results)
-- `/play/group-stage` group stage detail (read-only + standings/results)
-- `/play/bracket` knockout detail (read-only; active after group close + draw readiness)
-- `/play/league` standings
-- `/demo/play` demo play center (admin only)
-- `/demo/play/picks` demo picks detail (read-only + embedded results) (admin only)
-- `/demo/play/group-stage` demo group stage detail (read-only + standings/results) (admin only)
-- `/demo/play/bracket` demo knockout detail (read-only; fixture-activated or forced active for selected demo knockout scenarios) (admin only)
-- `/demo/play/league` demo standings (admin only)
+- `/` play center workspace (default member entry)
+- `/match-picks` picks detail (read-only + embedded results)
+- `/group-stage` group stage detail (read-only + standings/results)
+- `/group-stage/:groupId` group stage deep-link (A-L)
+- `/knockout-bracket` knockout detail (read-only; active after group close + draw readiness)
+- `/leaderboard` standings
+- `/demo` demo play center (admin only)
+- `/demo/match-picks` demo picks detail (read-only + embedded results) (admin only)
+- `/demo/group-stage` demo group stage detail (read-only + standings/results) (admin only)
+- `/demo/group-stage/:groupId` demo group stage deep-link (A-L) (admin only)
+- `/demo/knockout-bracket` demo knockout detail (read-only; fixture-activated or forced active for selected demo knockout scenarios) (admin only)
+- `/demo/leaderboard` demo standings (admin only)
 - `/demo/admin/controls` demo controls (scenario/viewer/session) (admin only)
 - `/demo/admin/players` demo member manager (admin only)
 - `/demo/admin/exports` demo export tools (admin only)
@@ -31,7 +32,7 @@ Demo snapshot data lives in per-scenario folders under `public/data/demo/scenari
 
 ## Demo Mode Data + Storage
 
-- Demo routes (`/demo/play/*`, `/demo/admin/*`) read from `public/data/demo/scenarios/<selected-scenario>/*`.
+- Demo routes (`/demo/*`, `/demo/admin/*`) read from `public/data/demo/scenarios/<selected-scenario>/*`.
 - Demo-mode caches and local edits are namespaced in localStorage to avoid mixing with normal mode.
 - Demo mode disables Firestore writes (including picks, group stage, knockout, members admin edits, theme sync, and export backfills).
 - Demo localStorage keys are explicitly cleared on logout and on page exit while in demo mode.
@@ -130,7 +131,7 @@ Demo snapshot data lives in per-scenario folders under `public/data/demo/scenari
 
 ## Play Center Phase Behavior
 
-- Play Center (`/play` and `/demo/play`) keeps match picks always active.
+- Play Center (`/` and `/demo`) keeps match picks always active.
 - Under Action Hub, sections are phase-ordered and compact:
   - default: Group Stage, Match Picks, Knockout
   - when `groupClosed`: Match Picks and Knockout move above a collapsed Group Stage row
@@ -141,7 +142,7 @@ Demo snapshot data lives in per-scenario folders under `public/data/demo/scenari
 - Match-pick control buttons (`Continue`, `Next one`) are anchored inside the `Match picks` section for consistent section-first layout.
 - Match-pick status UI (progress bar, metric pills, and closes/deadline pill) is anchored inside the `Match picks` section.
 - Section cards use neutral/transparent surfaces for a more uniform visual hierarchy.
-- Detailed pages (`/play/picks`, `/play/group-stage`, `/play/bracket` and demo equivalents) are read-only and include a compact header `Picks` link (quick menu removed).
+- Detailed pages (`/match-picks`, `/group-stage`, `/knockout-bracket` and demo equivalents) are read-only and include a compact header `Picks` link (quick menu removed).
 - Detailed pages now embed inline post-result feedback:
   - actual results shown inline next to user predictions,
   - H1 status highlighting (`Correct`, `Wrong`, `Pending`) on rows/cards,

@@ -336,7 +336,7 @@ export default function DemoControlsPage() {
               <Button onClick={applyScenario} disabled={!scenarioNow}>
                 Apply Scenario Time
               </Button>
-              <Button variant="secondary" onClick={() => navigate('/demo/play')}>
+              <Button variant="secondary" onClick={() => navigate('/demo')}>
                 Open Demo Play
               </Button>
             </div>
@@ -361,7 +361,7 @@ export default function DemoControlsPage() {
               <Button onClick={applyViewer} disabled={!selectedViewerId}>
                 Apply Viewer
               </Button>
-              <Button variant="secondary" onClick={() => navigate('/demo/play/league')}>
+              <Button variant="secondary" onClick={() => navigate('/demo/leaderboard')}>
                 Open Demo League
               </Button>
             </div>

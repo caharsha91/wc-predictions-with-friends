@@ -27,11 +27,10 @@ export const MAIN_NAV: NavItem[] = [
     children: [
       { to: '/group-stage', label: 'Group Stage' },
       { to: '/match-picks', label: 'Match Picks' },
-      { to: '/knockout-bracket', label: 'Knockout Bracket' },
-      { to: '/leaderboard', label: 'Leaderboard' }
+      { to: '/knockout-bracket', label: 'Knockout Bracket' }
     ]
   },
-  { to: '/play/league', label: 'League', icon: TrophyIcon }
+  { to: '/leaderboard', label: 'League', icon: TrophyIcon }
 ]
 
 export const ADMIN_NAV: NavItem[] = [
@@ -47,11 +46,10 @@ export const DEMO_MAIN_NAV: NavItem[] = [
     children: [
       { to: '/demo/group-stage', label: 'Group Stage' },
       { to: '/demo/match-picks', label: 'Match Picks' },
-      { to: '/demo/knockout-bracket', label: 'Knockout Bracket' },
-      { to: '/demo/leaderboard', label: 'Leaderboard' }
+      { to: '/demo/knockout-bracket', label: 'Knockout Bracket' }
     ]
   },
-  { to: '/demo/play/league', label: 'League', icon: TrophyIcon }
+  { to: '/demo/leaderboard', label: 'League', icon: TrophyIcon }
 ]
 
 export const DEMO_ADMIN_NAV: NavItem[] = [

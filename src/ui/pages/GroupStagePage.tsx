@@ -204,7 +204,7 @@ function downloadCsvFile(fileName: string, content: string) {
 }
 
 export default function GroupStagePage() {
-  // QA-SMOKE: route=/play/group-stage and /demo/play/group-stage ; checklist-id=smoke-group-stage-detail
+  // QA-SMOKE: route=/group-stage and /demo/group-stage ; checklist-id=smoke-group-stage-detail
   const navigate = useNavigate()
   const location = useLocation()
   const { groupId: routeGroupIdParam } = useParams<{ groupId?: string }>()
@@ -285,8 +285,6 @@ export default function GroupStagePage() {
       canceled = true
     }
   }, [authState.user?.email, mode, viewerId])
-
-  const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
 
   const groupTeams = useMemo(() => buildGroupTeams(matches), [matches])
   const groupIds = groupStage.groupIds
@@ -741,7 +739,7 @@ export default function GroupStagePage() {
   const selectedGroupTeamCodes = buildGroupTeamCodes(groupTeams[selectedStandingsGroup] ?? [])
   const selectedGroupTopTwo = resolveStoredTopTwo(selectedGroupPrediction, selectedGroupTeamCodes)
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
-  const leaderboardPath = `${playRoot}/league`
+  const leaderboardPath = mode === 'demo' ? '/demo/leaderboard' : '/leaderboard'
   const scoringSnapshotLabel = formatSnapshotTimestamp(scoringSnapshotTimestamp)
   const groupLockLabel = groupLockTime ? formatUtcAndLocalDeadline(groupLockTime.toISOString()) : 'Lock deadline unavailable'
 

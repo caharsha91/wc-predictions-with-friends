@@ -37,14 +37,12 @@ import { cn } from './lib/utils'
 import { ADMIN_NAV, DEMO_ADMIN_NAV, DEMO_MAIN_NAV, MAIN_NAV, type NavItem } from './nav'
 
 const APP_ROUTE_PREFIXES = [
-  '/play',
   '/group-stage',
   '/match-picks',
   '/knockout-bracket',
   '/leaderboard',
   '/admin',
   '/settings',
-  '/demo/play',
   '/demo/group-stage',
   '/demo/match-picks',
   '/demo/knockout-bracket',
@@ -212,21 +210,49 @@ function SidebarAccountMenu({
 }
 
 function toDemoPath(pathname: string): string {
-  if (pathname.startsWith('/demo/')) return pathname
-  if (pathname === '/' || pathname === '/play') return '/demo'
-  if (pathname.startsWith('/play/')) return pathname.replace('/play/', '/demo/play/')
+  if (pathname === '/demo' || pathname.startsWith('/demo/')) return pathname
+  if (pathname === '/') return '/demo'
+  if (pathname === '/group-stage' || pathname.startsWith('/group-stage/')) return `/demo${pathname}`
+  if (pathname === '/match-picks') return '/demo/match-picks'
+  if (pathname === '/knockout-bracket') return '/demo/knockout-bracket'
+  if (pathname === '/leaderboard') return '/demo/leaderboard'
   if (pathname === '/admin') return '/demo/admin'
   if (pathname.startsWith('/admin/')) return '/demo/admin'
+
+  // Legacy /play* aliases are still mapped during transition.
+  if (pathname === '/play') return '/demo'
+  if (pathname === '/play/picks') return '/demo/match-picks'
+  if (pathname === '/play/group-stage' || pathname.startsWith('/play/group-stage/')) {
+    return pathname.replace('/play/group-stage', '/demo/group-stage')
+  }
+  if (pathname === '/play/bracket') return '/demo/knockout-bracket'
+  if (pathname === '/play/league') return '/demo/leaderboard'
+
   return '/demo'
 }
 
 function toDefaultPath(pathname: string): string {
   if (pathname === '/demo') return '/'
   if (!pathname.startsWith('/demo/')) return pathname
-  if (pathname === '/demo/play') return '/'
-  if (pathname.startsWith('/demo/play/')) return pathname.replace('/demo/play/', '/play/')
+
+  if (pathname === '/demo/group-stage' || pathname.startsWith('/demo/group-stage/')) {
+    return pathname.replace('/demo/group-stage', '/group-stage')
+  }
+  if (pathname === '/demo/match-picks') return '/match-picks'
+  if (pathname === '/demo/knockout-bracket') return '/knockout-bracket'
+  if (pathname === '/demo/leaderboard') return '/leaderboard'
   if (pathname === '/demo/admin') return '/admin'
   if (pathname.startsWith('/demo/admin/')) return '/admin'
+
+  // Legacy /demo/play* aliases are still mapped during transition.
+  if (pathname === '/demo/play') return '/'
+  if (pathname === '/demo/play/picks') return '/match-picks'
+  if (pathname === '/demo/play/group-stage' || pathname.startsWith('/demo/play/group-stage/')) {
+    return pathname.replace('/demo/play/group-stage', '/group-stage')
+  }
+  if (pathname === '/demo/play/bracket') return '/knockout-bracket'
+  if (pathname === '/demo/play/league') return '/leaderboard'
+
   return '/'
 }
 

@@ -114,7 +114,7 @@ function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] 
 }
 
 export default function BracketPage() {
-  // QA-SMOKE: route=/play/bracket and /demo/play/bracket ; checklist-id=smoke-knockout-detail
+  // QA-SMOKE: route=/knockout-bracket and /demo/knockout-bracket ; checklist-id=smoke-knockout-detail
   const location = useLocation()
   const isDemoRoute = location.pathname.startsWith('/demo/')
   const dataMode = isDemoRoute ? 'demo' : 'default'
@@ -131,10 +131,8 @@ export default function BracketPage() {
   const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
   const readyBracketState = bracket.loadState.status === 'ready' ? bracket.loadState : null
 
-  const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
-  const leaderboardPath = `${playRoot}/league`
-  const toPlayPath = (segment?: 'picks') =>
-    segment ? `${playRoot}/${segment}` : playRoot
+  const homePath = isDemoRoute ? '/demo' : '/'
+  const leaderboardPath = isDemoRoute ? '/demo/leaderboard' : '/leaderboard'
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
@@ -298,7 +296,7 @@ export default function BracketPage() {
           subtitle="Read-only bracket picks and results. Use Play Center for guided edits."
           meta={
             <div className="flex items-start gap-3 text-right">
-              <ButtonLink to={toPlayPath()} size="sm" variant="primary">
+              <ButtonLink to={homePath} size="sm" variant="primary">
                 Back to Play Center
               </ButtonLink>
               <div className="text-xs text-muted-foreground" data-last-updated="true">
