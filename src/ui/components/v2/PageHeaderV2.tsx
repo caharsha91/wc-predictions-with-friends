@@ -10,6 +10,8 @@ type PageHeaderV2Props = {
   subtitle?: ReactNode
   kicker?: ReactNode
   actions?: ReactNode
+  metadata?: ReactNode
+  metadataClassName?: string
   className?: string
   variant?: PageHeaderV2Variant
 }
@@ -19,6 +21,8 @@ export default function PageHeaderV2({
   subtitle,
   kicker,
   actions,
+  metadata,
+  metadataClassName,
   className,
   variant = 'section'
 }: PageHeaderV2Props) {
@@ -57,7 +61,7 @@ export default function PageHeaderV2({
               <p
                 className="text-[var(--page-header-subtitle)]"
                 style={{
-                  fontSize: isHero ? 'var(--text-sm)' : 'var(--text-xs)',
+                  fontSize: 'var(--text-sm)',
                   lineHeight: 'var(--line-height-body)'
                 }}
               >
@@ -67,6 +71,16 @@ export default function PageHeaderV2({
           </div>
           {actions ? <div className="flex items-center gap-2 self-start md:pt-0.5">{actions}</div> : null}
         </div>
+        {metadata ? (
+          <div
+            className={cn(
+              'v2-page-header-meta flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-foreground',
+              metadataClassName
+            )}
+          >
+            {metadata}
+          </div>
+        ) : null}
       </div>
     </V2Card>
   )

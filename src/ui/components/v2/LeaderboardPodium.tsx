@@ -41,13 +41,13 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className }
       aria-label="Leaderboard podium"
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Podium race</div>
-        <span className="rounded-full border border-border/70 bg-background/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Podium race</div>
+        <span className="rounded-full border border-border/70 bg-background/40 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Top 3
         </span>
       </div>
 
-      {!snapshotAvailable ? <div className="mt-2 text-xs text-muted-foreground">Snapshot unavailable</div> : null}
+      {!snapshotAvailable ? <div className="mt-2 text-[13px] text-muted-foreground">Snapshot unavailable</div> : null}
 
       <div className="landing-v2-podium-race-grid mt-3 grid grid-cols-3 items-end gap-2 md:gap-3">
         {orderedSlots.map((slot) => (
@@ -58,7 +58,7 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className }
             data-viewer={slot.row?.isViewer ? 'true' : 'false'}
           >
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">#{slot.rank}</div>
+              <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">#{slot.rank}</div>
               {slot.row?.isViewer ? <span className="landing-v2-podium-you-badge">You</span> : null}
             </div>
             <div className="mt-2 truncate text-2xl font-semibold leading-tight text-[color:var(--v2-text-strong)] md:text-3xl">
@@ -68,7 +68,7 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className }
               <span className="text-4xl font-semibold leading-none text-[color:var(--v2-text-strong)] md:text-[2.6rem]">
                 {slot.row?.points ?? 0}
               </span>
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">pts</span>
+              <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">pts</span>
             </div>
           </article>
         ))}
@@ -79,7 +79,7 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className }
           to={leaderboardPath}
           variant="secondary"
           size="sm"
-          className="h-8 rounded-full px-3 text-[11px]"
+          className="h-9 rounded-full px-3 text-[12px]"
         >
           View full leaderboard
         </ButtonLink>

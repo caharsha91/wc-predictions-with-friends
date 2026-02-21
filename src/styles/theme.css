@@ -335,6 +335,19 @@
   letter-spacing: 0.01em;
 }
 
+.v2-page-shell {
+  margin-inline: auto;
+}
+
+.v2-page-header-meta {
+  border-top: 1px solid color-mix(in srgb, var(--v2-border-soft) 88%, transparent);
+  padding-top: 0.6rem;
+}
+
+.v2-section-card {
+  border-color: var(--v2-border-medium);
+}
+
 .landing-v2-canvas {
   position: relative;
   isolation: isolate;

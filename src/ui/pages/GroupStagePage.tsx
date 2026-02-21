@@ -21,19 +21,17 @@ import type { GroupPrediction } from '../../types/bracket'
 import type { Match, Team } from '../../types/matches'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
-import { Button, ButtonLink } from '../components/ui/Button'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
+import { Button } from '../components/ui/Button'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
-import V2Card from '../components/v2/V2Card'
+import PageShellV2 from '../components/v2/PageShellV2'
+import SectionCardV2 from '../components/v2/SectionCardV2'
 import {
   BestThirdPicksCompact,
   GroupPicksDenseTable,
   LeaderboardCardCurated,
-  RightRailSticky,
-  StatusBar,
   type BestThirdGroupTile,
   type GroupStageDenseRow,
   type LeaderboardCardRow
@@ -45,37 +43,27 @@ import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
 import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
+import { useAuthState } from '../hooks/useAuthState'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { formatUtcAndLocalDeadline } from '../lib/deadline'
+import { readUserProfile } from '../lib/profilePersistence'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { cn } from '../lib/utils'
 import {
   GROUP_STAGE_GROUP_CODES,
-  patchGroupStageSearch,
-  readGroupStageQueryState,
-  stripLegacyGroupStageParams,
-  type GroupStageQueryState
+  stripLegacyGroupStageParams
 } from '../lib/groupStageFilters'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildProjectedImpactRows } from '../lib/projectedImpact'
 
 const BEST_THIRD_SLOTS = BEST_THIRD_SLOT_COUNT
 const DEFAULT_GROUP_QUALIFIER_POINTS = 3
+const DESKTOP_PREVIEW_ROW_COUNT = 9
 const EMPTY_MATCHES: Match[] = []
 const GROUP_ID_PATTERN = /^[A-L]$/
 
 type GroupJumpStatus = 'complete' | 'incomplete' | 'locked'
-
-function formatTime(iso?: string): string {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 function buildGroupTeams(matches: Match[]): Record<string, Team[]> {
   const groups = new Map<string, Map<string, Team>>()
@@ -144,6 +132,26 @@ function normalizeRouteGroupId(value: string | undefined): string | null {
   return normalized
 }
 
+function normalizeKey(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase()
+}
+
+function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] {
+  const viewerKey = normalizeKey(viewerId)
+  const seen = new Set<string>()
+  const next: string[] = []
+  for (const rivalId of nextRivals) {
+    const trimmed = rivalId.trim()
+    if (!trimmed) continue
+    const key = normalizeKey(trimmed)
+    if (!key || key === viewerKey || seen.has(key)) continue
+    seen.add(key)
+    next.push(trimmed)
+    if (next.length >= 3) break
+  }
+  return next
+}
+
 function getGroupJumpStatus(
   groupId: string,
   groups: Record<string, GroupPrediction>,
@@ -192,6 +200,7 @@ export default function GroupStagePage() {
   const { groupId: routeGroupIdParam } = useParams<{ groupId?: string }>()
   const mode = useRouteDataMode()
   const viewerId = useViewerId()
+  const authState = useAuthState()
   const phaseState = useTournamentPhaseState()
   const { showToast } = useToast()
   const now = useNow({ tickMs: 30_000 })
@@ -209,12 +218,11 @@ export default function GroupStagePage() {
   const [lastPersistedBestThirds, setLastPersistedBestThirds] = useState<string[]>([])
   const [bestThirdHelperText, setBestThirdHelperText] = useState<string | null>(null)
   const [bestThirdAnimatedGroupId, setBestThirdAnimatedGroupId] = useState<string | null>(null)
-  const [leaguePeekOpen, setLeaguePeekOpen] = useState(false)
   const bestThirdHelperTimerRef = useRef<number | null>(null)
   const bestThirdAnimationTimerRef = useRef<number | null>(null)
   const selectedThirdCodeByGroupRef = useRef<Record<string, string>>({})
+  const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
 
-  const queryState = useMemo(() => readGroupStageQueryState(location.search), [location.search])
   const groupRouteBase = mode === 'demo' ? '/demo/group-stage' : '/group-stage'
   const routeGroupId = useMemo(() => normalizeRouteGroupId(routeGroupIdParam), [routeGroupIdParam])
 
@@ -249,9 +257,26 @@ export default function GroupStagePage() {
     navigateToGroup('A', true)
   }, [navigateToGroup, routeGroupId])
 
+  useEffect(() => {
+    let canceled = false
+
+    async function loadRivals() {
+      try {
+        const profile = await readUserProfile(mode, viewerId, authState.user?.email ?? null)
+        if (canceled) return
+        setRivalUserIds(sanitizeRivalUserIds(profile.rivalUserIds, viewerId))
+      } catch {
+        if (!canceled) setRivalUserIds([])
+      }
+    }
+
+    void loadRivals()
+    return () => {
+      canceled = true
+    }
+  }, [authState.user?.email, mode, viewerId])
+
   const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
-  const toPlayPath = (segment?: 'picks') =>
-    segment ? `${playRoot}/${segment}` : playRoot
 
   const groupTeams = useMemo(() => buildGroupTeams(matches), [matches])
   const groupIds = groupStage.groupIds
@@ -383,9 +408,6 @@ export default function GroupStagePage() {
       })
   }, [snapshotReady])
 
-  const tableStatusLabel = groupsFinal ? 'Final' : 'Pending'
-  const pointsContextLabel = groupsFinal ? 'Final points' : 'Potential points'
-
   const rows = useMemo<GroupStageDenseRow[]>(() => {
     return groupIds.map((groupId) => {
       const teams = groupTeams[groupId] ?? []
@@ -462,21 +484,6 @@ export default function GroupStagePage() {
       setSavedRowGroupId((current) => (current === groupId ? null : current))
     }, 2500)
   }, [])
-
-  const updateQueryState = useCallback(
-    (patch: Partial<GroupStageQueryState>) => {
-      const nextSearch = patchGroupStageSearch(location.search, patch)
-      if (nextSearch === location.search) return
-      navigate(
-        {
-          pathname: location.pathname,
-          search: nextSearch
-        },
-        { replace: false }
-      )
-    },
-    [location.pathname, location.search, navigate]
-  )
 
   const handleRankingReorder = useCallback(
     (row: GroupStageDenseRow, ranking: string[]) => {
@@ -663,11 +670,6 @@ export default function GroupStagePage() {
     setSavingRowGroupId(null)
   }, [isReadOnly])
 
-  useEffect(() => {
-    if (!isDesktopRailViewport) return
-    setLeaguePeekOpen(false)
-  }, [isDesktopRailViewport])
-
   const leaderboardRowsForCard = useMemo<LeaderboardCardRow[]>(() => {
     if (isFinalResultsMode) {
       return finalGroupStageRows.map((row, index) => {
@@ -705,10 +707,9 @@ export default function GroupStagePage() {
   const selectedGroupTeamCodes = buildGroupTeamCodes(groupTeams[selectedStandingsGroup] ?? [])
   const selectedGroupTopTwo = resolveStoredTopTwo(selectedGroupPrediction, selectedGroupTeamCodes)
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
-  const playCenterPath = toPlayPath()
   const leaderboardPath = `${playRoot}/league`
-  const picksLastSavedLabel = formatTime(groupStage.data.updatedAt)
   const scoringSnapshotLabel = formatSnapshotTimestamp(scoringSnapshotTimestamp)
+  const groupLockLabel = groupLockTime ? formatUtcAndLocalDeadline(groupLockTime.toISOString()) : 'Lock deadline unavailable'
 
   const saveBestThirdSelections = useCallback(async () => {
     const result = await groupStage.save()
@@ -818,16 +819,13 @@ export default function GroupStagePage() {
   const groupPicksTable = (
     <GroupPicksDenseTable
       rows={rowsForActiveGroup}
-      showPoints={queryState.points === 'on'}
+      groupsDone={completion.groupsDone}
+      groupsTotal={groupIds.length}
       isReadOnly={isReadOnly}
-      groupClosedByTime={groupClosedByTime}
       groupQualifierPoints={groupQualifierPoints}
-      tableStatusLabel={tableStatusLabel}
-      pointsContextLabel={pointsContextLabel}
       saveStatus={groupStage.saveStatus}
       savingRowGroupId={savingRowGroupId}
       savedRowGroupId={savedRowGroupId}
-      onTogglePoints={() => updateQueryState({ points: queryState.points === 'on' ? 'off' : 'on' })}
       onRankingReorder={handleRankingReorder}
     />
   )
@@ -840,7 +838,7 @@ export default function GroupStagePage() {
       meterLabel={bestThirdMeterLabel}
       hintLabel={bestThirdHintLabel}
       helperText={bestThirdHelperText}
-      statusLabel={bestThirdsFinal ? 'Final' : groupClosedByTime ? 'Locked' : 'Pending'}
+      statusLabel={bestThirdsFinal ? 'Final' : groupClosedByTime ? 'Locked' : null}
       defaultCollapsed={false}
       isReadOnly={isReadOnly}
       isDirty={bestThirdDirty}
@@ -862,10 +860,10 @@ export default function GroupStagePage() {
   )
 
   const standingsPanel = (
-    <V2Card tone="panel" className="group-stage-v2-standings min-h-0 rounded-xl overflow-hidden">
-      <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
-        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Standings</div>
-        <Badge tone="secondary" className="h-7 rounded-full px-2 text-[11px] normal-case tracking-normal">
+    <SectionCardV2 tone="panel" density="none" className="group-stage-v2-standings min-h-0 rounded-xl overflow-hidden">
+      <div className="flex h-11 items-center justify-between gap-2 border-b border-border/60 px-3">
+        <div className="text-[13px] font-semibold tracking-[0.02em] text-foreground">Standings</div>
+        <Badge tone="secondary" className="h-7 rounded-full px-2 text-[12px] normal-case tracking-normal">
           Group {selectedStandingsGroup}
         </Badge>
       </div>
@@ -873,7 +871,7 @@ export default function GroupStagePage() {
       <div className="min-h-0 overflow-auto p-3">
         <Table
           unframed
-          className="[&_th]:h-8 [&_th]:px-2 [&_th]:py-0 [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-9 [&_td]:px-2 [&_td]:py-0 [&_td]:text-[12px]"
+          className="[&_th]:h-9 [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:px-2 [&_td]:py-0 [&_td]:text-[14px]"
         >
           <thead>
             <tr>
@@ -899,8 +897,8 @@ export default function GroupStagePage() {
                   <td>
                     <div className="flex min-w-0 items-center gap-1.5">
                       <span className="truncate">{entry.code}</span>
-                      {pickedFirst ? <Badge tone="info" className="px-1 py-0 text-[9px] tracking-[0.12em]">Your 1st</Badge> : null}
-                      {pickedSecond ? <Badge tone="secondary" className="px-1 py-0 text-[9px] tracking-[0.12em]">Your 2nd</Badge> : null}
+                      {pickedFirst ? <Badge tone="info" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Your 1st</Badge> : null}
+                      {pickedSecond ? <Badge tone="secondary" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Your 2nd</Badge> : null}
                     </div>
                   </td>
                   <td>{entry.points}</td>
@@ -911,7 +909,7 @@ export default function GroupStagePage() {
             })}
             {(standings.standingsByGroup.get(selectedStandingsGroup) ?? []).length === 0 ? (
               <tr>
-                <td colSpan={4} className="text-center text-[12px] text-muted-foreground">
+                <td colSpan={4} className="text-center text-[13px] text-muted-foreground">
                   No standings data yet.
                 </td>
               </tr>
@@ -919,139 +917,97 @@ export default function GroupStagePage() {
           </tbody>
         </Table>
       </div>
-    </V2Card>
+    </SectionCardV2>
+  )
+
+  const statusLineCopy =
+    groupsFinal || isFinalResultsMode
+      ? `Group stage is final and read-only. Lock deadline: ${groupLockLabel}.`
+      : isReadOnly
+        ? `Group stage is locked. Edits are no longer allowed. Lock deadline: ${groupLockLabel}.`
+        : `Group stage is editable until ${groupLockLabel}.`
+
+  const projectedLeaderboardCard = (
+    <LeaderboardCardCurated
+      rows={leaderboardRowsForCard}
+      snapshotLabel={scoringSnapshotLabel}
+      topCount={3}
+      title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
+      leaderboardPath={leaderboardPath}
+      previewRowCount={isDesktopRailViewport ? DESKTOP_PREVIEW_ROW_COUNT : undefined}
+      priorityUserIds={rivalUserIds}
+    />
   )
 
   return (
-    <div className="group-stage-v2-canvas w-full">
-      <div className="flex w-full flex-col gap-3 p-4">
-        <PageHeaderV2
-          variant="hero"
-          className="group-stage-v2-hero"
-          kicker="Your move"
-          title="Group Stage"
-          subtitle="Set your group ranking and best-third qualifiers. Updates publish on daily snapshots."
-          actions={(
-            <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-background/50 p-1">
-              <ButtonLink to={playCenterPath} size="sm" variant="pill" className="h-8 rounded-lg px-3 text-[12px]">
-                Play Center
-              </ButtonLink>
-              <ButtonLink to={leaderboardPath} size="sm" variant="pillSecondary" className="h-8 rounded-lg px-3 text-[12px]">
-                Leaderboard
-              </ButtonLink>
+    <PageShellV2 className="group-stage-v2-canvas p-4">
+      <PageHeaderV2
+        variant="hero"
+        className="group-stage-v2-hero"
+        kicker="Your move"
+        title="Group Stage"
+        subtitle="Set your group ranking and best-third qualifiers. Updates publish on daily snapshots."
+        metadataClassName="w-full"
+        metadata={<span className="block w-full">{statusLineCopy}</span>}
+      />
+
+      <SectionCardV2 tone="panel" density="none" className="group-stage-v2-group-nav sticky top-0 z-20 rounded-xl px-2 py-2 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <div className="shrink-0 px-2 text-[13px] font-medium text-muted-foreground">Groups</div>
+          <div className="min-w-0 flex-1 overflow-x-auto">
+            <div className="flex min-w-max items-center gap-2 pr-1">
+              {GROUP_STAGE_GROUP_CODES.map((groupId) => {
+                const status = groupJumpStatuses.get(groupId) ?? 'incomplete'
+                return (
+                  <Button
+                    key={`group-pill-${groupId}`}
+                    size="sm"
+                    variant={groupId === activeGroupId ? 'primary' : 'secondary'}
+                    className={cn(
+                      'h-9 rounded-full px-3 text-[13px]',
+                      groupId !== activeGroupId ? groupJumpStatusClass(status) : undefined
+                    )}
+                    onClick={() => navigateToGroup(groupId)}
+                  >
+                    {groupId}
+                  </Button>
+                )
+              })}
             </div>
-          )}
-        />
-
-        <V2Card tone="panel" className="group-stage-v2-meta rounded-xl px-3 py-2">
-          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="truncate whitespace-nowrap">Saved {picksLastSavedLabel}</span>
-            <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span className="truncate whitespace-nowrap">Snapshot {scoringSnapshotLabel}</span>
-          </div>
-        </V2Card>
-
-        <StatusBar
-          groupsDone={completion.groupsDone}
-          groupsTotal={groupIds.length}
-          bestThirdDone={completion.bestThirdDone}
-          bestThirdTotal={BEST_THIRD_SLOTS}
-          closesLabel={formatUtcAndLocalDeadline(groupLockTime?.toISOString())}
-          stateLabel={groupsFinal ? 'Final' : 'Pending'}
-        />
-
-        <V2Card tone="panel" className="group-stage-v2-group-nav sticky top-0 z-20 rounded-xl px-2 py-2 backdrop-blur-sm">
-          <div className="flex items-center gap-2">
-            <div className="shrink-0 px-2 text-[11px] uppercase tracking-wide text-muted-foreground">Groups</div>
-            <div className="min-w-0 flex-1 overflow-x-auto">
-              <div className="flex min-w-max items-center gap-1.5 pr-1">
-                {GROUP_STAGE_GROUP_CODES.map((groupId) => {
-                  const status = groupJumpStatuses.get(groupId) ?? 'incomplete'
-                  return (
-                    <Button
-                      key={`group-pill-${groupId}`}
-                      size="sm"
-                      variant={groupId === activeGroupId ? 'primary' : 'secondary'}
-                      className={cn(
-                        'h-8 rounded-full px-3 text-[12px]',
-                        groupId !== activeGroupId ? groupJumpStatusClass(status) : undefined
-                      )}
-                      onClick={() => navigateToGroup(groupId)}
-                    >
-                      {groupId}
-                    </Button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {showExportMenu ? (
-              <ExportMenuV2
-                scopeLabel="Group rankings + best-third selections (you only)"
-                snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
-                lockMessage="Post-lock exports only. CSV format."
-                onDownloadCsv={handleDownloadGroupStageCsv}
-              />
-            ) : null}
-          </div>
-        </V2Card>
-
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="space-y-2.5">
-              {groupPicksAlert}
-              {groupPicksTable}
-            </div>
-            {bestThirdPanel}
-            {!isDesktopRailViewport ? standingsPanel : null}
           </div>
 
-          {isDesktopRailViewport ? (
-            <RightRailSticky>
-              <div className="right-rail flex max-w-full flex-col gap-3">
-                {standingsPanel}
-                <LeaderboardCardCurated
-                  rows={leaderboardRowsForCard}
-                  snapshotLabel={scoringSnapshotLabel}
-                  topCount={3}
-                  title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
-                  leaderboardPath={leaderboardPath}
-                />
-              </div>
-            </RightRailSticky>
+          {showExportMenu ? (
+            <ExportMenuV2
+              scopeLabel="Group rankings + best-third selections (you only)"
+              snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
+              lockMessage="Post-lock exports only. CSV format."
+              onDownloadCsv={handleDownloadGroupStageCsv}
+            />
           ) : null}
         </div>
+      </SectionCardV2>
 
-        {!isDesktopRailViewport ? (
-          <>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="league-peek-fab fixed bottom-[calc(var(--bottom-nav-height)+0.75rem)] right-4 z-40 h-10 rounded-full px-4 text-[12px] lg:hidden"
-              onClick={() => setLeaguePeekOpen(true)}
-            >
-              League Peek
-            </Button>
-            <Sheet open={leaguePeekOpen} onOpenChange={setLeaguePeekOpen}>
-              <SheetContent side="bottom" className="league-peek-sheet-content max-h-[80dvh] rounded-t-2xl p-0">
-                <SheetHeader>
-                  <SheetTitle>League Peek</SheetTitle>
-                  <SheetDescription>Snapshot leaderboard summary.</SheetDescription>
-                </SheetHeader>
-                <div className="p-3">
-                  <LeaderboardCardCurated
-                    rows={leaderboardRowsForCard}
-                    snapshotLabel={scoringSnapshotLabel}
-                    topCount={3}
-                    title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
-                    leaderboardPath={leaderboardPath}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </>
-        ) : null}
-      </div>
-    </div>
+      {isDesktopRailViewport ? (
+        <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
+          <div className="min-w-0 space-y-2.5">
+            {groupPicksAlert}
+            {groupPicksTable}
+          </div>
+          <div className="min-w-0">{standingsPanel}</div>
+          <div className="min-w-0">{bestThirdPanel}</div>
+          <div className="min-w-0">{projectedLeaderboardCard}</div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="space-y-2.5">
+            {groupPicksAlert}
+            {groupPicksTable}
+          </div>
+          {bestThirdPanel}
+          {standingsPanel}
+          {projectedLeaderboardCard}
+        </div>
+      )}
+    </PageShellV2>
   )
 }

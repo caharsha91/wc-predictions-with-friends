@@ -7,7 +7,6 @@ import { findPick, isPickComplete } from '../../lib/picks'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import type { Match, Team } from '../../types/matches'
 import { Alert } from '../components/ui/Alert'
-import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import {
@@ -17,9 +16,12 @@ import {
   UsersIcon
 } from '../components/Icons'
 import LeaderboardPodium, { type LeaderboardPodiumRow } from '../components/v2/LeaderboardPodium'
+import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import PageShellV2 from '../components/v2/PageShellV2'
 import ProfileAvatar from '../components/v2/ProfileAvatar'
+import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
-import V2Card from '../components/v2/V2Card'
+import StatusLineV2 from '../components/v2/StatusLineV2'
 import { useAuthState } from '../hooks/useAuthState'
 import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
 import { useCurrentUser } from '../hooks/useCurrentUser'
@@ -42,7 +44,7 @@ import {
 import { cn } from '../lib/utils'
 
 type EntryTileKey = 'group-stage' | 'match-picks' | 'knockout-bracket'
-type PillTone = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'secondary' | 'locked'
+type TileStatusTone = 'neutral' | 'success' | 'warning' | 'info' | 'locked'
 
 type EntryTile = {
   key: EntryTileKey
@@ -51,9 +53,9 @@ type EntryTile = {
   icon: (props: { size?: number }) => JSX.Element
 }
 
-type TileProgressPill = {
+type TileStatusLine = {
   label: string
-  tone: PillTone
+  tone: TileStatusTone
 }
 
 type SnapshotRow = {
@@ -395,6 +397,18 @@ function formatLocalDateTime(input: Date | string): string {
   }).format(date)
 }
 
+function formatHeaderTime(iso?: string | null): string {
+  if (!iso) return '—'
+  const timestamp = new Date(iso).getTime()
+  if (!Number.isFinite(timestamp)) return '—'
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(new Date(timestamp))
+}
+
 function isResolvedTeamCode(code?: string): boolean {
   const normalized = (code ?? '').trim().toUpperCase()
   return /^[A-Z]{3}$/.test(normalized)
@@ -416,23 +430,6 @@ function resolveSnapshotRow(
     points: typeof match?.entry.totalPoints === 'number' ? match.entry.totalPoints : null,
     isViewer
   }
-}
-
-function TileProgressPills({ pills }: { pills: TileProgressPill[] }) {
-  return (
-    <div className="landing-v2-card-pills">
-      {pills.map((pill) => (
-        <Badge
-          key={pill.label}
-          tone={pill.tone}
-          className="landing-v2-progress-pill"
-          data-tone={pill.tone}
-        >
-          {pill.label}
-        </Badge>
-      ))}
-    </div>
-  )
 }
 
 export default function LandingPage() {
@@ -529,6 +526,8 @@ export default function LandingPage() {
 
   const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
   const snapshotTimestamp = snapshotReady?.snapshotTimestamp ?? null
+  const picksLastSavedLabel =
+    groupStage.loadState.status === 'ready' ? formatHeaderTime(groupStage.data.updatedAt) : '—'
 
   const viewerName = currentUser?.name || authState.user?.displayName || authState.user?.email || 'You'
   const viewerPhotoURL = authState.user?.photoURL ?? null
@@ -742,72 +741,56 @@ export default function LandingPage() {
     [demoScenario, groupClosed, groupCompleteFromMatches, knockoutDrawReady, knockoutStarted, mode]
   )
 
-  const tilePillsByKey = useMemo<Record<EntryTileKey, TileProgressPill[]>>(() => {
+  const tileStatusByKey = useMemo<Record<EntryTileKey, TileStatusLine>>(() => {
     const groupLoading = groupStage.loadState.status === 'loading'
     const knockoutLoading = knockoutData.loadState.status === 'loading'
     const picksLoading = picksState.state.status === 'loading'
 
-    const groupPills: TileProgressPill[] = groupLoading
-      ? [{ label: 'Updating', tone: 'secondary' }]
-      : [
-          {
-            label: `Groups ${groupCompletion.groupsDone}/${groupCompletion.groupsTotal}`,
-            tone: groupCompletion.groupsDone === groupCompletion.groupsTotal && groupCompletion.groupsTotal > 0 ? 'success' : 'warning'
-          },
-          {
-            label: `Best thirds ${groupCompletion.bestThirdDone}/8`,
-            tone: groupCompletion.bestThirdDone === 8 ? 'success' : 'warning'
-          },
-          {
-            label: `Pending ${groupCompletion.pending}`,
+    const groupStatus: TileStatusLine = groupLoading
+      ? { label: 'Updating group progress.', tone: 'neutral' }
+      : groupClosed
+        ? {
+            label: `${groupCompletion.groupsDone}/${groupCompletion.groupsTotal} groups set • ${groupCompletion.bestThirdDone}/8 best-thirds selected.`,
+            tone: 'locked'
+          }
+        : {
+            label: `${groupCompletion.pending} groups left before lock • ${groupCompletion.bestThirdDone}/8 best-thirds selected.`,
             tone: groupCompletion.pending === 0 ? 'success' : 'warning'
           }
-        ]
 
-    const matchPills: TileProgressPill[] = picksLoading
-      ? [{ label: 'Updating', tone: 'secondary' }]
+    const matchStatus: TileStatusLine = picksLoading
+      ? { label: 'Updating match pick progress.', tone: 'neutral' }
       : matchWindow48h.total > 0
-        ? [
-            { label: `Next 48h ${matchWindow48h.total}`, tone: 'info' },
-            {
-              label: `Picked ${matchWindow48h.picked}/${matchWindow48h.total}`,
-              tone: matchWindow48h.pending === 0 ? 'success' : 'info'
-            }
-          ]
+        ? {
+            label: `${matchWindow48h.picked}/${matchWindow48h.total} picks set in the next 48 hours.`,
+            tone: matchWindow48h.pending === 0 ? 'success' : 'info'
+          }
         : nextMatchdayWindow
-          ? [
-              { label: `Next matchday ${nextMatchdayWindow.dateLabel}`, tone: 'info' },
-              {
-                label: `Picked ${nextMatchdayWindow.picked}/${nextMatchdayWindow.total}`,
-                tone: nextMatchdayWindow.pending === 0 ? 'success' : 'info'
-              }
-            ]
-        : [
-            { label: 'All locked', tone: 'secondary' },
-            { label: 'Picked 0/0', tone: 'secondary' }
-          ]
-
-    const knockoutPills: TileProgressPill[] = knockoutLoading
-      ? [{ label: 'Updating', tone: 'secondary' }]
-      : knockoutActivation.active
-        ? [
-            {
-              label: `Picked ${knockoutData.completeMatches}/${knockoutData.totalMatches || 0}`,
-              tone: knockoutPendingActions === 0 ? 'success' : 'info'
-            },
-            {
-              label: 'Active',
-              tone: 'info'
+          ? {
+              label: `${nextMatchdayWindow.picked}/${nextMatchdayWindow.total} picks set for ${nextMatchdayWindow.dateLabel}.`,
+              tone: nextMatchdayWindow.pending === 0 ? 'success' : 'info'
             }
-          ]
-        : [{ label: 'Inactive', tone: 'secondary' }]
+        : { label: 'No open match picks right now.', tone: 'locked' }
+
+    const knockoutStatus: TileStatusLine = knockoutLoading
+      ? { label: 'Updating knockout availability.', tone: 'neutral' }
+      : knockoutActivation.active
+        ? {
+            label: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set.`,
+            tone: knockoutPendingActions === 0 ? 'success' : 'info'
+          }
+        : {
+            label: 'Opens after group outcomes lock and matchups are confirmed.',
+            tone: 'locked'
+          }
 
     return {
-      'group-stage': groupPills,
-      'match-picks': matchPills,
-      'knockout-bracket': knockoutPills
+      'group-stage': groupStatus,
+      'match-picks': matchStatus,
+      'knockout-bracket': knockoutStatus
     }
   }, [
+    groupClosed,
     groupCompletion.bestThirdDone,
     groupCompletion.groupsDone,
     groupCompletion.groupsTotal,
@@ -1009,12 +992,12 @@ export default function LandingPage() {
   const rivalsBoard = (
     <div className="space-y-3">
       <div className="landing-v2-rivals-header-row flex flex-wrap items-center justify-between gap-2">
-        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-strong)]">Rivals</div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-strong)]">Rivals</div>
+        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
           <span>{rivalUserIds.length}/3 selected</span>
           {profileSaving ? <span>Saving...</span> : null}
           {rivalUserIds.length > 0 ? (
-            <Button variant="ghost" size="sm" className="h-7 rounded-md px-2 text-xs" onClick={clearRivals}>
+            <Button variant="ghost" size="sm" className="h-8 rounded-md px-2 text-[12px]" onClick={clearRivals}>
               Clear all
             </Button>
           ) : null}
@@ -1023,7 +1006,7 @@ export default function LandingPage() {
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="landing-v2-rivals-pane space-y-2" data-pane="selected">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your lineup</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your lineup</div>
           <div className="space-y-2">
             {rivalsListRows.map((row, index) => {
               const selectedRivalId = row.selectedIndex !== null ? rivalUserIds[row.selectedIndex] : null
@@ -1056,37 +1039,32 @@ export default function LandingPage() {
                 >
                   <ProfileAvatar name={row.name} photoURL={row.photoURL} className="h-8 w-8" />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-[color:var(--v2-text-strong)]">{row.name}</div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {row.kind === 'viewer'
-                        ? 'You'
-                        : row.kind === 'selected' && row.selectedIndex !== null
-                          ? `Rival ${row.selectedIndex + 1}`
-                          : `Snapshot fill${row.slotNumber ? ` • R${row.slotNumber}` : ''}`}
+                    <div className="truncate text-[15px] font-semibold leading-tight text-[color:var(--v2-text-strong)]">
+                      {row.name}
                     </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <Badge tone={row.rank && row.rank <= 3 ? 'info' : 'secondary'} className="landing-v2-progress-pill !h-5 !px-2 !text-[9px]">
-                      {row.rank ? `#${row.rank}` : '—'}
-                    </Badge>
-                    <Badge tone="secondary" className="landing-v2-progress-pill !h-5 !px-2 !text-[9px]">
-                      {row.points ?? '—'} pts
-                    </Badge>
-                    {row.kind === 'fallback' ? (
-                      <Badge tone="secondary" className="landing-v2-progress-pill !h-5 !px-2 !text-[9px]">
-                        Fill
-                      </Badge>
-                    ) : null}
+                    <div className="text-[12px] text-muted-foreground">
+                      <span>
+                        {row.kind === 'viewer'
+                          ? 'You'
+                          : row.kind === 'selected' && row.selectedIndex !== null
+                            ? `Rival ${row.selectedIndex + 1}`
+                            : `Snapshot fill${row.slotNumber ? ` • R${row.slotNumber}` : ''}`}
+                      </span>
+                      <span className="mx-1.5">·</span>
+                      <span>{row.rank ? `#${row.rank}` : 'Unranked'}</span>
+                      <span className="mx-1.5">·</span>
+                      <span>{row.points ?? '—'} pts</span>
+                    </div>
                   </div>
                   {row.kind === 'selected' && row.selectedIndex !== null && selectedRivalId ? (
                     <div className="flex items-center gap-1">
-                      <span className="landing-v2-rival-drag-handle text-[10px] text-muted-foreground" aria-hidden="true">
+                      <span className="landing-v2-rival-drag-handle text-[11px] text-muted-foreground" aria-hidden="true">
                         ::
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 rounded px-1.5 text-[10px]"
+                        className="h-8 rounded px-2 text-[12px]"
                         disabled={profileSaving}
                         onClick={() => removeRival(selectedRivalId)}
                       >
@@ -1102,31 +1080,31 @@ export default function LandingPage() {
 
         <div className="landing-v2-rivals-pane space-y-2" data-pane="suggested">
           <div className="space-y-2">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Find players</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Find players</div>
             <Input
               ref={rivalSearchInputRef}
               value={rivalQuery}
               onChange={(event) => setRivalQuery(event.target.value)}
               placeholder="Search players"
-              className="h-8"
+              className="h-9"
             />
           </div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Suggestions</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Suggestions</div>
           {rivalsState.status === 'loading' ? (
             <div className="space-y-2">
-              <div className="h-8 animate-pulse rounded-md border border-border/70 bg-muted/35" />
-              <div className="h-8 animate-pulse rounded-md border border-border/70 bg-muted/35" />
+              <div className="h-9 animate-pulse rounded-md border border-border/70 bg-muted/35" />
+              <div className="h-9 animate-pulse rounded-md border border-border/70 bg-muted/35" />
             </div>
           ) : null}
 
           {rivalsState.status === 'error' ? (
             <Alert tone="danger" title="Could not load players right now">
               <div className="mt-2 flex items-center justify-between gap-3">
-                <span className="text-xs text-muted-foreground">{rivalsState.message}</span>
+                <span className="text-[13px] text-muted-foreground">{rivalsState.message}</span>
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="h-6 rounded px-1.5 text-[10px]"
+                  className="h-8 rounded px-2 text-[12px]"
                   onClick={() => setRivalsReloadCount((current) => current + 1)}
                 >
                   Retry
@@ -1136,13 +1114,13 @@ export default function LandingPage() {
           ) : null}
 
           {rivalsState.status === 'ready' && rivalsState.entries.length === 0 ? (
-            <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-xs text-muted-foreground">
+            <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-[13px] text-muted-foreground">
               No players are available yet.
             </div>
           ) : null}
 
           {rivalsState.status === 'ready' && rivalsState.entries.length > 0 && filteredRivalSuggestions.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-xs text-muted-foreground">
+              <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-[13px] text-muted-foreground">
                 No players match that search.
               </div>
             ) : null}
@@ -1159,12 +1137,12 @@ export default function LandingPage() {
                         data-kind="suggestion"
                       >
                         <ProfileAvatar name={entry.displayName} photoURL={entry.photoURL ?? null} className="h-7 w-7" />
-                        <div className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{entry.displayName}</div>
+                        <div className="min-w-0 flex-1 truncate text-[14px] font-medium text-foreground">{entry.displayName}</div>
                         <div className="group/add relative">
                           <Button
                             variant="secondary"
                             size="sm"
-                            className="h-6 rounded px-1.5 text-[10px]"
+                            className="h-8 rounded px-2 text-[12px]"
                             disabled={capReached || profileSaving}
                             onClick={() => addRival(entry.id)}
                             aria-describedby={capReached ? `rival-cap-tip-${entry.id}` : undefined}
@@ -1193,67 +1171,77 @@ export default function LandingPage() {
   )
 
   return (
-    <div className="landing-v2-canvas space-y-4 md:space-y-5">
-      <V2Card tone="hero" className="landing-v2-hero p-4 md:p-5">
-        <div className="landing-v2-hero-grid flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-3">
-            <div className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--v2-text-muted)]">Your move</div>
-            <h1 className="text-[length:var(--v2-h1-size)] font-semibold leading-[var(--line-height-tight)] text-[color:var(--v2-text-strong)]">
-              Play Center
-            </h1>
-            <p className="text-sm text-[color:var(--v2-text-muted)]">Plan your next picks and keep your rivals in view.</p>
-            <div className="landing-v2-hero-cta-cluster space-y-2">
-              <Button onClick={() => void handleContinue()} loading={profileLoading}>
-                Continue: {continuePreviewLabel}
-              </Button>
+    <PageShellV2 className="landing-v2-canvas">
+      <PageHeaderV2
+        variant="hero"
+        className="landing-v2-hero"
+        kicker="Your move"
+        title="Play Center"
+        subtitle="Plan your next picks and keep your rivals in view."
+        actions={(
+          <div className="flex flex-col items-end gap-2">
+            <div className="landing-v2-current-time text-right text-xl font-semibold text-[color:var(--v2-text-strong)]">
+              {currentTimeLabel}
             </div>
+            <Button onClick={() => void handleContinue()} loading={profileLoading}>
+              Continue: {continuePreviewLabel}
+            </Button>
           </div>
-          <div className="landing-v2-current-time text-right text-xl font-semibold text-[color:var(--v2-text-strong)]">
-            {currentTimeLabel}
-          </div>
-        </div>
-      </V2Card>
+        )}
+        metadata={(
+          <>
+            <span className="truncate whitespace-nowrap">Saved {picksLastSavedLabel}</span>
+            <span className="h-3 w-px bg-border" aria-hidden="true" />
+            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
+          </>
+        )}
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ENTRY_TILES.map((tile) => {
           const Icon = tile.icon
-          const pills = tilePillsByKey[tile.key]
+          const status = tileStatusByKey[tile.key]
           return (
-            <V2Card
+            <SectionCardV2
               key={tile.key}
               tone="tile"
+              density="none"
               className="landing-v2-card group h-full p-4 transition-all duration-[var(--motion-duration-fast)] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_var(--v2-glow-medium),var(--shadow1)]"
             >
-              <div className="relative z-[1] flex h-full items-stretch gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="text-base font-semibold text-[color:var(--v2-text-strong)]">{tile.label}</div>
-                  <p className="mt-1 text-sm text-[color:var(--v2-text-muted)]">{tile.description}</p>
-                  <TileProgressPills pills={pills} />
-                  <div className="mt-3 pt-1">
-                    <Button variant="secondary" size="sm" onClick={() => openRoute(routeForTile(tile.key))}>
-                      Open
-                    </Button>
+              <div className="relative z-[1] flex h-full flex-col gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[18px] font-semibold leading-tight text-[color:var(--v2-text-strong)]">{tile.label}</div>
+                    <p className="mt-1 text-[14px] text-[color:var(--v2-text-muted)]">{tile.description}</p>
+                  </div>
+                  <div className="landing-v2-card-icon-rail flex w-[74px] shrink-0 items-center justify-center">
+                    <Icon size={42} />
                   </div>
                 </div>
-                <div className="landing-v2-card-icon-rail flex w-[96px] shrink-0 items-center justify-center">
-                  <Icon size={50} />
+                <StatusLineV2 tone={status.tone} className="min-h-10 bg-background/45">
+                  {status.label}
+                </StatusLineV2>
+                <div className="pt-1">
+                  <Button variant="secondary" size="sm" className="h-9 px-3 text-[13px]" onClick={() => openRoute(routeForTile(tile.key))}>
+                    Open
+                  </Button>
                 </div>
               </div>
-            </V2Card>
+            </SectionCardV2>
           )
         })}
       </div>
 
-      <V2Card tone="panel" className="landing-v2-snapshot p-4 md:p-5">
+      <SectionCardV2 tone="panel" density="none" className="landing-v2-snapshot p-4 md:p-5">
         <div className="relative z-[1] space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="v2-heading-h2 text-foreground">Leaderboard</h2>
             </div>
-            <div className="flex items-center gap-2">
-              <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot: " className="text-[11px] text-muted-foreground" />
-              <div className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                <UsersIcon size={12} />
+            <div className="flex items-center gap-3">
+              <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
+              <div className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
+                <UsersIcon size={13} />
                 <span>{rivalUserIds.length}/3 selected</span>
               </div>
             </div>
@@ -1264,10 +1252,10 @@ export default function LandingPage() {
               <div className="h-56 animate-pulse rounded-xl border border-border/70 bg-muted/35" />
               <div className="space-y-2 rounded-xl border border-border/70 bg-background/20 p-3">
                 <div className="h-5 w-24 animate-pulse rounded-md bg-muted/35" />
-                <div className="h-10 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
-                <div className="h-10 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
-                <div className="h-10 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
-                <div className="h-10 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
+                <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
+                <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
+                <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
+                <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
               </div>
             </div>
           ) : null}
@@ -1279,7 +1267,7 @@ export default function LandingPage() {
           ) : null}
 
           {snapshotReady && snapshotReady.leaderboardRows.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border/70 bg-muted/35 px-3 py-3 text-sm text-muted-foreground">
+            <div className="rounded-xl border border-dashed border-border/70 bg-muted/35 px-3 py-3 text-[14px] text-muted-foreground">
               No standings are available in this snapshot yet.
             </div>
           ) : null}
@@ -1297,10 +1285,10 @@ export default function LandingPage() {
             </div>
           ) : null}
         </div>
-      </V2Card>
+      </SectionCardV2>
 
-      <V2Card tone="subtle" className="landing-v2-rules p-4 md:p-5">
-        <div className="space-y-2 text-sm text-muted-foreground">
+      <SectionCardV2 tone="subtle" className="landing-v2-rules">
+        <div className="space-y-2 text-[15px] text-muted-foreground">
           <h2 className="v2-heading-h2 text-foreground">Rules at a glance</h2>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
@@ -1322,13 +1310,8 @@ export default function LandingPage() {
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
             <span>Leaderboard reflects published snapshots.</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Snapshot:</span>
-            <SnapshotStamp timestamp={snapshotTimestamp} className="text-sm" />
-          </div>
         </div>
-      </V2Card>
-    </div>
+      </SectionCardV2>
+    </PageShellV2>
   )
 }

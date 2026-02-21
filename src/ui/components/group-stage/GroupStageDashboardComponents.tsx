@@ -7,6 +7,7 @@ import { SNAPSHOT_UNAVAILABLE_LABEL } from '../../lib/snapshotStamp'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/Badge'
 import { Button, ButtonLink } from '../ui/Button'
+import SectionCardV2 from '../v2/SectionCardV2'
 import V2Card from '../v2/V2Card'
 
 export type GroupStageDenseRow = {
@@ -154,10 +155,10 @@ function resolveRowDelta({
 }
 
 function markerMeta(result: GroupPlacementStatus): { icon: string; code: string; tooltip: string } {
-  if (result === 'correct') return { icon: '✓', code: 'OK', tooltip: 'Correct' }
-  if (result === 'incorrect') return { icon: '×', code: 'NO', tooltip: 'Incorrect' }
-  if (result === 'locked') return { icon: '🔒', code: 'LCK', tooltip: 'Locked' }
-  return { icon: '⏳', code: 'PEN', tooltip: 'Pending' }
+  if (result === 'correct') return { icon: '✓', code: 'Correct', tooltip: 'Correct' }
+  if (result === 'incorrect') return { icon: '×', code: 'Incorrect', tooltip: 'Incorrect' }
+  if (result === 'locked') return { icon: '🔒', code: 'Locked', tooltip: 'Locked' }
+  return { icon: '⏳', code: 'Pending', tooltip: 'Pending' }
 }
 
 function placementTone(result: GroupPlacementStatus): string {
@@ -169,16 +170,13 @@ function placementTone(result: GroupPlacementStatus): string {
 
 type GroupPicksDenseTableProps = {
   rows: GroupStageDenseRow[]
-  showPoints: boolean
+  groupsDone: number
+  groupsTotal: number
   isReadOnly: boolean
-  groupClosedByTime: boolean
   groupQualifierPoints: number
-  tableStatusLabel: string
-  pointsContextLabel: string
   saveStatus: 'idle' | 'saving' | 'saved' | 'error' | 'locked'
   savingRowGroupId: string | null
   savedRowGroupId: string | null
-  onTogglePoints: () => void
   onRankingReorder: (row: GroupStageDenseRow, ranking: string[]) => void
 }
 
@@ -202,16 +200,13 @@ function reorderRanking(ranking: string[], sourceCode: string, targetCode: strin
 
 export function GroupPicksDenseTable({
   rows,
-  showPoints,
+  groupsDone,
+  groupsTotal,
   isReadOnly,
-  groupClosedByTime,
   groupQualifierPoints,
-  tableStatusLabel,
-  pointsContextLabel,
   saveStatus,
   savingRowGroupId,
   savedRowGroupId,
-  onTogglePoints,
   onRankingReorder
 }: GroupPicksDenseTableProps) {
   const [dragging, setDragging] = useState<{ groupId: string; code: string } | null>(null)
@@ -255,43 +250,11 @@ export function GroupPicksDenseTable({
   }
 
   return (
-    <V2Card tone="panel" className="group-stage-v2-table rounded-xl overflow-hidden">
+    <SectionCardV2 tone="panel" density="none" className="group-stage-v2-table rounded-xl overflow-hidden">
       <div className="flex flex-col">
-        <div className="flex h-10 flex-wrap items-center gap-2 border-b border-border/60 px-3">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Group Picks</div>
-          <div className="ml-auto flex items-center gap-2">
-            <Button
-              size="sm"
-              variant={showPoints ? 'primary' : 'secondary'}
-              className="h-8 rounded-lg px-2 text-[12px]"
-              onClick={onTogglePoints}
-            >
-              Points {showPoints ? 'On' : 'Off'}
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex h-9 items-center gap-3 border-b border-border/50 px-3 text-[11px] uppercase tracking-wide text-muted-foreground">
-          <div className="flex min-w-0 items-center gap-2 truncate">
-            <span className="truncate">Table {tableStatusLabel}</span>
-            <Badge
-              tone={tableStatusLabel === 'Final' ? 'success' : 'warning'}
-              title={tableStatusLabel === 'Final' ? 'Finalized scoring.' : 'Points are potential until groups finalize.'}
-              className="h-5 px-1.5 text-[9px] normal-case tracking-normal"
-            >
-              {tableStatusLabel === 'Final' ? 'FINAL' : 'PENDING'}
-            </Badge>
-            {isReadOnly ? <span className="truncate">{groupClosedByTime ? 'Locked' : 'Final recap'}</span> : null}
-          </div>
-
-          {showPoints ? (
-            <div className="ml-auto flex min-w-0 items-center gap-2 overflow-hidden text-[10px] leading-none">
-              <span className="truncate">{pointsContextLabel}</span>
-              <span className="truncate whitespace-nowrap" title="Correct / Incorrect / Pending / Locked">
-                ✓ OK × NO ⏳ PEN 🔒 LCK
-              </span>
-            </div>
-          ) : null}
+        <div className="flex min-h-11 flex-wrap items-center gap-2 border-b border-border/60 px-3">
+          <div className="text-[13px] font-semibold tracking-[0.02em] text-foreground">Group picks</div>
+          <div className="text-[13px] text-muted-foreground">{groupsDone}/{groupsTotal} groups complete</div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto">
@@ -316,28 +279,23 @@ export function GroupPicksDenseTable({
                     saveStatus === 'error' ? 'ring-1 ring-destructive/40' : undefined
                   )}
                 >
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <div className="mb-3 flex flex-wrap items-center gap-2 text-[13px]">
                     <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
                       {row.groupId}
                     </span>
-                    <Badge
-                      tone={row.rankingComplete ? 'success' : 'warning'}
-                      className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal"
-                    >
+                    <span className={cn('font-medium', row.rankingComplete ? 'text-foreground' : 'text-muted-foreground')}>
                       {row.rankingComplete ? 'Complete' : 'Incomplete'}
-                    </Badge>
-                    {showPoints ? (
-                      <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border bg-background px-1.5 text-[11px] font-medium text-muted-foreground">
-                        +{rowDelta}
-                      </span>
-                    ) : null}
+                    </span>
+                    <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border bg-background px-2 text-[12px] font-medium text-muted-foreground">
+                      Potential +{rowDelta}
+                    </span>
                     {saveStatus === 'saving' && savingRowGroupId === row.groupId ? (
-                      <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
+                      <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[12px] text-muted-foreground">
                         Saving...
                       </span>
                     ) : null}
                     {saveStatus !== 'saving' && savedRowGroupId === row.groupId ? (
-                      <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
+                      <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[12px] text-muted-foreground">
                         Saved
                       </span>
                     ) : null}
@@ -360,7 +318,7 @@ export function GroupPicksDenseTable({
                           key={`${row.groupId}-${teamCode}`}
                           draggable={!isDragDisabled}
                           className={cn(
-                            'flex items-center justify-between gap-2 rounded-lg border border-border bg-background/70 px-2.5 py-2 transition-colors',
+                            'flex min-h-12 items-center justify-between gap-2 rounded-lg border border-border bg-background/70 px-2.5 py-2.5 transition-colors',
                             !isDragDisabled ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
                             isDragging ? 'opacity-70 ring-1 ring-ring/40' : undefined,
                             isDragOver ? 'border-ring/70 bg-background' : undefined
@@ -371,19 +329,16 @@ export function GroupPicksDenseTable({
                           onDragEnd={clearDragState}
                         >
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-border text-[10px] font-semibold text-muted-foreground">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-border text-[11px] font-semibold text-muted-foreground">
                               {index + 1}
                             </span>
-                            <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-md border border-border px-1.5 text-[10px] font-semibold tracking-wide text-foreground">
+                            <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-md border border-border px-1.5 text-[11px] font-semibold tracking-wide text-foreground">
                               {team?.code ?? teamCode}
                             </span>
-                            <div className="min-w-0 truncate text-[12px] text-foreground">{team?.name ?? teamCode}</div>
-                            <Badge
-                              tone={index < 2 ? 'success' : index === 2 ? 'info' : 'secondary'}
-                              className="h-5 rounded-full px-2 text-[9px] normal-case tracking-normal"
-                            >
+                            <div className="min-w-0 truncate text-[14px] leading-tight text-foreground">{team?.name ?? teamCode}</div>
+                            <span className="truncate text-[12px] text-muted-foreground">
                               {slotContextLabel(index)}
-                            </Badge>
+                            </span>
                           </div>
 
                           <div className="flex shrink-0 items-center gap-2">
@@ -391,7 +346,7 @@ export function GroupPicksDenseTable({
                               <span
                                 title={marker.tooltip}
                                 className={cn(
-                                  'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none',
+                                  'inline-flex items-center gap-1 whitespace-nowrap text-[12px] leading-none',
                                   placementTone(index === 0 ? row.firstResult : row.secondResult)
                                 )}
                               >
@@ -399,8 +354,8 @@ export function GroupPicksDenseTable({
                                 <span>{marker.code}</span>
                               </span>
                             ) : null}
-                            <span className="text-[10px] text-muted-foreground">{isDragDisabled ? 'Locked' : 'Drag'}</span>
-                            <span className="font-mono text-[12px] leading-none text-muted-foreground" aria-hidden="true">
+                            <span className="text-[12px] text-muted-foreground">{isDragDisabled ? 'Locked' : 'Drag to reorder'}</span>
+                            <span className="font-mono text-[13px] leading-none text-muted-foreground" aria-hidden="true">
                               ::
                             </span>
                           </div>
@@ -412,13 +367,11 @@ export function GroupPicksDenseTable({
               )
             })}
 
-            {rows.length === 0 ? (
-              <div className="h-10 px-1 text-[12px] text-muted-foreground">No groups available.</div>
-            ) : null}
+            {rows.length === 0 ? <div className="h-10 px-1 text-[13px] text-muted-foreground">No groups available.</div> : null}
           </div>
         </div>
       </div>
-    </V2Card>
+    </SectionCardV2>
   )
 }
 
@@ -429,7 +382,7 @@ type BestThirdPicksCompactProps = {
   meterLabel: string
   hintLabel: string
   helperText?: string | null
-  statusLabel: string
+  statusLabel?: string | null
   defaultCollapsed: boolean
   isReadOnly: boolean
   isDirty: boolean
@@ -446,11 +399,11 @@ function bestThirdSurfaceClass(status: BestThirdStatus): string {
   return 'bg-background/40'
 }
 
-function bestThirdStatusText(status: BestThirdStatus): string {
+function bestThirdStatusText(status: BestThirdStatus): string | null {
   if (status === 'qualified') return 'Correct'
   if (status === 'missed') return 'Incorrect'
   if (status === 'locked') return 'Locked'
-  return 'Pending'
+  return null
 }
 
 export function BestThirdPicksCompact({
@@ -476,22 +429,24 @@ export function BestThirdPicksCompact({
   }, [defaultCollapsed])
 
   return (
-    <V2Card tone="panel" className="group-stage-v2-best-third rounded-xl overflow-hidden">
+    <SectionCardV2 tone="panel" density="none" className="group-stage-v2-best-third rounded-xl overflow-hidden">
       <div className="flex h-10 items-center gap-2 border-b border-border/60 px-3">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{meterLabel}</div>
+          <div className="truncate text-[13px] font-semibold tracking-[0.02em] text-foreground">{meterLabel}</div>
         </div>
 
-        <Badge tone={selectedCount < totalCount ? 'warning' : 'success'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
+        <Badge tone={selectedCount < totalCount ? 'warning' : 'success'} className="h-6 rounded-full px-2 text-[12px] normal-case tracking-normal">
           {hintLabel}
         </Badge>
 
-        <Badge tone={statusLabel === 'Final' ? 'success' : statusLabel === 'Locked' ? 'locked' : 'warning'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
-          {statusLabel}
-        </Badge>
+        {statusLabel ? (
+          <Badge tone={statusLabel === 'Final' ? 'success' : statusLabel === 'Locked' ? 'locked' : 'warning'} className="h-6 rounded-full px-2 text-[12px] normal-case tracking-normal">
+            {statusLabel}
+          </Badge>
+        ) : null}
 
         {!isReadOnly && isDirty ? (
-          <Button size="sm" className="h-8 rounded-lg px-3 text-[12px]" loading={saveStatus === 'saving'} onClick={onSave}>
+          <Button size="sm" className="h-9 rounded-lg px-3 text-[13px]" loading={saveStatus === 'saving'} onClick={onSave}>
             Save
           </Button>
         ) : null}
@@ -508,13 +463,14 @@ export function BestThirdPicksCompact({
               const tileDisabled = isReadOnly || tile.disabled
               const showNotReady = tile.blockedReason === 'not-ready'
               const showCapReached = tile.blockedReason === 'cap'
+              const statusText = bestThirdStatusText(tile.status)
               return (
                 <button
                   key={`best-third-group-${tile.groupId}`}
                   type="button"
                   disabled={tileDisabled}
                   className={cn(
-                    'group-stage-v2-best-third-tile rounded-lg border px-2.5 py-2 text-left',
+                    'group-stage-v2-best-third-tile rounded-lg border px-2.5 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     bestThirdSurfaceClass(tile.status)
                   )}
                   data-selected={tile.selected ? 'true' : 'false'}
@@ -523,23 +479,13 @@ export function BestThirdPicksCompact({
                   onClick={() => onToggleGroup(tile.groupId)}
                 >
                   <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Group {tile.groupId}</span>
-                    {showNotReady ? (
-                      <Badge tone="secondary" className="h-5 rounded-full px-1.5 text-[9px] normal-case tracking-normal">
-                        Not ready
-                      </Badge>
-                    ) : showCapReached ? (
-                      <Badge tone="warning" className="h-5 rounded-full px-1.5 text-[9px] normal-case tracking-normal">
-                        8 selected
-                      </Badge>
-                    ) : tile.selected ? (
-                      <Badge tone="info" className="h-5 rounded-full px-1.5 text-[9px] normal-case tracking-normal">
-                        Selected
-                      </Badge>
-                    ) : null}
+                    <span className="text-[12px] uppercase tracking-wide text-muted-foreground">Group {tile.groupId}</span>
+                    <span className="text-[12px] text-muted-foreground">
+                      {showNotReady ? 'Not ready' : showCapReached ? 'Limit reached' : tile.selected ? 'Selected' : ''}
+                    </span>
                   </div>
 
-                  <div className="min-h-10 rounded-lg border border-border bg-background px-2 py-2 text-[12px] text-foreground">
+                  <div className="min-h-11 rounded-lg border border-border bg-background px-2 py-2 text-[13px] text-foreground">
                     {showNotReady ? (
                       <span className="text-muted-foreground">Complete ranking 1-4 first.</span>
                     ) : (
@@ -550,17 +496,17 @@ export function BestThirdPicksCompact({
                     )}
                   </div>
 
-                  <div className="mt-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">{bestThirdStatusText(tile.status)}</div>
+                  {statusText ? <div className="mt-1.5 text-[12px] text-muted-foreground">{statusText}</div> : null}
                 </button>
               )
             })}
           </div>
-          {helperText ? <div className="mt-2 text-[11px] text-[color:var(--v2-text-muted)]">{helperText}</div> : null}
+          {helperText ? <div className="mt-2 text-[13px] text-[color:var(--v2-text-muted)]">{helperText}</div> : null}
         </div>
       ) : null}
 
-      {warning ? <div className="px-3 pb-3 text-[12px]">{warning}</div> : null}
-    </V2Card>
+      {warning ? <div className="px-3 pb-3 text-[13px]">{warning}</div> : null}
+    </SectionCardV2>
   )
 }
 
@@ -578,11 +524,70 @@ type LeaderboardCardCuratedProps = {
   topCount: 3 | 5
   title: string
   leaderboardPath?: string
+  previewRowCount?: number
+  priorityUserIds?: string[]
 }
 
 function movementLabel(movement: number | undefined): string {
   if (typeof movement !== 'number' || movement === 0) return '-'
   return movement > 0 ? `up ${movement}` : `down ${Math.abs(movement)}`
+}
+
+function normalizeIdentity(value: string | null | undefined): string {
+  const normalized = value?.trim().toLowerCase()
+  return normalized ?? ''
+}
+
+function rowIdentityKeys(row: LeaderboardCardRow): string[] {
+  const keys: string[] = []
+  const idKey = normalizeIdentity(row.id)
+  if (idKey) keys.push(`id:${idKey}`)
+  const nameKey = normalizeIdentity(row.name)
+  if (nameKey) keys.push(`name:${nameKey}`)
+  return keys
+}
+
+function buildFixedPreviewRows({
+  rankedRows,
+  previewRowCount,
+  priorityUserIds
+}: {
+  rankedRows: LeaderboardCardRow[]
+  previewRowCount: number
+  priorityUserIds: string[]
+}): LeaderboardCardRow[] {
+  const selected: LeaderboardCardRow[] = []
+  const seen = new Set<string>()
+
+  const add = (row: LeaderboardCardRow | null | undefined) => {
+    if (!row) return
+    const keys = rowIdentityKeys(row)
+    if (keys.length === 0) return
+    if (keys.some((key) => seen.has(key))) return
+    keys.forEach((key) => seen.add(key))
+    selected.push(row)
+  }
+
+  rankedRows.filter((row) => row.isYou).forEach(add)
+  for (const priorityId of priorityUserIds) {
+    const key = normalizeIdentity(priorityId)
+    if (!key) continue
+    add(
+      rankedRows.find((row) => {
+        const rowId = normalizeIdentity(row.id)
+        const rowName = normalizeIdentity(row.name)
+        return rowId === key || rowName === key
+      })
+    )
+    if (selected.length >= previewRowCount) return selected.slice(0, previewRowCount)
+  }
+
+  for (const row of rankedRows) {
+    add(row)
+    if (selected.length >= previewRowCount) break
+  }
+
+  return selected.slice(0, previewRowCount)
 }
 
 function curateRows(rows: LeaderboardCardRow[], topCount: number): LeaderboardCardRow[] {
@@ -635,35 +640,51 @@ export function LeaderboardCardCurated({
   snapshotLabel,
   topCount,
   title,
-  leaderboardPath
+  leaderboardPath,
+  previewRowCount,
+  priorityUserIds = []
 }: LeaderboardCardCuratedProps) {
   const [showFull, setShowFull] = useState(false)
 
   const rankedRows = useMemo(() => [...rows].sort((a, b) => a.rank - b.rank), [rows])
+  const shouldUseFixedPreview = typeof previewRowCount === 'number' && previewRowCount > 0
   const curatedRows = useMemo(() => curateRows(rankedRows, topCount), [rankedRows, topCount])
+  const fixedPreviewRows = useMemo(() => {
+    if (!shouldUseFixedPreview || !previewRowCount) return []
+    return buildFixedPreviewRows({
+      rankedRows,
+      previewRowCount,
+      priorityUserIds
+    })
+  }, [previewRowCount, priorityUserIds, rankedRows, shouldUseFixedPreview])
   const topRows = useMemo(() => rankedRows.slice(0, topCount), [rankedRows, topCount])
   const topHasYou = topRows.some((row) => row.isYou)
   const youRow = rankedRows.find((row) => row.isYou) ?? null
   const curatedWithoutYou = useMemo(() => curatedRows.filter((row) => !row.isYou), [curatedRows])
-  const shouldPinYouInCurated = !showFull && !topHasYou && Boolean(youRow)
+  const shouldPinYouInCurated = !showFull && !shouldUseFixedPreview && !topHasYou && Boolean(youRow)
   const displayRows = showFull
     ? rankedRows
-    : shouldPinYouInCurated
+    : shouldUseFixedPreview
+      ? fixedPreviewRows
+      : shouldPinYouInCurated
       ? [...curatedWithoutYou, ...(youRow ? [youRow] : [])]
       : curatedRows
+  const previewPlaceholderCount =
+    !showFull && shouldUseFixedPreview && previewRowCount ? Math.max(0, previewRowCount - displayRows.length) : 0
+  const canShowFullToggle = shouldUseFixedPreview && previewRowCount ? rows.length > previewRowCount : rows.length > curatedRows.length
 
   return (
-    <V2Card tone="panel" className="group-stage-v2-leaderboard rounded-xl overflow-hidden">
+    <SectionCardV2 tone="panel" density="none" className="group-stage-v2-leaderboard rounded-xl overflow-hidden">
       <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
         <div className="min-w-0">
-          <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{title}</div>
-          <div className="truncate text-[10px] text-muted-foreground">
+          <div className="truncate text-[13px] font-semibold tracking-[0.02em] text-foreground">{title}</div>
+          <div className="truncate text-[12px] text-muted-foreground">
             {snapshotLabel === SNAPSHOT_UNAVAILABLE_LABEL ? snapshotLabel : `As of ${snapshotLabel}`}
           </div>
         </div>
 
-        {rows.length > curatedRows.length ? (
-          <Button size="sm" variant="ghost" className="h-7 rounded-lg px-2 text-[11px]" onClick={() => setShowFull((current) => !current)}>
+        {canShowFullToggle ? (
+          <Button size="sm" variant="ghost" className="h-8 rounded-lg px-2 text-[12px]" onClick={() => setShowFull((current) => !current)}>
             {showFull ? 'Hide full' : 'View full'}
           </Button>
         ) : null}
@@ -676,21 +697,21 @@ export function LeaderboardCardCurated({
             <div
               key={`leaderboard-row-${row.id}`}
               className={cn(
-                'flex h-10 items-center justify-between rounded-lg border border-border px-3 text-[12px] transition-colors hover:bg-background/70',
+                'flex min-h-11 items-center justify-between rounded-lg border border-border px-3 text-[13px] transition-colors hover:bg-background/70',
                 row.isYou ? 'bg-background/80 ring-1 ring-ring/50' : 'bg-background/35'
               )}
             >
               <div className="min-w-0">
                 <div className="truncate font-medium text-foreground">#{row.rank} {row.name}</div>
-                <div className="text-[10px] text-muted-foreground">
+                <div className="text-[12px] text-muted-foreground">
                   Move {movementLabel(row.movement)}
                   {row.isYou ? (
-                    <span className="ml-1 rounded-full border border-border px-1 py-0.5 text-[9px] uppercase tracking-[0.12em]">You</span>
+                    <span className="ml-1 rounded-full border border-border px-1 py-0.5 text-[10px] uppercase tracking-[0.12em]">You</span>
                   ) : null}
                 </div>
               </div>
 
-              <div className="text-right text-[11px] text-muted-foreground">
+              <div className="text-right text-[12px] text-muted-foreground">
                 <div className="tabular-nums text-foreground">{row.points} pts</div>
                 {typeof row.deltaPoints === 'number' ? (
                   <div className="tabular-nums">{row.deltaPoints >= 0 ? '+' : ''}{row.deltaPoints}</div>
@@ -699,9 +720,20 @@ export function LeaderboardCardCurated({
             </div>
           </div>
         ))}
+        {previewPlaceholderCount > 0
+          ? Array.from({ length: previewPlaceholderCount }, (_, index) => (
+              <div
+                key={`leaderboard-row-placeholder-${index}`}
+                className="flex min-h-11 items-center rounded-lg border border-dashed border-border/50 bg-background/20 px-3"
+                aria-hidden="true"
+              >
+                <div className="h-2 w-24 rounded bg-border/60" />
+              </div>
+            ))
+          : null}
 
         {rows.length === 0 ? (
-          <div className="rounded-lg border border-border bg-background/35 px-3 py-2 text-[12px] text-muted-foreground">
+          <div className="rounded-lg border border-border bg-background/35 px-3 py-2 text-[13px] text-muted-foreground">
             No leaderboard snapshot rows available.
           </div>
         ) : null}
@@ -709,11 +741,11 @@ export function LeaderboardCardCurated({
 
       {leaderboardPath ? (
         <div className="border-t border-border/60 px-3 py-2">
-          <ButtonLink to={leaderboardPath} size="sm" variant="secondary" className="h-7 rounded-lg px-2 text-[11px]">
+          <ButtonLink to={leaderboardPath} size="sm" variant="secondary" className="h-8 rounded-lg px-2 text-[12px]">
             Open leaderboard
           </ButtonLink>
         </div>
       ) : null}
-    </V2Card>
+    </SectionCardV2>
   )
 }

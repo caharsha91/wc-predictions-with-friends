@@ -21,7 +21,7 @@ export type NavItem = {
 export const MAIN_NAV: NavItem[] = [
   {
     to: '/',
-    label: 'Play',
+    label: 'Play Center',
     icon: HomeIcon,
     end: true,
     children: [
@@ -41,7 +41,7 @@ export const ADMIN_NAV: NavItem[] = [
 export const DEMO_MAIN_NAV: NavItem[] = [
   {
     to: '/demo',
-    label: 'Play',
+    label: 'Play Center',
     icon: HomeIcon,
     end: true,
     children: [
