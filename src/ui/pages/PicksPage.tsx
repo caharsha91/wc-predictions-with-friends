@@ -8,19 +8,27 @@ import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 import type { KnockoutStage, ScoringConfig } from '../../types/scoring'
 import { CORE_LIST_PAGE_SIZE } from '../constants/pagination'
+import {
+  LeaderboardCardCurated,
+  RightRailSticky,
+  type LeaderboardCardRow
+} from '../components/group-stage/GroupStageDashboardComponents'
 import PicksWizardFlow from '../components/play/PicksWizardFlow'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/Accordion'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button, ButtonLink } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
+import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
+import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
+import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 
 const EMPTY_MATCHES: Match[] = []
 const FINISHED_HISTORY_DAY_BATCH = 4
@@ -281,14 +289,18 @@ export default function PicksPage() {
   const now = useNow()
   const userId = useViewerId()
   const mode = useRouteDataMode()
+  const isDesktopRailViewport = useMediaQuery('(min-width: 1024px)')
   const picksState = usePicksData()
+  const publishedSnapshot = usePublishedSnapshot()
   const [scoringState, setScoringState] = useState<ScoringState>({ status: 'loading' })
   const [expandedSections, setExpandedSections] = useState<string[]>(['open-now'])
   const [quickEditMatchId, setQuickEditMatchId] = useState<string | null>(null)
+  const [leaguePeekOpen, setLeaguePeekOpen] = useState(false)
   const [visibleFinishedDayCount, setVisibleFinishedDayCount] = useState(FINISHED_HISTORY_DAY_BATCH)
   const dayRefs = useRef(new Map<string, HTMLDivElement>())
 
   const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
+  const leaderboardPath = `${playRoot}/league`
   const toPlayPath = (segment?: 'picks') =>
     segment ? `${playRoot}/${segment}` : playRoot
 
@@ -398,6 +410,26 @@ export default function PicksPage() {
     .filter((value): value is string => Boolean(value))
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
 
+  const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
+  const leaderboardSnapshotLabel = formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)
+  const leaderboardRowsForCard = useMemo<LeaderboardCardRow[]>(() => {
+    if (!snapshotReady) return []
+    const rows = buildLeaderboardPresentation({
+      snapshotTimestamp: snapshotReady.snapshotTimestamp,
+      groupStageComplete: snapshotReady.groupStageComplete,
+      projectedGroupStagePointsByUser: snapshotReady.projectedGroupStagePointsByUser,
+      leaderboardRows: snapshotReady.leaderboardRows
+    }).rows
+    const viewerKey = userId.trim().toLowerCase()
+    return rows.map((entry, index) => ({
+      id: entry.member.id || entry.member.name,
+      name: entry.member.name,
+      rank: index + 1,
+      points: entry.totalPoints,
+      isYou: Boolean(entry.member.id?.trim()) && String(entry.member.id).trim().toLowerCase() === viewerKey
+    }))
+  }, [snapshotReady, userId])
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!expandedSections.includes('finished')) return
@@ -406,6 +438,11 @@ export default function PicksPage() {
     window.sessionStorage.setItem(storageKey, latestResultsUpdatedUtc)
     window.dispatchEvent(new Event('wc-results-seen-updated'))
   }, [expandedSections, latestResultsUpdatedUtc, userId])
+
+  useEffect(() => {
+    if (!isDesktopRailViewport) return
+    setLeaguePeekOpen(false)
+  }, [isDesktopRailViewport])
 
   if (picksState.state.status === 'loading') {
     return (
@@ -441,208 +478,252 @@ export default function PicksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-6">
-        <PageHeroPanel
-        title="Picks Detail"
-        subtitle="Read-only pick detail with embedded results. Use Play Center for guided edits."
-        kicker="Reference"
-        meta={
-          <div className="flex items-start gap-3 text-right">
-            <ButtonLink to={toPlayPath()} size="sm" variant="primary">
-              Back to Play Center
-            </ButtonLink>
-            <div className="text-xs text-muted-foreground" data-last-updated="true">
-              <div className="uppercase tracking-[0.2em]">Last updated</div>
-              <div className="text-sm font-semibold text-foreground">
-                {formatKickoff(picksState.state.lastUpdated)}
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
+        <div className="space-y-6">
+          <PageHeroPanel
+          title="Picks Detail"
+          subtitle="Read-only pick detail with embedded results. Use Play Center for guided edits."
+          kicker="Reference"
+          meta={
+            <div className="flex items-start gap-3 text-right">
+              <ButtonLink to={toPlayPath()} size="sm" variant="primary">
+                Back to Play Center
+              </ButtonLink>
+              <div className="text-xs text-muted-foreground" data-last-updated="true">
+                <div className="uppercase tracking-[0.2em]">Last updated</div>
+                <div className="text-sm font-semibold text-foreground">
+                  {formatKickoff(picksState.state.lastUpdated)}
+                </div>
               </div>
             </div>
-          </div>
-        }
-        />
+          }
+          />
 
-        <Accordion
-          type="multiple"
-          className="space-y-3"
-          value={expandedSections}
-          onValueChange={setExpandedSections}
-        >
-        <AccordionItem value="open-now">
-          <AccordionTrigger>
-            <span className="flex flex-wrap items-center gap-2">
-              Open now
-              <Badge tone={pendingOpenMatches.length > 0 ? 'warning' : 'secondary'}>
-                {pendingOpenMatches.length}
-              </Badge>
-              <Badge tone="warning">Deadline {formatChipDateTime(nextOpenDeadlineUtc)}</Badge>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="mb-3 text-xs text-muted-foreground">Unsubmitted and unlocked picks.</div>
-            <ReadOnlyMatchList
-              matches={pendingOpenMatches}
-              picks={picksState.picks}
-              userId={userId}
-              now={now}
-              emptyMessage="No urgent picks right now."
-              showInlineEdit
-              onEditMatch={setQuickEditMatchId}
-            />
-          </AccordionContent>
-        </AccordionItem>
+          <Accordion
+            type="multiple"
+            className="space-y-3"
+            value={expandedSections}
+            onValueChange={setExpandedSections}
+          >
+          <AccordionItem value="open-now">
+            <AccordionTrigger>
+              <span className="flex flex-wrap items-center gap-2">
+                Open now
+                <Badge tone={pendingOpenMatches.length > 0 ? 'warning' : 'secondary'}>
+                  {pendingOpenMatches.length}
+                </Badge>
+                <Badge tone="warning">Deadline {formatChipDateTime(nextOpenDeadlineUtc)}</Badge>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="mb-3 text-xs text-muted-foreground">Unsubmitted and unlocked picks.</div>
+              <ReadOnlyMatchList
+                matches={pendingOpenMatches}
+                picks={picksState.picks}
+                userId={userId}
+                now={now}
+                emptyMessage="No urgent picks right now."
+                showInlineEdit
+                onEditMatch={setQuickEditMatchId}
+              />
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="completed">
-          <AccordionTrigger>
-            <span className="flex flex-wrap items-center gap-2">
-              Completed (open)
-              <Badge tone="success">{completedOpenMatches.length}</Badge>
-              <Badge tone="secondary">Last submitted {formatChipDateTime(latestCompletedOpenSubmissionUtc)}</Badge>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent>
-            <ReadOnlyMatchList
-              matches={completedOpenMatches}
-              picks={picksState.picks}
-              userId={userId}
-              now={now}
-              emptyMessage="No completed open picks yet."
-              showInlineEdit
-              onEditMatch={setQuickEditMatchId}
-            />
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="completed">
+            <AccordionTrigger>
+              <span className="flex flex-wrap items-center gap-2">
+                Completed (open)
+                <Badge tone="success">{completedOpenMatches.length}</Badge>
+                <Badge tone="secondary">Last submitted {formatChipDateTime(latestCompletedOpenSubmissionUtc)}</Badge>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <ReadOnlyMatchList
+                matches={completedOpenMatches}
+                picks={picksState.picks}
+                userId={userId}
+                now={now}
+                emptyMessage="No completed open picks yet."
+                showInlineEdit
+                onEditMatch={setQuickEditMatchId}
+              />
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="locked">
-          <AccordionTrigger>
-            <span className="flex flex-wrap items-center gap-2">
-              Locked / waiting
-              <Badge tone="locked">{lockedMatches.length}</Badge>
-              <Badge tone="locked">Next kickoff {formatChipDateTime(nextLockedKickoffUtc)}</Badge>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent>
-            <ReadOnlyMatchList
-              matches={lockedMatches}
-              picks={picksState.picks}
-              userId={userId}
-              now={now}
-              emptyMessage="No locked picks."
-            />
-          </AccordionContent>
-        </AccordionItem>
+          <AccordionItem value="locked">
+            <AccordionTrigger>
+              <span className="flex flex-wrap items-center gap-2">
+                Locked / waiting
+                <Badge tone="locked">{lockedMatches.length}</Badge>
+                <Badge tone="locked">Next kickoff {formatChipDateTime(nextLockedKickoffUtc)}</Badge>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <ReadOnlyMatchList
+                matches={lockedMatches}
+                picks={picksState.picks}
+                userId={userId}
+                now={now}
+                emptyMessage="No locked picks."
+              />
+            </AccordionContent>
+          </AccordionItem>
 
-        <AccordionItem value="finished">
-          <AccordionTrigger>
-            <span className="flex flex-wrap items-center gap-2">
-              Finished matches
-              <Badge tone="secondary">{finishedMatches.length}</Badge>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-3">
-              {scoringState.status === 'error' ? (
-                <Alert tone="warning" title="Points unavailable">
-                  Scoring config could not be loaded. Finished matches are shown without points.
-                </Alert>
-              ) : null}
+          <AccordionItem value="finished">
+            <AccordionTrigger>
+              <span className="flex flex-wrap items-center gap-2">
+                Finished matches
+                <Badge tone="secondary">{finishedMatches.length}</Badge>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3">
+                {scoringState.status === 'error' ? (
+                  <Alert tone="warning" title="Points unavailable">
+                    Scoring config could not be loaded. Finished matches are shown without points.
+                  </Alert>
+                ) : null}
 
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs text-muted-foreground">
-                  History grouped by day ({finishedMatches.length} finished matches)
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" variant="secondary" onClick={jumpToToday} disabled={todayGroupIndex < 0}>
-                    Jump to Today
-                  </Button>
-                  {finishedGroups.length > visibleFinishedGroups.length ? (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() =>
-                        setVisibleFinishedDayCount((current) =>
-                          Math.min(current + FINISHED_HISTORY_DAY_BATCH, finishedGroups.length)
-                        )
-                      }
-                    >
-                      Load older days
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-xs text-muted-foreground">
+                    History grouped by day ({finishedMatches.length} finished matches)
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" variant="secondary" onClick={jumpToToday} disabled={todayGroupIndex < 0}>
+                      Jump to Today
                     </Button>
+                    {finishedGroups.length > visibleFinishedGroups.length ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() =>
+                          setVisibleFinishedDayCount((current) =>
+                            Math.min(current + FINISHED_HISTORY_DAY_BATCH, finishedGroups.length)
+                          )
+                        }
+                      >
+                        Load older days
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {visibleFinishedGroups.map((group) => (
+                    <div
+                      key={`finished-day-${group.dayKey}`}
+                      className="rounded-2xl border border-border/60 bg-transparent p-3"
+                      ref={(node) => {
+                        if (!node) {
+                          dayRefs.current.delete(group.dayKey)
+                          return
+                        }
+                        dayRefs.current.set(group.dayKey, node)
+                      }}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-sm font-semibold text-foreground">{group.label}</div>
+                          <Badge tone="secondary">{group.matches.length} matches</Badge>
+                        </div>
+                        <div className="space-y-2">
+                          {group.matches.map((match) => {
+                            const pick = findPick(picksState.picks, match.id, userId)
+                            const result = getPredictionResult(match, pick)
+                            const points =
+                              scoringState.status === 'ready'
+                                ? scorePick(match, pick, scoringState.scoring)
+                                : undefined
+                            return (
+                              <div
+                                key={`finished-${group.dayKey}-${match.id}`}
+                                className={`rounded-xl border border-border/70 p-3 ${resultRowClass(result)}`}
+                              >
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div>
+                                    <div className="font-semibold text-foreground">
+                                      {match.homeTeam.code} vs {match.awayTeam.code}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {match.stage} · {formatKickoff(match.kickoffUtc)}
+                                    </div>
+                                    <div className="mt-1 text-xs text-muted-foreground">
+                                      Your pick: <span className="font-semibold text-foreground">{pickLabel(match, pick)}</span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Actual: <span className="font-semibold text-foreground">{actualLabel(match)}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge tone={resultTone(result)}>{resultLabel(result)}</Badge>
+                                    {points ? (
+                                      <Badge tone={points.total > 0 ? 'success' : 'secondary'}>+{points.total}</Badge>
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">—</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {visibleFinishedGroups.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+                      No finished matches yet.
+                    </div>
                   ) : null}
                 </div>
               </div>
+            </AccordionContent>
+          </AccordionItem>
+          </Accordion>
+        </div>
 
-              <div className="space-y-3">
-                {visibleFinishedGroups.map((group) => (
-                  <div
-                    key={`finished-day-${group.dayKey}`}
-                    className="rounded-2xl border border-border/60 bg-transparent p-3"
-                    ref={(node) => {
-                      if (!node) {
-                        dayRefs.current.delete(group.dayKey)
-                        return
-                      }
-                      dayRefs.current.set(group.dayKey, node)
-                    }}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-sm font-semibold text-foreground">{group.label}</div>
-                        <Badge tone="secondary">{group.matches.length} matches</Badge>
-                      </div>
-                      <div className="space-y-2">
-                        {group.matches.map((match) => {
-                          const pick = findPick(picksState.picks, match.id, userId)
-                          const result = getPredictionResult(match, pick)
-                          const points =
-                            scoringState.status === 'ready'
-                              ? scorePick(match, pick, scoringState.scoring)
-                              : undefined
-                          return (
-                            <div
-                              key={`finished-${group.dayKey}-${match.id}`}
-                              className={`rounded-xl border border-border/70 p-3 ${resultRowClass(result)}`}
-                            >
-                              <div className="flex flex-wrap items-start justify-between gap-3">
-                                <div>
-                                  <div className="font-semibold text-foreground">
-                                    {match.homeTeam.code} vs {match.awayTeam.code}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {match.stage} · {formatKickoff(match.kickoffUtc)}
-                                  </div>
-                                  <div className="mt-1 text-xs text-muted-foreground">
-                                    Your pick: <span className="font-semibold text-foreground">{pickLabel(match, pick)}</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Actual: <span className="font-semibold text-foreground">{actualLabel(match)}</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge tone={resultTone(result)}>{resultLabel(result)}</Badge>
-                                  {points ? (
-                                    <Badge tone={points.total > 0 ? 'success' : 'secondary'}>+{points.total}</Badge>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">—</span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {visibleFinishedGroups.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
-                    No finished matches yet.
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-        </Accordion>
+        {isDesktopRailViewport ? (
+          <RightRailSticky>
+            <LeaderboardCardCurated
+              rows={leaderboardRowsForCard}
+              snapshotLabel={leaderboardSnapshotLabel}
+              topCount={3}
+              title="League Snapshot"
+              leaderboardPath={leaderboardPath}
+            />
+          </RightRailSticky>
+        ) : null}
       </div>
+
+      {!isDesktopRailViewport ? (
+        <>
+          <Button
+            size="sm"
+            variant="secondary"
+            className="league-peek-fab fixed bottom-[calc(var(--bottom-nav-height)+0.75rem)] right-4 z-40 h-10 rounded-full px-4 text-[12px] lg:hidden"
+            onClick={() => setLeaguePeekOpen(true)}
+          >
+            League Peek
+          </Button>
+          <Sheet open={leaguePeekOpen} onOpenChange={setLeaguePeekOpen}>
+            <SheetContent side="bottom" className="league-peek-sheet-content max-h-[80dvh] rounded-t-2xl p-0">
+              <SheetHeader>
+                <SheetTitle>League Peek</SheetTitle>
+                <SheetDescription>Snapshot leaderboard summary.</SheetDescription>
+              </SheetHeader>
+              <div className="p-3">
+                <LeaderboardCardCurated
+                  rows={leaderboardRowsForCard}
+                  snapshotLabel={leaderboardSnapshotLabel}
+                  topCount={3}
+                  title="League Snapshot"
+                  leaderboardPath={leaderboardPath}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </>
+      ) : null}
 
       <Sheet open={Boolean(quickEditMatchId)} onOpenChange={(open) => !open && setQuickEditMatchId(null)}>
         <SheetContent side="right" className="w-[96vw] max-w-xl p-0">

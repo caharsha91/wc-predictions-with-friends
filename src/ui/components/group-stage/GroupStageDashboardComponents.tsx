@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from 'react'
 
 import type { GroupPrediction } from '../../../types/bracket'
 import type { BestThirdStatus, GroupPlacementStatus } from '../../../lib/groupStageSnapshot'
@@ -13,6 +13,8 @@ export type GroupStageDenseRow = {
   groupId: string
   teams: Team[]
   prediction: GroupPrediction
+  ranking: string[]
+  rankingComplete: boolean
   complete: boolean
   actualTopTwo: string[]
   finishedCount: number
@@ -20,11 +22,6 @@ export type GroupStageDenseRow = {
   firstResult: GroupPlacementStatus
   secondResult: GroupPlacementStatus
   rowResult: GroupPlacementStatus
-}
-
-type GroupStageRowDraft = {
-  first: string
-  second: string
 }
 
 export type LeaderboardCardRow = {
@@ -37,11 +34,15 @@ export type LeaderboardCardRow = {
   isYou: boolean
 }
 
-type BestThirdSlot = {
-  index: number
-  code: string
+export type BestThirdGroupTile = {
+  groupId: string
+  teamCode: string
+  teamName: string
+  selected: boolean
+  disabled: boolean
+  blockedReason: 'not-ready' | 'cap' | null
   status: BestThirdStatus
-  options: Team[]
+  animateSelection: boolean
 }
 
 type DashboardToolbarProps = {
@@ -58,7 +59,7 @@ export function DashboardToolbar({
   scoringSnapshotLabel
 }: DashboardToolbarProps) {
   return (
-    <V2Card className="rounded-xl px-4 py-2 xl:h-14 xl:py-0">
+    <V2Card tone="panel" className="rounded-xl px-4 py-2">
       <div className="flex h-full items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="truncate text-base font-semibold tracking-tight text-foreground">Group stage</div>
@@ -74,7 +75,7 @@ export function DashboardToolbar({
           </ButtonLink>
         </div>
 
-        <div className="hidden min-w-0 max-w-[34ch] items-center gap-2 text-[11px] text-muted-foreground lg:flex">
+        <div className="min-w-0 max-w-[34ch] items-center gap-2 text-[11px] text-muted-foreground">
           <span className="truncate whitespace-nowrap">Saved {picksLastSavedLabel}</span>
           <span className="h-3 w-px bg-border" aria-hidden="true" />
           <span className="truncate whitespace-nowrap">Snapshot {scoringSnapshotLabel}</span>
@@ -102,7 +103,7 @@ export function StatusBar({
   stateLabel
 }: StatusBarProps) {
   return (
-    <V2Card className="rounded-xl px-3 py-1.5 xl:h-9 xl:py-0">
+    <V2Card tone="panel" className="group-stage-v2-status rounded-xl px-3 py-1.5">
       <div className="flex h-full items-center gap-2.5 overflow-hidden">
         <Badge tone={groupsDone === groupsTotal && groupsTotal > 0 ? 'success' : 'warning'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
           Groups {groupsDone}/{groupsTotal}
@@ -126,12 +127,6 @@ function rowSurfaceClass(result: GroupPlacementStatus): string {
   if (result === 'incorrect') return 'bg-destructive/10'
   if (result === 'locked') return 'bg-warn/10'
   return 'bg-background/40'
-}
-
-function formatTeamLabel(code: string | undefined, teams: Team[]): string {
-  if (!code) return 'Select team'
-  const team = teams.find((entry) => entry.code === code)
-  return team ? `${team.code} · ${team.name}` : code
 }
 
 function resolveRowDelta({
@@ -181,12 +176,28 @@ type GroupPicksDenseTableProps = {
   tableStatusLabel: string
   pointsContextLabel: string
   saveStatus: 'idle' | 'saving' | 'saved' | 'error' | 'locked'
+  savingRowGroupId: string | null
   savedRowGroupId: string | null
-  rowDrafts: Record<string, GroupStageRowDraft>
   onTogglePoints: () => void
-  onPickChange: (row: GroupStageDenseRow, field: 'first' | 'second', value: string) => void
-  onRowSave: (row: GroupStageDenseRow) => void
-  onRowCancel: (groupId: string) => void
+  onRankingReorder: (row: GroupStageDenseRow, ranking: string[]) => void
+}
+
+function slotContextLabel(index: number): string {
+  if (index === 0 || index === 1) return 'Qualified'
+  if (index === 2) return 'Third candidate'
+  return 'Eliminated'
+}
+
+function reorderRanking(ranking: string[], sourceCode: string, targetCode: string): string[] {
+  if (sourceCode === targetCode) return ranking
+  const sourceIndex = ranking.indexOf(sourceCode)
+  const targetIndex = ranking.indexOf(targetCode)
+  if (sourceIndex < 0 || targetIndex < 0) return ranking
+
+  const next = [...ranking]
+  const [moved] = next.splice(sourceIndex, 1)
+  next.splice(targetIndex, 0, moved)
+  return next
 }
 
 export function GroupPicksDenseTable({
@@ -198,17 +209,53 @@ export function GroupPicksDenseTable({
   tableStatusLabel,
   pointsContextLabel,
   saveStatus,
+  savingRowGroupId,
   savedRowGroupId,
-  rowDrafts,
   onTogglePoints,
-  onPickChange,
-  onRowSave,
-  onRowCancel
+  onRankingReorder
 }: GroupPicksDenseTableProps) {
-  const gridColumnsClass = 'grid grid-cols-[88px_minmax(0,1fr)_minmax(0,1fr)_150px] items-center gap-3.5'
+  const [dragging, setDragging] = useState<{ groupId: string; code: string } | null>(null)
+  const [dragOver, setDragOver] = useState<{ groupId: string; code: string } | null>(null)
+
+  const clearDragState = () => {
+    setDragging(null)
+    setDragOver(null)
+  }
+
+  const isDragDisabled = isReadOnly || saveStatus === 'saving'
+
+  function handleDragStart(event: DragEvent<HTMLDivElement>, row: GroupStageDenseRow, code: string) {
+    if (isDragDisabled) return
+    setDragging({ groupId: row.groupId, code })
+    setDragOver({ groupId: row.groupId, code })
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', `${row.groupId}:${code}`)
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>, row: GroupStageDenseRow, code: string) {
+    if (!dragging || dragging.groupId !== row.groupId) return
+    event.preventDefault()
+    if (dragOver?.groupId === row.groupId && dragOver.code === code) return
+    setDragOver({ groupId: row.groupId, code })
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>, row: GroupStageDenseRow, code: string) {
+    event.preventDefault()
+    const payload = event.dataTransfer.getData('text/plain')
+    const [payloadGroupId, payloadCode] = payload.split(':')
+    const sourceCode =
+      dragging && dragging.groupId === row.groupId ? dragging.code : payloadGroupId === row.groupId ? payloadCode : ''
+    if (!sourceCode) {
+      clearDragState()
+      return
+    }
+    const nextRanking = reorderRanking(row.ranking, sourceCode, code)
+    clearDragState()
+    onRankingReorder(row, nextRanking)
+  }
 
   return (
-    <V2Card className="rounded-xl overflow-hidden">
+    <V2Card tone="panel" className="group-stage-v2-table rounded-xl overflow-hidden">
       <div className="flex flex-col">
         <div className="flex h-10 flex-wrap items-center gap-2 border-b border-border/60 px-3">
           <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Group Picks</div>
@@ -238,7 +285,7 @@ export function GroupPicksDenseTable({
           </div>
 
           {showPoints ? (
-            <div className="ml-auto flex min-w-0 items-center gap-2 overflow-hidden text-[10px] leading-none md:text-[11px]">
+            <div className="ml-auto flex min-w-0 items-center gap-2 overflow-hidden text-[10px] leading-none">
               <span className="truncate">{pointsContextLabel}</span>
               <span className="truncate whitespace-nowrap" title="Correct / Incorrect / Pending / Locked">
                 ✓ OK × NO ⏳ PEN 🔒 LCK
@@ -248,194 +295,126 @@ export function GroupPicksDenseTable({
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto">
-          <div className="min-w-[760px]">
-            <div className={cn(gridColumnsClass, 'h-8 px-3 text-[11px] uppercase tracking-wide text-muted-foreground')}>
-              <div>Group</div>
-              <div>1st Pick</div>
-              <div>2nd Pick</div>
-              <div className="text-right">Actions</div>
-            </div>
+          <div className="space-y-3 p-3">
+            {rows.map((row) => {
+              const firstPick = row.ranking[0] ?? ''
+              const secondPick = row.ranking[1] ?? ''
+              const rowDelta = resolveRowDelta({
+                row,
+                first: firstPick,
+                second: secondPick,
+                groupQualifierPoints
+              })
+              const teamByCode = new Map(row.teams.map((team) => [team.code, team]))
 
-            <div className="divide-y divide-border/45">
-              {rows.map((row) => {
-                const persistedFirst = row.prediction.first ?? ''
-                const persistedSecond = row.prediction.second ?? ''
-                const draft = rowDrafts[row.groupId]
-                const effectiveFirst = draft?.first ?? persistedFirst
-                const effectiveSecond = draft?.second ?? persistedSecond
-                const rowHasUnsavedChanges = Boolean(
-                  draft && (draft.first !== persistedFirst || draft.second !== persistedSecond)
-                )
-                const rowIsValid = Boolean(effectiveFirst) && Boolean(effectiveSecond) && effectiveFirst !== effectiveSecond
-                const rowDelta = resolveRowDelta({
-                  row,
-                  first: effectiveFirst,
-                  second: effectiveSecond,
-                  groupQualifierPoints
-                })
-
-                return (
-                  <div
-                    key={`group-row-${row.groupId}`}
-                    className={cn(
-                      gridColumnsClass,
-                      rowSurfaceClass(row.rowResult),
-                      'h-11 px-3 transition-colors hover:bg-background/80 focus-within:bg-background/80 focus-within:ring-1 focus-within:ring-ring',
-                      rowHasUnsavedChanges ? 'ring-1 ring-ring/35' : undefined
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
-                        {row.groupId}
+              return (
+                <div
+                  key={`group-row-${row.groupId}`}
+                  className={cn(
+                    'rounded-xl border border-border/60 p-3',
+                    rowSurfaceClass(row.rowResult),
+                    saveStatus === 'error' ? 'ring-1 ring-destructive/40' : undefined
+                  )}
+                >
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
+                      {row.groupId}
+                    </span>
+                    <Badge
+                      tone={row.rankingComplete ? 'success' : 'warning'}
+                      className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal"
+                    >
+                      {row.rankingComplete ? 'Complete' : 'Incomplete'}
+                    </Badge>
+                    {showPoints ? (
+                      <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border bg-background px-1.5 text-[11px] font-medium text-muted-foreground">
+                        +{rowDelta}
                       </span>
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        {isReadOnly ? (
-                          <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveFirst || undefined, row.teams)}</div>
-                        ) : (
-                          <select
-                            value={effectiveFirst}
-                            className="h-9 w-full min-w-0 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
-                            onChange={(event) => onPickChange(row, 'first', event.target.value)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Escape') {
-                                event.preventDefault()
-                                onRowCancel(row.groupId)
-                              }
-                              if (event.key === 'Enter') {
-                                event.preventDefault()
-                                onRowSave(row)
-                              }
-                            }}
-                            disabled={isReadOnly}
-                          >
-                            <option value="">Select team</option>
-                            {row.teams.map((team) => (
-                              <option key={`${row.groupId}-first-${team.code}`} value={team.code}>
-                                {team.code} · {team.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                        {effectiveFirst ? (
-                          <span
-                            title={markerMeta(row.firstResult).tooltip}
-                            className={cn(
-                              'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none',
-                              placementTone(row.firstResult)
-                            )}
-                          >
-                            <span aria-hidden="true">{markerMeta(row.firstResult).icon}</span>
-                            <span>{markerMeta(row.firstResult).code}</span>
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        {isReadOnly ? (
-                          <div className="truncate text-[12px] text-foreground">{formatTeamLabel(effectiveSecond || undefined, row.teams)}</div>
-                        ) : (
-                          <select
-                            value={effectiveSecond}
-                            className="h-9 w-full min-w-0 rounded-lg border border-border bg-background/60 px-2 text-[12px] text-foreground hover:bg-background/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
-                            onChange={(event) => onPickChange(row, 'second', event.target.value)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Escape') {
-                                event.preventDefault()
-                                onRowCancel(row.groupId)
-                              }
-                              if (event.key === 'Enter') {
-                                event.preventDefault()
-                                onRowSave(row)
-                              }
-                            }}
-                            disabled={isReadOnly}
-                          >
-                            <option value="">Select team</option>
-                            {row.teams.map((team) => (
-                              <option key={`${row.groupId}-second-${team.code}`} value={team.code}>
-                                {team.code} · {team.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                        {effectiveSecond ? (
-                          <span
-                            title={markerMeta(row.secondResult).tooltip}
-                            className={cn(
-                              'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none',
-                              placementTone(row.secondResult)
-                            )}
-                          >
-                            <span aria-hidden="true">{markerMeta(row.secondResult).icon}</span>
-                            <span>{markerMeta(row.secondResult).code}</span>
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2">
-                      {showPoints && rowDelta !== 0 ? (
-                        <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-full border border-border bg-background px-1.5 text-[11px] font-medium text-muted-foreground">
-                          +{rowDelta}
-                        </span>
-                      ) : (
-                        <span className="inline-flex h-6 min-w-10" aria-hidden="true" />
-                      )}
-
-                      <div className="flex min-w-[142px] items-center justify-end gap-1.5">
-                        {rowHasUnsavedChanges ? (
-                          <span title="Unsaved changes" className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
-                            Edited
-                          </span>
-                        ) : null}
-                        {!rowHasUnsavedChanges && savedRowGroupId === row.groupId ? (
-                          <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
-                            Saved
-                          </span>
-                        ) : null}
-                        <Button
-                          size="sm"
-                          loading={saveStatus === 'saving'}
-                          disabled={!rowHasUnsavedChanges || !rowIsValid || isReadOnly}
-                          tabIndex={rowHasUnsavedChanges ? 0 : -1}
-                          aria-hidden={!rowHasUnsavedChanges}
-                          className={cn(
-                            'h-8 rounded-lg px-3 text-[12px]',
-                            rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
-                          )}
-                          onClick={() => onRowSave(row)}
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          tabIndex={rowHasUnsavedChanges ? 0 : -1}
-                          aria-hidden={!rowHasUnsavedChanges}
-                          className={cn(
-                            'h-8 w-8 rounded-lg px-0 text-[12px]',
-                            rowHasUnsavedChanges ? 'opacity-100' : 'pointer-events-none opacity-0'
-                          )}
-                          onClick={() => onRowCancel(row.groupId)}
-                          aria-label={`Cancel edits for group ${row.groupId}`}
-                        >
-                          x
-                        </Button>
-                      </div>
-                    </div>
+                    ) : null}
+                    {saveStatus === 'saving' && savingRowGroupId === row.groupId ? (
+                      <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
+                        Saving...
+                      </span>
+                    ) : null}
+                    {saveStatus !== 'saving' && savedRowGroupId === row.groupId ? (
+                      <span className="inline-flex h-6 items-center rounded-full border border-border px-2 text-[10px] text-muted-foreground">
+                        Saved
+                      </span>
+                    ) : null}
                   </div>
-                )
-              })}
 
-              {rows.length === 0 ? (
-                <div className="h-10 px-3 text-[12px] text-muted-foreground">No groups available.</div>
-              ) : null}
-            </div>
+                  <div className="space-y-2">
+                    {row.ranking.map((teamCode, index) => {
+                      const team = teamByCode.get(teamCode)
+                      const marker =
+                        index === 0
+                          ? markerMeta(row.firstResult)
+                          : index === 1
+                            ? markerMeta(row.secondResult)
+                            : null
+                      const isDragging = dragging?.groupId === row.groupId && dragging.code === teamCode
+                      const isDragOver = dragOver?.groupId === row.groupId && dragOver.code === teamCode
+
+                      return (
+                        <div
+                          key={`${row.groupId}-${teamCode}`}
+                          draggable={!isDragDisabled}
+                          className={cn(
+                            'flex items-center justify-between gap-2 rounded-lg border border-border bg-background/70 px-2.5 py-2 transition-colors',
+                            !isDragDisabled ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
+                            isDragging ? 'opacity-70 ring-1 ring-ring/40' : undefined,
+                            isDragOver ? 'border-ring/70 bg-background' : undefined
+                          )}
+                          onDragStart={(event) => handleDragStart(event, row, teamCode)}
+                          onDragOver={(event) => handleDragOver(event, row, teamCode)}
+                          onDrop={(event) => handleDrop(event, row, teamCode)}
+                          onDragEnd={clearDragState}
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-border text-[10px] font-semibold text-muted-foreground">
+                              {index + 1}
+                            </span>
+                            <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-md border border-border px-1.5 text-[10px] font-semibold tracking-wide text-foreground">
+                              {team?.code ?? teamCode}
+                            </span>
+                            <div className="min-w-0 truncate text-[12px] text-foreground">{team?.name ?? teamCode}</div>
+                            <Badge
+                              tone={index < 2 ? 'success' : index === 2 ? 'info' : 'secondary'}
+                              className="h-5 rounded-full px-2 text-[9px] normal-case tracking-normal"
+                            >
+                              {slotContextLabel(index)}
+                            </Badge>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-2">
+                            {marker ? (
+                              <span
+                                title={marker.tooltip}
+                                className={cn(
+                                  'inline-flex items-center gap-1 whitespace-nowrap text-[10px] leading-none',
+                                  placementTone(index === 0 ? row.firstResult : row.secondResult)
+                                )}
+                              >
+                                <span aria-hidden="true">{marker.icon}</span>
+                                <span>{marker.code}</span>
+                              </span>
+                            ) : null}
+                            <span className="text-[10px] text-muted-foreground">{isDragDisabled ? 'Locked' : 'Drag'}</span>
+                            <span className="font-mono text-[12px] leading-none text-muted-foreground" aria-hidden="true">
+                              ::
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+
+            {rows.length === 0 ? (
+              <div className="h-10 px-1 text-[12px] text-muted-foreground">No groups available.</div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -444,18 +423,19 @@ export function GroupPicksDenseTable({
 }
 
 type BestThirdPicksCompactProps = {
-  slots: BestThirdSlot[]
+  tiles: BestThirdGroupTile[]
   selectedCount: number
   totalCount: number
-  selectedCodes: string[]
+  meterLabel: string
+  hintLabel: string
+  helperText?: string | null
   statusLabel: string
   defaultCollapsed: boolean
   isReadOnly: boolean
   isDirty: boolean
   saveStatus: 'idle' | 'saving' | 'saved' | 'error' | 'locked'
   warning?: ReactNode
-  resolveTeamLabel: (code: string | undefined) => string
-  onSlotChange: (index: number, value: string) => void
+  onToggleGroup: (groupId: string) => void
   onSave: () => void
 }
 
@@ -474,18 +454,19 @@ function bestThirdStatusText(status: BestThirdStatus): string {
 }
 
 export function BestThirdPicksCompact({
-  slots,
+  tiles,
   selectedCount,
   totalCount,
-  selectedCodes,
+  meterLabel,
+  hintLabel,
+  helperText,
   statusLabel,
   defaultCollapsed,
   isReadOnly,
   isDirty,
   saveStatus,
   warning,
-  resolveTeamLabel,
-  onSlotChange,
+  onToggleGroup,
   onSave
 }: BestThirdPicksCompactProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
@@ -495,22 +476,15 @@ export function BestThirdPicksCompact({
   }, [defaultCollapsed])
 
   return (
-    <V2Card className="rounded-xl overflow-hidden">
+    <V2Card tone="panel" className="group-stage-v2-best-third rounded-xl overflow-hidden">
       <div className="flex h-10 items-center gap-2 border-b border-border/60 px-3">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">Best 3rd Picks - Selected {selectedCount}/{totalCount}</div>
+          <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{meterLabel}</div>
         </div>
 
-        <div className="flex min-w-0 max-w-[14rem] items-center gap-1 overflow-hidden">
-          {selectedCodes.slice(0, 6).map((code) => (
-            <span key={`best-third-chip-${code}`} className="inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] text-muted-foreground">
-              {code}
-            </span>
-          ))}
-          {selectedCodes.length > 6 ? (
-            <span className="inline-flex h-5 items-center rounded-full border border-border px-1.5 text-[10px] text-muted-foreground">+{selectedCodes.length - 6}</span>
-          ) : null}
-        </div>
+        <Badge tone={selectedCount < totalCount ? 'warning' : 'success'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
+          {hintLabel}
+        </Badge>
 
         <Badge tone={statusLabel === 'Final' ? 'success' : statusLabel === 'Locked' ? 'locked' : 'warning'} className="h-6 rounded-full px-2 text-[11px] normal-case tracking-normal">
           {statusLabel}
@@ -529,32 +503,59 @@ export function BestThirdPicksCompact({
 
       {!collapsed ? (
         <div className="p-3">
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {slots.map((slot) => (
-              <div key={`best-third-slot-${slot.index}`} className={cn('rounded-lg border border-border px-2.5 py-2', bestThirdSurfaceClass(slot.status))}>
-                <div className="mb-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">Slot {slot.index + 1}</div>
-                {isReadOnly ? (
-                  <div className="h-10 rounded-lg border border-border bg-background px-2 text-[12px] leading-10 text-foreground sm:h-9 sm:leading-9">
-                    {resolveTeamLabel(slot.code || undefined)}
+          <div className="group-stage-v2-best-third-grid grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+            {tiles.map((tile) => {
+              const tileDisabled = isReadOnly || tile.disabled
+              const showNotReady = tile.blockedReason === 'not-ready'
+              const showCapReached = tile.blockedReason === 'cap'
+              return (
+                <button
+                  key={`best-third-group-${tile.groupId}`}
+                  type="button"
+                  disabled={tileDisabled}
+                  className={cn(
+                    'group-stage-v2-best-third-tile rounded-lg border px-2.5 py-2 text-left',
+                    bestThirdSurfaceClass(tile.status)
+                  )}
+                  data-selected={tile.selected ? 'true' : 'false'}
+                  data-disabled={tileDisabled ? 'true' : 'false'}
+                  data-animate={tile.animateSelection ? 'true' : 'false'}
+                  onClick={() => onToggleGroup(tile.groupId)}
+                >
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Group {tile.groupId}</span>
+                    {showNotReady ? (
+                      <Badge tone="secondary" className="h-5 rounded-full px-1.5 text-[9px] normal-case tracking-normal">
+                        Not ready
+                      </Badge>
+                    ) : showCapReached ? (
+                      <Badge tone="warning" className="h-5 rounded-full px-1.5 text-[9px] normal-case tracking-normal">
+                        8 selected
+                      </Badge>
+                    ) : tile.selected ? (
+                      <Badge tone="info" className="h-5 rounded-full px-1.5 text-[9px] normal-case tracking-normal">
+                        Selected
+                      </Badge>
+                    ) : null}
                   </div>
-                ) : (
-                  <select
-                    className="h-10 w-full rounded-lg border border-border bg-background px-2 text-[12px] text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:h-9"
-                    value={slot.code}
-                    onChange={(event) => onSlotChange(slot.index, event.target.value)}
-                  >
-                    <option value="">Select</option>
-                    {slot.options.map((team) => (
-                      <option key={`best-third-option-${slot.index}-${team.code}`} value={team.code}>
-                        {team.code} · {team.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <div className="mt-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">{bestThirdStatusText(slot.status)}</div>
-              </div>
-            ))}
+
+                  <div className="min-h-10 rounded-lg border border-border bg-background px-2 py-2 text-[12px] text-foreground">
+                    {showNotReady ? (
+                      <span className="text-muted-foreground">Complete ranking 1-4 first.</span>
+                    ) : (
+                      <span className="block truncate">
+                        <span className="font-semibold">{tile.teamCode}</span>
+                        <span className="text-muted-foreground"> · {tile.teamName}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">{bestThirdStatusText(tile.status)}</div>
+                </button>
+              )
+            })}
           </div>
+          {helperText ? <div className="mt-2 text-[11px] text-[color:var(--v2-text-muted)]">{helperText}</div> : null}
         </div>
       ) : null}
 
@@ -568,7 +569,7 @@ type RightRailStickyProps = {
 }
 
 export function RightRailSticky({ children }: RightRailStickyProps) {
-  return <aside className="max-xl:static xl:sticky xl:top-[calc(var(--toolbar-h,56px)+var(--meta-h,32px)+20px)] xl:self-start">{children}</aside>
+  return <aside className="max-lg:static lg:sticky lg:top-[calc(var(--toolbar-h,56px)+var(--meta-h,32px)+20px)] lg:self-start">{children}</aside>
 }
 
 type LeaderboardCardCuratedProps = {
@@ -576,6 +577,7 @@ type LeaderboardCardCuratedProps = {
   snapshotLabel: string
   topCount: 3 | 5
   title: string
+  leaderboardPath?: string
 }
 
 function movementLabel(movement: number | undefined): string {
@@ -628,7 +630,13 @@ function curateRows(rows: LeaderboardCardRow[], topCount: number): LeaderboardCa
   return curated
 }
 
-export function LeaderboardCardCurated({ rows, snapshotLabel, topCount, title }: LeaderboardCardCuratedProps) {
+export function LeaderboardCardCurated({
+  rows,
+  snapshotLabel,
+  topCount,
+  title,
+  leaderboardPath
+}: LeaderboardCardCuratedProps) {
   const [showFull, setShowFull] = useState(false)
 
   const rankedRows = useMemo(() => [...rows].sort((a, b) => a.rank - b.rank), [rows])
@@ -645,7 +653,7 @@ export function LeaderboardCardCurated({ rows, snapshotLabel, topCount, title }:
       : curatedRows
 
   return (
-    <V2Card className="rounded-xl overflow-hidden">
+    <V2Card tone="panel" className="group-stage-v2-leaderboard rounded-xl overflow-hidden">
       <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
         <div className="min-w-0">
           <div className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">{title}</div>
@@ -698,6 +706,14 @@ export function LeaderboardCardCurated({ rows, snapshotLabel, topCount, title }:
           </div>
         ) : null}
       </div>
+
+      {leaderboardPath ? (
+        <div className="border-t border-border/60 px-3 py-2">
+          <ButtonLink to={leaderboardPath} size="sm" variant="secondary" className="h-7 rounded-lg px-2 text-[11px]">
+            Open leaderboard
+          </ButtonLink>
+        </div>
+      ) : null}
     </V2Card>
   )
 }

@@ -5,29 +5,36 @@ import { fetchScoring } from '../../lib/data'
 import {
   BEST_THIRD_SLOT_COUNT,
   buildGroupStandingsSnapshot,
-  hasExactBestThirdSelection,
   normalizeTeamCodes,
   resolveBestThirdStatus,
   resolveGroupPlacementStatus,
   resolveGroupRowStatus
 } from '../../lib/groupStageSnapshot'
+import {
+  buildGroupRankingForDisplay,
+  buildGroupTeamCodes,
+  isStrictGroupRanking,
+  resolveStoredTopTwo
+} from '../../lib/groupRanking'
 import { getGroupOutcomesLockTime } from '../../lib/matches'
 import type { GroupPrediction } from '../../types/bracket'
 import type { Match, Team } from '../../types/matches'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
-import { Button } from '../components/ui/Button'
+import { Button, ButtonLink } from '../components/ui/Button'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
+import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import V2Card from '../components/v2/V2Card'
 import {
   BestThirdPicksCompact,
-  DashboardToolbar,
   GroupPicksDenseTable,
   LeaderboardCardCurated,
   RightRailSticky,
   StatusBar,
+  type BestThirdGroupTile,
   type GroupStageDenseRow,
   type LeaderboardCardRow
 } from '../components/group-stage/GroupStageDashboardComponents'
@@ -57,11 +64,6 @@ const BEST_THIRD_SLOTS = BEST_THIRD_SLOT_COUNT
 const DEFAULT_GROUP_QUALIFIER_POINTS = 3
 const EMPTY_MATCHES: Match[] = []
 const GROUP_ID_PATTERN = /^[A-L]$/
-
-type RowDraft = {
-  first: string
-  second: string
-}
 
 type GroupJumpStatus = 'complete' | 'incomplete' | 'locked'
 
@@ -98,21 +100,41 @@ function normalizeBestThirds(bestThirds: string[]): string[] {
   return next.slice(0, BEST_THIRD_SLOTS)
 }
 
-function getCompletionCount(groups: Record<string, GroupPrediction>, groupIds: string[]) {
+type BestThirdCandidateByGroupEntry = {
+  ready: boolean
+  thirdCode: string
+  thirdTeamName: string
+}
+
+function buildBestThirdCodesFromSelectedGroups(
+  selectedGroupIds: Set<string>,
+  candidatesByGroup: Map<string, BestThirdCandidateByGroupEntry>
+): string[] {
+  const nextCodes: string[] = []
+  for (const groupId of GROUP_STAGE_GROUP_CODES) {
+    if (!selectedGroupIds.has(groupId)) continue
+    const candidate = candidatesByGroup.get(groupId)
+    if (!candidate?.ready || !candidate.thirdCode) continue
+    nextCodes.push(candidate.thirdCode)
+    if (nextCodes.length >= BEST_THIRD_SLOTS) break
+  }
+  return normalizeBestThirds(nextCodes)
+}
+
+function getCompletionCount(
+  groups: Record<string, GroupPrediction>,
+  groupIds: string[],
+  groupTeams: Record<string, Team[]>
+) {
   let complete = 0
   for (const groupId of groupIds) {
+    const teamCodes = buildGroupTeamCodes(groupTeams[groupId] ?? [])
     const group = groups[groupId] ?? {}
-    if (group.first && group.second && group.first !== group.second) {
+    if (isStrictGroupRanking(group.ranking, teamCodes)) {
       complete += 1
     }
   }
   return complete
-}
-
-function formatTeam(code: string | undefined, teams: Team[]): string {
-  if (!code) return '—'
-  const team = teams.find((entry) => entry.code === code)
-  return team ? `${team.code} · ${team.name}` : code
 }
 
 function normalizeRouteGroupId(value: string | undefined): string | null {
@@ -125,11 +147,13 @@ function normalizeRouteGroupId(value: string | undefined): string | null {
 function getGroupJumpStatus(
   groupId: string,
   groups: Record<string, GroupPrediction>,
+  groupTeams: Record<string, Team[]>,
   isLocked: boolean
 ): GroupJumpStatus {
   if (isLocked) return 'locked'
+  const teamCodes = buildGroupTeamCodes(groupTeams[groupId] ?? [])
   const pick = groups[groupId] ?? {}
-  if (pick.first && pick.second && pick.first !== pick.second) return 'complete'
+  if (isStrictGroupRanking(pick.ranking, teamCodes)) return 'complete'
   return 'incomplete'
 }
 
@@ -172,16 +196,23 @@ export default function GroupStagePage() {
   const { showToast } = useToast()
   const now = useNow({ tickMs: 30_000 })
   const isDesktopViewport = useMediaQuery('(min-width: 768px)')
+  const isDesktopRailViewport = useMediaQuery('(min-width: 1024px)')
   const picksState = usePicksData()
   const publishedSnapshot = usePublishedSnapshot()
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
   const groupStage = useGroupStageData(matches)
   const [groupQualifierPoints, setGroupQualifierPoints] = useState(DEFAULT_GROUP_QUALIFIER_POINTS)
   const [selectedStandingsGroup, setSelectedStandingsGroup] = useState<string>('A')
-  const [rowDrafts, setRowDrafts] = useState<Record<string, RowDraft>>({})
+  const [savingRowGroupId, setSavingRowGroupId] = useState<string | null>(null)
   const [savedRowGroupId, setSavedRowGroupId] = useState<string | null>(null)
   const savedRowTimerRef = useRef<number | null>(null)
   const [lastPersistedBestThirds, setLastPersistedBestThirds] = useState<string[]>([])
+  const [bestThirdHelperText, setBestThirdHelperText] = useState<string | null>(null)
+  const [bestThirdAnimatedGroupId, setBestThirdAnimatedGroupId] = useState<string | null>(null)
+  const [leaguePeekOpen, setLeaguePeekOpen] = useState(false)
+  const bestThirdHelperTimerRef = useRef<number | null>(null)
+  const bestThirdAnimationTimerRef = useRef<number | null>(null)
+  const selectedThirdCodeByGroupRef = useRef<Record<string, string>>({})
 
   const queryState = useMemo(() => readGroupStageQueryState(location.search), [location.search])
   const groupRouteBase = mode === 'demo' ? '/demo/group-stage' : '/group-stage'
@@ -223,9 +254,52 @@ export default function GroupStagePage() {
     segment ? `${playRoot}/${segment}` : playRoot
 
   const groupTeams = useMemo(() => buildGroupTeams(matches), [matches])
-  const allTeams = useMemo(() => Object.values(groupTeams).flat(), [groupTeams])
   const groupIds = groupStage.groupIds
   const bestThirds = normalizeBestThirds(groupStage.data.bestThirds)
+  const bestThirdCandidatesByGroup = useMemo(() => {
+    const next = new Map<string, BestThirdCandidateByGroupEntry>()
+
+    for (const groupId of GROUP_STAGE_GROUP_CODES) {
+      const teams = groupTeams[groupId] ?? []
+      const teamCodes = buildGroupTeamCodes(teams)
+      const prediction = groupStage.data.groups[groupId] ?? {}
+      const isStrict = isStrictGroupRanking(prediction.ranking, teamCodes)
+      const ranking = isStrict ? buildGroupRankingForDisplay(prediction, teamCodes) : []
+      const thirdCode = ranking[2] ?? ''
+      const thirdTeamName =
+        teams.find((team) => team.code === thirdCode)?.name ??
+        (thirdCode ? thirdCode : '')
+
+      next.set(groupId, {
+        ready: isStrict && Boolean(thirdCode),
+        thirdCode,
+        thirdTeamName
+      })
+    }
+
+    return next
+  }, [groupStage.data.groups, groupTeams])
+
+  const selectedBestThirdGroups = useMemo(() => {
+    const selectedCodes = new Set(normalizeTeamCodes(bestThirds))
+    const selected = new Set<string>()
+    for (const groupId of GROUP_STAGE_GROUP_CODES) {
+      const candidate = bestThirdCandidatesByGroup.get(groupId)
+      if (!candidate?.ready || !candidate.thirdCode) continue
+      if (selectedCodes.has(candidate.thirdCode)) {
+        selected.add(groupId)
+      }
+    }
+    return selected
+  }, [bestThirdCandidatesByGroup, bestThirds])
+
+  const selectedBestThirdCodes = useMemo(
+    () => buildBestThirdCodesFromSelectedGroups(selectedBestThirdGroups, bestThirdCandidatesByGroup),
+    [bestThirdCandidatesByGroup, selectedBestThirdGroups]
+  )
+
+  const selectedBestThirds = useMemo(() => normalizeTeamCodes(selectedBestThirdCodes), [selectedBestThirdCodes])
+  const selectedBestThirdCount = selectedBestThirdGroups.size
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
   const groupClosedByTime = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
   const groupClosed = groupClosedByTime || groupStage.isLocked
@@ -234,10 +308,10 @@ export default function GroupStagePage() {
   const isReadOnly = groupClosed || isFinalResultsMode
 
   const completion = useMemo(() => {
-    const groupsDone = getCompletionCount(groupStage.data.groups, groupIds)
-    const bestThirdDone = normalizeTeamCodes(bestThirds).length
-    return { groupsDone, bestThirdDone, bestThirdSelectionValid: hasExactBestThirdSelection(bestThirds) }
-  }, [bestThirds, groupIds, groupStage.data.groups])
+    const groupsDone = getCompletionCount(groupStage.data.groups, groupIds, groupTeams)
+    const bestThirdDone = selectedBestThirdCount
+    return { groupsDone, bestThirdDone, bestThirdSelectionValid: selectedBestThirdCount === BEST_THIRD_SLOTS }
+  }, [groupIds, groupStage.data.groups, groupTeams, selectedBestThirdCount])
 
   const snapshotMatches = snapshotReady?.matches ?? matches
   const standings = useMemo(() => buildGroupStandingsSnapshot(snapshotMatches), [snapshotMatches])
@@ -247,8 +321,6 @@ export default function GroupStagePage() {
   )
   const groupsFinal = groupIds.length > 0 && standings.completeGroups.size === groupIds.length
   const bestThirdsFinal = groupsFinal && (snapshotReady?.bestThirdQualifiers.length ?? 0) >= BEST_THIRD_SLOTS
-  const selectedBestThirds = useMemo(() => normalizeTeamCodes(bestThirds), [bestThirds])
-  const selectedBestThirdCount = selectedBestThirds.length
   const bestThirdDirty = useMemo(() => {
     const baseline = normalizeBestThirds(lastPersistedBestThirds)
     const current = normalizeBestThirds(groupStage.data.bestThirds)
@@ -317,22 +389,38 @@ export default function GroupStagePage() {
   const rows = useMemo<GroupStageDenseRow[]>(() => {
     return groupIds.map((groupId) => {
       const teams = groupTeams[groupId] ?? []
+      const teamCodes = buildGroupTeamCodes(teams)
       const prediction = groupStage.data.groups[groupId] ?? {}
+      const ranking = buildGroupRankingForDisplay(prediction, teamCodes)
+      const topTwo = resolveStoredTopTwo(prediction, teamCodes)
+      const complete = isStrictGroupRanking(prediction.ranking, teamCodes)
       const groupStandings = standings.standingsByGroup.get(groupId) ?? []
-      const complete = standings.completeGroups.has(groupId)
+      const standingsComplete = standings.completeGroups.has(groupId)
       const actualTopTwo = groupStandings.slice(0, 2).map((entry) => entry.code)
       const finishedCount = standings.finishedMatchesByGroup.get(groupId) ?? 0
       const totalCount = standings.totalMatchesByGroup.get(groupId) ?? 0
 
-      const firstResult = resolveGroupPlacementStatus(complete, groupClosedByTime, prediction.first, actualTopTwo[0])
-      const secondResult = resolveGroupPlacementStatus(complete, groupClosedByTime, prediction.second, actualTopTwo[1])
-      const rowResult = resolveGroupRowStatus(complete, groupClosedByTime, firstResult, secondResult)
+      const firstResult = resolveGroupPlacementStatus(
+        standingsComplete,
+        groupClosedByTime,
+        topTwo.first,
+        actualTopTwo[0]
+      )
+      const secondResult = resolveGroupPlacementStatus(
+        standingsComplete,
+        groupClosedByTime,
+        topTwo.second,
+        actualTopTwo[1]
+      )
+      const rowResult = resolveGroupRowStatus(standingsComplete, groupClosedByTime, firstResult, secondResult)
 
       return {
         groupId,
         teams,
         prediction,
-        complete,
+        ranking,
+        rankingComplete: complete,
+        complete: standingsComplete,
         actualTopTwo,
         finishedCount,
         totalCount,
@@ -359,48 +447,26 @@ export default function GroupStagePage() {
   const groupJumpStatuses = useMemo(() => {
     const statuses = new Map<string, GroupJumpStatus>()
     for (const groupId of GROUP_STAGE_GROUP_CODES) {
-      statuses.set(groupId, getGroupJumpStatus(groupId, groupStage.data.groups, groupClosed))
+      statuses.set(groupId, getGroupJumpStatus(groupId, groupStage.data.groups, groupTeams, groupClosed))
     }
     return statuses
-  }, [groupClosed, groupStage.data.groups])
+  }, [groupClosed, groupStage.data.groups, groupTeams])
 
-  const hasUnsavedRowDrafts = useMemo(() => {
-    for (const [groupId, draft] of Object.entries(rowDrafts)) {
-      const persisted = groupStage.data.groups[groupId] ?? {}
-      if ((persisted.first ?? '') !== draft.first || (persisted.second ?? '') !== draft.second) {
-        return true
-      }
+  const flashSavedGroup = useCallback((groupId: string) => {
+    setSavedRowGroupId(groupId)
+    if (savedRowTimerRef.current !== null && typeof window !== 'undefined') {
+      window.clearTimeout(savedRowTimerRef.current)
     }
-    return false
-  }, [groupStage.data.groups, rowDrafts])
-
-  const discardRowDrafts = useCallback(() => {
-    setRowDrafts({})
+    if (typeof window === 'undefined') return
+    savedRowTimerRef.current = window.setTimeout(() => {
+      setSavedRowGroupId((current) => (current === groupId ? null : current))
+    }, 2500)
   }, [])
-
-  const discardRowDraft = useCallback((groupId: string) => {
-    setRowDrafts((current) => {
-      if (!current[groupId]) return current
-      const next = { ...current }
-      delete next[groupId]
-      return next
-    })
-  }, [])
-
-  const confirmDiscardRowDrafts = useCallback(() => {
-    if (!hasUnsavedRowDrafts) return true
-    if (typeof window === 'undefined') return true
-    const shouldDiscard = window.confirm('Discard unsaved inline edits?')
-    if (!shouldDiscard) return false
-    discardRowDrafts()
-    return true
-  }, [discardRowDrafts, hasUnsavedRowDrafts])
 
   const updateQueryState = useCallback(
     (patch: Partial<GroupStageQueryState>) => {
       const nextSearch = patchGroupStageSearch(location.search, patch)
       if (nextSearch === location.search) return
-      if (!confirmDiscardRowDrafts()) return
       navigate(
         {
           pathname: location.pathname,
@@ -409,119 +475,111 @@ export default function GroupStagePage() {
         { replace: false }
       )
     },
-    [confirmDiscardRowDrafts, location.pathname, location.search, navigate]
+    [location.pathname, location.search, navigate]
   )
 
-  const handleRowPickChange = useCallback(
-    (row: GroupStageDenseRow, field: 'first' | 'second', value: string) => {
+  const handleRankingReorder = useCallback(
+    (row: GroupStageDenseRow, ranking: string[]) => {
       if (isReadOnly) return
-      const persisted = groupStage.data.groups[row.groupId] ?? {}
-      const persistedFirst = persisted.first ?? ''
-      const persistedSecond = persisted.second ?? ''
 
-      setRowDrafts((current) => {
-        const baseline = current[row.groupId] ?? {
-          first: persistedFirst,
-          second: persistedSecond
-        }
-        const nextDraft = {
-          ...baseline
-        }
+      const persist = async () => {
+        setSavingRowGroupId(row.groupId)
+        const result = await groupStage.saveGroupRanking(row.groupId, ranking)
+        setSavingRowGroupId((current) => (current === row.groupId ? null : current))
 
-        if (field === 'first') {
-          nextDraft.first = value
-          if (nextDraft.second && nextDraft.second === value) nextDraft.second = ''
-        } else {
-          nextDraft.second = value
-          if (nextDraft.first && nextDraft.first === value) nextDraft.first = ''
+        if (!result.ok) {
+          showToast({
+            tone: result.reason === 'locked' ? 'warning' : 'danger',
+            title: result.reason === 'locked' ? 'Group stage locked' : 'Save failed',
+            message:
+              result.reason === 'locked'
+                ? 'Post-lock edits are not allowed.'
+                : 'Unable to save group ranking order.'
+          })
+          return
         }
 
-        const unchanged = nextDraft.first === persistedFirst && nextDraft.second === persistedSecond
-        if (unchanged) {
-          if (!current[row.groupId]) return current
-          const next = { ...current }
-          delete next[row.groupId]
-          return next
-        }
-
-        return {
-          ...current,
-          [row.groupId]: nextDraft
-        }
-      })
-    },
-    [groupStage.data.groups, isReadOnly]
-  )
-
-  const saveRowDraft = useCallback(
-    async (row: GroupStageDenseRow) => {
-      if (isReadOnly) return false
-      const draft = rowDrafts[row.groupId]
-      if (!draft) return false
-      const rowIsValid = Boolean(draft.first) && Boolean(draft.second) && draft.first !== draft.second
-      if (!rowIsValid) return false
-
-      const updatedGroups = {
-        ...groupStage.data.groups,
-        [row.groupId]: {
-          ...(groupStage.data.groups[row.groupId] ?? {}),
-          first: draft.first || undefined,
-          second: draft.second || undefined
-        }
+        setLastPersistedBestThirds(normalizeBestThirds(result.bestThirds))
+        if (!result.changed) return
+        flashSavedGroup(row.groupId)
       }
 
-      const result = await groupStage.save({
-        ...groupStage.data,
-        groups: updatedGroups,
-        updatedAt: new Date().toISOString()
-      })
-
-      showToast({
-        tone: result.ok ? 'success' : result.reason === 'locked' ? 'warning' : 'danger',
-        title: result.ok ? `Group ${row.groupId} saved` : result.reason === 'locked' ? 'Group stage locked' : 'Save failed',
-        message: result.ok
-          ? 'Inline group edits were saved.'
-          : result.reason === 'locked'
-            ? 'Post-lock edits are not allowed.'
-            : 'Unable to save inline group edits.'
-      })
-
-      if (result.ok) {
-        discardRowDraft(row.groupId)
-        setLastPersistedBestThirds(normalizeBestThirds(groupStage.data.bestThirds))
-        setSavedRowGroupId(row.groupId)
-        if (savedRowTimerRef.current !== null && typeof window !== 'undefined') {
-          window.clearTimeout(savedRowTimerRef.current)
-        }
-        if (typeof window !== 'undefined') {
-          savedRowTimerRef.current = window.setTimeout(() => {
-            setSavedRowGroupId((current) => (current === row.groupId ? null : current))
-          }, 2500)
-        }
-      }
-      return result.ok
+      void persist()
     },
-    [discardRowDraft, groupStage, isReadOnly, rowDrafts, showToast]
+    [flashSavedGroup, groupStage, isReadOnly, showToast]
   )
 
-  const bestThirdCandidatesForIndex = useMemo(
-    () => (index: number) => {
-      const excludedTopTwo = new Set<string>()
-      for (const groupId of groupIds) {
-        const pick = groupStage.data.groups[groupId] ?? {}
-        if (pick.first) excludedTopTwo.add(pick.first)
-        if (pick.second) excludedTopTwo.add(pick.second)
+  const handleBestThirdGroupToggle = useCallback(
+    (groupId: string) => {
+      if (isReadOnly) return
+      const candidate = bestThirdCandidatesByGroup.get(groupId)
+      if (!candidate?.ready || !candidate.thirdCode) return
+
+      const nextSelected = new Set(selectedBestThirdGroups)
+      if (nextSelected.has(groupId)) {
+        nextSelected.delete(groupId)
+      } else {
+        if (nextSelected.size >= BEST_THIRD_SLOTS) return
+        nextSelected.add(groupId)
       }
-      const selectedElsewhere = new Set(
-        groupStage.data.bestThirds
-          .map((team, idx) => ({ team, idx }))
-          .filter((entry) => entry.idx !== index && Boolean(entry.team))
-          .map((entry) => entry.team)
-      )
-      return allTeams.filter((team) => !excludedTopTwo.has(team.code) && !selectedElsewhere.has(team.code))
+
+      const nextCodes = buildBestThirdCodesFromSelectedGroups(nextSelected, bestThirdCandidatesByGroup)
+      groupStage.setBestThirds(nextCodes)
     },
-    [allTeams, groupIds, groupStage.data.bestThirds, groupStage.data.groups]
+    [bestThirdCandidatesByGroup, groupStage, isReadOnly, selectedBestThirdGroups]
   )
+
+  const bestThirdTiles = useMemo<BestThirdGroupTile[]>(() => {
+    const atCap = selectedBestThirdCount >= BEST_THIRD_SLOTS
+    return GROUP_STAGE_GROUP_CODES.map((groupId) => {
+      const candidate = bestThirdCandidatesByGroup.get(groupId)
+      const selected = selectedBestThirdGroups.has(groupId)
+      const ready = candidate?.ready ?? false
+      const blockedReason = !ready ? 'not-ready' : !selected && atCap ? 'cap' : null
+      const thirdCode = candidate?.thirdCode ?? ''
+
+      return {
+        groupId,
+        teamCode: thirdCode,
+        teamName: candidate?.thirdTeamName ?? '',
+        selected,
+        disabled: Boolean(blockedReason),
+        blockedReason,
+        status: resolveBestThirdStatus(
+          bestThirdsFinal,
+          groupClosedByTime,
+          completion.bestThirdSelectionValid,
+          selected ? thirdCode : undefined,
+          qualifiersSet
+        ),
+        animateSelection: bestThirdAnimatedGroupId === groupId
+      }
+    })
+  }, [
+    bestThirdAnimatedGroupId,
+    bestThirdCandidatesByGroup,
+    bestThirdsFinal,
+    completion.bestThirdSelectionValid,
+    groupClosedByTime,
+    qualifiersSet,
+    selectedBestThirdCount,
+    selectedBestThirdGroups
+  ])
+
+  const bestThirdMeterLabel = `Third-place qualifiers: ${selectedBestThirdCount} / ${BEST_THIRD_SLOTS} selected`
+  const bestThirdHintLabel =
+    selectedBestThirdCount < BEST_THIRD_SLOTS ? `${BEST_THIRD_SLOTS - selectedBestThirdCount} more left` : 'All set'
+
+  const selectedThirdCodeByGroup = useMemo(() => {
+    const next: Record<string, string> = {}
+    for (const groupId of GROUP_STAGE_GROUP_CODES) {
+      if (!selectedBestThirdGroups.has(groupId)) continue
+      const thirdCode = bestThirdCandidatesByGroup.get(groupId)?.thirdCode ?? ''
+      if (!thirdCode) continue
+      next[groupId] = thirdCode
+    }
+    return next
+  }, [bestThirdCandidatesByGroup, selectedBestThirdGroups])
 
   useEffect(() => {
     setSelectedStandingsGroup(routeGroupId ?? 'A')
@@ -533,9 +591,51 @@ export default function GroupStagePage() {
   }, [groupStage.loadState.status, mode])
 
   useEffect(() => {
+    const previous = selectedThirdCodeByGroupRef.current
+    let changedGroupId: string | null = null
+
+    for (const [groupId, code] of Object.entries(selectedThirdCodeByGroup)) {
+      const previousCode = previous[groupId]
+      if (previousCode && previousCode !== code) {
+        changedGroupId = groupId
+        break
+      }
+    }
+
+    selectedThirdCodeByGroupRef.current = selectedThirdCodeByGroup
+    if (!changedGroupId) return
+
+    setBestThirdHelperText(`Selection stays with Group ${changedGroupId}`)
+    setBestThirdAnimatedGroupId(changedGroupId)
+
+    if (typeof window === 'undefined') return
+    if (bestThirdHelperTimerRef.current !== null) {
+      window.clearTimeout(bestThirdHelperTimerRef.current)
+    }
+    if (bestThirdAnimationTimerRef.current !== null) {
+      window.clearTimeout(bestThirdAnimationTimerRef.current)
+    }
+
+    bestThirdHelperTimerRef.current = window.setTimeout(() => {
+      setBestThirdHelperText((current) =>
+        current === `Selection stays with Group ${changedGroupId}` ? null : current
+      )
+    }, 2600)
+    bestThirdAnimationTimerRef.current = window.setTimeout(() => {
+      setBestThirdAnimatedGroupId((current) => (current === changedGroupId ? null : current))
+    }, 1100)
+  }, [selectedThirdCodeByGroup])
+
+  useEffect(() => {
     return () => {
       if (savedRowTimerRef.current !== null && typeof window !== 'undefined') {
         window.clearTimeout(savedRowTimerRef.current)
+      }
+      if (bestThirdHelperTimerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(bestThirdHelperTimerRef.current)
+      }
+      if (bestThirdAnimationTimerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(bestThirdAnimationTimerRef.current)
       }
     }
   }, [])
@@ -559,54 +659,14 @@ export default function GroupStagePage() {
   }, [mode])
 
   useEffect(() => {
-    if (isReadOnly) {
-      discardRowDrafts()
-      return
-    }
+    if (!isReadOnly) return
+    setSavingRowGroupId(null)
+  }, [isReadOnly])
 
-    setRowDrafts((current) => {
-      let changed = false
-      const next: Record<string, RowDraft> = {}
-      for (const [groupId, draft] of Object.entries(current)) {
-        if (!groupIds.includes(groupId)) {
-          changed = true
-          continue
-        }
-        const persisted = groupStage.data.groups[groupId] ?? {}
-        const unchanged = (persisted.first ?? '') === draft.first && (persisted.second ?? '') === draft.second
-        if (unchanged) {
-          changed = true
-          continue
-        }
-        next[groupId] = draft
-      }
-      return changed ? next : current
-    })
-  }, [discardRowDrafts, groupIds, groupStage.data.groups, isReadOnly])
-
-  const bestThirdSlots = useMemo(() => {
-    return bestThirds.map((teamCode, index) => ({
-      index,
-      code: teamCode ?? '',
-      status: resolveBestThirdStatus(
-        bestThirdsFinal,
-        groupClosedByTime,
-        completion.bestThirdSelectionValid,
-        teamCode,
-        qualifiersSet
-      ),
-      options: bestThirdCandidatesForIndex(index)
-    }))
-  }, [
-    bestThirdCandidatesForIndex,
-    bestThirds,
-    bestThirdsFinal,
-    completion.bestThirdSelectionValid,
-    groupClosedByTime,
-    qualifiersSet
-  ])
-
-  const resolveTeamLabel = useCallback((code: string | undefined) => formatTeam(code, allTeams), [allTeams])
+  useEffect(() => {
+    if (!isDesktopRailViewport) return
+    setLeaguePeekOpen(false)
+  }, [isDesktopRailViewport])
 
   const leaderboardRowsForCard = useMemo<LeaderboardCardRow[]>(() => {
     if (isFinalResultsMode) {
@@ -642,7 +702,13 @@ export default function GroupStagePage() {
   }, [finalGroupStageRows, frozenLeaderboardRows, isFinalResultsMode, projectedImpactRows, viewerId])
 
   const selectedGroupPrediction = groupStage.data.groups[selectedStandingsGroup] ?? {}
+  const selectedGroupTeamCodes = buildGroupTeamCodes(groupTeams[selectedStandingsGroup] ?? [])
+  const selectedGroupTopTwo = resolveStoredTopTwo(selectedGroupPrediction, selectedGroupTeamCodes)
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
+  const playCenterPath = toPlayPath()
+  const leaderboardPath = `${playRoot}/league`
+  const picksLastSavedLabel = formatTime(groupStage.data.updatedAt)
+  const scoringSnapshotLabel = formatSnapshotTimestamp(scoringSnapshotTimestamp)
 
   const saveBestThirdSelections = useCallback(async () => {
     const result = await groupStage.save()
@@ -673,12 +739,23 @@ export default function GroupStagePage() {
       ['viewerUserId', viewerId],
       ['mode', mode === 'demo' ? 'demo' : 'prod'],
       [],
-      ['groupId', 'first', 'second']
+      ['groupId', 'rank1', 'rank2', 'rank3', 'rank4']
     ]
 
     for (const groupId of GROUP_STAGE_GROUP_CODES) {
       const prediction = groupStage.data.groups[groupId] ?? {}
-      rows.push([groupId, prediction.first ?? '', prediction.second ?? ''])
+      const teamCodes = buildGroupTeamCodes(groupTeams[groupId] ?? [])
+      const topTwo = resolveStoredTopTwo(prediction, teamCodes)
+      const ranking = isStrictGroupRanking(prediction.ranking, teamCodes)
+        ? buildGroupRankingForDisplay(prediction, teamCodes)
+        : []
+      rows.push([
+        groupId,
+        topTwo.first ?? '',
+        topTwo.second ?? '',
+        ranking[2] ?? '',
+        ranking[3] ?? ''
+      ])
     }
 
     rows.push([])
@@ -691,7 +768,7 @@ export default function GroupStagePage() {
     const stamp = exportedAt.replace(/[:.]/g, '-')
     const fileName = `group-stage-${safeViewerId || 'viewer'}-${stamp}.csv`
     downloadCsvFile(fileName, rowsToCsv(rows))
-  }, [bestThirds, groupStage.data.groups, mode, snapshotReady?.snapshotTimestamp, viewerId])
+  }, [bestThirds, groupStage.data.groups, groupTeams, mode, snapshotReady?.snapshotTimestamp, viewerId])
 
   if (
     picksState.state.status === 'loading' ||
@@ -748,23 +825,21 @@ export default function GroupStagePage() {
       tableStatusLabel={tableStatusLabel}
       pointsContextLabel={pointsContextLabel}
       saveStatus={groupStage.saveStatus}
+      savingRowGroupId={savingRowGroupId}
       savedRowGroupId={savedRowGroupId}
-      rowDrafts={rowDrafts}
       onTogglePoints={() => updateQueryState({ points: queryState.points === 'on' ? 'off' : 'on' })}
-      onPickChange={handleRowPickChange}
-      onRowSave={(row) => {
-        void saveRowDraft(row)
-      }}
-      onRowCancel={discardRowDraft}
+      onRankingReorder={handleRankingReorder}
     />
   )
 
   const bestThirdPanel = (
     <BestThirdPicksCompact
-      slots={bestThirdSlots}
+      tiles={bestThirdTiles}
       selectedCount={selectedBestThirdCount}
       totalCount={BEST_THIRD_SLOTS}
-      selectedCodes={selectedBestThirds}
+      meterLabel={bestThirdMeterLabel}
+      hintLabel={bestThirdHintLabel}
+      helperText={bestThirdHelperText}
       statusLabel={bestThirdsFinal ? 'Final' : groupClosedByTime ? 'Locked' : 'Pending'}
       defaultCollapsed={false}
       isReadOnly={isReadOnly}
@@ -779,8 +854,7 @@ export default function GroupStagePage() {
           </Alert>
         ) : undefined
       }
-      resolveTeamLabel={resolveTeamLabel}
-      onSlotChange={(index, value) => groupStage.setBestThird(index, value)}
+      onToggleGroup={handleBestThirdGroupToggle}
       onSave={() => {
         void saveBestThirdSelections()
       }}
@@ -788,7 +862,7 @@ export default function GroupStagePage() {
   )
 
   const standingsPanel = (
-    <V2Card className="min-h-0 rounded-xl overflow-hidden">
+    <V2Card tone="panel" className="group-stage-v2-standings min-h-0 rounded-xl overflow-hidden">
       <div className="flex h-10 items-center justify-between gap-2 border-b border-border/60 px-3">
         <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Standings</div>
         <Badge tone="secondary" className="h-7 rounded-full px-2 text-[11px] normal-case tracking-normal">
@@ -811,8 +885,8 @@ export default function GroupStagePage() {
           </thead>
           <tbody>
             {(standings.standingsByGroup.get(selectedStandingsGroup) ?? []).map((entry) => {
-              const pickedFirst = selectedGroupPrediction.first === entry.code
-              const pickedSecond = selectedGroupPrediction.second === entry.code
+              const pickedFirst = selectedGroupTopTwo.first === entry.code
+              const pickedSecond = selectedGroupTopTwo.second === entry.code
               return (
                 <tr
                   key={`group-standing-${selectedStandingsGroup}-${entry.code}`}
@@ -849,14 +923,33 @@ export default function GroupStagePage() {
   )
 
   return (
-    <div className="w-full">
-      <div className="flex w-full flex-col gap-3 p-3 sm:p-4 xl:p-5">
-        <DashboardToolbar
-          playCenterPath={toPlayPath()}
-          leaderboardPath={`${playRoot}/league`}
-          picksLastSavedLabel={formatTime(groupStage.data.updatedAt)}
-          scoringSnapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
+    <div className="group-stage-v2-canvas w-full">
+      <div className="flex w-full flex-col gap-3 p-4">
+        <PageHeaderV2
+          variant="hero"
+          className="group-stage-v2-hero"
+          kicker="Your move"
+          title="Group Stage"
+          subtitle="Set your group ranking and best-third qualifiers. Updates publish on daily snapshots."
+          actions={(
+            <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-background/50 p-1">
+              <ButtonLink to={playCenterPath} size="sm" variant="pill" className="h-8 rounded-lg px-3 text-[12px]">
+                Play Center
+              </ButtonLink>
+              <ButtonLink to={leaderboardPath} size="sm" variant="pillSecondary" className="h-8 rounded-lg px-3 text-[12px]">
+                Leaderboard
+              </ButtonLink>
+            </div>
+          )}
         />
+
+        <V2Card tone="panel" className="group-stage-v2-meta rounded-xl px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+            <span className="truncate whitespace-nowrap">Saved {picksLastSavedLabel}</span>
+            <span className="h-3 w-px bg-border" aria-hidden="true" />
+            <span className="truncate whitespace-nowrap">Snapshot {scoringSnapshotLabel}</span>
+          </div>
+        </V2Card>
 
         <StatusBar
           groupsDone={completion.groupsDone}
@@ -867,7 +960,7 @@ export default function GroupStagePage() {
           stateLabel={groupsFinal ? 'Final' : 'Pending'}
         />
 
-        <V2Card className="sticky top-0 z-20 rounded-xl px-2 py-2 backdrop-blur-sm">
+        <V2Card tone="panel" className="group-stage-v2-group-nav sticky top-0 z-20 rounded-xl px-2 py-2 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <div className="shrink-0 px-2 text-[11px] uppercase tracking-wide text-muted-foreground">Groups</div>
             <div className="min-w-0 flex-1 overflow-x-auto">
@@ -903,27 +996,61 @@ export default function GroupStagePage() {
           </div>
         </V2Card>
 
-        <div className="grid gap-3 xl:gap-4 xl:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
           <div className="flex min-w-0 flex-col gap-3">
             <div className="space-y-2.5">
               {groupPicksAlert}
               {groupPicksTable}
             </div>
             {bestThirdPanel}
+            {!isDesktopRailViewport ? standingsPanel : null}
           </div>
 
-          <RightRailSticky>
-            <div className="right-rail flex max-w-full flex-col gap-3 xl:max-w-[420px]">
-              {standingsPanel}
-              <LeaderboardCardCurated
-                rows={leaderboardRowsForCard}
-                snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
-                topCount={3}
-                title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
-              />
-            </div>
-          </RightRailSticky>
+          {isDesktopRailViewport ? (
+            <RightRailSticky>
+              <div className="right-rail flex max-w-full flex-col gap-3">
+                {standingsPanel}
+                <LeaderboardCardCurated
+                  rows={leaderboardRowsForCard}
+                  snapshotLabel={scoringSnapshotLabel}
+                  topCount={3}
+                  title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
+                  leaderboardPath={leaderboardPath}
+                />
+              </div>
+            </RightRailSticky>
+          ) : null}
         </div>
+
+        {!isDesktopRailViewport ? (
+          <>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="league-peek-fab fixed bottom-[calc(var(--bottom-nav-height)+0.75rem)] right-4 z-40 h-10 rounded-full px-4 text-[12px] lg:hidden"
+              onClick={() => setLeaguePeekOpen(true)}
+            >
+              League Peek
+            </Button>
+            <Sheet open={leaguePeekOpen} onOpenChange={setLeaguePeekOpen}>
+              <SheetContent side="bottom" className="league-peek-sheet-content max-h-[80dvh] rounded-t-2xl p-0">
+                <SheetHeader>
+                  <SheetTitle>League Peek</SheetTitle>
+                  <SheetDescription>Snapshot leaderboard summary.</SheetDescription>
+                </SheetHeader>
+                <div className="p-3">
+                  <LeaderboardCardCurated
+                    rows={leaderboardRowsForCard}
+                    snapshotLabel={scoringSnapshotLabel}
+                    topCount={3}
+                    title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
+                    leaderboardPath={leaderboardPath}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </>
+        ) : null}
       </div>
     </div>
   )

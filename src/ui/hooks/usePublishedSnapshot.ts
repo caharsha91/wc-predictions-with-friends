@@ -9,6 +9,8 @@ import {
   hasExactBestThirdSelection,
   normalizeTeamCodes
 } from '../../lib/groupStageSnapshot'
+import { resolveStoredTopTwo } from '../../lib/groupRanking'
+import type { GroupPrediction } from '../../types/bracket'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import type { Match } from '../../types/matches'
 import { useRouteDataMode } from './useRouteDataMode'
@@ -56,7 +58,7 @@ function sortLeaderboardRows(entries: LeaderboardEntry[]): LeaderboardEntry[] {
 
 type ProjectedGroupPrediction = {
   userId: string
-  groups: Record<string, { first?: string; second?: string }>
+  groups: Record<string, GroupPrediction>
   bestThirds?: string[]
 }
 
@@ -94,7 +96,7 @@ async function fetchProjectedGroupPredictions(mode: 'default' | 'demo'): Promise
             : docSnap.id,
         groups:
           typeof data.groups === 'object' && data.groups !== null
-            ? (data.groups as Record<string, { first?: string; second?: string }>)
+            ? (data.groups as Record<string, GroupPrediction>)
             : {},
         bestThirds: Array.isArray(data.bestThirds)
           ? data.bestThirds.filter((value): value is string => typeof value === 'string')
@@ -144,10 +146,11 @@ function buildProjectedGroupStagePointsByUser({
       if (groupStandings.length < 2) continue
       const predictedGroup = prediction.groups[groupId]
       if (!predictedGroup) continue
-      if (predictedGroup.first && predictedGroup.first === groupStandings[0].code) {
+      const topTwo = resolveStoredTopTwo(predictedGroup, groupStandings.map((entry) => entry.code))
+      if (topTwo.first && topTwo.first === groupStandings[0].code) {
         points += groupQualifierPoints
       }
-      if (predictedGroup.second && predictedGroup.second === groupStandings[1].code) {
+      if (topTwo.second && topTwo.second === groupStandings[1].code) {
         points += groupQualifierPoints
       }
     }

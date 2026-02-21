@@ -21,7 +21,10 @@ import PanelState from '../components/ui/PanelState'
 import PageHeroPanel from '../components/ui/PageHeroPanel'
 import ScoreStepper from '../components/ui/ScoreStepper'
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
+import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import { LEADERBOARD_LIST_PAGE_SIZE } from '../constants/pagination'
+import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
@@ -121,6 +124,28 @@ function formatTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+function csvEscape(value: string): string {
+  if (!/[",\n]/.test(value)) return value
+  return `"${value.replace(/"/g, '""')}"`
+}
+
+function rowsToCsv(rows: string[][]): string {
+  return rows.map((row) => row.map((value) => csvEscape(value)).join(',')).join('\n')
+}
+
+function downloadCsvFile(fileName: string, content: string) {
+  if (typeof window === 'undefined') return
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
+  const url = window.URL.createObjectURL(blob)
+  const anchor = window.document.createElement('a')
+  anchor.href = url
+  anchor.download = fileName
+  window.document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  window.URL.revokeObjectURL(url)
 }
 
 function getEntryIdentityKey(entry: LeaderboardEntry): string {
@@ -308,6 +333,8 @@ export default function LeaderboardPage() {
   const userId = useViewerId()
   const mode = useRouteDataMode()
   const now = useNow()
+  const phaseState = useTournamentPhaseState()
+  const isDesktopViewport = useMediaQuery('(min-width: 768px)')
   const [page, setPage] = useState(1)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [previousRanks, setPreviousRanks] = useState<Record<string, number> | null>(null)
@@ -694,6 +721,49 @@ export default function LeaderboardPage() {
   const activeSimulationCount = Object.keys(simulatedOutcomes).length
   const projectedRankDelta =
     summary?.currentRank && projectedYou ? summary.currentRank - projectedYou.projectedRank : null
+  const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
+
+  function handleDownloadLeaderboardCsv() {
+    const exportedAt = new Date().toISOString()
+    const snapshotAsOf = snapshotTimestamp || 'Snapshot unavailable'
+    const rows: string[][] = [
+      ['exportedAt', exportedAt],
+      ['snapshotAsOf', snapshotAsOf],
+      ['viewerUserId', userId],
+      ['mode', mode === 'demo' ? 'demo' : 'prod'],
+      [],
+      [
+        'rank',
+        'userId',
+        'name',
+        'totalPoints',
+        'exactPoints',
+        'resultPoints',
+        'knockoutPoints',
+        'bracketPoints',
+        'earliestSubmission'
+      ]
+    ]
+
+    leaderboardRows.forEach((entry, index) => {
+      rows.push([
+        String(index + 1),
+        entry.member.id ?? '',
+        entry.member.name,
+        String(entry.totalPoints ?? 0),
+        String(entry.exactPoints ?? 0),
+        String(entry.resultPoints ?? 0),
+        String(entry.knockoutPoints ?? 0),
+        String(entry.bracketPoints ?? 0),
+        entry.earliestSubmission ?? ''
+      ])
+    })
+
+    const safeViewerId = userId.replace(/[^a-z0-9_-]/gi, '-').toLowerCase()
+    const stamp = exportedAt.replace(/[:.]/g, '-')
+    const fileName = `leaderboard-${safeViewerId || 'viewer'}-${stamp}.csv`
+    downloadCsvFile(fileName, rowsToCsv(rows))
+  }
 
   function jumpToCurrentUserRow() {
     if (!summary?.currentRank) return
@@ -711,13 +781,23 @@ export default function LeaderboardPage() {
         title="Leaderboard"
         subtitle="Published leaderboard snapshot for the private league race. Scores refresh daily."
         meta={
-          <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
-            <div className="uppercase tracking-[0.2em]">Last updated</div>
-            <div className="text-sm font-semibold text-foreground">{formatSnapshotTimestamp(snapshotTimestamp)}</div>
-            <div className="mt-1 text-[11px]">
-              {groupStageComplete
-                ? 'Group-stage scoring is included in this official snapshot.'
-                : 'Official group-stage scoring is frozen until completion.'}
+          <div className="flex items-start gap-3">
+            {showExportMenu ? (
+              <ExportMenuV2
+                scopeLabel="Full leaderboard snapshot (all members)"
+                snapshotLabel={formatSnapshotTimestamp(snapshotTimestamp)}
+                lockMessage="Post-lock exports only. CSV format."
+                onDownloadCsv={handleDownloadLeaderboardCsv}
+              />
+            ) : null}
+            <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
+              <div className="uppercase tracking-[0.2em]">Last updated</div>
+              <div className="text-sm font-semibold text-foreground">{formatSnapshotTimestamp(snapshotTimestamp)}</div>
+              <div className="mt-1 text-[11px]">
+                {groupStageComplete
+                  ? 'Group-stage scoring is included in this official snapshot.'
+                  : 'Official group-stage scoring is frozen until completion.'}
+              </div>
             </div>
           </div>
         }

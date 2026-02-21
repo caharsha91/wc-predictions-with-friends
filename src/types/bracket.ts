@@ -4,6 +4,7 @@ import type { MatchWinner } from './matches'
 export type GroupPrediction = {
   first?: string
   second?: string
+  ranking?: string[]
 }
 
 export type BracketGroupDoc = {

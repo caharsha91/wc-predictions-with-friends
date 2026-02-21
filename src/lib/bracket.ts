@@ -81,6 +81,7 @@ export function saveLocalBracketPrediction(
 export function hasBracketData(prediction: BracketPrediction): boolean {
   if (prediction.bestThirds?.some((code) => Boolean(code))) return true
   for (const group of Object.values(prediction.groups ?? {})) {
+    if (Array.isArray(group?.ranking) && group.ranking.some((code) => Boolean(code))) return true
     if (group?.first || group?.second) return true
   }
   for (const stagePredictions of Object.values(prediction.knockout ?? {})) {

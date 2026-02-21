@@ -6,6 +6,11 @@ import { loadLocalBracketPrediction, saveLocalBracketPrediction } from '../../li
 import { fetchBracketPredictions } from '../../lib/data'
 import { fetchUserGroupStageDoc, saveUserGroupStageDoc } from '../../lib/firestoreData'
 import { firebaseAuth, firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
+import {
+  applyGroupRanking,
+  hasAnyGroupRankingSelection,
+  normalizeGroupRanking
+} from '../../lib/groupRanking'
 import { getGroupOutcomesLockTime } from '../../lib/matches'
 import type { GroupPrediction } from '../../types/bracket'
 import type { Match } from '../../types/matches'
@@ -34,6 +39,10 @@ type GroupStageSaveResult =
   | { ok: true }
   | { ok: false; reason: 'locked' | 'error' }
 
+type GroupRankingSaveResult =
+  | { ok: true; changed: boolean; bestThirds: string[] }
+  | { ok: false; reason: 'locked' | 'error' }
+
 function buildGroupIds(matches: Match[]): string[] {
   const ids = new Set<string>()
   for (const match of matches) {
@@ -41,6 +50,23 @@ function buildGroupIds(matches: Match[]): string[] {
     ids.add(match.group)
   }
   return [...ids].sort()
+}
+
+function buildGroupTeamCodesByGroup(matches: Match[]): Record<string, string[]> {
+  const groups = new Map<string, Set<string>>()
+  for (const match of matches) {
+    if (match.stage !== 'Group' || !match.group) continue
+    const group = groups.get(match.group) ?? new Set<string>()
+    group.add(match.homeTeam.code)
+    group.add(match.awayTeam.code)
+    groups.set(match.group, group)
+  }
+
+  const next: Record<string, string[]> = {}
+  for (const [groupId, codes] of groups.entries()) {
+    next[groupId] = [...codes].sort((a, b) => a.localeCompare(b))
+  }
+  return next
 }
 
 function createEmptyData(groupIds: string[]): GroupStageData {
@@ -57,11 +83,20 @@ function createEmptyData(groupIds: string[]): GroupStageData {
 
 function normalizeGroups(
   groups: Record<string, GroupPrediction>,
-  groupIds: string[]
+  groupIds: string[],
+  groupTeamCodesByGroup: Record<string, string[]>
 ): Record<string, GroupPrediction> {
-  const next = { ...groups }
+  const next: Record<string, GroupPrediction> = {}
   for (const groupId of groupIds) {
-    if (!next[groupId]) next[groupId] = {}
+    const current = groups[groupId] ?? {}
+    const teamCodes = groupTeamCodesByGroup[groupId] ?? []
+    if (teamCodes.length === 0) {
+      next[groupId] = { ...current }
+      continue
+    }
+    const normalizedRanking = normalizeGroupRanking(current.ranking, teamCodes)
+    const normalizedGroup = applyGroupRanking(current, normalizedRanking, teamCodes)
+    next[groupId] = normalizedGroup
   }
   return next
 }
@@ -72,9 +107,19 @@ function normalizeBestThirds(bestThirds: string[] | undefined, slotCount: number
   return next.slice(0, slotCount)
 }
 
-function hasAnyGroupSelection(groups: Record<string, GroupPrediction>, bestThirds: string[]): boolean {
-  for (const group of Object.values(groups)) {
-    if (group?.first || group?.second) return true
+function hasAnyGroupSelection(
+  groups: Record<string, GroupPrediction>,
+  bestThirds: string[],
+  groupTeamCodesByGroup: Record<string, string[]>
+): boolean {
+  for (const [groupId, group] of Object.entries(groups)) {
+    const teamCodes = groupTeamCodesByGroup[groupId] ?? []
+    if (teamCodes.length === 0) {
+      if (group?.first || group?.second) return true
+      if (Array.isArray(group?.ranking) && group.ranking.length > 0) return true
+      continue
+    }
+    if (hasAnyGroupRankingSelection(group, teamCodes)) return true
   }
   return bestThirds.some((team) => Boolean(team))
 }
@@ -101,6 +146,7 @@ export function useGroupStageData(matches: Match[]) {
   const demoScenario = useDemoScenarioState()
   const userId = useViewerId()
   const groupIds = useMemo(() => buildGroupIds(matches), [matches])
+  const groupTeamCodesByGroup = useMemo(() => buildGroupTeamCodesByGroup(matches), [matches])
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
 
   const [loadState, setLoadState] = useState<GroupStageLoadState>({ status: 'loading' })
@@ -163,22 +209,22 @@ export function useGroupStageData(matches: Match[]) {
           const remote = await fetchUserGroupStageDoc(canonicalUserId)
           if (remote) {
             next = {
-              groups: normalizeGroups(remote.groups ?? {}, groupIds),
+              groups: normalizeGroups(remote.groups ?? {}, groupIds, groupTeamCodesByGroup),
               bestThirds: normalizeBestThirds(remote.bestThirds ?? [], slotCount),
               updatedAt: new Date().toISOString()
             }
           } else {
             next = {
-              groups: normalizeGroups({}, groupIds),
+              groups: normalizeGroups({}, groupIds, groupTeamCodesByGroup),
               bestThirds: normalizeBestThirds([], slotCount),
               updatedAt: new Date().toISOString()
             }
           }
         } else if (!isLiveMode) {
           const local = loadLocalBracketPrediction(userId, mode)
-          if (local && hasAnyGroupSelection(local.groups ?? {}, local.bestThirds ?? [])) {
+          if (local && hasAnyGroupSelection(local.groups ?? {}, local.bestThirds ?? [], groupTeamCodesByGroup)) {
             next = {
-              groups: normalizeGroups(local.groups ?? {}, groupIds),
+              groups: normalizeGroups(local.groups ?? {}, groupIds, groupTeamCodesByGroup),
               bestThirds: normalizeBestThirds(local.bestThirds ?? [], slotCount),
               updatedAt: local.updatedAt || new Date().toISOString()
             }
@@ -190,7 +236,7 @@ export function useGroupStageData(matches: Match[]) {
           const seedDoc = seed.group.find((entry) => entry.userId === userId) ?? seed.group[0]
           if (seedDoc) {
             next = {
-              groups: normalizeGroups(seedDoc.groups ?? {}, groupIds),
+              groups: normalizeGroups(seedDoc.groups ?? {}, groupIds, groupTeamCodesByGroup),
               bestThirds: normalizeBestThirds(seedDoc.bestThirds ?? [], slotCount),
               updatedAt: seedDoc.updatedAt || new Date().toISOString()
             }
@@ -222,11 +268,17 @@ export function useGroupStageData(matches: Match[]) {
     return () => {
       canceled = true
     }
-  }, [authState.status, demoScenario, firestoreEnabled, groupIds, isLiveMode, mode, userId])
+  }, [authState.status, demoScenario, firestoreEnabled, groupIds, groupTeamCodesByGroup, isLiveMode, mode, userId])
 
   const setGroupPick = useCallback(
     (groupId: string, field: 'first' | 'second', value: string) => {
       if (isLocked) return
+      const teamCodes = groupTeamCodesByGroup[groupId] ?? []
+      const allowed = new Set(teamCodes)
+      const normalized = value.trim().toUpperCase()
+      const safeValue =
+        normalized && (teamCodes.length === 0 || allowed.has(normalized)) ? normalized : undefined
+
       setData((current) => {
         const nextGroups = {
           ...current.groups,
@@ -236,14 +288,15 @@ export function useGroupStageData(matches: Match[]) {
         }
 
         const pick = nextGroups[groupId]
-        const normalized = value || undefined
         if (field === 'first') {
-          pick.first = normalized
-          if (pick.second && pick.second === normalized) pick.second = undefined
+          pick.first = safeValue
+          if (pick.second && pick.second === safeValue) pick.second = undefined
         } else {
-          pick.second = normalized
-          if (pick.first && pick.first === normalized) pick.first = undefined
+          pick.second = safeValue
+          if (pick.first && pick.first === safeValue) pick.first = undefined
         }
+        // Any direct top-two edit invalidates persisted strict ranking.
+        delete pick.ranking
 
         const next: GroupStageData = {
           ...current,
@@ -255,7 +308,7 @@ export function useGroupStageData(matches: Match[]) {
       })
       setSaveStatus('idle')
     },
-    [isLocked, mode, userId]
+    [groupTeamCodesByGroup, isLocked, mode, userId]
   )
 
   const setBestThird = useCallback(
@@ -265,6 +318,29 @@ export function useGroupStageData(matches: Match[]) {
         const slotCount = Math.max(DEFAULT_BEST_THIRD_SLOTS, current.bestThirds.length)
         const nextBestThirds = normalizeBestThirds(current.bestThirds, slotCount)
         nextBestThirds[index] = value || ''
+
+        const next: GroupStageData = {
+          ...current,
+          bestThirds: nextBestThirds,
+          updatedAt: new Date().toISOString()
+        }
+        saveLocalGroupStage(userId, next, mode)
+        return next
+      })
+      setSaveStatus('idle')
+    },
+    [isLocked, mode, userId]
+  )
+
+  const setBestThirds = useCallback(
+    (nextCodes: string[]) => {
+      if (isLocked) return
+      setData((current) => {
+        const slotCount = Math.max(DEFAULT_BEST_THIRD_SLOTS, current.bestThirds.length, nextCodes.length)
+        const nextBestThirds = normalizeBestThirds(
+          nextCodes.map((code) => String(code ?? '').trim().toUpperCase()),
+          slotCount
+        )
 
         const next: GroupStageData = {
           ...current,
@@ -300,14 +376,20 @@ export function useGroupStageData(matches: Match[]) {
     }
 
     try {
+      const normalizedGroups = normalizeGroups(resolvedData.groups, groupIds, groupTeamCodesByGroup)
+      const persistableData: GroupStageData = {
+        ...resolvedData,
+        groups: normalizedGroups,
+        bestThirds: normalizeBestThirds(resolvedData.bestThirds, DEFAULT_BEST_THIRD_SLOTS)
+      }
       const canonicalUserId = await resolveCanonicalUserId(userId)
-      saveLocalGroupStage(canonicalUserId, resolvedData, mode)
+      saveLocalGroupStage(canonicalUserId, persistableData, mode)
       if (firestoreEnabled) {
-        await saveUserGroupStageDoc(canonicalUserId, resolvedData.groups, resolvedData.bestThirds)
+        await saveUserGroupStageDoc(canonicalUserId, persistableData.groups, persistableData.bestThirds)
         if (canonicalUserId !== userId) refreshCurrentUser()
       }
       if (nextData) {
-        setData(resolvedData)
+        setData(persistableData)
       }
       setSaveStatus('saved')
       return { ok: true }
@@ -320,14 +402,98 @@ export function useGroupStageData(matches: Match[]) {
       setSaveStatus('error')
       return { ok: false, reason: 'error' }
     }
-  }, [data, firestoreEnabled, isLiveMode, isLocked, mode, userId])
+  }, [data, firestoreEnabled, groupIds, groupTeamCodesByGroup, isLiveMode, isLocked, mode, userId])
+
+  const saveGroupRanking = useCallback(
+    async (groupId: string, ranking: string[]): Promise<GroupRankingSaveResult> => {
+      if (isLocked) {
+        setForcedLocked(true)
+        setSaveStatus('locked')
+        return { ok: false, reason: 'locked' }
+      }
+
+      const teamCodes = groupTeamCodesByGroup[groupId] ?? []
+      if (teamCodes.length === 0) {
+        return {
+          ok: true,
+          changed: false,
+          bestThirds: normalizeBestThirds(data.bestThirds, Math.max(DEFAULT_BEST_THIRD_SLOTS, data.bestThirds.length))
+        }
+      }
+      const normalizedRanking = normalizeGroupRanking(ranking, teamCodes)
+      if (normalizedRanking.length !== teamCodes.length) {
+        return {
+          ok: true,
+          changed: false,
+          bestThirds: normalizeBestThirds(data.bestThirds, Math.max(DEFAULT_BEST_THIRD_SLOTS, data.bestThirds.length))
+        }
+      }
+
+      const currentGroup = data.groups[groupId] ?? {}
+      const currentRanking = normalizeGroupRanking(currentGroup.ranking, teamCodes)
+      const unchanged =
+        currentRanking.length === normalizedRanking.length &&
+        currentRanking.every((code, index) => code === normalizedRanking[index])
+      if (unchanged) {
+        return {
+          ok: true,
+          changed: false,
+          bestThirds: normalizeBestThirds(data.bestThirds, Math.max(DEFAULT_BEST_THIRD_SLOTS, data.bestThirds.length))
+        }
+      }
+
+      const nextGroup = applyGroupRanking(currentGroup, normalizedRanking, teamCodes)
+      const previousThirdCode = currentRanking.length === teamCodes.length ? currentRanking[2] ?? '' : ''
+      const nextThirdCode = normalizedRanking[2] ?? ''
+      const slotCount = Math.max(DEFAULT_BEST_THIRD_SLOTS, data.bestThirds.length)
+      let nextBestThirds = normalizeBestThirds(data.bestThirds, slotCount)
+
+      if (previousThirdCode && nextThirdCode && previousThirdCode !== nextThirdCode) {
+        let replaced = false
+        nextBestThirds = nextBestThirds.map((code) => {
+          if (code !== previousThirdCode) return code
+          replaced = true
+          return nextThirdCode
+        })
+
+        if (replaced) {
+          const seen = new Set<string>()
+          nextBestThirds = nextBestThirds.map((code) => {
+            const normalized = String(code ?? '').trim().toUpperCase()
+            if (!normalized || seen.has(normalized)) return ''
+            seen.add(normalized)
+            return normalized
+          })
+        }
+      }
+
+      const nextData: GroupStageData = {
+        ...data,
+        groups: {
+          ...data.groups,
+          [groupId]: nextGroup
+        },
+        bestThirds: nextBestThirds,
+        updatedAt: new Date().toISOString()
+      }
+
+      setData(nextData)
+      saveLocalGroupStage(userId, nextData, mode)
+      const saveResult = await save(nextData)
+      if (!saveResult.ok) return saveResult
+      return { ok: true, changed: true, bestThirds: nextBestThirds }
+    },
+    [data, groupTeamCodesByGroup, isLocked, mode, save, userId]
+  )
 
   return {
     loadState,
     data,
     groupIds,
     setGroupPick,
+    saveGroupRanking,
     setBestThird,
+    setBestThirds,
     save,
     saveStatus,
     canPersistFirestore: firestoreEnabled,

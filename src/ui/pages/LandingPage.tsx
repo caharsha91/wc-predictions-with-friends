@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { buildGroupTeamCodes, isStrictGroupRanking } from '../../lib/groupRanking'
 import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../lib/matches'
 import { findPick, isPickComplete } from '../../lib/picks'
 import type { LeaderboardEntry } from '../../types/leaderboard'
-import type { Match } from '../../types/matches'
+import type { Match, Team } from '../../types/matches'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -215,6 +216,35 @@ function normalizeStatus(status: Match['status'] | string): string {
   return String(status || '').toUpperCase()
 }
 
+function buildGroupTeams(matches: Match[]): Record<string, Team[]> {
+  const groups = new Map<string, Map<string, Team>>()
+  for (const match of matches) {
+    if (match.stage !== 'Group' || !match.group) continue
+    const teamMap = groups.get(match.group) ?? new Map<string, Team>()
+    teamMap.set(match.homeTeam.code, match.homeTeam)
+    teamMap.set(match.awayTeam.code, match.awayTeam)
+    groups.set(match.group, teamMap)
+  }
+
+  const next: Record<string, Team[]> = {}
+  for (const [groupId, teamMap] of groups.entries()) {
+    next[groupId] = [...teamMap.values()].sort((a, b) => a.code.localeCompare(b.code))
+  }
+  return next
+}
+
+function reorderRivalIds(rivalIds: string[], sourceId: string, targetId: string): string[] {
+  if (sourceId === targetId) return rivalIds
+  const sourceIndex = rivalIds.indexOf(sourceId)
+  const targetIndex = rivalIds.indexOf(targetId)
+  if (sourceIndex < 0 || targetIndex < 0) return rivalIds
+
+  const next = [...rivalIds]
+  const [moved] = next.splice(sourceIndex, 1)
+  next.splice(targetIndex, 0, moved)
+  return next
+}
+
 type ComposeTrackedStandingsIdsInput = {
   viewerId: string
   viewerName: string
@@ -423,6 +453,8 @@ export default function LandingPage() {
   const [profileLoading, setProfileLoading] = useState(true)
   const [profileSaving, setProfileSaving] = useState(false)
   const [rivalsReloadCount, setRivalsReloadCount] = useState(0)
+  const [draggingRivalId, setDraggingRivalId] = useState<string | null>(null)
+  const [dragOverRivalId, setDragOverRivalId] = useState<string | null>(null)
   const [rivalsState, setRivalsState] = useState<
     { status: 'loading' } | { status: 'ready'; entries: RivalDirectoryEntry[] } | { status: 'error'; message: string }
   >({ status: 'loading' })
@@ -437,6 +469,7 @@ export default function LandingPage() {
   const memberId = viewerId
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
+  const groupTeams = useMemo(() => buildGroupTeams(matches), [matches])
   const groupStage = useGroupStageData(matches)
   const knockoutData = useBracketKnockoutData()
 
@@ -486,6 +519,13 @@ export default function LandingPage() {
       canceled = true
     }
   }, [authState.user?.email, memberId, mode, rivalsReloadCount])
+
+  useEffect(() => {
+    if (!draggingRivalId) return
+    if (!rivalUserIds.includes(draggingRivalId)) {
+      clearRivalDragState()
+    }
+  }, [draggingRivalId, rivalUserIds])
 
   const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
   const snapshotTimestamp = snapshotReady?.snapshotTimestamp ?? null
@@ -600,7 +640,8 @@ export default function LandingPage() {
     let groupsDone = 0
     for (const groupId of groupStage.groupIds) {
       const selection = groupStage.data.groups[groupId] ?? {}
-      if (selection.first && selection.second && selection.first !== selection.second) {
+      const teamCodes = buildGroupTeamCodes(groupTeams[groupId] ?? [])
+      if (isStrictGroupRanking(selection.ranking, teamCodes)) {
         groupsDone += 1
       }
     }
@@ -614,7 +655,7 @@ export default function LandingPage() {
       bestThirdDone,
       pending: groupsRemaining + bestThirdRemaining
     }
-  }, [groupStage.data.bestThirds, groupStage.data.groups, groupStage.groupIds])
+  }, [groupStage.data.bestThirds, groupStage.data.groups, groupStage.groupIds, groupTeams])
 
   const queueMatches = useMemo<QueueMatch[]>(() => {
     return matches
@@ -921,21 +962,48 @@ export default function LandingPage() {
     persistRivals(rivalUserIds.filter((id) => id !== rivalId))
   }
 
-  function moveRival(rivalId: string, direction: -1 | 1) {
-    const currentIndex = rivalUserIds.indexOf(rivalId)
-    if (currentIndex < 0) return
-    const nextIndex = currentIndex + direction
-    if (nextIndex < 0 || nextIndex >= rivalUserIds.length) return
-
-    const next = [...rivalUserIds]
-    const [moved] = next.splice(currentIndex, 1)
-    next.splice(nextIndex, 0, moved)
-    persistRivals(next)
+  function clearRivalDragState() {
+    setDraggingRivalId(null)
+    setDragOverRivalId(null)
   }
 
   function clearRivals() {
     if (rivalUserIds.length === 0) return
     persistRivals([])
+  }
+
+  function handleSelectedRivalDragStart(event: DragEvent<HTMLDivElement>, rivalId: string) {
+    if (profileSaving) return
+    setDraggingRivalId(rivalId)
+    setDragOverRivalId(rivalId)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', rivalId)
+  }
+
+  function handleSelectedRivalDragOver(event: DragEvent<HTMLDivElement>, rivalId: string) {
+    if (!draggingRivalId || draggingRivalId === rivalId) return
+    event.preventDefault()
+    if (dragOverRivalId === rivalId) return
+    setDragOverRivalId(rivalId)
+  }
+
+  function handleSelectedRivalDrop(event: DragEvent<HTMLDivElement>, rivalId: string) {
+    event.preventDefault()
+    if (profileSaving) {
+      clearRivalDragState()
+      return
+    }
+
+    const payload = event.dataTransfer.getData('text/plain').trim()
+    const sourceId = draggingRivalId ?? payload
+    if (!sourceId) {
+      clearRivalDragState()
+      return
+    }
+    const next = reorderRivalIds(rivalUserIds, sourceId, rivalId)
+    clearRivalDragState()
+    if (arraysEqual(next, rivalUserIds)) return
+    persistRivals(next)
   }
 
   const rivalsBoard = (
@@ -959,12 +1027,32 @@ export default function LandingPage() {
           <div className="space-y-2">
             {rivalsListRows.map((row, index) => {
               const selectedRivalId = row.selectedIndex !== null ? rivalUserIds[row.selectedIndex] : null
+              const isSelectedDraggable = Boolean(row.kind === 'selected' && selectedRivalId && !profileSaving)
+              const isDragging = Boolean(selectedRivalId && draggingRivalId === selectedRivalId)
+              const isDragOver = Boolean(selectedRivalId && draggingRivalId && dragOverRivalId === selectedRivalId)
 
               return (
                 <div
                   key={`${row.id}-${index}`}
                   className="landing-v2-rivals-row landing-v2-rival-slot flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1.5"
                   data-kind={row.kind}
+                  data-draggable={isSelectedDraggable ? 'true' : 'false'}
+                  data-dragging={isDragging ? 'true' : 'false'}
+                  data-drag-over={isDragOver ? 'true' : 'false'}
+                  draggable={isSelectedDraggable}
+                  onDragStart={(event) => {
+                    if (!selectedRivalId) return
+                    handleSelectedRivalDragStart(event, selectedRivalId)
+                  }}
+                  onDragOver={(event) => {
+                    if (!selectedRivalId) return
+                    handleSelectedRivalDragOver(event, selectedRivalId)
+                  }}
+                  onDrop={(event) => {
+                    if (!selectedRivalId) return
+                    handleSelectedRivalDrop(event, selectedRivalId)
+                  }}
+                  onDragEnd={clearRivalDragState}
                 >
                   <ProfileAvatar name={row.name} photoURL={row.photoURL} className="h-8 w-8" />
                   <div className="min-w-0 flex-1">
@@ -992,24 +1080,9 @@ export default function LandingPage() {
                   </div>
                   {row.kind === 'selected' && row.selectedIndex !== null && selectedRivalId ? (
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 rounded px-1.5 text-[10px]"
-                        disabled={profileSaving || row.selectedIndex === 0}
-                        onClick={() => moveRival(selectedRivalId, -1)}
-                      >
-                        Up
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 rounded px-1.5 text-[10px]"
-                        disabled={profileSaving || row.selectedIndex === rivalUserIds.length - 1}
-                        onClick={() => moveRival(selectedRivalId, 1)}
-                      >
-                        Down
-                      </Button>
+                      <span className="landing-v2-rival-drag-handle text-[10px] text-muted-foreground" aria-hidden="true">
+                        ::
+                      </span>
                       <Button
                         variant="ghost"
                         size="sm"

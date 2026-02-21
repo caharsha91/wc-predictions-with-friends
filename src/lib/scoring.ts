@@ -6,6 +6,7 @@ import type { BracketPrediction } from '../types/bracket'
 import type { KnockoutStage, ScoringConfig, StageScoring } from '../types/scoring'
 import { getOutcomeFromScores, getPickOutcome, getPredictedWinner, isPickComplete } from './picks'
 import { buildGroupStandingsSnapshot, hasExactBestThirdSelection, normalizeTeamCodes } from './groupStageSnapshot'
+import { resolveStoredTopTwo } from './groupRanking'
 
 type Outcome = 'WIN' | 'DRAW' | 'LOSS'
 
@@ -77,10 +78,11 @@ function scoreBracketPrediction(
     const actualTopTwo = standings.slice(0, 2).map((entry) => entry.code)
     const predicted = prediction.groups[groupId]
     if (!predicted) continue
-    if (predicted.first && predicted.first === actualTopTwo[0]) {
+    const topTwo = resolveStoredTopTwo(predicted, standings.map((entry) => entry.code))
+    if (topTwo.first && topTwo.first === actualTopTwo[0]) {
       points += scoring.bracket.groupQualifiers
     }
-    if (predicted.second && predicted.second === actualTopTwo[1]) {
+    if (topTwo.second && topTwo.second === actualTopTwo[1]) {
       points += scoring.bracket.groupQualifiers
     }
   }
