@@ -1,4 +1,5 @@
 import { getPredictedWinner } from '../../lib/picks'
+import { isMatchCompleted } from '../../lib/matchStatus'
 import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
 
@@ -79,7 +80,7 @@ export function buildSocialBadgeMap(
       if (!match) continue
 
       if (
-        match.status === 'FINISHED' &&
+        isMatchCompleted(match) &&
         match.score &&
         typeof pick.homeScore === 'number' &&
         typeof pick.awayScore === 'number' &&

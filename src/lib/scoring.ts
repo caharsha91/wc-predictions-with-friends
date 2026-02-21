@@ -6,6 +6,7 @@ import type { BracketPrediction } from '../types/bracket'
 import type { KnockoutStage, ScoringConfig, StageScoring } from '../types/scoring'
 import { getOutcomeFromScores, getPickOutcome, getPredictedWinner, isPickComplete } from './picks'
 import { buildGroupStandingsSnapshot, hasExactBestThirdSelection, normalizeTeamCodes } from './groupStageSnapshot'
+import { isMatchCompleted } from './matchStatus'
 import { resolveStoredTopTwo } from './groupRanking'
 
 type Outcome = 'WIN' | 'DRAW' | 'LOSS'
@@ -100,7 +101,7 @@ function scoreBracketPrediction(
 
   for (const match of matches) {
     if (match.stage === 'Group') continue
-    if (match.status !== 'FINISHED' || !match.winner) continue
+    if (!isMatchCompleted(match) || !match.winner) continue
     const stage = match.stage as KnockoutStage
     const stagePredictions = prediction.knockout?.[stage]
     if (!stagePredictions) continue
@@ -139,7 +140,7 @@ export function buildLeaderboard(
 
   for (const pick of picks) {
     const match = matchById.get(pick.matchId)
-    if (!match || match.status !== 'FINISHED') continue
+    if (!match || !isMatchCompleted(match)) continue
     if (!isPickComplete(match, pick)) continue
 
     const entry = entries.get(pick.userId)

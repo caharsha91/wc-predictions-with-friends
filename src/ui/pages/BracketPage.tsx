@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
-import { getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../lib/matches'
+import { getGroupOutcomesLockTime, isMatchLocked } from '../../lib/matches'
+import { areMatchesCompleted, isMatchCompleted } from '../../lib/matchStatus'
 import type { Match } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
 import {
@@ -27,6 +28,8 @@ import { useViewerId } from '../hooks/useViewerId'
 import { readDemoScenario } from '../lib/demoControls'
 import { resolveKnockoutActivation } from '../lib/knockoutActivation'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
+import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
+import { readUserProfile } from '../lib/profilePersistence'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 
 const STAGE_LABELS: Record<KnockoutStage, string> = {
@@ -88,10 +91,33 @@ function resolvedTeamCode(code?: string): boolean {
   return /^[A-Z]{3}$/.test((code ?? '').trim().toUpperCase())
 }
 
+function normalizeKey(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase()
+}
+
+function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] {
+  const viewerKey = normalizeKey(viewerId)
+  const seen = new Set<string>()
+  const next: string[] = []
+
+  for (const rivalId of nextRivals) {
+    const trimmed = rivalId.trim()
+    if (!trimmed) continue
+    const key = normalizeKey(trimmed)
+    if (!key || key === viewerKey || seen.has(key)) continue
+    seen.add(key)
+    next.push(trimmed)
+    if (next.length >= 3) break
+  }
+
+  return next
+}
+
 export default function BracketPage() {
   // QA-SMOKE: route=/play/bracket and /demo/play/bracket ; checklist-id=smoke-knockout-detail
   const location = useLocation()
   const isDemoRoute = location.pathname.startsWith('/demo/')
+  const dataMode = isDemoRoute ? 'demo' : 'default'
   const demoScenario = isDemoRoute ? readDemoScenario() : null
   const now = useNow({ tickMs: 30_000 })
   const viewerId = useViewerId()
@@ -102,6 +128,7 @@ export default function BracketPage() {
   const bracket = useBracketKnockoutData()
   const publishedSnapshot = usePublishedSnapshot()
   const [leaguePeekOpen, setLeaguePeekOpen] = useState(false)
+  const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
   const readyBracketState = bracket.loadState.status === 'ready' ? bracket.loadState : null
 
   const playRoot = location.pathname.startsWith('/demo/') ? '/demo/play' : '/play'
@@ -115,6 +142,10 @@ export default function BracketPage() {
 
   const knockoutMatchesFromFixtures = useMemo(
     () => matches.filter((match) => match.stage !== 'Group'),
+    [matches]
+  )
+  const isKnockoutFinal = useMemo(
+    () => areMatchesCompleted(matches, (match) => match.stage !== 'Group'),
     [matches]
   )
 
@@ -157,25 +188,59 @@ export default function BracketPage() {
     setViewMode(isMobile ? 'list' : 'table')
   }, [isMobile])
 
+  useEffect(() => {
+    let canceled = false
+
+    async function loadRivals() {
+      try {
+        const profile = await readUserProfile(dataMode, viewerId)
+        if (canceled) return
+        setRivalUserIds(sanitizeRivalUserIds(profile.rivalUserIds, viewerId))
+      } catch {
+        if (!canceled) setRivalUserIds([])
+      }
+    }
+
+    void loadRivals()
+    return () => {
+      canceled = true
+    }
+  }, [dataMode, viewerId])
+
   const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
   const leaderboardSnapshotLabel = formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)
+  const leaderboardCardTitle = isKnockoutFinal ? 'Final Leaderboard' : 'Projected Leaderboard'
   const leaderboardRowsForCard = useMemo<LeaderboardCardRow[]>(() => {
     if (!snapshotReady) return []
-    const rows = buildLeaderboardPresentation({
+    const sectionRows = buildLeaderboardPresentation({
       snapshotTimestamp: snapshotReady.snapshotTimestamp,
       groupStageComplete: snapshotReady.groupStageComplete,
       projectedGroupStagePointsByUser: snapshotReady.projectedGroupStagePointsByUser,
       leaderboardRows: snapshotReady.leaderboardRows
-    }).rows
-    const viewerKey = viewerId.trim().toLowerCase()
-    return rows.map((entry, index) => ({
+    }).rows.map((entry) => ({
       id: entry.member.id || entry.member.name,
       name: entry.member.name,
-      rank: index + 1,
-      points: entry.totalPoints,
-      isYou: Boolean(entry.member.id?.trim()) && String(entry.member.id).trim().toLowerCase() === viewerKey
+      points: entry.bracketPoints,
+      isYou: normalizeKey(entry.member.id) === normalizeKey(viewerId)
     }))
-  }, [snapshotReady, viewerId])
+
+    const ranked = rankRowsWithTiePriority({
+      rows: sectionRows,
+      getPoints: (row) => row.points,
+      getIdentityKeys: (row) => [row.id],
+      getName: (row) => row.name,
+      viewerIdentity: viewerId,
+      rivalIdentities: rivalUserIds
+    })
+
+    return ranked.rankedRows.map(({ row, rank }) => ({
+      id: row.id,
+      name: row.name,
+      rank,
+      points: row.points,
+      isYou: row.isYou
+    }))
+  }, [rivalUserIds, snapshotReady, viewerId])
 
   useEffect(() => {
     if (!isDesktopRailViewport) return
@@ -324,7 +389,7 @@ export default function BracketPage() {
                       {entries.map((entry) => {
                         const pickedWinner = bracket.knockout[entry.stage]?.[entry.match.id]
                         const result: PredictionResult =
-                          entry.match.status !== 'FINISHED' || !entry.match.winner
+                          !isMatchCompleted(entry.match) || !entry.match.winner
                             ? 'pending'
                             : pickedWinner && pickedWinner === entry.match.winner
                               ? 'correct'
@@ -408,7 +473,7 @@ export default function BracketPage() {
                       {entries.map((entry) => {
                         const pickedWinner = bracket.knockout[entry.stage]?.[entry.match.id]
                         const result: PredictionResult =
-                          entry.match.status !== 'FINISHED' || !entry.match.winner
+                          !isMatchCompleted(entry.match) || !entry.match.winner
                             ? 'pending'
                             : pickedWinner && pickedWinner === entry.match.winner
                               ? 'correct'
@@ -503,8 +568,9 @@ export default function BracketPage() {
               rows={leaderboardRowsForCard}
               snapshotLabel={leaderboardSnapshotLabel}
               topCount={3}
-              title="League Snapshot"
+              title={leaderboardCardTitle}
               leaderboardPath={leaderboardPath}
+              priorityUserIds={rivalUserIds}
             />
           </RightRailSticky>
         ) : null}
@@ -531,8 +597,9 @@ export default function BracketPage() {
                   rows={leaderboardRowsForCard}
                   snapshotLabel={leaderboardSnapshotLabel}
                   topCount={3}
-                  title="League Snapshot"
+                  title={leaderboardCardTitle}
                   leaderboardPath={leaderboardPath}
+                  priorityUserIds={rivalUserIds}
                 />
               </div>
             </SheetContent>

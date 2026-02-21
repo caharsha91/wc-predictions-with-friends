@@ -109,7 +109,9 @@ export function isPickComplete(match: Match, pick?: Pick): boolean {
 
   const derivedOutcome = getPickOutcome(pick)
   if (derivedOutcome === 'DRAW') {
-    return Boolean(getPredictedWinner(pick))
+    const hasWinner = Boolean(getPredictedWinner(pick))
+    const hasKoMethod = pick.decidedBy === 'ET' || pick.decidedBy === 'PENS'
+    return hasWinner && hasKoMethod
   }
   return true
 }

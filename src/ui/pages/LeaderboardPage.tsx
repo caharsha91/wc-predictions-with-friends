@@ -22,7 +22,8 @@ import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
-import { buildViewerKeySet, resolveLeaderboardIdentityKeys, resolveLeaderboardUserContext } from '../lib/leaderboardContext'
+import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
+import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
 import { fetchRivalDirectory, readUserProfile, type RivalDirectoryEntry } from '../lib/profilePersistence'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
@@ -55,6 +56,7 @@ type RivalFocusRow = {
   rankDelta: number | null
   pointsDelta: number | null
   kind: 'you' | 'rival'
+  rivalSlot?: number | null
 }
 
 function formatTime(iso: string): string {
@@ -118,10 +120,14 @@ function getEntryIdentityKey(entry: LeaderboardEntry): string {
   return `name:${entry.member.name.trim().toLowerCase()}`
 }
 
-function buildRankSnapshot(entries: LeaderboardEntry[]): Record<string, number> {
+function buildRankSnapshot(entries: LeaderboardEntry[], rankByEntryKey: Map<string, number>): Record<string, number> {
   const snapshot: Record<string, number> = {}
-  for (let index = 0; index < entries.length; index += 1) {
-    snapshot[getEntryIdentityKey(entries[index])] = index + 1
+  for (const entry of entries) {
+    const entryKey = getEntryIdentityKey(entry)
+    const rank = rankByEntryKey.get(entryKey)
+    if (typeof rank === 'number' && Number.isFinite(rank)) {
+      snapshot[entryKey] = rank
+    }
   }
   return snapshot
 }
@@ -317,7 +323,7 @@ function RivalFocusPanel({
               <div className="truncate text-[14px] font-semibold text-foreground">{row.name}</div>
               <div className="mt-1 flex flex-wrap items-center gap-1">
                 <Badge tone={row.kind === 'you' ? 'info' : 'warning'} className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                  {row.kind === 'you' ? 'You' : 'Rival'}
+                  {row.kind === 'you' ? 'You' : row.rivalSlot ? `Rival ${row.rivalSlot}` : 'Rival'}
                 </Badge>
                 {row.rankDelta !== null ? (
                   <Badge tone={movementTone(row.rankDelta)} className="px-2 py-0 text-[10px] normal-case tracking-normal">
@@ -397,10 +403,33 @@ export default function LeaderboardPage() {
   const finalAvailable = Boolean(snapshotReady?.groupStageComplete)
   const snapshotTimestamp = snapshotReady?.snapshotTimestamp ?? ''
 
-  const activeRows = useMemo(
+  const activeBaseRows = useMemo(
     () => (view === 'final' && finalAvailable ? finalRows : potentialRows),
     [finalAvailable, finalRows, potentialRows, view]
   )
+
+  const activeTieRankedRows = useMemo(
+    () =>
+      rankRowsWithTiePriority({
+        rows: activeBaseRows,
+        getPoints: (entry) => entry.totalPoints,
+        getIdentityKeys: (entry) => resolveLeaderboardIdentityKeys(entry),
+        getName: (entry) => entry.member.name,
+        viewerIdentity: userId,
+        rivalIdentities: rivalUserIds
+      }),
+    [activeBaseRows, rivalUserIds, userId]
+  )
+
+  const activeRows = activeTieRankedRows.sortedRows
+
+  const rankByEntryKey = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const { row, rank } of activeTieRankedRows.rankedRows) {
+      map.set(getEntryIdentityKey(row), rank)
+    }
+    return map
+  }, [activeTieRankedRows.rankedRows])
 
   function syncViewInUrl(nextView: LeaderboardView, replace = true) {
     const params = new URLSearchParams(location.search)
@@ -518,14 +547,14 @@ export default function LeaderboardPage() {
 
     const currentSnapshot: RankSnapshot = {
       lastUpdated: snapshotTimestamp,
-      ranks: buildRankSnapshot(activeRows),
+      ranks: buildRankSnapshot(activeRows, rankByEntryKey),
       points: buildPointsSnapshot(activeRows)
     }
 
     const previous = readRankSnapshot(mode, view)
     setPreviousSnapshot(previous && previous.lastUpdated !== snapshotTimestamp ? previous : null)
     writeRankSnapshot(mode, view, currentSnapshot)
-  }, [activeRows, mode, snapshotTimestamp, state.status, view])
+  }, [activeRows, mode, rankByEntryKey, snapshotTimestamp, state.status, view])
 
   const socialBadgesByUser = useMemo(() => {
     if (state.status !== 'ready' || !snapshotReady) return new Map<string, SocialBadge[]>()
@@ -578,15 +607,66 @@ export default function LeaderboardPage() {
     return resolveLeaderboardIdentityKeys(entry).some((key) => rivalKeys.has(key))
   }
 
-  const userContext = useMemo(() => resolveLeaderboardUserContext(activeRows, viewerKeys), [activeRows, viewerKeys])
+  const rivalOrderByKey = useMemo(() => {
+    const order = new Map<string, number>()
+    for (let index = 0; index < rivalUserIds.length; index += 1) {
+      const key = normalizeIdentity(rivalUserIds[index])
+      if (!key) continue
+      order.set(key, index + 1)
+    }
+    return order
+  }, [rivalUserIds])
+
+  function resolveRivalSlot(entry: LeaderboardEntry): number | null {
+    if (isCurrentUserEntry(entry)) return null
+    for (const key of resolveLeaderboardIdentityKeys(entry)) {
+      const slot = rivalOrderByKey.get(normalizeIdentity(key))
+      if (typeof slot === 'number') return slot
+    }
+    return null
+  }
+
+  const userContext = useMemo(() => {
+    const currentIndex = activeRows.findIndex((entry) =>
+      resolveLeaderboardIdentityKeys(entry).some((key) => viewerKeys.has(key))
+    )
+    if (currentIndex < 0) return null
+    const currentEntry = activeRows[currentIndex]
+    const currentEntryKey = getEntryIdentityKey(currentEntry)
+    const currentRank = rankByEntryKey.get(currentEntryKey) ?? currentIndex + 1
+    const aboveEntry = currentIndex > 0 ? activeRows[currentIndex - 1] : null
+    const belowEntry = currentIndex < activeRows.length - 1 ? activeRows[currentIndex + 1] : null
+
+    return {
+      current: {
+        entry: currentEntry,
+        index: currentIndex,
+        rank: currentRank
+      },
+      above: aboveEntry
+        ? {
+            entry: aboveEntry,
+            index: currentIndex - 1,
+            rank: rankByEntryKey.get(getEntryIdentityKey(aboveEntry)) ?? currentIndex
+          }
+        : null,
+      below: belowEntry
+        ? {
+            entry: belowEntry,
+            index: currentIndex + 1,
+            rank: rankByEntryKey.get(getEntryIdentityKey(belowEntry)) ?? currentIndex + 2
+          }
+        : null
+    }
+  }, [activeRows, rankByEntryKey, viewerKeys])
 
   const activeRowsByIdentity = useMemo(() => {
     const map = new Map<string, { entry: LeaderboardEntry; rank: number; entryKey: string }>()
 
     for (let index = 0; index < activeRows.length; index += 1) {
       const entry = activeRows[index]
-      const rank = index + 1
       const entryKey = getEntryIdentityKey(entry)
+      const rank = rankByEntryKey.get(entryKey) ?? index + 1
 
       for (const key of resolveLeaderboardIdentityKeys(entry)) {
         map.set(key, { entry, rank, entryKey })
@@ -594,7 +674,7 @@ export default function LeaderboardPage() {
     }
 
     return map
-  }, [activeRows])
+  }, [activeRows, rankByEntryKey])
 
   const rivalFocusRows = useMemo<RivalFocusRow[]>(() => {
     const rows: RivalFocusRow[] = []
@@ -612,7 +692,8 @@ export default function LeaderboardPage() {
         points: currentEntry.totalPoints,
         rankDelta: typeof previousRank === 'number' ? previousRank - userContext.current.rank : null,
         pointsDelta: typeof previousPoints === 'number' ? currentEntry.totalPoints - previousPoints : null,
-        kind: 'you'
+        kind: 'you',
+        rivalSlot: null
       })
     } else {
       rows.push({
@@ -622,11 +703,14 @@ export default function LeaderboardPage() {
         points: null,
         rankDelta: null,
         pointsDelta: null,
-        kind: 'you'
+        kind: 'you',
+        rivalSlot: null
       })
     }
 
-    for (const rivalId of rivalUserIds) {
+    for (let rivalIndex = 0; rivalIndex < rivalUserIds.length; rivalIndex += 1) {
+      const rivalId = rivalUserIds[rivalIndex]
+      const rivalSlot = rivalIndex + 1
       const rawRivalId = rivalId.trim()
       const rivalIdKey = normalizeIdentity(rawRivalId)
       const rivalLookupKey = rivalIdKey.startsWith('id:') ? rivalIdKey.slice(3) : rivalIdKey
@@ -646,7 +730,8 @@ export default function LeaderboardPage() {
           points: null,
           rankDelta: null,
           pointsDelta: null,
-          kind: 'rival'
+          kind: 'rival',
+          rivalSlot
         })
         continue
       }
@@ -661,7 +746,8 @@ export default function LeaderboardPage() {
         points: lookup.entry.totalPoints,
         rankDelta: typeof previousRank === 'number' ? previousRank - lookup.rank : null,
         pointsDelta: typeof previousPoints === 'number' ? lookup.entry.totalPoints - previousPoints : null,
-        kind: 'rival'
+        kind: 'rival',
+        rivalSlot
       })
     }
 
@@ -726,7 +812,7 @@ export default function LeaderboardPage() {
     id: entry.member.id || `podium-${index + 1}`,
     name: entry.member.name,
     points: entry.totalPoints,
-    rank: (index + 1) as 1 | 2 | 3,
+    rank: Math.min(3, Math.max(1, rankByEntryKey.get(getEntryIdentityKey(entry)) ?? index + 1)) as 1 | 2 | 3,
     isViewer: isCurrentUserEntry(entry)
   }))
 
@@ -778,7 +864,7 @@ export default function LeaderboardPage() {
 
   function jumpToCurrentUserRow() {
     if (!userContext?.current.rank) return
-    const targetPage = Math.max(1, Math.ceil(userContext.current.rank / LEADERBOARD_LIST_PAGE_SIZE))
+    const targetPage = Math.max(1, Math.ceil((userContext.current.index + 1) / LEADERBOARD_LIST_PAGE_SIZE))
     setPage(targetPage)
     window.setTimeout(() => {
       currentRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -873,11 +959,12 @@ export default function LeaderboardPage() {
               </div>
 
               {pageRows.map((entry, index) => {
-                const rank = start + index + 1
                 const entryKey = getEntryIdentityKey(entry)
+                const rank = rankByEntryKey.get(entryKey) ?? start + index + 1
                 const entryBadges = socialBadgesByEntry.get(entryKey) ?? []
                 const isYou = isCurrentUserEntry(entry)
                 const isRival = isRivalEntry(entry)
+                const rivalSlot = resolveRivalSlot(entry)
                 const isTopThree = rank <= 3
                 const previousRank = previousSnapshot?.ranks[entryKey]
                 const movementDelta = typeof previousRank === 'number' ? previousRank - rank : null
@@ -910,7 +997,7 @@ export default function LeaderboardPage() {
                           ) : null}
                           {!isYou && isRival ? (
                             <Badge tone="warning" className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                              Rival
+                              {rivalSlot ? `Rival ${rivalSlot}` : 'Rival'}
                             </Badge>
                           ) : null}
                           {isTopThree ? (
@@ -963,7 +1050,7 @@ export default function LeaderboardPage() {
                         ) : null}
                         {!isYou && isRival ? (
                           <Badge tone="warning" className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                            Rival
+                            {rivalSlot ? `Rival ${rivalSlot}` : 'Rival'}
                           </Badge>
                         ) : null}
                         {isTopThree ? (

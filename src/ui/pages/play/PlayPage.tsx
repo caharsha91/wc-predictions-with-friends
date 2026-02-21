@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { fetchLeaderboard, fetchMembers } from '../../../lib/data'
 import { firebaseDb, getLeagueId, hasFirebase } from '../../../lib/firebase'
+import { isMatchCompleted } from '../../../lib/matchStatus'
 import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, getLockTimePstForDateKey, isMatchLocked } from '../../../lib/matches'
 import { findPick, isPickComplete } from '../../../lib/picks'
 import type { LeaderboardEntry } from '../../../types/leaderboard'
@@ -410,7 +411,7 @@ export default function PlayPage() {
   const upcomingMatches = useMemo(
     () =>
       matches
-        .filter((match) => match.status !== 'FINISHED')
+        .filter((match) => !isMatchCompleted(match))
         .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime()),
     [matches]
   )

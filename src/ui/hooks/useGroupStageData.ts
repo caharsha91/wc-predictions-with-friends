@@ -6,11 +6,15 @@ import { loadLocalBracketPrediction, saveLocalBracketPrediction } from '../../li
 import { fetchBracketPredictions } from '../../lib/data'
 import { fetchUserGroupStageDoc, saveUserGroupStageDoc } from '../../lib/firestoreData'
 import { firebaseAuth, firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
+import { buildGroupStandingsSnapshot } from '../../lib/groupStageSnapshot'
 import {
   applyGroupRanking,
   hasAnyGroupRankingSelection,
-  normalizeGroupRanking
+  isStrictGroupRanking,
+  normalizeGroupRanking,
+  resolveStoredTopTwo
 } from '../../lib/groupRanking'
+import { isMatchCompleted } from '../../lib/matchStatus'
 import { getGroupOutcomesLockTime } from '../../lib/matches'
 import type { GroupPrediction } from '../../types/bracket'
 import type { Match } from '../../types/matches'
@@ -107,6 +111,107 @@ function normalizeBestThirds(bestThirds: string[] | undefined, slotCount: number
   return next.slice(0, slotCount)
 }
 
+function buildRankingFromTopTwoAndStandings(
+  group: GroupPrediction | undefined,
+  teamCodes: string[],
+  standingsCodes: string[]
+): string[] {
+  const next: string[] = []
+  const allowed = new Set(teamCodes)
+  const push = (value: string | undefined) => {
+    const normalized = String(value ?? '').trim().toUpperCase()
+    if (!normalized || !allowed.has(normalized) || next.includes(normalized)) return
+    next.push(normalized)
+  }
+
+  const topTwo = resolveStoredTopTwo(group, teamCodes)
+  push(topTwo.first)
+  push(topTwo.second)
+  for (const code of standingsCodes) push(code)
+  for (const code of teamCodes) push(code)
+  return next.slice(0, teamCodes.length)
+}
+
+function hydrateStrictRankingsFromStandings({
+  data,
+  matches,
+  groupIds,
+  groupTeamCodesByGroup
+}: {
+  data: GroupStageData
+  matches: Match[]
+  groupIds: string[]
+  groupTeamCodesByGroup: Record<string, string[]>
+}): GroupStageData {
+  const standings = buildGroupStandingsSnapshot(matches)
+  let changed = false
+  const nextGroups: Record<string, GroupPrediction> = { ...data.groups }
+
+  for (const groupId of groupIds) {
+    const teamCodes = groupTeamCodesByGroup[groupId] ?? []
+    if (teamCodes.length === 0) continue
+
+    const currentGroup = data.groups[groupId] ?? {}
+    if (isStrictGroupRanking(currentGroup.ranking, teamCodes)) continue
+
+    const standingsCodes = (standings.standingsByGroup.get(groupId) ?? []).map((entry) => entry.code)
+    const hydratedRanking = buildRankingFromTopTwoAndStandings(currentGroup, teamCodes, standingsCodes)
+    if (hydratedRanking.length !== teamCodes.length) continue
+
+    nextGroups[groupId] = applyGroupRanking(currentGroup, hydratedRanking, teamCodes)
+    changed = true
+  }
+
+  if (!changed) return data
+  return {
+    ...data,
+    groups: nextGroups
+  }
+}
+
+function hasAnyBestThirdSelection(bestThirds: string[] | undefined): boolean {
+  return (bestThirds ?? []).some((code) => Boolean(String(code ?? '').trim()))
+}
+
+function mergeGroupStageData({
+  seedData,
+  localData,
+  groupIds,
+  groupTeamCodesByGroup,
+  slotCount
+}: {
+  seedData: GroupStageData
+  localData: GroupStageData
+  groupIds: string[]
+  groupTeamCodesByGroup: Record<string, string[]>
+  slotCount: number
+}): GroupStageData {
+  const mergedGroups: Record<string, GroupPrediction> = {}
+
+  for (const groupId of groupIds) {
+    const teamCodes = groupTeamCodesByGroup[groupId] ?? []
+    const localGroup = localData.groups[groupId] ?? {}
+    const seedGroup = seedData.groups[groupId] ?? {}
+
+    const hasLocalSelection =
+      teamCodes.length > 0
+        ? hasAnyGroupRankingSelection(localGroup, teamCodes)
+        : Boolean(localGroup.first || localGroup.second || (Array.isArray(localGroup.ranking) && localGroup.ranking.length > 0))
+
+    mergedGroups[groupId] = hasLocalSelection ? localGroup : seedGroup
+  }
+
+  const mergedBestThirds = hasAnyBestThirdSelection(localData.bestThirds)
+    ? normalizeBestThirds(localData.bestThirds, slotCount)
+    : normalizeBestThirds(seedData.bestThirds, slotCount)
+
+  return {
+    groups: normalizeGroups(mergedGroups, groupIds, groupTeamCodesByGroup),
+    bestThirds: mergedBestThirds,
+    updatedAt: localData.updatedAt || seedData.updatedAt || new Date().toISOString()
+  }
+}
+
 function hasAnyGroupSelection(
   groups: Record<string, GroupPrediction>,
   bestThirds: string[],
@@ -148,6 +253,26 @@ export function useGroupStageData(matches: Match[]) {
   const groupIds = useMemo(() => buildGroupIds(matches), [matches])
   const groupTeamCodesByGroup = useMemo(() => buildGroupTeamCodesByGroup(matches), [matches])
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
+  const areGroupOutcomesComplete = useMemo(() => {
+    if (groupIds.length === 0) return false
+
+    const totalByGroup = new Map<string, number>()
+    const completedByGroup = new Map<string, number>()
+
+    for (const match of matches) {
+      if (match.stage !== 'Group' || !match.group) continue
+      totalByGroup.set(match.group, (totalByGroup.get(match.group) ?? 0) + 1)
+      if (isMatchCompleted(match)) {
+        completedByGroup.set(match.group, (completedByGroup.get(match.group) ?? 0) + 1)
+      }
+    }
+
+    return groupIds.every((groupId) => {
+      const total = totalByGroup.get(groupId) ?? 0
+      if (total <= 0) return false
+      return (completedByGroup.get(groupId) ?? 0) >= total
+    })
+  }, [groupIds, matches])
 
   const [loadState, setLoadState] = useState<GroupStageLoadState>({ status: 'loading' })
   const [saveStatus, setSaveStatus] = useState<GroupStageSaveStatus>('idle')
@@ -203,6 +328,7 @@ export function useGroupStageData(matches: Match[]) {
 
       try {
         let next: GroupStageData | null = null
+        let seedData: GroupStageData | null = null
 
         if (firestoreEnabled) {
           const canonicalUserId = await resolveCanonicalUserId(userId)
@@ -220,22 +346,13 @@ export function useGroupStageData(matches: Match[]) {
               updatedAt: new Date().toISOString()
             }
           }
-        } else if (!isLiveMode) {
-          const local = loadLocalBracketPrediction(userId, mode)
-          if (local && hasAnyGroupSelection(local.groups ?? {}, local.bestThirds ?? [], groupTeamCodesByGroup)) {
-            next = {
-              groups: normalizeGroups(local.groups ?? {}, groupIds, groupTeamCodesByGroup),
-              bestThirds: normalizeBestThirds(local.bestThirds ?? [], slotCount),
-              updatedAt: local.updatedAt || new Date().toISOString()
-            }
-          }
         }
 
         if (!next && !isLiveMode) {
           const seed = await fetchBracketPredictions({ mode })
           const seedDoc = seed.group.find((entry) => entry.userId === userId) ?? seed.group[0]
           if (seedDoc) {
-            next = {
+            seedData = {
               groups: normalizeGroups(seedDoc.groups ?? {}, groupIds, groupTeamCodesByGroup),
               bestThirds: normalizeBestThirds(seedDoc.bestThirds ?? [], slotCount),
               updatedAt: seedDoc.updatedAt || new Date().toISOString()
@@ -243,9 +360,47 @@ export function useGroupStageData(matches: Match[]) {
           }
         }
 
-        const resolved = next ?? {
+        if (!next && !isLiveMode) {
+          const local = loadLocalBracketPrediction(userId, mode)
+          if (local && hasAnyGroupSelection(local.groups ?? {}, local.bestThirds ?? [], groupTeamCodesByGroup)) {
+            const localData: GroupStageData = {
+              groups: normalizeGroups(local.groups ?? {}, groupIds, groupTeamCodesByGroup),
+              bestThirds: normalizeBestThirds(local.bestThirds ?? [], slotCount),
+              updatedAt: local.updatedAt || new Date().toISOString()
+            }
+
+            if (isDemoMode && (isTimeLocked || areGroupOutcomesComplete) && seedData) {
+              next = seedData
+            } else if (seedData) {
+              next = mergeGroupStageData({
+                seedData,
+                localData,
+                groupIds,
+                groupTeamCodesByGroup,
+                slotCount
+              })
+            } else {
+              next = localData
+            }
+          }
+        }
+
+        if (!next && !isLiveMode) {
+          next = seedData
+        }
+
+        let resolved = next ?? {
           ...empty,
           bestThirds: normalizeBestThirds(empty.bestThirds, slotCount)
+        }
+
+        if (isDemoMode && areGroupOutcomesComplete) {
+          resolved = hydrateStrictRankingsFromStandings({
+            data: resolved,
+            matches,
+            groupIds,
+            groupTeamCodesByGroup
+          })
         }
 
         saveLocalGroupStage(userId, resolved, mode)
@@ -268,7 +423,7 @@ export function useGroupStageData(matches: Match[]) {
     return () => {
       canceled = true
     }
-  }, [authState.status, demoScenario, firestoreEnabled, groupIds, groupTeamCodesByGroup, isLiveMode, mode, userId])
+  }, [areGroupOutcomesComplete, authState.status, demoScenario, firestoreEnabled, groupIds, groupTeamCodesByGroup, isDemoMode, isLiveMode, isTimeLocked, mode, userId])
 
   const setGroupPick = useCallback(
     (groupId: string, field: 'first' | 'second', value: string) => {

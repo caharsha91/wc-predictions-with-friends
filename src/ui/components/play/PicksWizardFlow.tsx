@@ -3,6 +3,7 @@ import { collection, getDocs } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
 
 import { firebaseDb, getLeagueId, hasFirebase } from '../../../lib/firebase'
+import { isMatchCompleted } from '../../../lib/matchStatus'
 import { getLockTime, isMatchLocked } from '../../../lib/matches'
 import { findPick, isPickComplete, upsertPick } from '../../../lib/picks'
 import type { Match } from '../../../types/matches'
@@ -23,6 +24,7 @@ type DraftPick = {
   homeScore: string
   awayScore: string
   advances: '' | PickAdvances
+  koWinMethod: '' | 'ET' | 'PENS'
 }
 
 type WizardStepKind = 'match' | 'review' | 'confirm'
@@ -79,7 +81,8 @@ function toDraft(pick?: Pick): DraftPick {
   return {
     homeScore: typeof pick?.homeScore === 'number' ? String(pick.homeScore) : '',
     awayScore: typeof pick?.awayScore === 'number' ? String(pick.awayScore) : '',
-    advances: pick?.advances ?? ''
+    advances: pick?.advances ?? '',
+    koWinMethod: pick?.decidedBy === 'ET' || pick?.decidedBy === 'PENS' ? pick.decidedBy : ''
   }
 }
 
@@ -153,7 +156,8 @@ export default function PicksWizardFlow({
   const [activeMatchDraft, setActiveMatchDraft] = useState<DraftPick>({
     homeScore: '',
     awayScore: '',
-    advances: ''
+    advances: '',
+    koWinMethod: ''
   })
   const [savingMatch, setSavingMatch] = useState(false)
   const [savingFinal, setSavingFinal] = useState(false)
@@ -202,7 +206,7 @@ export default function PicksWizardFlow({
   const upcomingMatches = useMemo(
     () =>
       matches
-        .filter((match) => match.status !== 'FINISHED')
+        .filter((match) => !isMatchCompleted(match))
         .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime()),
     [matches]
   )
@@ -366,7 +370,9 @@ export default function PicksWizardFlow({
   const parsedHome = parseScore(activeMatchDraft.homeScore)
   const parsedAway = parseScore(activeMatchDraft.awayScore)
   const tieInput = parsedHome !== undefined && parsedAway !== undefined && parsedHome === parsedAway
-  const requiresAdvances = currentMatch ? currentMatch.stage !== 'Group' && tieInput : false
+  const requiresKoExtras = currentMatch ? currentMatch.stage !== 'Group' && tieInput : false
+  const hasKoWinner = activeMatchDraft.advances === 'HOME' || activeMatchDraft.advances === 'AWAY'
+  const hasKoMethod = activeMatchDraft.koWinMethod === 'ET' || activeMatchDraft.koWinMethod === 'PENS'
 
   const matchLocked = currentMatch ? isMatchLocked(currentMatch.kickoffUtc, now) : false
   const matchCanSave =
@@ -374,7 +380,7 @@ export default function PicksWizardFlow({
     !matchLocked &&
     parsedHome !== undefined &&
     parsedAway !== undefined &&
-    (!requiresAdvances || activeMatchDraft.advances === 'HOME' || activeMatchDraft.advances === 'AWAY')
+    (!requiresKoExtras || (hasKoWinner && hasKoMethod))
 
   const currentConsensus = currentMatch ? consensusByMatchId.get(currentMatch.id) ?? null : null
   const activeDraftWinner = resolveWinnerSide(parsedHome, parsedAway, activeMatchDraft.advances, currentPick?.winner)
@@ -430,7 +436,10 @@ export default function PicksWizardFlow({
         userId,
         homeScore: parsedHome,
         awayScore: parsedAway,
-        advances: requiresAdvances ? activeMatchDraft.advances || undefined : undefined
+        advances: requiresKoExtras ? activeMatchDraft.advances || undefined : undefined,
+        winner: requiresKoExtras ? activeMatchDraft.advances || undefined : undefined,
+        decidedBy: requiresKoExtras ? activeMatchDraft.koWinMethod || undefined : undefined,
+        outcome: undefined
       })
       picksState.updatePicks(next)
       await picksState.savePicks(next)
@@ -449,12 +458,13 @@ export default function PicksWizardFlow({
     }
   }, [
     activeMatchDraft.advances,
+    activeMatchDraft.koWinMethod,
     currentMatch,
     matchCanSave,
     parsedAway,
     parsedHome,
     picksState,
-    requiresAdvances,
+    requiresKoExtras,
     userId,
     showToast
   ])
@@ -551,8 +561,13 @@ export default function PicksWizardFlow({
       return
     }
 
-    if (requiresAdvances && !(activeMatchDraft.advances === 'HOME' || activeMatchDraft.advances === 'AWAY')) {
+    if (requiresKoExtras && !hasKoWinner) {
       setNotice('Knockout ties require selecting who advances before continuing.')
+      return
+    }
+
+    if (requiresKoExtras && !hasKoMethod) {
+      setNotice('Knockout ties require selecting AET or Pens before continuing.')
       return
     }
 
@@ -738,16 +753,16 @@ export default function PicksWizardFlow({
               />
             </div>
 
-            {currentMatch.stage !== 'Group' ? (
+            {currentMatch.stage !== 'Group' && tieInput ? (
               <div className="rounded-xl border border-border/70 bg-bg2 p-3">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Knockout tie rule</div>
-                <div className="mt-1 text-sm text-foreground">Tie game — pick who advances.</div>
+                <div className="mt-1 text-sm text-foreground">Tie game — pick who advances and how.</div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <Button
                     variant="secondary"
                     data-active={activeMatchDraft.advances === 'HOME' ? 'true' : 'false'}
                     className={activeMatchDraft.advances === 'HOME' ? 'border-primary' : ''}
-                    disabled={matchLocked || !requiresAdvances}
+                    disabled={matchLocked}
                     onClick={() => setActiveMatchDraft((current) => ({ ...current, advances: 'HOME' }))}
                   >
                     {currentMatch.homeTeam.code} advances
@@ -756,16 +771,42 @@ export default function PicksWizardFlow({
                     variant="secondary"
                     data-active={activeMatchDraft.advances === 'AWAY' ? 'true' : 'false'}
                     className={activeMatchDraft.advances === 'AWAY' ? 'border-primary' : ''}
-                    disabled={matchLocked || !requiresAdvances}
+                    disabled={matchLocked}
                     onClick={() => setActiveMatchDraft((current) => ({ ...current, advances: 'AWAY' }))}
                   >
                     {currentMatch.awayTeam.code} advances
                   </Button>
                 </div>
-                {requiresAdvances &&
-                !(activeMatchDraft.advances === 'HOME' || activeMatchDraft.advances === 'AWAY') ? (
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <Button
+                    variant="secondary"
+                    data-active={activeMatchDraft.koWinMethod === 'ET' ? 'true' : 'false'}
+                    className={activeMatchDraft.koWinMethod === 'ET' ? 'border-primary' : ''}
+                    disabled={matchLocked}
+                    onClick={() => setActiveMatchDraft((current) => ({ ...current, koWinMethod: 'ET' }))}
+                  >
+                    AET
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    data-active={activeMatchDraft.koWinMethod === 'PENS' ? 'true' : 'false'}
+                    className={activeMatchDraft.koWinMethod === 'PENS' ? 'border-primary' : ''}
+                    disabled={matchLocked}
+                    onClick={() => setActiveMatchDraft((current) => ({ ...current, koWinMethod: 'PENS' }))}
+                  >
+                    Pens
+                  </Button>
+                </div>
+                {requiresKoExtras && !(activeMatchDraft.advances === 'HOME' || activeMatchDraft.advances === 'AWAY') ? (
                   <div className="mt-2 text-xs text-destructive">Required to continue.</div>
                 ) : null}
+                {requiresKoExtras && !(activeMatchDraft.koWinMethod === 'ET' || activeMatchDraft.koWinMethod === 'PENS') ? (
+                  <div className="mt-1 text-xs text-destructive">Pick AET or Pens to continue.</div>
+                ) : null}
+              </div>
+            ) : currentMatch.stage !== 'Group' ? (
+              <div className="rounded-xl border border-dashed border-border/70 bg-bg2/60 p-3 text-xs text-muted-foreground">
+                KO extras appear only for predicted draws.
               </div>
             ) : null}
 

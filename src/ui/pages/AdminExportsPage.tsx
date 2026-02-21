@@ -14,6 +14,7 @@ import {
 } from '../../lib/data'
 import type { DataMode } from '../../lib/dataMode'
 import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
+import { isMatchCompleted } from '../../lib/matchStatus'
 import { getDateKeyInTimeZone, getLockTime } from '../../lib/matches'
 import { flattenPicksFile, getPickOutcome, getPredictedWinner } from '../../lib/picks'
 import { buildLeaderboard } from '../../lib/scoring'
@@ -672,7 +673,7 @@ function buildUserWorkbookSheets(
   let previous: ScoreTotals = { exact: 0, outcome: 0, knockout: 0, bracket: 0, total: 0 }
   const resultsRows = matchdaysAsc.map((matchday) => {
     const finishedThroughDay = bundle.matchesFile.matches.filter(
-      (match) => match.status === 'FINISHED' && getDateKeyInTimeZone(match.kickoffUtc) <= matchday
+      (match) => isMatchCompleted(match) && getDateKeyInTimeZone(match.kickoffUtc) <= matchday
     )
     const entry = buildLeaderboard(
       [member],
@@ -685,7 +686,7 @@ function buildUserWorkbookSheets(
     const current = getScoreTotals(entry)
 
     const finishedOnDay = bundle.matchesFile.matches.filter(
-      (match) => match.status === 'FINISHED' && getDateKeyInTimeZone(match.kickoffUtc) === matchday
+      (match) => isMatchCompleted(match) && getDateKeyInTimeZone(match.kickoffUtc) === matchday
     ).length
 
     const awardedExact = current.exact - previous.exact
@@ -924,7 +925,7 @@ function buildMatchdayWorkbookSheets(
 
   const memberPool = buildMemberPool(bundle)
   const finishedThroughMatchday = bundle.matchesFile.matches.filter(
-    (match) => match.status === 'FINISHED' && getDateKeyInTimeZone(match.kickoffUtc) <= selectedMatchday
+    (match) => isMatchCompleted(match) && getDateKeyInTimeZone(match.kickoffUtc) <= selectedMatchday
   )
   const snapshotEntries = buildLeaderboard(
     memberPool,

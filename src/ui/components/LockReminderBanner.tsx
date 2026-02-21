@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 
+import { isMatchCompleted } from '../../lib/matchStatus'
 import { getDateKeyInTimeZone, getLockTime, isMatchLocked } from '../../lib/matches'
 import { findPick, isPickComplete } from '../../lib/picks'
 import type { Match } from '../../types/matches'
@@ -55,7 +56,7 @@ export default function LockReminderBanner({
 
   const upcomingLock = useMemo<UpcomingLock | null>(() => {
     const candidates = matches
-      .filter((match) => match.status !== 'FINISHED')
+      .filter((match) => !isMatchCompleted(match))
       .map((match) => ({ match, lockTime: getLockTime(match.kickoffUtc) }))
       .filter((entry) => entry.lockTime.getTime() > now.getTime())
       .sort((a, b) => a.lockTime.getTime() - b.lockTime.getTime())

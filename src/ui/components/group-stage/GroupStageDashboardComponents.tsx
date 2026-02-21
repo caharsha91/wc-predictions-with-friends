@@ -458,6 +458,7 @@ export function BestThirdPicksCompact({
 
       {!collapsed ? (
         <div className="p-3">
+          {warning ? <div className="mb-2 text-[13px]">{warning}</div> : null}
           <div className="group-stage-v2-best-third-grid grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
             {tiles.map((tile) => {
               const tileDisabled = isReadOnly || tile.disabled
@@ -504,8 +505,6 @@ export function BestThirdPicksCompact({
           {helperText ? <div className="mt-2 text-[13px] text-[color:var(--v2-text-muted)]">{helperText}</div> : null}
         </div>
       ) : null}
-
-      {warning ? <div className="px-3 pb-3 text-[13px]">{warning}</div> : null}
     </SectionCardV2>
   )
 }
@@ -541,9 +540,15 @@ function normalizeIdentity(value: string | null | undefined): string {
 function rowIdentityKeys(row: LeaderboardCardRow): string[] {
   const keys: string[] = []
   const idKey = normalizeIdentity(row.id)
-  if (idKey) keys.push(`id:${idKey}`)
+  if (idKey) {
+    keys.push(idKey)
+    keys.push(`id:${idKey}`)
+  }
   const nameKey = normalizeIdentity(row.name)
-  if (nameKey) keys.push(`name:${nameKey}`)
+  if (nameKey) {
+    keys.push(nameKey)
+    keys.push(`name:${nameKey}`)
+  }
   return keys
 }
 
@@ -587,7 +592,8 @@ function buildFixedPreviewRows({
     if (selected.length >= previewRowCount) break
   }
 
-  return selected.slice(0, previewRowCount)
+  const previewRows = selected.slice(0, previewRowCount)
+  return [...previewRows].sort((a, b) => a.rank - b.rank)
 }
 
 function curateRows(rows: LeaderboardCardRow[], topCount: number): LeaderboardCardRow[] {
@@ -635,6 +641,20 @@ function curateRows(rows: LeaderboardCardRow[], topCount: number): LeaderboardCa
   return curated
 }
 
+function resolveRivalSlot(row: LeaderboardCardRow, priorityUserIds: string[]): number | null {
+  if (row.isYou) return null
+  const rowId = normalizeIdentity(row.id)
+  const rowName = normalizeIdentity(row.name)
+
+  for (let index = 0; index < priorityUserIds.length; index += 1) {
+    const priorityKey = normalizeIdentity(priorityUserIds[index])
+    if (!priorityKey) continue
+    if (priorityKey === rowId || priorityKey === rowName) return index + 1
+  }
+
+  return null
+}
+
 export function LeaderboardCardCurated({
   rows,
   snapshotLabel,
@@ -657,17 +677,10 @@ export function LeaderboardCardCurated({
       priorityUserIds
     })
   }, [previewRowCount, priorityUserIds, rankedRows, shouldUseFixedPreview])
-  const topRows = useMemo(() => rankedRows.slice(0, topCount), [rankedRows, topCount])
-  const topHasYou = topRows.some((row) => row.isYou)
-  const youRow = rankedRows.find((row) => row.isYou) ?? null
-  const curatedWithoutYou = useMemo(() => curatedRows.filter((row) => !row.isYou), [curatedRows])
-  const shouldPinYouInCurated = !showFull && !shouldUseFixedPreview && !topHasYou && Boolean(youRow)
   const displayRows = showFull
     ? rankedRows
     : shouldUseFixedPreview
       ? fixedPreviewRows
-      : shouldPinYouInCurated
-      ? [...curatedWithoutYou, ...(youRow ? [youRow] : [])]
       : curatedRows
   const previewPlaceholderCount =
     !showFull && shouldUseFixedPreview && previewRowCount ? Math.max(0, previewRowCount - displayRows.length) : 0
@@ -691,35 +704,44 @@ export function LeaderboardCardCurated({
       </div>
 
       <div className={cn('space-y-1.5 p-3', showFull ? 'max-h-72 overflow-y-auto pr-1' : undefined)}>
-        {displayRows.map((row, index) => (
-          <div key={`leaderboard-row-wrap-${row.id}`}>
-            {shouldPinYouInCurated && row.isYou && index > 0 ? <div className="my-1 h-px bg-border/70" aria-hidden="true" /> : null}
-            <div
-              key={`leaderboard-row-${row.id}`}
-              className={cn(
-                'flex min-h-11 items-center justify-between rounded-lg border border-border px-3 text-[13px] transition-colors hover:bg-background/70',
-                row.isYou ? 'bg-background/80 ring-1 ring-ring/50' : 'bg-background/35'
-              )}
-            >
-              <div className="min-w-0">
-                <div className="truncate font-medium text-foreground">#{row.rank} {row.name}</div>
-                <div className="text-[12px] text-muted-foreground">
-                  Move {movementLabel(row.movement)}
-                  {row.isYou ? (
-                    <span className="ml-1 rounded-full border border-border px-1 py-0.5 text-[10px] uppercase tracking-[0.12em]">You</span>
+        {displayRows.map((row) => {
+          const rivalSlot = resolveRivalSlot(row, priorityUserIds)
+          return (
+            <div key={`leaderboard-row-wrap-${row.id}`}>
+              <div
+                className={cn(
+                  'flex min-h-11 items-center justify-between rounded-lg border border-border px-3 text-[13px] transition-colors hover:bg-background/70',
+                  row.isYou
+                    ? 'bg-background/80 ring-1 ring-ring/50'
+                    : rivalSlot
+                      ? 'bg-[rgba(var(--secondary-rgb),0.08)] ring-1 ring-[rgba(var(--secondary-rgb),0.35)]'
+                      : 'bg-background/35'
+                )}
+              >
+                <div className="min-w-0">
+                  <div className="truncate font-medium text-foreground">#{row.rank} {row.name}</div>
+                  <div className="text-[12px] text-muted-foreground">
+                    Move {movementLabel(row.movement)}
+                    {row.isYou ? (
+                      <span className="ml-1 rounded-full border border-border px-1 py-0.5 text-[10px] uppercase tracking-[0.12em]">You</span>
+                    ) : rivalSlot ? (
+                      <span className="ml-1 rounded-full border border-border px-1 py-0.5 text-[10px] uppercase tracking-[0.12em]">
+                        Rival {rivalSlot}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="text-right text-[12px] text-muted-foreground">
+                  <div className="tabular-nums text-foreground">{row.points} pts</div>
+                  {typeof row.deltaPoints === 'number' ? (
+                    <div className="tabular-nums">{row.deltaPoints >= 0 ? '+' : ''}{row.deltaPoints}</div>
                   ) : null}
                 </div>
               </div>
-
-              <div className="text-right text-[12px] text-muted-foreground">
-                <div className="tabular-nums text-foreground">{row.points} pts</div>
-                {typeof row.deltaPoints === 'number' ? (
-                  <div className="tabular-nums">{row.deltaPoints >= 0 ? '+' : ''}{row.deltaPoints}</div>
-                ) : null}
-              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
         {previewPlaceholderCount > 0
           ? Array.from({ length: previewPlaceholderCount }, (_, index) => (
               <div

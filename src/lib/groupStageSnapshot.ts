@@ -1,4 +1,5 @@
 import type { Match } from '../types/matches'
+import { isMatchCompleted } from './matchStatus'
 
 export const BEST_THIRD_SLOT_COUNT = 8
 
@@ -38,7 +39,7 @@ export function buildGroupStandingsSnapshot(matches: Match[]): GroupStandingsSna
     }
     tables.set(match.group, groupTable)
 
-    if (match.status !== 'FINISHED' || !match.score) continue
+    if (!isMatchCompleted(match) || !match.score) continue
 
     finishedPerGroup.set(match.group, (finishedPerGroup.get(match.group) ?? 0) + 1)
 
