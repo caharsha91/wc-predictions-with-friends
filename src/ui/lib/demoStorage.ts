@@ -36,13 +36,18 @@ export function emitDemoScenarioChanged(previousScenario: string, nextScenario: 
 
 export function clearDemoLocalStorage(): void {
   if (typeof window === 'undefined') return
-  const keysToRemove: string[] = []
-  for (let index = 0; index < window.localStorage.length; index += 1) {
-    const key = window.localStorage.key(index)
-    if (!key || !isDemoStorageKey(key)) continue
-    keysToRemove.push(key)
+  const clearDemoKeys = (storage: Storage) => {
+    const keysToRemove: string[] = []
+    for (let index = 0; index < storage.length; index += 1) {
+      const key = storage.key(index)
+      if (!key || !isDemoStorageKey(key)) continue
+      keysToRemove.push(key)
+    }
+    for (const key of keysToRemove) {
+      storage.removeItem(key)
+    }
   }
-  for (const key of keysToRemove) {
-    window.localStorage.removeItem(key)
-  }
+
+  clearDemoKeys(window.localStorage)
+  clearDemoKeys(window.sessionStorage)
 }

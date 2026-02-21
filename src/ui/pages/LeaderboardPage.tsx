@@ -1,87 +1,37 @@
-import * as ProgressPrimitive from '@radix-ui/react-progress'
-import { cva } from 'class-variance-authority'
 import { collection, getDocs } from 'firebase/firestore'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
-import { fetchScoring } from '../../lib/data'
 import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
-import { getLockTime, isMatchLocked } from '../../lib/matches'
-import { getPredictedWinner } from '../../lib/picks'
 import type { LeaderboardEntry } from '../../types/leaderboard'
-import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
-import type { ScoringConfig } from '../../types/scoring'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
-import DetailsDisclosure from '../components/ui/DetailsDisclosure'
 import PanelState from '../components/ui/PanelState'
-import PageHeroPanel from '../components/ui/PageHeroPanel'
-import ScoreStepper from '../components/ui/ScoreStepper'
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
+import LeaderboardPodium from '../components/v2/LeaderboardPodium'
+import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import PageShellV2 from '../components/v2/PageShellV2'
+import SectionCardV2 from '../components/v2/SectionCardV2'
+import SnapshotStamp from '../components/v2/SnapshotStamp'
 import { LEADERBOARD_LIST_PAGE_SIZE } from '../constants/pagination'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useMediaQuery } from '../hooks/useMediaQuery'
-import { useNow } from '../hooks/useNow'
 import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
-import { formatUtcAndLocalDeadline } from '../lib/deadline'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys, resolveLeaderboardUserContext } from '../lib/leaderboardContext'
+import { fetchRivalDirectory, readUserProfile, type RivalDirectoryEntry } from '../lib/profilePersistence'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { cn } from '../lib/utils'
-import { buildProjectedLeaderboard, type SimulatedMatchOutcome } from '../lib/whatIfSimulator'
 
 const RANK_SNAPSHOT_STORAGE_KEY = 'wc-leaderboard-rank-snapshot'
+const LEADERBOARD_VIEW_STORAGE_KEY = 'wc-leaderboard-view'
 
-const leaderboardRow = cva(
-  'grid grid-cols-[88px_96px_minmax(220px,1fr)_96px_96px_96px_96px_96px] items-center gap-2 rounded-2xl border px-3 py-3 transition duration-200 hover:scale-[1.01] hover:shadow-[0_0_0_1px_var(--border-accent),0_0_20px_var(--glow)]',
-  {
-    variants: {
-      intent: {
-        default: 'border-border/70 bg-card',
-        user:
-          'border-[var(--border-accent)] bg-[var(--accent-soft)]/65 ring-2 ring-[var(--border-accent)] shadow-[0_0_0_1px_var(--border-accent),0_0_28px_var(--glow)]',
-        rival: 'border-[var(--border-warning)] bg-[var(--banner-accent)]/35 shadow-[inset_0_0_0_1px_var(--border-warning)]'
-      }
-    },
-    defaultVariants: {
-      intent: 'default'
-    }
-  }
-)
-
-const momentumChevron = cva('inline-flex items-center justify-center text-lg font-black leading-none', {
-  variants: {
-    direction: {
-      up: 'text-success',
-      down: 'text-destructive',
-      flat: 'text-muted-foreground'
-    }
-  },
-  defaultVariants: {
-    direction: 'flat'
-  }
-})
-
-const podiumSurface = cva('rounded-3xl border backdrop-blur-md shadow-[var(--shadow1)]', {
-  variants: {
-    tone: {
-      podium:
-        'border-border/70 bg-[linear-gradient(145deg,var(--accent-soft),transparent_58%),linear-gradient(320deg,var(--accent-violet-soft),transparent_62%)]',
-      rival:
-        'border-border/70 bg-[linear-gradient(145deg,var(--banner-accent),transparent_58%),linear-gradient(320deg,var(--accent-soft),transparent_62%)]'
-    }
-  },
-  defaultVariants: {
-    tone: 'podium'
-  }
-})
+type LeaderboardView = 'potential' | 'final'
 
 type LoadState =
   | { status: 'loading' }
@@ -89,32 +39,22 @@ type LoadState =
   | {
       status: 'ready'
       picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[]
-      scoring: ScoringConfig
     }
 
 type RankSnapshot = {
   lastUpdated: string
   ranks: Record<string, number>
+  points?: Record<string, number>
 }
 
-type SwingOpportunity = {
-  matchId: string
-  label: string
-  lockUtc: string
-  kickoffUtc: string
-  votes: number
-  consensusTeam: string | null
-  consensusPct: number | null
-  swingScore: number
-}
-
-type MovementDirection = 'up' | 'down' | 'flat'
-
-type WhatIfDraft = {
-  enabled: boolean
-  homeScore: number
-  awayScore: number
-  advances?: 'HOME' | 'AWAY'
+type RivalFocusRow = {
+  id: string
+  name: string
+  rank: number | null
+  points: number | null
+  rankDelta: number | null
+  pointsDelta: number | null
+  kind: 'you' | 'rival'
 }
 
 function formatTime(iso: string): string {
@@ -148,6 +88,30 @@ function downloadCsvFile(fileName: string, content: string) {
   window.URL.revokeObjectURL(url)
 }
 
+function normalizeViewParam(value: string | null | undefined): LeaderboardView | null {
+  if (value === 'potential' || value === 'final') return value
+  return null
+}
+
+function isViewAllowed(view: LeaderboardView | null, finalAvailable: boolean): view is LeaderboardView {
+  if (view === 'potential') return true
+  return view === 'final' && finalAvailable
+}
+
+function resolveDefaultView(finalAvailable: boolean): LeaderboardView {
+  return finalAvailable ? 'final' : 'potential'
+}
+
+function readStoredView(mode: 'default' | 'demo'): LeaderboardView | null {
+  if (typeof window === 'undefined') return null
+  return normalizeViewParam(window.localStorage.getItem(`${LEADERBOARD_VIEW_STORAGE_KEY}:${mode}`))
+}
+
+function writeStoredView(mode: 'default' | 'demo', view: LeaderboardView): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(`${LEADERBOARD_VIEW_STORAGE_KEY}:${mode}`, view)
+}
+
 function getEntryIdentityKey(entry: LeaderboardEntry): string {
   const id = entry.member.id?.trim().toLowerCase()
   if (id) return `id:${id}`
@@ -162,12 +126,21 @@ function buildRankSnapshot(entries: LeaderboardEntry[]): Record<string, number> 
   return snapshot
 }
 
-function readRankSnapshot(mode: 'default' | 'demo'): RankSnapshot | null {
+function buildPointsSnapshot(entries: LeaderboardEntry[]): Record<string, number> {
+  const snapshot: Record<string, number> = {}
+  for (const entry of entries) {
+    snapshot[getEntryIdentityKey(entry)] = entry.totalPoints
+  }
+  return snapshot
+}
+
+function readRankSnapshot(mode: 'default' | 'demo', view: LeaderboardView): RankSnapshot | null {
   if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(`${RANK_SNAPSHOT_STORAGE_KEY}:${mode}`)
+  const raw = window.localStorage.getItem(`${RANK_SNAPSHOT_STORAGE_KEY}:${mode}:${view}`)
   if (!raw) return null
+
   try {
-    const parsed = JSON.parse(raw) as { lastUpdated?: unknown; ranks?: unknown }
+    const parsed = JSON.parse(raw) as { lastUpdated?: unknown; ranks?: unknown; points?: unknown }
     if (
       typeof parsed.lastUpdated !== 'string' ||
       !parsed.ranks ||
@@ -176,198 +149,337 @@ function readRankSnapshot(mode: 'default' | 'demo'): RankSnapshot | null {
     ) {
       return null
     }
+
     const ranks = Object.fromEntries(
       Object.entries(parsed.ranks).filter(([, value]) => typeof value === 'number' && Number.isFinite(value))
     ) as Record<string, number>
-    return { lastUpdated: parsed.lastUpdated, ranks }
+
+    const points =
+      parsed.points && typeof parsed.points === 'object' && !Array.isArray(parsed.points)
+        ? (Object.fromEntries(
+            Object.entries(parsed.points).filter(([, value]) => typeof value === 'number' && Number.isFinite(value))
+          ) as Record<string, number>)
+        : undefined
+
+    return {
+      lastUpdated: parsed.lastUpdated,
+      ranks,
+      points
+    }
   } catch {
     return null
   }
 }
 
-function writeRankSnapshot(mode: 'default' | 'demo', snapshot: RankSnapshot): void {
+function writeRankSnapshot(mode: 'default' | 'demo', view: LeaderboardView, snapshot: RankSnapshot): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(`${RANK_SNAPSHOT_STORAGE_KEY}:${mode}`, JSON.stringify(snapshot))
+  window.localStorage.setItem(`${RANK_SNAPSHOT_STORAGE_KEY}:${mode}:${view}`, JSON.stringify(snapshot))
 }
 
-function getMatchLabel(match: Match): string {
-  return `${match.homeTeam.code} vs ${match.awayTeam.code}`
-}
+function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] {
+  const viewerKey = viewerId.trim().toLowerCase()
+  const seen = new Set<string>()
+  const next: string[] = []
 
-function buildSwingOpportunities(
-  matches: Match[],
-  picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[],
-  now: Date
-): SwingOpportunity[] {
-  const openMatches = matches
-    .filter((match) => match.status !== 'FINISHED')
-    .filter((match) => !isMatchLocked(match.kickoffUtc, now))
-    .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())
-
-  const picksByMatch = new Map<string, { home: number; away: number; total: number }>()
-  for (const doc of picksDocs) {
-    for (const pick of doc.picks) {
-      const winner = getPredictedWinner(pick)
-      if (winner !== 'HOME' && winner !== 'AWAY') continue
-      const current = picksByMatch.get(pick.matchId) ?? { home: 0, away: 0, total: 0 }
-      if (winner === 'HOME') current.home += 1
-      if (winner === 'AWAY') current.away += 1
-      current.total += 1
-      picksByMatch.set(pick.matchId, current)
-    }
+  for (const rivalId of nextRivals) {
+    const trimmed = rivalId.trim()
+    if (!trimmed) continue
+    const key = trimmed.toLowerCase()
+    if (!key || key === viewerKey || seen.has(key)) continue
+    seen.add(key)
+    next.push(trimmed)
+    if (next.length >= 3) break
   }
 
-  const opportunities: SwingOpportunity[] = openMatches.map((match) => {
-    const picks = picksByMatch.get(match.id) ?? { home: 0, away: 0, total: 0 }
-    const topVotes = Math.max(picks.home, picks.away)
-    const runnerUpVotes = Math.min(picks.home, picks.away)
-    const margin = picks.total > 0 ? (topVotes - runnerUpVotes) / picks.total : 1
-    const disagreement = Math.max(0, 1 - margin)
-    const sampleWeight = picks.total > 0 ? picks.total / (picks.total + 4) : 0
-    const swingScore = Number((disagreement * sampleWeight).toFixed(4))
-    const consensusWinner = picks.home >= picks.away ? 'HOME' : 'AWAY'
-    const consensusTeam =
-      picks.total > 0
-        ? consensusWinner === 'HOME'
-          ? match.homeTeam.code
-          : match.awayTeam.code
-        : null
-    const consensusPct = picks.total > 0 ? Math.round((topVotes / picks.total) * 100) : null
-    return {
-      matchId: match.id,
-      label: getMatchLabel(match),
-      lockUtc: getLockTime(match.kickoffUtc).toISOString(),
-      kickoffUtc: match.kickoffUtc,
-      votes: picks.total,
-      consensusTeam,
-      consensusPct,
-      swingScore
-    }
-  })
-
-  return opportunities.sort((a, b) => {
-    if (b.swingScore !== a.swingScore) return b.swingScore - a.swingScore
-    return new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime()
-  })
+  return next
 }
 
-function getMovementDirection(delta: number): MovementDirection {
-  if (delta > 0) return 'up'
-  if (delta < 0) return 'down'
-  return 'flat'
+function normalizeIdentity(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase()
 }
 
-function SocialBadgePill({ badge }: { badge: SocialBadge }) {
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-bg2/60 px-2.5 py-1 text-xs text-foreground">
-      <span
-        className={cn(
-          'inline-flex h-4 w-4 items-center justify-center',
-          badge.kind === 'perfect_pick'
-            ? 'text-[var(--success)]'
-            : badge.kind === 'contrarian'
-              ? 'text-[var(--warning)]'
-              : 'text-[var(--info)]'
-        )}
-        aria-hidden="true"
-      >
-        {badge.kind === 'perfect_pick' ? (
-          <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current">
-            <path d="M10 1.5l2.2 4.4 4.8.7-3.5 3.4.8 4.8-4.3-2.3-4.3 2.3.8-4.8L3 6.6l4.8-.7L10 1.5z" />
-          </svg>
-        ) : badge.kind === 'contrarian' ? (
-          <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current">
-            <path d="M10 1.5l8.5 15H1.5l8.5-15zm0 4.2L6 13h8l-4-7.3z" />
-          </svg>
-        ) : (
-          <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current">
-            <path d="M10 2.5a6 6 0 00-6 6c0 4 6 9 6 9s6-5 6-9a6 6 0 00-6-6zm0 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" />
-          </svg>
-        )}
-      </span>
-      <span className="font-semibold">{badge.label}</span>
-    </div>
-  )
+function resolvePersistedRivalIds(
+  mode: 'default' | 'demo',
+  profileRivalUserIds: string[],
+  viewerId: string,
+  directory: RivalDirectoryEntry[]
+): string[] {
+  const sanitized = sanitizeRivalUserIds(profileRivalUserIds, viewerId)
+  if (mode !== 'default') return sanitized
+
+  const directoryById = new Map<string, string>()
+  for (const entry of directory) {
+    const trimmed = entry.id?.trim()
+    if (!trimmed) continue
+    directoryById.set(normalizeIdentity(trimmed), trimmed)
+  }
+
+  const viewerKey = normalizeIdentity(viewerId)
+  const seen = new Set<string>()
+  const resolved: string[] = []
+
+  for (const rivalId of sanitized) {
+    const canonicalId = directoryById.get(normalizeIdentity(rivalId))
+    if (!canonicalId) continue
+    const canonicalKey = normalizeIdentity(canonicalId)
+    if (!canonicalKey || canonicalKey === viewerKey || seen.has(canonicalKey)) continue
+    seen.add(canonicalKey)
+    resolved.push(canonicalId)
+    if (resolved.length >= 3) break
+  }
+
+  return resolved
+}
+
+function socialBadgeTone(kind: SocialBadge['kind']): 'success' | 'warning' | 'secondary' {
+  if (kind === 'perfect_pick') return 'success'
+  if (kind === 'contrarian') return 'warning'
+  return 'secondary'
+}
+
+function movementTone(delta: number | null): 'success' | 'danger' | 'secondary' {
+  if (delta === null) return 'secondary'
+  if (delta > 0) return 'success'
+  if (delta < 0) return 'danger'
+  return 'secondary'
+}
+
+function movementLabel(delta: number | null): string {
+  if (delta === null) return 'Momentum -'
+  if (delta > 0) return `Momentum +${delta}`
+  if (delta < 0) return `Momentum -${Math.abs(delta)}`
+  return 'Momentum ='
+}
+
+function rankDeltaLabel(delta: number | null): string {
+  if (delta === null) return 'Rank -'
+  if (delta > 0) return `Rank +${delta}`
+  if (delta < 0) return `Rank -${Math.abs(delta)}`
+  return 'Rank ='
+}
+
+function pointsDeltaLabel(delta: number | null): string {
+  if (delta === null) return 'Pts -'
+  if (delta > 0) return `Pts +${delta}`
+  if (delta < 0) return `Pts ${delta}`
+  return 'Pts ='
+}
+
+function shouldShowMomentumPill(delta: number | null): boolean {
+  return delta !== null && delta !== 0
 }
 
 function LeaderboardSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="rounded-3xl border border-border/70 bg-card p-5">
-        <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-          <div className="rounded-3xl border border-border/60 bg-bg2/40 p-5">
-            <div className="h-4 w-32 animate-pulse rounded bg-bg2" />
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {[0, 1, 2].map((index) => (
-                <div key={index} className="rounded-2xl border border-border/60 bg-card p-4">
-                  <div className="h-3 w-14 animate-pulse rounded bg-bg2" />
-                  <div className="mt-2 h-6 w-16 animate-pulse rounded bg-bg2" />
-                  <div className="mt-2 h-3 w-full animate-pulse rounded bg-bg2" />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-3xl border border-border/60 bg-bg2/40 p-5">
-            <div className="h-4 w-28 animate-pulse rounded bg-bg2" />
-            <div className="mt-3 h-3 w-full animate-pulse rounded bg-bg2" />
-            <div className="mt-3 h-3 w-5/6 animate-pulse rounded bg-bg2" />
-            <div className="mt-5 h-3 w-full animate-pulse rounded bg-bg2" />
-            <div className="mt-3 h-9 w-28 animate-pulse rounded-full bg-bg2" />
-          </div>
+    <PageShellV2 className="landing-v2-canvas p-4">
+      <div className="h-40 animate-pulse rounded-2xl border border-border/70 bg-muted/35" />
+      <div className="h-48 animate-pulse rounded-2xl border border-border/70 bg-muted/35" />
+      <div className="h-[34rem] animate-pulse rounded-2xl border border-border/70 bg-muted/35" />
+    </PageShellV2>
+  )
+}
+
+function RivalFocusPanel({
+  rows,
+  selectedCount,
+  snapshotTimestamp,
+  onManageRivals
+}: {
+  rows: RivalFocusRow[]
+  selectedCount: number
+  snapshotTimestamp: string
+  onManageRivals: () => void
+}) {
+  const rivalRows = rows.filter((row) => row.kind === 'rival')
+
+  return (
+    <section className="landing-v2-standings-panel rounded-xl border p-3 md:p-4" aria-label="Rival focus panel">
+      <div className="landing-v2-rivals-header-row flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-strong)]">Rival focus</div>
+        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
+          <span>{selectedCount}/3 selected</span>
         </div>
       </div>
-      <Card className="rounded-2xl border-border/60 p-4">
-        <div className="space-y-3">
-          {[0, 1, 2, 3, 4].map((index) => (
-            <div key={index} className="h-16 animate-pulse rounded-2xl border border-border/60 bg-bg2/30" />
-          ))}
-        </div>
-      </Card>
-    </div>
+
+      <div className="mt-3 space-y-2">
+        {rows.map((row) => (
+          <div
+            key={`rival-focus-${row.kind}-${row.id}`}
+            className={cn(
+              'flex items-center justify-between gap-3 rounded-lg border px-3 py-2',
+              row.kind === 'you'
+                ? 'border-[color:var(--v2-glow-medium)] bg-[rgba(var(--info-rgb),0.08)]'
+                : 'border-border/70 bg-background/40'
+            )}
+          >
+            <div className="min-w-0">
+              <div className="truncate text-[14px] font-semibold text-foreground">{row.name}</div>
+              <div className="mt-1 flex flex-wrap items-center gap-1">
+                <Badge tone={row.kind === 'you' ? 'info' : 'warning'} className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                  {row.kind === 'you' ? 'You' : 'Rival'}
+                </Badge>
+                {row.rankDelta !== null ? (
+                  <Badge tone={movementTone(row.rankDelta)} className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                    {rankDeltaLabel(row.rankDelta)}
+                  </Badge>
+                ) : null}
+                {row.pointsDelta !== null ? (
+                  <Badge tone={movementTone(row.pointsDelta)} className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                    {pointsDeltaLabel(row.pointsDelta)}
+                  </Badge>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="text-right text-[12px] text-muted-foreground">
+              <div className="tabular-nums font-semibold text-foreground">{row.rank ? `#${row.rank}` : 'Unranked'}</div>
+              <div className="tabular-nums">{row.points ?? '-'} pts</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {rivalRows.length === 0 ? (
+        <PanelState
+          className="mt-3 text-xs"
+          tone="empty"
+          message="No rivals selected. Add rivals on the landing page to track head-to-head movement here."
+        />
+      ) : null}
+
+      <div className="mt-3">
+        <Button size="sm" variant="secondary" className="h-8 rounded-lg px-3 text-[12px]" onClick={onManageRivals}>
+          Manage rivals
+        </Button>
+      </div>
+    </section>
   )
 }
 
 export default function LeaderboardPage() {
-  // QA-SMOKE: route=/play/league and /demo/play/league ; checklist-id=smoke-leaderboard
   const navigate = useNavigate()
+  const location = useLocation()
   const userId = useViewerId()
   const mode = useRouteDataMode()
-  const now = useNow()
   const phaseState = useTournamentPhaseState()
   const isDesktopViewport = useMediaQuery('(min-width: 768px)')
+
   const [page, setPage] = useState(1)
-  const [advancedOpen, setAdvancedOpen] = useState(false)
-  const [previousRanks, setPreviousRanks] = useState<Record<string, number> | null>(null)
-  const [isCurrentRowVisible, setIsCurrentRowVisible] = useState(true)
-  const [simulatorOpen, setSimulatorOpen] = useState(false)
-  const [whatIfDrafts, setWhatIfDrafts] = useState<Record<string, WhatIfDraft>>({})
+  const [view, setView] = useState<LeaderboardView>('potential')
+  const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
+  const [rivalDirectoryEntries, setRivalDirectoryEntries] = useState<RivalDirectoryEntry[]>([])
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [previousSnapshot, setPreviousSnapshot] = useState<RankSnapshot | null>(null)
+  const [isCurrentRowVisible, setIsCurrentRowVisible] = useState(true)
+
   const publishedSnapshot = usePublishedSnapshot()
   const currentRowRef = useRef<HTMLDivElement | null>(null)
-  const playRoot = mode === 'demo' ? '/demo/play' : '/play'
+  const landingRoot = mode === 'demo' ? '/demo' : '/'
 
-  const viewerKeys = useMemo(() => {
-    return buildViewerKeySet([userId])
-  }, [userId])
+  const viewerKeys = useMemo(() => buildViewerKeySet([userId]), [userId])
+  const rivalKeys = useMemo(() => buildViewerKeySet(rivalUserIds), [rivalUserIds])
 
-  function isCurrentUserEntry(entry: LeaderboardEntry): boolean {
-    const context = resolveLeaderboardUserContext([entry], viewerKeys)
-    return Boolean(context)
+  const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
+
+  const leaderboardPresentation = useMemo(() => {
+    if (!snapshotReady) return null
+    return buildLeaderboardPresentation({
+      snapshotTimestamp: snapshotReady.snapshotTimestamp,
+      groupStageComplete: snapshotReady.groupStageComplete,
+      projectedGroupStagePointsByUser: snapshotReady.projectedGroupStagePointsByUser,
+      leaderboardRows: snapshotReady.leaderboardRows
+    })
+  }, [snapshotReady])
+
+  const potentialRows = snapshotReady?.leaderboardRows ?? []
+  const finalRows = leaderboardPresentation?.rows ?? []
+  const finalAvailable = Boolean(snapshotReady?.groupStageComplete)
+  const snapshotTimestamp = snapshotReady?.snapshotTimestamp ?? ''
+
+  const activeRows = useMemo(
+    () => (view === 'final' && finalAvailable ? finalRows : potentialRows),
+    [finalAvailable, finalRows, potentialRows, view]
+  )
+
+  function syncViewInUrl(nextView: LeaderboardView, replace = true) {
+    const params = new URLSearchParams(location.search)
+    params.set('view', nextView)
+    const nextSearch = params.toString()
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch ? `?${nextSearch}` : ''
+      },
+      { replace }
+    )
+  }
+
+  function handleViewChange(nextView: LeaderboardView) {
+    if (!isViewAllowed(nextView, finalAvailable)) return
+    setView(nextView)
+    writeStoredView(mode, nextView)
+    syncViewInUrl(nextView)
   }
 
   useEffect(() => {
+    if (!snapshotReady) return
+
+    const params = new URLSearchParams(location.search)
+    const queryView = normalizeViewParam(params.get('view'))
+    const storedView = readStoredView(mode)
+    const defaultView = resolveDefaultView(finalAvailable)
+
+    const resolvedView = isViewAllowed(queryView, finalAvailable)
+      ? queryView
+      : isViewAllowed(storedView, finalAvailable)
+        ? storedView
+        : defaultView
+
+    setView((current) => (current === resolvedView ? current : resolvedView))
+    writeStoredView(mode, resolvedView)
+
+    if (queryView !== resolvedView) {
+      syncViewInUrl(resolvedView)
+    }
+  }, [finalAvailable, location.pathname, location.search, mode, navigate, snapshotReady])
+
+  useEffect(() => {
     let canceled = false
+
+    async function loadRivals() {
+      try {
+        const [profile, directory] = await Promise.all([readUserProfile(mode, userId), fetchRivalDirectory(mode, userId)])
+        if (canceled) return
+        setRivalDirectoryEntries(directory)
+        setRivalUserIds(resolvePersistedRivalIds(mode, profile.rivalUserIds, userId, directory))
+      } catch {
+        if (canceled) return
+        setRivalDirectoryEntries([])
+        setRivalUserIds([])
+      }
+    }
+
+    void loadRivals()
+
+    return () => {
+      canceled = true
+    }
+  }, [mode, userId])
+
+  useEffect(() => {
+    let canceled = false
+
     async function load() {
       setState({ status: 'loading' })
       try {
-        const scoring = await fetchScoring({ mode })
-        if (canceled) return
         let picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[] = []
 
         if (mode === 'default' && hasFirebase && firebaseDb) {
           try {
             const picksSnap = await getDocs(collection(firebaseDb, 'leagues', getLeagueId(), 'picks'))
             if (canceled) return
+
             picksDocs = picksSnap.docs.map((docSnap) => {
               const data = docSnap.data() as { userId?: unknown; picks?: unknown; updatedAt?: unknown }
               return {
@@ -380,280 +492,185 @@ export default function LeaderboardPage() {
               }
             })
           } catch {
-            // Best effort only. Some viewers may not have list access.
             picksDocs = []
           }
         }
 
         setState({
           status: 'ready',
-          picksDocs,
-          scoring
+          picksDocs
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
         if (!canceled) setState({ status: 'error', message })
       }
     }
+
     void load()
+
     return () => {
       canceled = true
     }
   }, [mode])
 
-  const leaderboardPresentation = useMemo(() => {
-    if (publishedSnapshot.state.status !== 'ready') return null
-    return buildLeaderboardPresentation({
-      snapshotTimestamp: publishedSnapshot.state.snapshotTimestamp,
-      groupStageComplete: publishedSnapshot.state.groupStageComplete,
-      projectedGroupStagePointsByUser: publishedSnapshot.state.projectedGroupStagePointsByUser,
-      leaderboardRows: publishedSnapshot.state.leaderboardRows
-    })
-  }, [publishedSnapshot.state])
-
-  const leaderboardRows = leaderboardPresentation?.rows ?? []
-  const groupStageComplete = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state.groupStageComplete : false
-  const snapshotTimestamp = leaderboardPresentation?.snapshotTimestamp ?? ''
-  const isFrozen = leaderboardPresentation?.isFrozen ?? true
-
   useEffect(() => {
     if (state.status !== 'ready' || !snapshotTimestamp) return
+
     const currentSnapshot: RankSnapshot = {
       lastUpdated: snapshotTimestamp,
-      ranks: buildRankSnapshot(leaderboardRows)
+      ranks: buildRankSnapshot(activeRows),
+      points: buildPointsSnapshot(activeRows)
     }
-    const previousSnapshot = readRankSnapshot(mode)
-    const previous =
-      previousSnapshot && previousSnapshot.lastUpdated !== snapshotTimestamp
-        ? previousSnapshot.ranks
-        : null
-    setPreviousRanks(previous)
-    writeRankSnapshot(mode, currentSnapshot)
-  }, [leaderboardRows, mode, snapshotTimestamp, state.status])
 
-  const swingOpportunities = useMemo(() => {
-    if (state.status !== 'ready' || publishedSnapshot.state.status !== 'ready') return []
-    return buildSwingOpportunities(publishedSnapshot.state.matches, state.picksDocs, now)
-  }, [now, publishedSnapshot.state, state])
-
-  const summary = useMemo(() => {
-    if (state.status !== 'ready') return null
-    const leader = leaderboardRows[0] ?? null
-    const userContext = resolveLeaderboardUserContext(leaderboardRows, viewerKeys)
-    const currentRank = userContext?.current.rank ?? null
-    const current = userContext?.current.entry ?? null
-    const count = leaderboardRows.length
-    const avg = (value: number) => (count > 0 ? Math.round(value / count) : 0)
-    const sumTotal = leaderboardRows.reduce((sum, entry) => sum + entry.totalPoints, 0)
-    const sumExact = leaderboardRows.reduce((sum, entry) => sum + entry.exactPoints, 0)
-    const sumOutcome = leaderboardRows.reduce((sum, entry) => sum + entry.resultPoints, 0)
-    const sumKo = leaderboardRows.reduce((sum, entry) => sum + entry.knockoutPoints, 0)
-    const sumBracket = leaderboardRows.reduce((sum, entry) => sum + entry.bracketPoints, 0)
-
-    const maxBy = (selector: (entry: LeaderboardEntry) => number) => {
-      if (leaderboardRows.length === 0) return null
-      return leaderboardRows.reduce((best, entry) => (selector(entry) > selector(best) ? entry : best), leaderboardRows[0])
-    }
-    const maxTotal = maxBy((entry) => entry.totalPoints)
-    const maxExact = maxBy((entry) => entry.exactPoints)
-    const maxOutcome = maxBy((entry) => entry.resultPoints)
-    const maxKo = maxBy((entry) => entry.knockoutPoints)
-    const maxBracket = maxBy((entry) => entry.bracketPoints)
-
-    const closestAbove = userContext?.above?.entry ?? null
-    const closestBelow = userContext?.below?.entry ?? null
-    const nearestRivalGap =
-      current && (closestAbove || closestBelow)
-        ? Math.min(
-            closestAbove ? Math.abs(closestAbove.totalPoints - current.totalPoints) : Number.POSITIVE_INFINITY,
-            closestBelow ? Math.abs(current.totalPoints - closestBelow.totalPoints) : Number.POSITIVE_INFINITY
-          )
-        : null
-    const gapToLeader = leader && current ? Math.max(0, leader.totalPoints - current.totalPoints) : null
-
-    const thirdPlace = leaderboardRows.length >= 3 ? leaderboardRows[2] : null
-    const targetPoints = thirdPlace ? thirdPlace.totalPoints + 1 : null
-    const pointsToTop3 = targetPoints !== null && current ? Math.max(0, targetPoints - current.totalPoints) : null
-
-    return {
-      leader,
-      current,
-      currentRank,
-      closestAbove,
-      closestBelow,
-      nearestRivalGap,
-      gapToLeader,
-      swingOpportunityCount: swingOpportunities.length,
-      targetPoints,
-      pointsToTop3,
-      averages: {
-        total: avg(sumTotal),
-        exact: avg(sumExact),
-        outcome: avg(sumOutcome),
-        ko: avg(sumKo),
-        bracket: avg(sumBracket)
-      },
-      maxima: {
-        total: maxTotal ? { value: maxTotal.totalPoints, name: maxTotal.member.name } : null,
-        exact: maxExact ? { value: maxExact.exactPoints, name: maxExact.member.name } : null,
-        outcome: maxOutcome ? { value: maxOutcome.resultPoints, name: maxOutcome.member.name } : null,
-        ko: maxKo ? { value: maxKo.knockoutPoints, name: maxKo.member.name } : null,
-        bracket: maxBracket ? { value: maxBracket.bracketPoints, name: maxBracket.member.name } : null
-      }
-    }
-  }, [leaderboardRows, state.status, swingOpportunities.length, viewerKeys])
+    const previous = readRankSnapshot(mode, view)
+    setPreviousSnapshot(previous && previous.lastUpdated !== snapshotTimestamp ? previous : null)
+    writeRankSnapshot(mode, view, currentSnapshot)
+  }, [activeRows, mode, snapshotTimestamp, state.status, view])
 
   const socialBadgesByUser = useMemo(() => {
-    if (state.status !== 'ready' || publishedSnapshot.state.status !== 'ready') return new Map<string, SocialBadge[]>()
-    return buildSocialBadgeMap(publishedSnapshot.state.matches, state.picksDocs)
-  }, [publishedSnapshot.state, state])
+    if (state.status !== 'ready' || !snapshotReady) return new Map<string, SocialBadge[]>()
+    return buildSocialBadgeMap(snapshotReady.matches, state.picksDocs)
+  }, [snapshotReady, state])
 
   const socialBadgesByEntry = useMemo(() => {
-    if (state.status !== 'ready') return new Map<string, SocialBadge[]>()
     const byEntry = new Map<string, SocialBadge[]>()
-    for (const entry of leaderboardRows) {
+
+    for (const entry of activeRows) {
       const entryKey = getEntryIdentityKey(entry)
       const seenKinds = new Set<SocialBadge['kind']>()
       const badges: SocialBadge[] = []
-      for (const key of buildViewerKeySet(resolveLeaderboardIdentityKeys(entry))) {
+
+      for (const key of resolveLeaderboardIdentityKeys(entry)) {
         for (const badge of socialBadgesByUser.get(key) ?? []) {
           if (seenKinds.has(badge.kind)) continue
           seenKinds.add(badge.kind)
           badges.push(badge)
         }
       }
+
       byEntry.set(entryKey, badges)
     }
+
     return byEntry
-  }, [leaderboardRows, socialBadgesByUser, state.status])
+  }, [activeRows, socialBadgesByUser])
 
-  const whatIfMatches = useMemo(() => {
-    if (publishedSnapshot.state.status !== 'ready') return []
-    return publishedSnapshot.state.matches
-      .filter((match) => match.status !== 'FINISHED')
-      .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())
-  }, [publishedSnapshot.state])
+  const rivalDirectoryByIdentity = useMemo(() => {
+    const lookup = new Map<string, RivalDirectoryEntry>()
 
-  useEffect(() => {
-    if (state.status !== 'ready') return
-    const validMatchIds = new Set(whatIfMatches.map((match) => match.id))
-    setWhatIfDrafts((current) => {
-      const next: Record<string, WhatIfDraft> = {}
-      let changed = false
-      for (const [matchId, draft] of Object.entries(current)) {
-        if (!validMatchIds.has(matchId)) {
-          changed = true
-          continue
-        }
-        next[matchId] = draft
-      }
-      return changed ? next : current
-    })
-  }, [state, whatIfMatches])
+    for (const entry of rivalDirectoryEntries) {
+      const rawId = entry.id?.trim()
+      if (!rawId) continue
+      const normalizedId = normalizeIdentity(rawId)
+      lookup.set(rawId, entry)
+      lookup.set(normalizedId, entry)
+      lookup.set(`id:${normalizedId}`, entry)
+    }
 
-  const simulatedOutcomes = useMemo(() => {
-    const outcomes: Record<string, SimulatedMatchOutcome> = {}
-    for (const [matchId, draft] of Object.entries(whatIfDrafts)) {
-      if (!draft.enabled) continue
-      outcomes[matchId] = {
-        homeScore: draft.homeScore,
-        awayScore: draft.awayScore,
-        advances: draft.advances
+    return lookup
+  }, [rivalDirectoryEntries])
+
+  function isCurrentUserEntry(entry: LeaderboardEntry): boolean {
+    return resolveLeaderboardIdentityKeys(entry).some((key) => viewerKeys.has(key))
+  }
+
+  function isRivalEntry(entry: LeaderboardEntry): boolean {
+    if (isCurrentUserEntry(entry)) return false
+    return resolveLeaderboardIdentityKeys(entry).some((key) => rivalKeys.has(key))
+  }
+
+  const userContext = useMemo(() => resolveLeaderboardUserContext(activeRows, viewerKeys), [activeRows, viewerKeys])
+
+  const activeRowsByIdentity = useMemo(() => {
+    const map = new Map<string, { entry: LeaderboardEntry; rank: number; entryKey: string }>()
+
+    for (let index = 0; index < activeRows.length; index += 1) {
+      const entry = activeRows[index]
+      const rank = index + 1
+      const entryKey = getEntryIdentityKey(entry)
+
+      for (const key of resolveLeaderboardIdentityKeys(entry)) {
+        map.set(key, { entry, rank, entryKey })
       }
     }
-    return outcomes
-  }, [whatIfDrafts])
 
-  const projectedRows = useMemo(() => {
-    if (state.status !== 'ready' || publishedSnapshot.state.status !== 'ready' || isFrozen) return []
-    if (Object.keys(simulatedOutcomes).length === 0) return []
-    return buildProjectedLeaderboard(
-      leaderboardRows,
-      publishedSnapshot.state.matches,
-      state.picksDocs,
-      state.scoring,
-      simulatedOutcomes
-    )
-  }, [isFrozen, leaderboardRows, publishedSnapshot.state, simulatedOutcomes, state])
+    return map
+  }, [activeRows])
 
-  const projectedYou = useMemo(() => {
-    for (const row of projectedRows) {
-      if (resolveLeaderboardUserContext([row.entry], viewerKeys)) return row
+  const rivalFocusRows = useMemo<RivalFocusRow[]>(() => {
+    const rows: RivalFocusRow[] = []
+
+    if (userContext?.current) {
+      const currentEntry = userContext.current.entry
+      const currentKey = getEntryIdentityKey(currentEntry)
+      const previousRank = previousSnapshot?.ranks[currentKey]
+      const previousPoints = previousSnapshot?.points?.[currentKey]
+
+      rows.push({
+        id: currentEntry.member.id ?? userId,
+        name: currentEntry.member.name,
+        rank: userContext.current.rank,
+        points: currentEntry.totalPoints,
+        rankDelta: typeof previousRank === 'number' ? previousRank - userContext.current.rank : null,
+        pointsDelta: typeof previousPoints === 'number' ? currentEntry.totalPoints - previousPoints : null,
+        kind: 'you'
+      })
+    } else {
+      rows.push({
+        id: userId,
+        name: 'You',
+        rank: null,
+        points: null,
+        rankDelta: null,
+        pointsDelta: null,
+        kind: 'you'
+      })
     }
-    return null
-  }, [projectedRows, viewerKeys])
 
-  const currentRankByKey = useMemo(() => {
-    if (state.status !== 'ready') return new Map<string, number>()
-    const ranks = new Map<string, number>()
-    for (let index = 0; index < leaderboardRows.length; index += 1) {
-      ranks.set(getEntryIdentityKey(leaderboardRows[index]), index + 1)
+    for (const rivalId of rivalUserIds) {
+      const rawRivalId = rivalId.trim()
+      const rivalIdKey = normalizeIdentity(rawRivalId)
+      const rivalLookupKey = rivalIdKey.startsWith('id:') ? rivalIdKey.slice(3) : rivalIdKey
+      const lookup = activeRowsByIdentity.get(rivalLookupKey) ?? activeRowsByIdentity.get(rivalIdKey)
+      const rivalDirectoryEntry =
+        rivalDirectoryByIdentity.get(rawRivalId) ??
+        rivalDirectoryByIdentity.get(rivalIdKey) ??
+        rivalDirectoryByIdentity.get(rivalLookupKey)
+      const rivalDisplayName =
+        rivalDirectoryEntry?.displayName?.trim() || lookup?.entry.member.name.trim() || rawRivalId || 'Unknown rival'
+
+      if (!lookup) {
+        rows.push({
+          id: rivalId,
+          name: rivalDisplayName,
+          rank: null,
+          points: null,
+          rankDelta: null,
+          pointsDelta: null,
+          kind: 'rival'
+        })
+        continue
+      }
+
+      const previousRank = previousSnapshot?.ranks[lookup.entryKey]
+      const previousPoints = previousSnapshot?.points?.[lookup.entryKey]
+
+      rows.push({
+        id: rivalId,
+        name: rivalDisplayName,
+        rank: lookup.rank,
+        points: lookup.entry.totalPoints,
+        rankDelta: typeof previousRank === 'number' ? previousRank - lookup.rank : null,
+        pointsDelta: typeof previousPoints === 'number' ? lookup.entry.totalPoints - previousPoints : null,
+        kind: 'rival'
+      })
     }
-    return ranks
-  }, [leaderboardRows, state.status])
 
-  function toggleWhatIfMatch(matchId: string) {
-    setWhatIfDrafts((current) => {
-      const existing = current[matchId]
-      if (existing) {
-        return {
-          ...current,
-          [matchId]: { ...existing, enabled: !existing.enabled }
-        }
-      }
-      return {
-        ...current,
-        [matchId]: { enabled: true, homeScore: 0, awayScore: 0 }
-      }
-    })
-  }
-
-  function updateWhatIfScore(match: Match, side: 'home' | 'away', nextScore: number) {
-    setWhatIfDrafts((current) => {
-      const existing = current[match.id] ?? { enabled: true, homeScore: 0, awayScore: 0 }
-      const next: WhatIfDraft =
-        side === 'home'
-          ? { ...existing, enabled: true, homeScore: nextScore }
-          : { ...existing, enabled: true, awayScore: nextScore }
-
-      if (match.stage === 'Group') {
-        next.advances = undefined
-      } else if (next.homeScore !== next.awayScore) {
-        next.advances = undefined
-      }
-
-      return {
-        ...current,
-        [match.id]: next
-      }
-    })
-  }
-
-  function updateWhatIfAdvance(matchId: string, advances: 'HOME' | 'AWAY') {
-    setWhatIfDrafts((current) => {
-      const existing = current[matchId] ?? { enabled: true, homeScore: 0, awayScore: 0 }
-      return {
-        ...current,
-        [matchId]: { ...existing, enabled: true, advances }
-      }
-    })
-  }
-
-  function openAdvancedMetrics() {
-    setAdvancedOpen(true)
-    if (typeof document === 'undefined') return
-    const node = document.getElementById('league-advanced-metrics')
-    node?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  useEffect(() => {
-    if (!isFrozen) return
-    setSimulatorOpen(false)
-  }, [isFrozen])
+    return rows
+  }, [activeRowsByIdentity, previousSnapshot, rivalDirectoryByIdentity, rivalUserIds, userContext, userId])
 
   useEffect(() => {
     setPage(1)
-  }, [leaderboardRows.length])
+  }, [activeRows.length, view])
 
   useEffect(() => {
     const row = currentRowRef.current
@@ -661,6 +678,7 @@ export default function LeaderboardPage() {
       setIsCurrentRowVisible(true)
       return
     }
+
     if (typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
       setIsCurrentRowVisible(true)
       return
@@ -670,11 +688,12 @@ export default function LeaderboardPage() {
       ([entry]) => {
         setIsCurrentRowVisible(entry.isIntersecting)
       },
-      { threshold: 0.2 }
+      { threshold: 0.25 }
     )
+
     observer.observe(row)
     return () => observer.disconnect()
-  }, [leaderboardRows.length, page])
+  }, [activeRows.length, page, view])
 
   if (state.status === 'loading' || publishedSnapshot.state.status === 'loading') {
     return <LeaderboardSkeleton />
@@ -687,6 +706,7 @@ export default function LeaderboardPage() {
         : publishedSnapshot.state.status === 'error'
           ? publishedSnapshot.state.message
           : 'Unknown error'
+
     return (
       <Alert tone="danger" title="Unable to load leaderboard">
         {errorMessage}
@@ -694,38 +714,29 @@ export default function LeaderboardPage() {
     )
   }
 
-  const totalPages = Math.max(1, Math.ceil(leaderboardRows.length / LEADERBOARD_LIST_PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(activeRows.length / LEADERBOARD_LIST_PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
   const start = (safePage - 1) * LEADERBOARD_LIST_PAGE_SIZE
-  const pageRows = leaderboardRows.slice(start, start + LEADERBOARD_LIST_PAGE_SIZE)
+  const pageRows = activeRows.slice(start, start + LEADERBOARD_LIST_PAGE_SIZE)
 
-  const closestAboveKey = summary?.closestAbove ? getEntryIdentityKey(summary.closestAbove) : null
-  const closestBelowKey = summary?.closestBelow ? getEntryIdentityKey(summary.closestBelow) : null
-
-  const podiumEntries = leaderboardRows.slice(0, 3)
-  const centerPodiumEntry = podiumEntries[0] ?? null
-  const leftPodiumEntry = podiumEntries[1] ?? null
-  const rightPodiumEntry = podiumEntries[2] ?? null
-  const featuredRival = summary?.closestAbove ?? summary?.closestBelow ?? summary?.leader ?? null
-  const featuredGap =
-    summary?.current && featuredRival ? Math.abs(featuredRival.totalPoints - summary.current.totalPoints) : null
-
-  const progressTarget = summary?.targetPoints ?? 0
-  const currentPoints = summary?.current?.totalPoints ?? 0
-  const progressPercent =
-    progressTarget > 0
-      ? Math.max(0, Math.min(100, Math.round((Math.min(currentPoints, progressTarget) / progressTarget) * 100)))
-      : 0
-  const stickyUserRow = summary?.current ?? null
+  const stickyUserRow = userContext?.current.entry ?? null
   const shouldShowStickyRow = Boolean(stickyUserRow) && !isCurrentRowVisible
-  const activeSimulationCount = Object.keys(simulatedOutcomes).length
-  const projectedRankDelta =
-    summary?.currentRank && projectedYou ? summary.currentRank - projectedYou.projectedRank : null
+
+  const podiumRows = activeRows.slice(0, 3).map((entry, index) => ({
+    id: entry.member.id || `podium-${index + 1}`,
+    name: entry.member.name,
+    points: entry.totalPoints,
+    rank: (index + 1) as 1 | 2 | 3,
+    isViewer: isCurrentUserEntry(entry)
+  }))
+
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
 
   function handleDownloadLeaderboardCsv() {
     const exportedAt = new Date().toISOString()
     const snapshotAsOf = snapshotTimestamp || 'Snapshot unavailable'
+    const exportRows = finalRows.length > 0 ? finalRows : potentialRows
+
     const rows: string[][] = [
       ['exportedAt', exportedAt],
       ['snapshotAsOf', snapshotAsOf],
@@ -745,7 +756,7 @@ export default function LeaderboardPage() {
       ]
     ]
 
-    leaderboardRows.forEach((entry, index) => {
+    exportRows.forEach((entry, index) => {
       rows.push([
         String(index + 1),
         entry.member.id ?? '',
@@ -766,8 +777,8 @@ export default function LeaderboardPage() {
   }
 
   function jumpToCurrentUserRow() {
-    if (!summary?.currentRank) return
-    const targetPage = Math.max(1, Math.ceil(summary.currentRank / LEADERBOARD_LIST_PAGE_SIZE))
+    if (!userContext?.current.rank) return
+    const targetPage = Math.max(1, Math.ceil(userContext.current.rank / LEADERBOARD_LIST_PAGE_SIZE))
     setPage(targetPage)
     window.setTimeout(() => {
       currentRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -775,529 +786,272 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeroPanel
+    <PageShellV2 className="landing-v2-canvas p-4">
+      <PageHeaderV2
+        variant="hero"
+        className="landing-v2-hero"
         kicker="Standings"
         title="Leaderboard"
-        subtitle="Published leaderboard snapshot for the private league race. Scores refresh daily."
-        meta={
-          <div className="flex items-start gap-3">
-            {showExportMenu ? (
-              <ExportMenuV2
-                scopeLabel="Full leaderboard snapshot (all members)"
-                snapshotLabel={formatSnapshotTimestamp(snapshotTimestamp)}
-                lockMessage="Post-lock exports only. CSV format."
-                onDownloadCsv={handleDownloadLeaderboardCsv}
-              />
-            ) : null}
-            <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
-              <div className="uppercase tracking-[0.2em]">Last updated</div>
-              <div className="text-sm font-semibold text-foreground">{formatSnapshotTimestamp(snapshotTimestamp)}</div>
-              <div className="mt-1 text-[11px]">
-                {groupStageComplete
-                  ? 'Group-stage scoring is included in this official snapshot.'
-                  : 'Official group-stage scoring is frozen until completion.'}
+        subtitle="Compare your projected and final standings with rivals in one streamlined view."
+        actions={
+          showExportMenu ? (
+            <ExportMenuV2
+              scopeLabel="Full leaderboard snapshot (all members)"
+              snapshotLabel={formatSnapshotTimestamp(snapshotTimestamp)}
+              lockMessage="Post-lock exports only. CSV format."
+              onDownloadCsv={handleDownloadLeaderboardCsv}
+            />
+          ) : undefined
+        }
+        metadata={
+          <>
+            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
+            <span className="h-3 w-px bg-border" aria-hidden="true" />
+            <span>{finalAvailable ? 'Final standings available.' : 'Potential standings active until group stage closes.'}</span>
+          </>
+        }
+      />
+
+      <SectionCardV2 tone="panel" density="none" className="landing-v2-snapshot p-4 md:p-5">
+        <div className="grid gap-3 xl:grid-cols-[1fr_1.2fr]">
+          <LeaderboardPodium rows={podiumRows} snapshotAvailable={Boolean(snapshotTimestamp)} showCta={false} className="h-full" />
+          <RivalFocusPanel
+            rows={rivalFocusRows}
+            selectedCount={rivalUserIds.length}
+            snapshotTimestamp={snapshotTimestamp}
+            onManageRivals={() => navigate(landingRoot)}
+          />
+        </div>
+      </SectionCardV2>
+
+      <SectionCardV2 tone="panel" density="none" className="p-4 md:p-5">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="v2-heading-h2 text-foreground">Full leaderboard</h2>
+              <div className="mt-1 text-[13px] text-muted-foreground">Single-row standings with inline social hooks and full score breakdown.</div>
+            </div>
+
+            <div className="flex flex-col items-end gap-2">
+              <div className="inline-flex rounded-full border border-border/70 bg-background/45 p-1">
+                <Button
+                  size="sm"
+                  variant="pill"
+                  data-active={view === 'potential' ? 'true' : undefined}
+                  className="h-8 px-3 text-[11px]"
+                  onClick={() => handleViewChange('potential')}
+                >
+                  Potential
+                </Button>
+                <Button
+                  size="sm"
+                  variant="pill"
+                  data-active={view === 'final' ? 'true' : undefined}
+                  className="h-8 px-3 text-[11px]"
+                  onClick={() => handleViewChange('final')}
+                  disabled={!finalAvailable}
+                  title={finalAvailable ? 'Switch to final standings' : 'Not available yet'}
+                >
+                  Final
+                </Button>
               </div>
+
+              {!finalAvailable ? <span className="text-[12px] text-muted-foreground">Final not available yet.</span> : null}
             </div>
           </div>
-        }
-      >
-        <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-          <Card className={podiumSurface({ tone: 'podium' })}>
-            <div className="p-5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Podium race</div>
-                <Badge tone="secondary">Top 3</Badge>
-              </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-3">
-                {leftPodiumEntry ? (
-                  <div className="rounded-2xl border border-border/70 bg-card/70 p-4 backdrop-blur-sm md:mt-4">
-                    <div className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">#2</div>
-                    <div className="mt-1 truncate text-sm font-semibold text-foreground">{leftPodiumEntry.member.name}</div>
-                    <div className="mt-2 text-xl font-black uppercase tracking-tight text-foreground">
-                      {leftPodiumEntry.totalPoints}
-                      <span className="ml-1 text-[10px] text-muted-foreground">PTS</span>
-                    </div>
-                  </div>
-                ) : null}
-                {centerPodiumEntry ? (
-                  <div className="rounded-2xl border border-[var(--border-accent)] bg-card/80 p-4 shadow-[0_0_0_1px_var(--border-accent),0_0_26px_var(--glow)] backdrop-blur-sm">
-                    <div className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">#1</div>
-                    <div className="mt-1 truncate text-base font-semibold text-foreground">{centerPodiumEntry.member.name}</div>
-                    <div className="mt-2 text-2xl font-black uppercase tracking-tight text-foreground">
-                      {centerPodiumEntry.totalPoints}
-                      <span className="ml-1 text-[10px] text-muted-foreground">PTS</span>
-                    </div>
-                  </div>
-                ) : null}
-                {rightPodiumEntry ? (
-                  <div className="rounded-2xl border border-border/70 bg-card/70 p-4 backdrop-blur-sm md:mt-8">
-                    <div className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">#3</div>
-                    <div className="mt-1 truncate text-sm font-semibold text-foreground">{rightPodiumEntry.member.name}</div>
-                    <div className="mt-2 text-xl font-black uppercase tracking-tight text-foreground">
-                      {rightPodiumEntry.totalPoints}
-                      <span className="ml-1 text-[10px] text-muted-foreground">PTS</span>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </Card>
 
-          <Card className={podiumSurface({ tone: 'rival' })}>
-            <div className="p-5">
-              <div className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Featured rival</div>
-              <div className="mt-2 text-base font-semibold text-foreground">{featuredRival?.member.name ?? 'No rival yet'}</div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                {featuredGap !== null
-                  ? `${featuredGap} pts from your row`
-                  : 'Submit picks and scoring updates to unlock rival tracking.'}
+          <div className="overflow-x-auto">
+            <div className="min-w-[980px] space-y-2">
+              <div className="hidden grid-cols-[72px_minmax(260px,1fr)_110px_72px_72px_72px_72px] gap-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground md:grid">
+                <div>Rank</div>
+                <div>Player</div>
+                <div>Total</div>
+                <div>Exact</div>
+                <div>Outcome</div>
+                <div>KO</div>
+                <div>Bracket</div>
               </div>
-              <div className="mt-4 rounded-2xl border border-border/70 bg-card/70 p-3">
-                <div className="flex items-center justify-between gap-2 text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">
-                  <span>Path to top 3</span>
-                  <span>{progressPercent}%</span>
-                </div>
-                <ProgressPrimitive.Root
-                  value={progressPercent}
-                  max={100}
-                  className="mt-2 h-3 overflow-hidden rounded-full border border-border/70 bg-bg2"
-                >
-                  <ProgressPrimitive.Indicator
-                    className={cn(
-                      'relative h-full w-full bg-primary transition-transform duration-700 ease-out',
-                      'before:absolute before:inset-0 before:[background:linear-gradient(90deg,transparent,rgba(var(--fg0-rgb),0.28),transparent)] before:[background-size:200%_100%] before:animate-[shimmer_2.2s_linear_infinite]'
-                    )}
-                    style={{ transform: `translateX(-${100 - progressPercent}%)` }}
-                  />
-                </ProgressPrimitive.Root>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  {summary?.pointsToTop3 === null
-                    ? 'Need at least three scored players to compute this target.'
-                    : summary?.pointsToTop3 === 0
-                      ? 'You are already in the top 3. Defend the spot.'
-                      : `${summary?.pointsToTop3 ?? 0} pts to crash top 3.`}
-                </div>
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Button size="sm" onClick={() => navigate(playRoot)}>
-                  Open Play Center
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => navigate(`${playRoot}/group-stage`)}>
-                  Open Group Stage
-                </Button>
-                <Button size="sm" variant="secondary" disabled={isFrozen} onClick={() => setSimulatorOpen(true)}>
-                  Open What-If Simulator
-                </Button>
-                <Button size="sm" variant="secondary" onClick={openAdvancedMetrics}>
-                  Open advanced metrics
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </PageHeroPanel>
 
-      {isFrozen ? (
-        <Alert tone="info" title="Leaderboard is frozen for group-stage scoring">
-          Official group-stage scoring publishes after completion and appears on the next daily snapshot.
-        </Alert>
-      ) : null}
+              {pageRows.map((entry, index) => {
+                const rank = start + index + 1
+                const entryKey = getEntryIdentityKey(entry)
+                const entryBadges = socialBadgesByEntry.get(entryKey) ?? []
+                const isYou = isCurrentUserEntry(entry)
+                const isRival = isRivalEntry(entry)
+                const isTopThree = rank <= 3
+                const previousRank = previousSnapshot?.ranks[entryKey]
+                const movementDelta = typeof previousRank === 'number' ? previousRank - rank : null
 
-      <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
-        <div className="mb-3 text-xs text-muted-foreground">
-          Group-stage bracket points use exact-order 1st/2nd picks and best-3rds membership-only (8 teams). Scores refresh daily.
-        </div>
-        <div className="overflow-x-auto">
-          <div className="min-w-[1050px] space-y-2">
-            <div className="grid grid-cols-[88px_96px_minmax(220px,1fr)_96px_96px_96px_96px_96px] gap-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-muted-foreground">
-              <div>Rank</div>
-              <div>Momentum</div>
-              <div>Player</div>
-              <div>Total</div>
-              <div>Exact</div>
-              <div>Outcome</div>
-              <div>KO</div>
-              <div>Bracket</div>
-            </div>
-            {pageRows.map((entry, index) => {
-              const rank = start + index + 1
-              const entryKey = getEntryIdentityKey(entry)
-              const entryBadges = socialBadgesByEntry.get(entryKey) ?? []
-              const isYou = isCurrentUserEntry(entry)
-              const isClosestAbove = closestAboveKey !== null && entryKey === closestAboveKey
-              const isClosestBelow = closestBelowKey !== null && entryKey === closestBelowKey
-              const rowIntent = isYou ? 'user' : isClosestAbove || isClosestBelow ? 'rival' : 'default'
-              const previousRank = previousRanks?.[entryKey]
-              const movementDelta = typeof previousRank === 'number' ? previousRank - rank : 0
-              const movementDirection = getMovementDirection(movementDelta)
-              const movementGlyph = movementDirection === 'up' ? '↑' : movementDirection === 'down' ? '↓' : '—'
-
-              return (
-                <div key={entry.member.id} className="space-y-1">
-                  <div
+                return (
+                  <article
+                    key={`leaderboard-row-${entryKey}`}
                     ref={isYou ? currentRowRef : null}
-                    className={leaderboardRow({ intent: rowIntent })}
+                    className={cn(
+                      'rounded-xl border px-3 py-3 transition-colors focus-within:ring-2 focus-within:ring-ring',
+                      isYou
+                        ? 'border-[color:var(--v2-glow-medium)] bg-[rgba(var(--info-rgb),0.1)]'
+                        : isRival
+                          ? 'border-[rgba(var(--secondary-rgb),0.55)] bg-[rgba(var(--secondary-rgb),0.08)]'
+                          : isTopThree
+                            ? 'border-[rgba(var(--primary-rgb),0.45)] bg-[rgba(var(--primary-rgb),0.07)]'
+                            : 'border-border/70 bg-background/35 hover:bg-background/60'
+                    )}
                   >
-                    <div className="text-base font-black uppercase tracking-tight text-foreground">#{rank}</div>
-                    <div className="flex items-center gap-0.5">
-                      {movementDirection === 'flat' ? (
-                        <span className={momentumChevron({ direction: 'flat' })}>—</span>
-                      ) : (
-                        <>
-                          <span className={cn(momentumChevron({ direction: movementDirection }), 'animate-pulse')}>
-                            {movementGlyph}
-                          </span>
-                          <span
-                            className={cn(
-                              momentumChevron({ direction: movementDirection }),
-                              'animate-pulse opacity-70 [animation-delay:120ms]'
-                            )}
-                          >
-                            {movementGlyph}
-                          </span>
-                          {Math.abs(movementDelta) > 1 ? (
-                            <span
-                              className={cn(
-                                'ml-1 text-xs font-black',
-                                movementDirection === 'up' ? 'text-success' : 'text-destructive'
-                              )}
-                            >
-                              {Math.abs(movementDelta)}
-                            </span>
+                    <div className="hidden grid-cols-[72px_minmax(260px,1fr)_110px_72px_72px_72px_72px] items-center gap-2 md:grid">
+                      <div className="text-base font-semibold tabular-nums text-foreground">#{rank}</div>
+
+                      <div className="min-w-0">
+                        <div className="truncate text-[15px] font-semibold text-foreground">{entry.member.name}</div>
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                          {isYou ? (
+                            <Badge tone="info" className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                              You
+                            </Badge>
                           ) : null}
-                        </>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-foreground">{entry.member.name}</div>
-                      <div className="mt-1 flex flex-wrap items-center gap-1">
-                        {isYou ? <Badge tone="info">You</Badge> : null}
-                        {!isYou && isClosestAbove ? <Badge tone="warning">Closest above</Badge> : null}
-                        {!isYou && isClosestBelow ? <Badge tone="secondary">Closest below</Badge> : null}
+                          {!isYou && isRival ? (
+                            <Badge tone="warning" className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                              Rival
+                            </Badge>
+                          ) : null}
+                          {isTopThree ? (
+                            <Badge tone="success" className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                              Top 3
+                            </Badge>
+                          ) : null}
+                          {shouldShowMomentumPill(movementDelta) ? (
+                            <Badge tone={movementTone(movementDelta)} className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                              {movementLabel(movementDelta)}
+                            </Badge>
+                          ) : null}
+                          {entryBadges.map((badge) => (
+                            <Badge
+                              key={`${entryKey}-${badge.kind}`}
+                              tone={socialBadgeTone(badge.kind)}
+                              className="px-2 py-0 text-[10px] normal-case tracking-normal"
+                              title={badge.description}
+                            >
+                              {badge.label}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
+
+                      <div className="text-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
+                      <div className="tabular-nums text-sm font-medium text-foreground">{entry.exactPoints}</div>
+                      <div className="tabular-nums text-sm font-medium text-foreground">{entry.resultPoints}</div>
+                      <div className="tabular-nums text-sm font-medium text-foreground">{entry.knockoutPoints}</div>
+                      <div className="tabular-nums text-sm font-medium text-foreground">{entry.bracketPoints}</div>
                     </div>
-                    <div className="text-lg font-black uppercase tracking-tight text-foreground">
-                      {entry.totalPoints}
-                      <span className="ml-1 text-[10px] text-muted-foreground">PTS</span>
-                    </div>
-                    <div className="text-sm font-semibold text-foreground">{entry.exactPoints}</div>
-                    <div className="text-sm font-semibold text-foreground">{entry.resultPoints}</div>
-                    <div className="text-sm font-semibold text-foreground">{entry.knockoutPoints}</div>
-                    <div className="text-sm font-semibold text-foreground">{entry.bracketPoints}</div>
-                  </div>
-                  <DetailsDisclosure
-                    title="Signals"
-                    meta={entryBadges.length > 0 ? `${entryBadges.length} badges` : 'No badges'}
-                    defaultOpen={isYou}
-                    className="bg-bg2/35"
-                  >
-                    {entryBadges.length === 0 ? (
-                      <PanelState className="text-xs" tone="empty" message="No social badges yet." />
-                    ) : (
-                      <div className="flex flex-wrap items-center gap-2">
+
+                    <div className="space-y-2 md:hidden">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-base font-semibold tabular-nums text-foreground">#{rank}</div>
+                          <div className="truncate text-[15px] font-semibold text-foreground">{entry.member.name}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
+                          <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Total</div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1">
+                        {isYou ? (
+                          <Badge tone="info" className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                            You
+                          </Badge>
+                        ) : null}
+                        {!isYou && isRival ? (
+                          <Badge tone="warning" className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                            Rival
+                          </Badge>
+                        ) : null}
+                        {isTopThree ? (
+                          <Badge tone="success" className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                            Top 3
+                          </Badge>
+                        ) : null}
+                        {shouldShowMomentumPill(movementDelta) ? (
+                          <Badge tone={movementTone(movementDelta)} className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                            {movementLabel(movementDelta)}
+                          </Badge>
+                        ) : null}
                         {entryBadges.map((badge) => (
-                          <div key={`${entryKey}-${badge.kind}`} className="space-y-1">
-                            <SocialBadgePill badge={badge} />
-                            <div className="px-1 text-[11px] text-muted-foreground">{badge.description}</div>
-                          </div>
+                          <Badge
+                            key={`${entryKey}-mobile-${badge.kind}`}
+                            tone={socialBadgeTone(badge.kind)}
+                            className="px-2 py-0 text-[10px] normal-case tracking-normal"
+                            title={badge.description}
+                          >
+                            {badge.label}
+                          </Badge>
                         ))}
                       </div>
-                    )}
-                  </DetailsDisclosure>
-                </div>
-              )
-            })}
-          </div>
-        </div>
 
-        {leaderboardRows.length > LEADERBOARD_LIST_PAGE_SIZE ? (
-          <div className="mt-4 flex items-center justify-between gap-2">
-            <div className="text-xs text-muted-foreground">
-              Showing {start + 1}-{Math.min(start + LEADERBOARD_LIST_PAGE_SIZE, leaderboardRows.length)} of {leaderboardRows.length}
+                      <div className="grid grid-cols-2 gap-1 text-[12px]">
+                        <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Exact {entry.exactPoints}</div>
+                        <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Outcome {entry.resultPoints}</div>
+                        <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">KO {entry.knockoutPoints}</div>
+                        <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Bracket {entry.bracketPoints}</div>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={safePage <= 1}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-              >
-                Prev
-              </Button>
+          </div>
+
+          {activeRows.length > LEADERBOARD_LIST_PAGE_SIZE ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <div className="text-xs text-muted-foreground">
-                Page {safePage} / {totalPages}
+                Showing {start + 1}-{Math.min(start + LEADERBOARD_LIST_PAGE_SIZE, activeRows.length)} of {activeRows.length}
               </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={safePage >= totalPages}
-                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              >
-                Next
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 rounded-lg px-3 text-[12px]"
+                  disabled={safePage <= 1}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                >
+                  Prev
+                </Button>
+                <div className="text-xs text-muted-foreground">
+                  Page {safePage} / {totalPages}
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 rounded-lg px-3 text-[12px]"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : null}
-      </Card>
+          ) : null}
+        </div>
+      </SectionCardV2>
 
-      {shouldShowStickyRow && stickyUserRow ? (
+      {shouldShowStickyRow && stickyUserRow && userContext?.current.rank ? (
         <div className="fixed inset-x-4 bottom-4 z-40 mx-auto max-w-5xl" data-testid="leaderboard-sticky-user-row">
-          <div className="rounded-2xl border border-[var(--border-accent)] bg-[var(--accent-soft)]/90 p-3 shadow-[0_0_0_1px_var(--border-accent),0_0_24px_var(--glow)] backdrop-blur-md">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="rounded-xl border border-[color:var(--v2-glow-medium)] bg-background/95 p-3 shadow-[0_0_0_1px_color-mix(in_srgb,var(--v2-glow-medium)_65%,transparent),var(--shadow1)] backdrop-blur-md">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Your row</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Your row</div>
                 <div className="text-sm font-semibold text-foreground">
-                  #{summary?.currentRank} {stickyUserRow.member.name}
+                  #{userContext.current.rank} {stickyUserRow.member.name}
                 </div>
                 <div className="text-xs text-muted-foreground">{stickyUserRow.totalPoints} pts</div>
               </div>
-              <Button size="sm" variant="secondary" onClick={jumpToCurrentUserRow}>
+              <Button size="sm" variant="secondary" className="h-8 rounded-lg px-3 text-[12px]" onClick={jumpToCurrentUserRow}>
                 Jump to row
               </Button>
             </div>
           </div>
         </div>
       ) : null}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <DetailsDisclosure
-          title="What to pick next"
-          meta={swingOpportunities.length > 0 ? `${Math.min(3, swingOpportunities.length)} shown` : 'No open opportunities'}
-        >
-          {swingOpportunities.length === 0 ? (
-            <PanelState message="No open matches available for swing-based hints." tone="empty" />
-          ) : (
-            <div className="space-y-3">
-              {swingOpportunities.slice(0, 3).map((opportunity) => (
-                <div key={opportunity.matchId} className="rounded-xl border border-border/70 bg-bg2 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-semibold text-foreground">{opportunity.label}</div>
-                    <Badge tone="warning">Swing {Math.round(opportunity.swingScore * 100)}</Badge>
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    Locks {formatUtcAndLocalDeadline(opportunity.lockUtc)} · Kick {formatTime(opportunity.kickoffUtc)}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {opportunity.consensusTeam && opportunity.consensusPct !== null
-                      ? `Consensus: ${opportunity.consensusTeam} ${opportunity.consensusPct}% (${opportunity.votes} picks)`
-                      : 'Consensus: no picks yet'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </DetailsDisclosure>
-
-        {summary ? (
-          <div id="league-advanced-metrics">
-            <DetailsDisclosure title="League distribution details" className="scroll-mt-5" defaultOpen={advancedOpen}>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="rounded-2xl border-border/60 p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Section averages</div>
-                  <div className="mt-2 text-sm text-foreground">Total: {summary.averages.total}</div>
-                  <div className="mt-1 text-sm text-foreground">Exact: {summary.averages.exact}</div>
-                  <div className="mt-1 text-sm text-foreground">Outcome: {summary.averages.outcome}</div>
-                  <div className="mt-1 text-sm text-foreground">KO: {summary.averages.ko}</div>
-                  <div className="mt-1 text-sm text-foreground">Bracket: {summary.averages.bracket}</div>
-                </Card>
-                <Card className="rounded-2xl border-border/60 p-4">
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Section maxima</div>
-                  <div className="mt-2 text-sm text-foreground">
-                    Total: {summary.maxima.total?.value ?? 0} ({summary.maxima.total?.name ?? '—'})
-                  </div>
-                  <div className="mt-1 text-sm text-foreground">
-                    Exact: {summary.maxima.exact?.value ?? 0} ({summary.maxima.exact?.name ?? '—'})
-                  </div>
-                  <div className="mt-1 text-sm text-foreground">
-                    Outcome: {summary.maxima.outcome?.value ?? 0} ({summary.maxima.outcome?.name ?? '—'})
-                  </div>
-                  <div className="mt-1 text-sm text-foreground">
-                    KO: {summary.maxima.ko?.value ?? 0} ({summary.maxima.ko?.name ?? '—'})
-                  </div>
-                  <div className="mt-1 text-sm text-foreground">
-                    Bracket: {summary.maxima.bracket?.value ?? 0} ({summary.maxima.bracket?.name ?? '—'})
-                  </div>
-                </Card>
-              </div>
-            </DetailsDisclosure>
-          </div>
-        ) : null}
-      </div>
-
-      <Sheet open={!isFrozen && simulatorOpen} onOpenChange={setSimulatorOpen}>
-        <SheetContent side="right" className="w-[96vw] max-w-2xl p-0">
-          <SheetHeader>
-            <SheetTitle>What-If Simulator</SheetTitle>
-            <SheetDescription>
-              {isFrozen
-                ? 'Projected leaderboard values are hidden while group-stage scoring is frozen.'
-                : 'Model hypothetical upcoming match results and preview projected ranks.'}
-            </SheetDescription>
-          </SheetHeader>
-          {isFrozen ? (
-            <div className="p-4">
-              <Alert tone="info" title="Projections unavailable during freeze">
-                Official group-stage scoring publishes after completion and appears on the next daily snapshot.
-              </Alert>
-            </div>
-          ) : (
-          <div className="space-y-4 p-4">
-            <div className="rounded-xl border border-dashed border-[var(--border-accent)] bg-[var(--accent-soft)]/35 p-3">
-              <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Simulation mode</div>
-              <div className="mt-1 text-sm text-foreground">
-                Simulated projections only. Live leaderboard data remains unchanged.
-              </div>
-            </div>
-
-            {whatIfMatches.length === 0 ? (
-              <PanelState message="No upcoming matches available for simulation." tone="empty" />
-            ) : (
-              <div className="space-y-3">
-                {whatIfMatches.map((match) => {
-                  const draft = whatIfDrafts[match.id] ?? { enabled: false, homeScore: 0, awayScore: 0 }
-                  const tieNeedsAdvance = match.stage !== 'Group' && draft.enabled && draft.homeScore === draft.awayScore
-
-                  return (
-                    <div key={`what-if-${match.id}`} className="rounded-xl border border-border/70 bg-bg2/45 p-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-semibold text-foreground">
-                            {match.homeTeam.code} vs {match.awayTeam.code}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {match.stage} · Kick {formatTime(match.kickoffUtc)}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant={draft.enabled ? 'primary' : 'secondary'}
-                            onClick={() => toggleWhatIfMatch(match.id)}
-                          >
-                            {draft.enabled ? 'Included' : 'Include'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            disabled={!whatIfDrafts[match.id]}
-                            onClick={() =>
-                              setWhatIfDrafts((current) => {
-                                const next = { ...current }
-                                delete next[match.id]
-                                return next
-                              })
-                            }
-                          >
-                            Clear
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <ScoreStepper
-                          label={`${match.homeTeam.code} score`}
-                          value={draft.homeScore}
-                          disabled={!draft.enabled}
-                          onChange={(next) => updateWhatIfScore(match, 'home', next)}
-                        />
-                        <ScoreStepper
-                          label={`${match.awayTeam.code} score`}
-                          value={draft.awayScore}
-                          disabled={!draft.enabled}
-                          onChange={(next) => updateWhatIfScore(match, 'away', next)}
-                        />
-                      </div>
-
-                      {tieNeedsAdvance ? (
-                        <div className="mt-3 rounded-xl border border-border/70 bg-card/60 p-3">
-                          <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                            Tiebreak winner
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            <Button
-                              size="sm"
-                              variant={draft.advances === 'HOME' ? 'primary' : 'secondary'}
-                              onClick={() => updateWhatIfAdvance(match.id, 'HOME')}
-                            >
-                              {match.homeTeam.code} advances
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={draft.advances === 'AWAY' ? 'primary' : 'secondary'}
-                              onClick={() => updateWhatIfAdvance(match.id, 'AWAY')}
-                            >
-                              {match.awayTeam.code} advances
-                            </Button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            <div className="rounded-xl border border-[rgba(var(--info-rgb),0.45)] bg-[rgba(var(--info-rgb),0.08)] p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-sm font-semibold text-foreground">Projected leaderboard</div>
-                <Badge tone="info">{activeSimulationCount} simulated matches</Badge>
-              </div>
-              {projectedYou ? (
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Your projected rank: #{projectedYou.projectedRank}
-                  {projectedRankDelta === null
-                    ? ''
-                    : projectedRankDelta > 0
-                      ? ` (+${projectedRankDelta})`
-                      : projectedRankDelta < 0
-                        ? ` (${projectedRankDelta})`
-                        : ' (no change)'}
-                </div>
-              ) : null}
-
-              {projectedRows.length === 0 ? (
-                <PanelState className="mt-3 text-xs" message="Include a match above to generate projections." tone="empty" />
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {projectedRows.slice(0, 8).map((row) => {
-                    const rowKey = getEntryIdentityKey(row.entry)
-                    const currentRank = currentRankByKey.get(rowKey) ?? row.projectedRank
-                    const rankChange = currentRank - row.projectedRank
-                    const isYou = isCurrentUserEntry(row.entry)
-                    return (
-                      <div key={`projected-${rowKey}`} className="rounded-lg border border-border/60 bg-card/80 px-3 py-2">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="text-sm font-semibold text-foreground">
-                            #{row.projectedRank} {row.entry.member.name}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {isYou ? <Badge tone="info">You</Badge> : null}
-                            <Badge tone={row.projectedDelta > 0 ? 'success' : 'secondary'}>
-                              {row.projectedDelta >= 0 ? '+' : ''}
-                              {row.projectedDelta} pts
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          Total {row.projectedTotalPoints} · Rank change {rankChange >= 0 ? '+' : ''}
-                          {rankChange}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-          )}
-          <div className="border-t border-border/60 p-4">
-            <SheetClose asChild>
-              <Button variant="secondary">Close</Button>
-            </SheetClose>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </div>
+    </PageShellV2>
   )
 }

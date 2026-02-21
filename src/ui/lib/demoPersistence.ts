@@ -28,18 +28,28 @@ export function clearDemoLastRoute(): void {
 
 export function readDemoRivalUserIds(): string[] {
   if (typeof window === 'undefined') return []
-  const raw = window.localStorage.getItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY)
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .map((value) => (typeof value === 'string' ? value.trim() : ''))
-      .filter((value): value is string => Boolean(value))
-      .slice(0, 3)
-  } catch {
-    return []
+  const parseRivalIds = (raw: string | null): string[] => {
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw) as unknown
+      if (!Array.isArray(parsed)) return []
+      return parsed
+        .map((value) => (typeof value === 'string' ? value.trim() : ''))
+        .filter((value): value is string => Boolean(value))
+        .slice(0, 3)
+    } catch {
+      return []
+    }
   }
+
+  const sessionValue = parseRivalIds(window.sessionStorage.getItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY))
+  if (sessionValue.length > 0) return sessionValue
+
+  const localValue = parseRivalIds(window.localStorage.getItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY))
+  if (localValue.length > 0) {
+    window.sessionStorage.setItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY, JSON.stringify(localValue))
+  }
+  return localValue
 }
 
 export function writeDemoRivalUserIds(userIds: string[]): void {
@@ -48,10 +58,13 @@ export function writeDemoRivalUserIds(userIds: string[]): void {
     .map((value) => value.trim())
     .filter((value): value is string => Boolean(value))
     .slice(0, 3)
-  window.localStorage.setItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY, JSON.stringify(normalized))
+  const serialized = JSON.stringify(normalized)
+  window.localStorage.setItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY, serialized)
+  window.sessionStorage.setItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY, serialized)
 }
 
 export function clearDemoRivalUserIds(): void {
   if (typeof window === 'undefined') return
   window.localStorage.removeItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY)
+  window.sessionStorage.removeItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY)
 }

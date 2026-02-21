@@ -15,6 +15,7 @@ type LeaderboardPodiumProps = {
   rows: LeaderboardPodiumRow[]
   snapshotAvailable: boolean
   className?: string
+  showCta?: boolean
 }
 
 type PodiumSlot = {
@@ -26,7 +27,7 @@ function slotByRank(rows: LeaderboardPodiumRow[], rank: 1 | 2 | 3): PodiumSlot {
   return { rank, row: rows.find((row) => row.rank === rank) ?? null }
 }
 
-export default function LeaderboardPodium({ rows, snapshotAvailable, className }: LeaderboardPodiumProps) {
+export default function LeaderboardPodium({ rows, snapshotAvailable, className, showCta = true }: LeaderboardPodiumProps) {
   const mode = useRouteDataMode()
   const leaderboardPath = mode === 'demo' ? '/demo/leaderboard' : '/leaderboard'
 
@@ -74,16 +75,18 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className }
         ))}
       </div>
 
-      <div className="mt-3">
-        <ButtonLink
-          to={leaderboardPath}
-          variant="secondary"
-          size="sm"
-          className="h-9 rounded-full px-3 text-[12px]"
-        >
-          View full leaderboard
-        </ButtonLink>
-      </div>
+      {showCta ? (
+        <div className="mt-3">
+          <ButtonLink
+            to={leaderboardPath}
+            variant="secondary"
+            size="sm"
+            className="h-9 rounded-full px-3 text-[12px]"
+          >
+            View full leaderboard
+          </ButtonLink>
+        </div>
+      ) : null}
     </section>
   )
 }

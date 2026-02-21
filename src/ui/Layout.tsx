@@ -416,21 +416,6 @@ function LayoutFrame() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!isDemoRoute || typeof window === 'undefined') return
-
-    const handleExit = () => {
-      clearDemoLocalStorage()
-    }
-
-    window.addEventListener('beforeunload', handleExit)
-    window.addEventListener('pagehide', handleExit)
-    return () => {
-      window.removeEventListener('beforeunload', handleExit)
-      window.removeEventListener('pagehide', handleExit)
-    }
-  }, [isDemoRoute])
-
   return (
     <div
       className="min-h-screen bg-background bg-[var(--shell-bg-overlay)] bg-no-repeat"
