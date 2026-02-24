@@ -45,10 +45,25 @@ const CANONICAL_TEAM_CODES = [
   'UZB'
 ] as const
 
-export const PLACEHOLDER_FLAG_ASSET_PATH = '/flags/placeholder.svg'
+function normalizeBasePath(basePath: string): string {
+  const trimmed = basePath.trim()
+  if (!trimmed) return '/'
+  const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`
+}
+
+// Use BASE_URL so GitHub Pages subpath deploys resolve assets under /<repo>/...
+// instead of absolute root (/flags/...), which causes 404s.
+const PUBLIC_BASE_PATH = normalizeBasePath(import.meta.env.BASE_URL ?? '/')
+
+function resolveFlagAssetPath(assetName: string): string {
+  return `${PUBLIC_BASE_PATH}flags/${assetName}.svg`
+}
+
+export const PLACEHOLDER_FLAG_ASSET_PATH = resolveFlagAssetPath('placeholder')
 
 export const TEAM_FLAG_ASSET_BY_CODE: Record<string, string> = Object.fromEntries(
-  CANONICAL_TEAM_CODES.map((code) => [code, `/flags/${code}.svg`])
+  CANONICAL_TEAM_CODES.map((code) => [code, resolveFlagAssetPath(code)])
 )
 
 function normalizeCode(value: string | null | undefined): string {

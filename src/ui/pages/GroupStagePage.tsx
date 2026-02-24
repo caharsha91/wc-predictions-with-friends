@@ -888,7 +888,7 @@ export default function GroupStagePage() {
                   className="px-2 py-0 text-[11px] normal-case tracking-normal"
                   title="Correct qualifier not selected"
                 >
-                  <TeamFlagLabelV2 code={teamCode} label={teamCode} flagClassName="h-3 w-4" />
+                  <TeamFlagLabelV2 code={teamCode} label={teamCode} size="xs" />
                 </Badge>
               ))}
             </div>

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { cn } from '../../lib/utils'
 import { PLACEHOLDER_FLAG_ASSET_PATH, resolveTeamFlagMeta } from '../../lib/teamFlag'
+import FlagBadgeV2, { type FlagBadgeSize } from './FlagBadgeV2'
 
 type TeamFlagLabelV2Props = {
   code?: string | null
@@ -10,6 +11,7 @@ type TeamFlagLabelV2Props = {
   showName?: boolean
   truncate?: boolean
   className?: string
+  size?: FlagBadgeSize
   flagClassName?: string
   primaryClassName?: string
   secondaryClassName?: string
@@ -22,35 +24,16 @@ export default function TeamFlagLabelV2({
   showName = false,
   truncate = true,
   className,
+  size = 'md',
   flagClassName,
   primaryClassName,
   secondaryClassName
 }: TeamFlagLabelV2Props) {
   const meta = useMemo(() => resolveTeamFlagMeta({ code, name, label }), [code, label, name])
-  const [failed, setFailed] = useState(false)
-
-  useEffect(() => {
-    setFailed(false)
-  }, [meta.assetPath])
 
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
-      <span
-        className={cn(
-          'inline-flex h-4 w-5 shrink-0 overflow-hidden rounded-[4px] border border-border/70 bg-background/70',
-          flagClassName
-        )}
-      >
-        <img
-          src={failed ? PLACEHOLDER_FLAG_ASSET_PATH : meta.assetPath}
-          alt=""
-          aria-hidden="true"
-          className="h-full w-full object-cover"
-          onError={() => setFailed(true)}
-          loading="lazy"
-          decoding="async"
-        />
-      </span>
+      <FlagBadgeV2 src={meta.assetPath} fallbackSrc={PLACEHOLDER_FLAG_ASSET_PATH} size={size} className={flagClassName} />
       <span className={cn('min-w-0', truncate ? 'truncate' : undefined)}>
         <span className={cn('text-current', truncate ? 'truncate' : undefined, primaryClassName)}>
           {meta.textPrimary}

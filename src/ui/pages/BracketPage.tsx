@@ -355,14 +355,14 @@ function BracketSummaryPanel({
                       code={match.homeTeam.code}
                       name={match.homeTeam.name}
                       label={homeLabel}
-                      flagClassName="h-3.5 w-4.5"
+                      size="sm"
                     />
                     <span className="shrink-0">vs</span>
                     <TeamFlagLabelV2
                       code={match.awayTeam.code}
                       name={match.awayTeam.name}
                       label={awayLabel}
-                      flagClassName="h-3.5 w-4.5"
+                      size="sm"
                     />
                   </div>
                   <span className="shrink-0 rounded-full border border-border/70 bg-background/55 px-2 py-0.5 text-[10px] text-foreground">
@@ -410,7 +410,7 @@ function BracketMatchNode({
             name={team.name}
             label={label}
             className={side === 'right' ? 'min-w-0 flex-1 justify-end text-right' : 'min-w-0 flex-1'}
-            flagClassName="h-3.5 w-4.5"
+            size="sm"
           />
           <span className="shrink-0 text-[10px] uppercase tracking-[0.08em]">
             {selected ? 'Picked' : 'Pick'}
@@ -426,7 +426,7 @@ function BracketMatchNode({
           name={team.name}
           label={label}
           className={side === 'right' ? 'min-w-0 flex-1 justify-end text-right' : 'min-w-0 flex-1'}
-          flagClassName="h-3.5 w-4.5"
+          size="sm"
         />
         <span className="shrink-0 text-[10px]">{selected ? '●' : '○'}</span>
       </div>

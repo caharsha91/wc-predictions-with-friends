@@ -420,7 +420,7 @@ function MatchRow({
               code={match.homeTeam.code}
               name={match.homeTeam.name}
               className="max-w-[7.5rem]"
-              flagClassName="h-3.5 w-4.5"
+              size="sm"
             />
           </Button>
           <Button
@@ -433,7 +433,7 @@ function MatchRow({
               code={match.awayTeam.code}
               name={match.awayTeam.name}
               className="max-w-[7.5rem]"
-              flagClassName="h-3.5 w-4.5"
+              size="sm"
             />
           </Button>
           <Button

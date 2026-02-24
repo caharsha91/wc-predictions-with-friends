@@ -30,9 +30,6 @@ import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { cn } from '../lib/utils'
 
 const RANK_SNAPSHOT_STORAGE_KEY = 'wc-leaderboard-rank-snapshot'
-const LEADERBOARD_VIEW_STORAGE_KEY = 'wc-leaderboard-view'
-
-type LeaderboardView = 'potential' | 'final'
 
 type LoadState =
   | { status: 'loading' }
@@ -90,30 +87,6 @@ function downloadCsvFile(fileName: string, content: string) {
   window.URL.revokeObjectURL(url)
 }
 
-function normalizeViewParam(value: string | null | undefined): LeaderboardView | null {
-  if (value === 'potential' || value === 'final') return value
-  return null
-}
-
-function isViewAllowed(view: LeaderboardView | null, finalAvailable: boolean): view is LeaderboardView {
-  if (view === 'potential') return true
-  return view === 'final' && finalAvailable
-}
-
-function resolveDefaultView(finalAvailable: boolean): LeaderboardView {
-  return finalAvailable ? 'final' : 'potential'
-}
-
-function readStoredView(mode: 'default' | 'demo'): LeaderboardView | null {
-  if (typeof window === 'undefined') return null
-  return normalizeViewParam(window.localStorage.getItem(`${LEADERBOARD_VIEW_STORAGE_KEY}:${mode}`))
-}
-
-function writeStoredView(mode: 'default' | 'demo', view: LeaderboardView): void {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(`${LEADERBOARD_VIEW_STORAGE_KEY}:${mode}`, view)
-}
-
 function getEntryIdentityKey(entry: LeaderboardEntry): string {
   const id = entry.member.id?.trim().toLowerCase()
   if (id) return `id:${id}`
@@ -140,9 +113,19 @@ function buildPointsSnapshot(entries: LeaderboardEntry[]): Record<string, number
   return snapshot
 }
 
-function readRankSnapshot(mode: 'default' | 'demo', view: LeaderboardView): RankSnapshot | null {
+function readRankSnapshot(mode: 'default' | 'demo'): RankSnapshot | null {
   if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(`${RANK_SNAPSHOT_STORAGE_KEY}:${mode}:${view}`)
+  const unifiedKey = `${RANK_SNAPSHOT_STORAGE_KEY}:${mode}`
+  const legacyFinalKey = `${RANK_SNAPSHOT_STORAGE_KEY}:${mode}:final`
+
+  let raw = window.localStorage.getItem(unifiedKey)
+  if (!raw) {
+    raw = window.localStorage.getItem(legacyFinalKey)
+    if (raw) {
+      window.localStorage.setItem(unifiedKey, raw)
+    }
+  }
+
   if (!raw) return null
 
   try {
@@ -177,9 +160,9 @@ function readRankSnapshot(mode: 'default' | 'demo', view: LeaderboardView): Rank
   }
 }
 
-function writeRankSnapshot(mode: 'default' | 'demo', view: LeaderboardView, snapshot: RankSnapshot): void {
+function writeRankSnapshot(mode: 'default' | 'demo', snapshot: RankSnapshot): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(`${RANK_SNAPSHOT_STORAGE_KEY}:${mode}:${view}`, JSON.stringify(snapshot))
+  window.localStorage.setItem(`${RANK_SNAPSHOT_STORAGE_KEY}:${mode}`, JSON.stringify(snapshot))
 }
 
 function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] {
@@ -372,7 +355,6 @@ export default function LeaderboardPage() {
   const isDesktopViewport = useMediaQuery('(min-width: 768px)')
 
   const [page, setPage] = useState(1)
-  const [view, setView] = useState<LeaderboardView>('potential')
   const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
   const [rivalDirectoryEntries, setRivalDirectoryEntries] = useState<RivalDirectoryEntry[]>([])
   const [state, setState] = useState<LoadState>({ status: 'loading' })
@@ -398,15 +380,8 @@ export default function LeaderboardPage() {
     })
   }, [snapshotReady])
 
-  const potentialRows = snapshotReady?.leaderboardRows ?? []
-  const finalRows = leaderboardPresentation?.rows ?? []
-  const finalAvailable = Boolean(snapshotReady?.groupStageComplete)
+  const activeBaseRows = leaderboardPresentation?.rows ?? []
   const snapshotTimestamp = snapshotReady?.snapshotTimestamp ?? ''
-
-  const activeBaseRows = useMemo(
-    () => (view === 'final' && finalAvailable ? finalRows : potentialRows),
-    [finalAvailable, finalRows, potentialRows, view]
-  )
 
   const activeTieRankedRows = useMemo(
     () =>
@@ -431,47 +406,21 @@ export default function LeaderboardPage() {
     return map
   }, [activeTieRankedRows.rankedRows])
 
-  function syncViewInUrl(nextView: LeaderboardView, replace = true) {
+  useEffect(() => {
     const params = new URLSearchParams(location.search)
-    params.set('view', nextView)
+    if (!params.has('view')) return
+    params.delete('view')
     const nextSearch = params.toString()
+
     navigate(
       {
         pathname: location.pathname,
-        search: nextSearch ? `?${nextSearch}` : ''
+        search: nextSearch ? `?${nextSearch}` : '',
+        hash: location.hash
       },
-      { replace }
+      { replace: true }
     )
-  }
-
-  function handleViewChange(nextView: LeaderboardView) {
-    if (!isViewAllowed(nextView, finalAvailable)) return
-    setView(nextView)
-    writeStoredView(mode, nextView)
-    syncViewInUrl(nextView)
-  }
-
-  useEffect(() => {
-    if (!snapshotReady) return
-
-    const params = new URLSearchParams(location.search)
-    const queryView = normalizeViewParam(params.get('view'))
-    const storedView = readStoredView(mode)
-    const defaultView = resolveDefaultView(finalAvailable)
-
-    const resolvedView = isViewAllowed(queryView, finalAvailable)
-      ? queryView
-      : isViewAllowed(storedView, finalAvailable)
-        ? storedView
-        : defaultView
-
-    setView((current) => (current === resolvedView ? current : resolvedView))
-    writeStoredView(mode, resolvedView)
-
-    if (queryView !== resolvedView) {
-      syncViewInUrl(resolvedView)
-    }
-  }, [finalAvailable, location.pathname, location.search, mode, navigate, snapshotReady])
+  }, [location.hash, location.pathname, location.search, navigate])
 
   useEffect(() => {
     let canceled = false
@@ -551,10 +500,10 @@ export default function LeaderboardPage() {
       points: buildPointsSnapshot(activeRows)
     }
 
-    const previous = readRankSnapshot(mode, view)
+    const previous = readRankSnapshot(mode)
     setPreviousSnapshot(previous && previous.lastUpdated !== snapshotTimestamp ? previous : null)
-    writeRankSnapshot(mode, view, currentSnapshot)
-  }, [activeRows, mode, rankByEntryKey, snapshotTimestamp, state.status, view])
+    writeRankSnapshot(mode, currentSnapshot)
+  }, [activeRows, mode, rankByEntryKey, snapshotTimestamp, state.status])
 
   const socialBadgesByUser = useMemo(() => {
     if (state.status !== 'ready' || !snapshotReady) return new Map<string, SocialBadge[]>()
@@ -756,7 +705,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [activeRows.length, view])
+  }, [activeRows.length])
 
   useEffect(() => {
     const row = currentRowRef.current
@@ -779,7 +728,7 @@ export default function LeaderboardPage() {
 
     observer.observe(row)
     return () => observer.disconnect()
-  }, [activeRows.length, page, view])
+  }, [activeRows.length, page])
 
   if (state.status === 'loading' || publishedSnapshot.state.status === 'loading') {
     return <LeaderboardSkeleton />
@@ -821,7 +770,7 @@ export default function LeaderboardPage() {
   function handleDownloadLeaderboardCsv() {
     const exportedAt = new Date().toISOString()
     const snapshotAsOf = snapshotTimestamp || 'Snapshot unavailable'
-    const exportRows = finalRows.length > 0 ? finalRows : potentialRows
+    const exportRows = activeBaseRows
 
     const rows: string[][] = [
       ['exportedAt', exportedAt],
@@ -878,7 +827,7 @@ export default function LeaderboardPage() {
         className="landing-v2-hero"
         kicker="Standings"
         title="Leaderboard"
-        subtitle="Compare your projected and final standings with rivals in one streamlined view."
+        subtitle="Compare standings with rivals in one streamlined view."
         actions={
           showExportMenu ? (
             <ExportMenuV2
@@ -893,7 +842,7 @@ export default function LeaderboardPage() {
           <>
             <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
             <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span>{finalAvailable ? 'Final standings available.' : 'Potential standings active until group stage closes.'}</span>
+            <span>Final standings.</span>
           </>
         }
       />
@@ -916,33 +865,6 @@ export default function LeaderboardPage() {
             <div>
               <h2 className="v2-heading-h2 text-foreground">Full leaderboard</h2>
               <div className="mt-1 text-[13px] text-muted-foreground">Single-row standings with inline social hooks and full score breakdown.</div>
-            </div>
-
-            <div className="flex flex-col items-end gap-2">
-              <div className="inline-flex rounded-full border border-border/70 bg-background/45 p-1">
-                <Button
-                  size="sm"
-                  variant="pill"
-                  data-active={view === 'potential' ? 'true' : undefined}
-                  className="h-8 px-3 text-[11px]"
-                  onClick={() => handleViewChange('potential')}
-                >
-                  Potential
-                </Button>
-                <Button
-                  size="sm"
-                  variant="pill"
-                  data-active={view === 'final' ? 'true' : undefined}
-                  className="h-8 px-3 text-[11px]"
-                  onClick={() => handleViewChange('final')}
-                  disabled={!finalAvailable}
-                  title={finalAvailable ? 'Switch to final standings' : 'Not available yet'}
-                >
-                  Final
-                </Button>
-              </div>
-
-              {!finalAvailable ? <span className="text-[12px] text-muted-foreground">Final not available yet.</span> : null}
             </div>
           </div>
 
