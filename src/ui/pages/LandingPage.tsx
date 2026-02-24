@@ -22,10 +22,10 @@ import ProfileAvatar from '../components/v2/ProfileAvatar'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
 import StatusLineV2 from '../components/v2/StatusLineV2'
+import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useAuthState } from '../hooks/useAuthState'
 import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
 import { useCurrentUser } from '../hooks/useCurrentUser'
-import { useDemoScenarioState } from '../hooks/useDemoScenarioState'
 import { useGroupStageData } from '../hooks/useGroupStageData'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
@@ -33,7 +33,6 @@ import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
-import { resolveKnockoutActivation } from '../lib/knockoutActivation'
 import { validateLastRoute } from '../lib/lastRoute'
 import {
   fetchRivalDirectory,
@@ -409,11 +408,6 @@ function formatHeaderTime(iso?: string | null): string {
   }).format(new Date(timestamp))
 }
 
-function isResolvedTeamCode(code?: string): boolean {
-  const normalized = (code ?? '').trim().toUpperCase()
-  return /^[A-Z]{3}$/.test(normalized)
-}
-
 function resolveSnapshotRow(
   id: string,
   leaderboardById: Map<string, { entry: LeaderboardEntry; rank: number }>,
@@ -436,13 +430,13 @@ export default function LandingPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const mode = useRouteDataMode()
+  const phaseState = useTournamentPhaseState()
   const viewerId = useViewerId()
   const currentUser = useCurrentUser()
   const authState = useAuthState()
   const now = useNow({ tickMs: 60_000 })
   const publishedSnapshot = usePublishedSnapshot()
   const picksState = usePicksData()
-  const demoScenario = useDemoScenarioState()
 
   const [lastRoute, setLastRoute] = useState<string | null>(null)
   const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
@@ -697,49 +691,10 @@ export default function LandingPage() {
 
   const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
   const groupClosed = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
-  const groupMatches = useMemo(() => matches.filter((match) => match.stage === 'Group'), [matches])
-  const groupCompleteFromMatches = useMemo(
-    () => groupMatches.length > 0 && groupMatches.every((match) => normalizeStatus(match.status) === 'FINISHED'),
-    [groupMatches]
-  )
-
-  const knockoutMatches = useMemo(() => matches.filter((match) => match.stage !== 'Group'), [matches])
-  const roundOf32Matches = useMemo(
-    () => knockoutMatches.filter((match) => match.stage === 'R32'),
-    [knockoutMatches]
-  )
-  const knockoutDrawReady = useMemo(
-    () =>
-      roundOf32Matches.length > 0 &&
-      roundOf32Matches.every(
-        (match) => isResolvedTeamCode(match.homeTeam.code) && isResolvedTeamCode(match.awayTeam.code)
-      ),
-    [roundOf32Matches]
-  )
-  const firstKnockoutKickoffUtc = useMemo(() => {
-    const first = knockoutMatches
-      .slice()
-      .sort((a, b) => new Date(a.kickoffUtc).getTime() - new Date(b.kickoffUtc).getTime())[0]
-    return first?.kickoffUtc
-  }, [knockoutMatches])
-  const knockoutStarted = useMemo(() => {
-    const startedByStatus = knockoutMatches.some((match) => normalizeStatus(match.status) !== 'SCHEDULED')
-    if (startedByStatus) return true
-    if (!firstKnockoutKickoffUtc) return false
-    return now.getTime() >= new Date(firstKnockoutKickoffUtc).getTime()
-  }, [firstKnockoutKickoffUtc, knockoutMatches, now])
-
-  const knockoutActivation = useMemo(
-    () =>
-      resolveKnockoutActivation({
-        mode,
-        demoScenario,
-        groupComplete: groupCompleteFromMatches || groupClosed,
-        drawReady: knockoutDrawReady,
-        knockoutStarted
-      }),
-    [demoScenario, groupClosed, groupCompleteFromMatches, knockoutDrawReady, knockoutStarted, mode]
-  )
+  const knockoutAvailable =
+    phaseState.tournamentPhase === 'KO_OPEN' ||
+    phaseState.tournamentPhase === 'KO_LOCKED' ||
+    phaseState.tournamentPhase === 'FINAL'
 
   const tileStatusByKey = useMemo<Record<EntryTileKey, TileStatusLine>>(() => {
     const groupLoading = groupStage.loadState.status === 'loading'
@@ -774,7 +729,7 @@ export default function LandingPage() {
 
     const knockoutStatus: TileStatusLine = knockoutLoading
       ? { label: 'Updating knockout availability.', tone: 'neutral' }
-      : knockoutActivation.active
+      : knockoutAvailable
         ? {
             label: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set.`,
             tone: knockoutPendingActions === 0 ? 'success' : 'info'
@@ -796,7 +751,7 @@ export default function LandingPage() {
     groupCompletion.groupsTotal,
     groupCompletion.pending,
     groupStage.loadState.status,
-    knockoutActivation.active,
+    knockoutAvailable,
     knockoutData.completeMatches,
     knockoutData.loadState.status,
     knockoutData.totalMatches,
@@ -839,7 +794,7 @@ export default function LandingPage() {
     [groupLockTime]
   )
 
-  const knockoutOpenLabel = knockoutActivation.active
+  const knockoutOpenLabel = knockoutAvailable
     ? 'Knockout picks are open now.'
     : 'Knockout picks open once group outcomes lock and matchups are confirmed.'
 

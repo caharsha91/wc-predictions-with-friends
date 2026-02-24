@@ -8,6 +8,7 @@ import { cn } from '../../lib/utils'
 import { Badge } from '../ui/Badge'
 import { Button, ButtonLink } from '../ui/Button'
 import SectionCardV2 from '../v2/SectionCardV2'
+import TeamFlagLabelV2 from '../v2/TeamFlagLabelV2'
 import V2Card from '../v2/V2Card'
 
 export type GroupStageDenseRow = {
@@ -332,10 +333,13 @@ export function GroupPicksDenseTable({
                             <span className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-border text-[11px] font-semibold text-muted-foreground">
                               {index + 1}
                             </span>
-                            <span className="inline-flex h-6 min-w-10 items-center justify-center rounded-md border border-border px-1.5 text-[11px] font-semibold tracking-wide text-foreground">
-                              {team?.code ?? teamCode}
-                            </span>
-                            <div className="min-w-0 truncate text-[14px] leading-tight text-foreground">{team?.name ?? teamCode}</div>
+                            <TeamFlagLabelV2
+                              code={team?.code ?? teamCode}
+                              name={team?.name ?? teamCode}
+                              showName
+                              className="min-w-0 text-[14px] leading-tight text-foreground"
+                              primaryClassName="font-semibold tracking-wide"
+                            />
                             <span className="truncate text-[12px] text-muted-foreground">
                               {slotContextLabel(index)}
                             </span>
@@ -490,10 +494,14 @@ export function BestThirdPicksCompact({
                     {showNotReady ? (
                       <span className="text-muted-foreground">Complete ranking 1-4 first.</span>
                     ) : (
-                      <span className="block truncate">
-                        <span className="font-semibold">{tile.teamCode}</span>
-                        <span className="text-muted-foreground"> · {tile.teamName}</span>
-                      </span>
+                      <TeamFlagLabelV2
+                        code={tile.teamCode}
+                        name={tile.teamName}
+                        label={tile.teamCode}
+                        showName
+                        className="max-w-full text-[13px]"
+                        primaryClassName="font-semibold"
+                      />
                     )}
                   </div>
 

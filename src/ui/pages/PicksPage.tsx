@@ -14,7 +14,7 @@ import {
 } from '../components/group-stage/GroupStageDashboardComponents'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
-import { Button } from '../components/ui/Button'
+import { Button, ButtonLink } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import {
   Sheet,
@@ -30,6 +30,7 @@ import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
+import TeamFlagLabelV2 from '../components/v2/TeamFlagLabelV2'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
@@ -340,8 +341,10 @@ function MatchRow({
     <div className="rounded-lg border border-border/65 bg-background/35 px-2.5 py-2">
       <div className="grid items-center gap-2 md:grid-cols-[minmax(0,2fr)_minmax(0,160px)_minmax(0,220px)] md:gap-3">
         <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold text-foreground">
-            {match.homeTeam.code} vs {match.awayTeam.code}
+          <div className="flex min-w-0 items-center gap-1.5 text-[14px] font-semibold text-foreground">
+            <TeamFlagLabelV2 code={match.homeTeam.code} name={match.homeTeam.name} />
+            <span className="shrink-0 text-muted-foreground">vs</span>
+            <TeamFlagLabelV2 code={match.awayTeam.code} name={match.awayTeam.name} />
           </div>
           <div className="truncate text-[11px] text-muted-foreground">
             {stageLabel} · {formatKickoff(match.kickoffUtc)}
@@ -413,7 +416,12 @@ function MatchRow({
             className={`h-7 rounded-md px-2 text-[11px] ${draft.eventualWinnerTeamId === 'HOME' ? 'border-primary' : ''}`}
             onClick={() => onWinnerChange('HOME')}
           >
-            {match.homeTeam.code}
+            <TeamFlagLabelV2
+              code={match.homeTeam.code}
+              name={match.homeTeam.name}
+              className="max-w-[7.5rem]"
+              flagClassName="h-3.5 w-4.5"
+            />
           </Button>
           <Button
             size="sm"
@@ -421,7 +429,12 @@ function MatchRow({
             className={`h-7 rounded-md px-2 text-[11px] ${draft.eventualWinnerTeamId === 'AWAY' ? 'border-primary' : ''}`}
             onClick={() => onWinnerChange('AWAY')}
           >
-            {match.awayTeam.code}
+            <TeamFlagLabelV2
+              code={match.awayTeam.code}
+              name={match.awayTeam.name}
+              className="max-w-[7.5rem]"
+              flagClassName="h-3.5 w-4.5"
+            />
           </Button>
           <Button
             size="sm"
@@ -470,8 +483,10 @@ function ResultRow({ item, pick, scoring }: ResultRowProps) {
     <tr>
       <td>
         <div className="min-w-0">
-          <div className="truncate text-[13px] font-semibold text-foreground">
-            {match.homeTeam.code} vs {match.awayTeam.code}
+          <div className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-foreground">
+            <TeamFlagLabelV2 code={match.homeTeam.code} name={match.homeTeam.name} />
+            <span className="shrink-0 text-muted-foreground">vs</span>
+            <TeamFlagLabelV2 code={match.awayTeam.code} name={match.awayTeam.name} />
           </div>
           <div className="truncate text-[11px] text-muted-foreground">
             {stageLabel} · {formatKickoff(match.kickoffUtc)}
@@ -668,6 +683,7 @@ export default function PicksPage() {
   }, [rivalUserIds, snapshotReady, viewerId])
 
   const leaderboardPath = location.pathname.startsWith('/demo/') ? '/demo/leaderboard' : '/leaderboard'
+  const homePath = mode === 'demo' ? '/demo' : '/'
   const leaderboardCardTitle = isMatchPicksFinal ? 'Final Leaderboard' : 'Projected Leaderboard'
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
   const upcomingDisplayCount = upcomingDisplayMatches.length
@@ -882,16 +898,21 @@ export default function PicksPage() {
         kicker="Predictions"
         title="Match Picks"
         subtitle="Use the shared timeline model to edit only the current 48-hour window."
-        actions={
-          showExportMenu ? (
-            <ExportMenuV2
-              scopeLabel="Match picks + KO extras (you only)"
-              snapshotLabel={formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}
-              lockMessage="Post-lock exports only. CSV format."
-              onDownloadCsv={handleDownloadMatchPicksCsv}
-            />
-          ) : undefined
-        }
+        actions={(
+          <div className="flex items-center gap-2">
+            <ButtonLink to={homePath} size="sm" variant="secondary">
+              Back to Play Center
+            </ButtonLink>
+            {showExportMenu ? (
+              <ExportMenuV2
+                scopeLabel="Match picks + KO extras (you only)"
+                snapshotLabel={formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}
+                lockMessage="Post-lock exports only. CSV format."
+                onDownloadCsv={handleDownloadMatchPicksCsv}
+              />
+            ) : null}
+          </div>
+        )}
         metadata={
           <>
             <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Snapshot " />

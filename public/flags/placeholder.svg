@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48" viewBox="0 0 64 48" role="img" aria-label="Placeholder flag">
+  <rect x="0.5" y="0.5" width="63" height="47" rx="8" ry="8" fill="#0f172a"/>
+  <circle cx="32" cy="24" r="13" fill="#1f2937" stroke="#6b7280" stroke-width="1.5"/>
+  <text x="32" y="29" text-anchor="middle" font-size="20" fill="#9ca3af" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial">?</text>
+</svg>

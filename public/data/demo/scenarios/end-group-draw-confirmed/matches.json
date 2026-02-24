@@ -1381,7 +1381,11 @@
       "awayTeam": {
         "code": "ESP",
         "name": "Spain"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-hai",
+      "awayTeamId": "team-esp"
     },
     {
       "id": "537423",
@@ -1395,7 +1399,11 @@
       "awayTeam": {
         "code": "K1",
         "name": "Group K Team K1"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-tun",
+      "awayTeamId": "team-k1"
     },
     {
       "id": "537415",
@@ -1409,7 +1417,11 @@
       "awayTeam": {
         "code": "COL",
         "name": "Colombia"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-a1",
+      "awayTeamId": "team-col"
     },
     {
       "id": "537418",
@@ -1423,7 +1435,11 @@
       "awayTeam": {
         "code": "MAR",
         "name": "Morocco"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-civ",
+      "awayTeamId": "team-mar"
     },
     {
       "id": "537424",
@@ -1437,7 +1453,11 @@
       "awayTeam": {
         "code": "NOR",
         "name": "Norway"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-jpn",
+      "awayTeamId": "team-nor"
     },
     {
       "id": "537416",
@@ -1451,7 +1471,11 @@
       "awayTeam": {
         "code": "JOR",
         "name": "Jordan"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-cro",
+      "awayTeamId": "team-jor"
     },
     {
       "id": "537425",
@@ -1465,7 +1489,11 @@
       "awayTeam": {
         "code": "GHA",
         "name": "Ghana"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-qat",
+      "awayTeamId": "team-gha"
     },
     {
       "id": "537426",
@@ -1479,7 +1507,11 @@
       "awayTeam": {
         "code": "UZB",
         "name": "Uzbekistan"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-kor",
+      "awayTeamId": "team-uzb"
     },
     {
       "id": "537422",
@@ -1493,7 +1525,11 @@
       "awayTeam": {
         "code": "NED",
         "name": "Netherlands"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-sen",
+      "awayTeamId": "team-ned"
     },
     {
       "id": "537421",
@@ -1507,7 +1543,11 @@
       "awayTeam": {
         "code": "CUR",
         "name": "Curaçao"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-sco",
+      "awayTeamId": "team-cur"
     },
     {
       "id": "537420",
@@ -1521,7 +1561,11 @@
       "awayTeam": {
         "code": "URU",
         "name": "Uruguay"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-bel",
+      "awayTeamId": "team-uru"
     },
     {
       "id": "537419",
@@ -1535,7 +1579,11 @@
       "awayTeam": {
         "code": "PAN",
         "name": "Panama"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-nzl",
+      "awayTeamId": "team-pan"
     },
     {
       "id": "537429",
@@ -1549,7 +1597,11 @@
       "awayTeam": {
         "code": "CAN",
         "name": "Canada"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-ger",
+      "awayTeamId": "team-can"
     },
     {
       "id": "537428",
@@ -1563,7 +1615,11 @@
       "awayTeam": {
         "code": "FRA",
         "name": "France"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-usa",
+      "awayTeamId": "team-fra"
     },
     {
       "id": "537427",
@@ -1577,7 +1633,11 @@
       "awayTeam": {
         "code": "ARG",
         "name": "Argentina"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-aut",
+      "awayTeamId": "team-arg"
     },
     {
       "id": "537430",
@@ -1591,7 +1651,11 @@
       "awayTeam": {
         "code": "D1",
         "name": "Group D Team D1"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-cpv",
+      "awayTeamId": "team-d1"
     },
     {
       "id": "537376",
@@ -1605,7 +1669,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537375",
@@ -1619,7 +1685,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537377",
@@ -1633,7 +1701,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537378",
@@ -1647,7 +1717,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537379",
@@ -1661,7 +1733,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537380",
@@ -1675,7 +1749,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537381",
@@ -1689,7 +1765,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537382",
@@ -1703,7 +1781,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537383",
@@ -1717,7 +1797,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537384",
@@ -1731,7 +1813,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537385",
@@ -1745,7 +1829,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537386",
@@ -1759,7 +1845,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537387",
@@ -1773,7 +1861,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "SF",
+      "knockoutRoundIndex": 3
     },
     {
       "id": "537388",
@@ -1787,7 +1877,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "SF",
+      "knockoutRoundIndex": 3
     },
     {
       "id": "537389",
@@ -1801,7 +1893,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "Third",
+      "knockoutRoundIndex": 4
     },
     {
       "id": "537390",
@@ -1815,7 +1909,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      }
+      },
+      "round": "Final",
+      "knockoutRoundIndex": 5
     }
   ]
 }

@@ -16,11 +16,15 @@ export type MatchScore = {
 export type Match = {
   id: string
   stage: MatchStage
+  round?: string
+  knockoutRoundIndex?: number
   group?: string
   kickoffUtc: string
   status: MatchStatus
   homeTeam: Team
   awayTeam: Team
+  homeTeamId?: string
+  awayTeamId?: string
   score?: MatchScore
   winner?: MatchWinner
   decidedBy?: MatchDecision

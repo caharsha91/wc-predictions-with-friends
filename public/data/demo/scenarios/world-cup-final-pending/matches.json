@@ -1387,7 +1387,11 @@
         "away": 3
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-mar",
+      "awayTeamId": "team-pan"
     },
     {
       "id": "537423",
@@ -1407,7 +1411,11 @@
         "away": 0
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-esp",
+      "awayTeamId": "team-i1"
     },
     {
       "id": "537415",
@@ -1427,7 +1435,11 @@
         "away": 1
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-fra",
+      "awayTeamId": "team-bel"
     },
     {
       "id": "537418",
@@ -1447,7 +1459,11 @@
         "away": 2
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-uzb",
+      "awayTeamId": "team-por"
     },
     {
       "id": "537424",
@@ -1467,7 +1483,11 @@
         "away": 2
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-tun",
+      "awayTeamId": "team-civ"
     },
     {
       "id": "537416",
@@ -1487,7 +1507,11 @@
         "away": 0
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-sco",
+      "awayTeamId": "team-aus"
     },
     {
       "id": "537425",
@@ -1507,7 +1531,11 @@
         "away": 3
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-mex",
+      "awayTeamId": "team-usa"
     },
     {
       "id": "537426",
@@ -1527,7 +1555,11 @@
         "away": 3
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-arg",
+      "awayTeamId": "team-ksa"
     },
     {
       "id": "537422",
@@ -1547,7 +1579,11 @@
         "away": 0
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-cro",
+      "awayTeamId": "team-sen"
     },
     {
       "id": "537421",
@@ -1567,7 +1603,11 @@
         "away": 2
       },
       "winner": "AWAY",
-      "decidedBy": "PENS"
+      "decidedBy": "PENS",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-jpn",
+      "awayTeamId": "team-rsa"
     },
     {
       "id": "537420",
@@ -1587,7 +1627,11 @@
         "away": 2
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-can",
+      "awayTeamId": "team-cur"
     },
     {
       "id": "537419",
@@ -1607,7 +1651,11 @@
         "away": 1
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-egy",
+      "awayTeamId": "team-aut"
     },
     {
       "id": "537429",
@@ -1627,7 +1675,11 @@
         "away": 0
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-par",
+      "awayTeamId": "team-b1"
     },
     {
       "id": "537428",
@@ -1647,7 +1699,11 @@
         "away": 2
       },
       "winner": "AWAY",
-      "decidedBy": "ET"
+      "decidedBy": "ET",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-qat",
+      "awayTeamId": "team-col"
     },
     {
       "id": "537427",
@@ -1667,7 +1723,11 @@
         "away": 0
       },
       "winner": "HOME",
-      "decidedBy": "PENS"
+      "decidedBy": "PENS",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-irn",
+      "awayTeamId": "team-gha"
     },
     {
       "id": "537430",
@@ -1687,7 +1747,11 @@
         "away": 1
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R32",
+      "knockoutRoundIndex": 0,
+      "homeTeamId": "team-ger",
+      "awayTeamId": "team-a1"
     },
     {
       "id": "537376",
@@ -1707,7 +1771,9 @@
         "away": 1
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537375",
@@ -1727,7 +1793,9 @@
         "away": 1
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537377",
@@ -1747,7 +1815,9 @@
         "away": 1
       },
       "winner": "AWAY",
-      "decidedBy": "ET"
+      "decidedBy": "ET",
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537378",
@@ -1767,7 +1837,9 @@
         "away": 1
       },
       "winner": "HOME",
-      "decidedBy": "PENS"
+      "decidedBy": "PENS",
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537379",
@@ -1787,7 +1859,9 @@
         "away": 3
       },
       "winner": "HOME",
-      "decidedBy": "PENS"
+      "decidedBy": "PENS",
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537380",
@@ -1807,7 +1881,9 @@
         "away": 3
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537381",
@@ -1827,7 +1903,9 @@
         "away": 3
       },
       "winner": "HOME",
-      "decidedBy": "PENS"
+      "decidedBy": "PENS",
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537382",
@@ -1847,7 +1925,9 @@
         "away": 3
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537383",
@@ -1867,7 +1947,9 @@
         "away": 0
       },
       "winner": "HOME",
-      "decidedBy": "PENS"
+      "decidedBy": "PENS",
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537384",
@@ -1887,7 +1969,9 @@
         "away": 2
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537385",
@@ -1907,7 +1991,9 @@
         "away": 1
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537386",
@@ -1927,7 +2013,9 @@
         "away": 1
       },
       "winner": "HOME",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537387",
@@ -1947,7 +2035,9 @@
         "away": 4
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "SF",
+      "knockoutRoundIndex": 3
     },
     {
       "id": "537388",
@@ -1967,7 +2057,9 @@
         "away": 3
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "SF",
+      "knockoutRoundIndex": 3
     },
     {
       "id": "537389",
@@ -1987,7 +2079,9 @@
         "away": 3
       },
       "winner": "AWAY",
-      "decidedBy": "REG"
+      "decidedBy": "REG",
+      "round": "Third",
+      "knockoutRoundIndex": 4
     },
     {
       "id": "537390",
@@ -2001,7 +2095,9 @@
       "awayTeam": {
         "code": "PAR",
         "name": "Paraguay"
-      }
+      },
+      "round": "Final",
+      "knockoutRoundIndex": 5
     }
   ]
 }

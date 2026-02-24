@@ -81,17 +81,14 @@ function resolveDeadlineFallbackPhase({
   nowMs,
   groupStageDeadlineMs,
   firstKoKickoffMs,
-  koDrawConfirmedSignal,
-  mode
+  koDrawConfirmedSignal
 }: {
   nowMs: number
   groupStageDeadlineMs: number | null
   firstKoKickoffMs: number | null
   koDrawConfirmedSignal: boolean
-  mode: PhaseEngineMode
 }): TournamentPhase {
   if (koDrawConfirmedSignal) {
-    if (mode === 'prod' && firstKoKickoffMs === null) return 'KO_LOCKED'
     if (firstKoKickoffMs !== null && nowMs >= firstKoKickoffMs) return 'KO_LOCKED'
     return 'KO_OPEN'
   }
@@ -141,14 +138,11 @@ export function computeTournamentPhase(inputs: ComputeTournamentPhaseInputs): To
       nowMs,
       groupStageDeadlineMs,
       firstKoKickoffMs,
-      koDrawConfirmedSignal: inputs.koDrawConfirmedSignal,
-      mode: inputs.mode
+      koDrawConfirmedSignal: inputs.koDrawConfirmedSignal
     })
 
-  if (tournamentPhase !== 'FINAL' && inputs.mode === 'prod') {
-    if (firstKoKickoffMs !== null && nowMs >= firstKoKickoffMs) {
-      tournamentPhase = 'KO_LOCKED'
-    } else if (tournamentPhase === 'KO_OPEN' && firstKoKickoffMs === null) {
+  if (inputs.mode === 'prod' && tournamentPhase === 'KO_OPEN') {
+    if (firstKoKickoffMs === null || nowMs >= firstKoKickoffMs) {
       tournamentPhase = 'KO_LOCKED'
     }
   }
@@ -160,32 +154,37 @@ export function computeTournamentPhase(inputs: ComputeTournamentPhaseInputs): To
   }
 }
 
-function isOpeningKoFixture(match: Match): boolean {
-  const fixture = match as unknown as Record<string, unknown>
-  const stage = typeof fixture.stage === 'string' ? fixture.stage : null
-  const round = typeof fixture.round === 'string' ? fixture.round : null
-  const knockoutRoundIndex =
-    typeof fixture.knockoutRoundIndex === 'number' ? fixture.knockoutRoundIndex : null
+function resolveOpeningKoRound(matches: Match[]): Match[] {
+  const openingByStageRound = matches.filter((match) => {
+    const fixture = match as unknown as Record<string, unknown>
+    const stage = typeof fixture.stage === 'string' ? fixture.stage : null
+    const round = typeof fixture.round === 'string' ? fixture.round : null
+    return stage === 'KO' && round === 'R32'
+  })
+  if (openingByStageRound.length > 0) return openingByStageRound
 
-  if (stage === 'KO' && round === 'R32') return true
-  if (knockoutRoundIndex === 0) return true
-  return stage === 'R32'
+  const openingByRoundIndex = matches.filter((match) => {
+    const fixture = match as unknown as Record<string, unknown>
+    return fixture.knockoutRoundIndex === 0
+  })
+  if (openingByRoundIndex.length > 0) return openingByRoundIndex
+
+  return []
 }
 
-function hasNonEmptyTeam(match: Match, side: 'home' | 'away'): boolean {
+function hasNonEmptyTeamId(match: Match, side: 'home' | 'away'): boolean {
   const fixture = match as unknown as Record<string, unknown>
   const key = side === 'home' ? 'homeTeamId' : 'awayTeamId'
-  if (typeof fixture[key] === 'string' && fixture[key].trim()) return true
-  const code = side === 'home' ? match.homeTeam?.code : match.awayTeam?.code
-  return Boolean(code?.trim())
+  return typeof fixture[key] === 'string' && fixture[key].trim().length > 0
 }
 
 export function computeKoDrawConfirmedSignal(matches: Match[]): boolean {
-  const openingRound = matches.filter((match) => isOpeningKoFixture(match))
+  const openingRound = resolveOpeningKoRound(matches)
+  if (openingRound.length === 0) return false
   if (openingRound.length < 16) return false
 
   return openingRound.every((match) => {
     const kickoffMs = parseUtcMs(match.kickoffUtc)
-    return kickoffMs !== null && hasNonEmptyTeam(match, 'home') && hasNonEmptyTeam(match, 'away')
+    return kickoffMs !== null && hasNonEmptyTeamId(match, 'home') && hasNonEmptyTeamId(match, 'away')
   })
 }

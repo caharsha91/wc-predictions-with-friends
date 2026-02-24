@@ -21,13 +21,14 @@ import type { GroupPrediction } from '../../types/bracket'
 import type { Match, Team } from '../../types/matches'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
-import { Button } from '../components/ui/Button'
+import { Button, ButtonLink } from '../components/ui/Button'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
+import TeamFlagLabelV2 from '../components/v2/TeamFlagLabelV2'
 import {
   BestThirdPicksCompact,
   GroupPicksDenseTable,
@@ -739,6 +740,7 @@ export default function GroupStagePage() {
   const selectedGroupTeamCodes = buildGroupTeamCodes(groupTeams[selectedStandingsGroup] ?? [])
   const selectedGroupTopTwo = resolveStoredTopTwo(selectedGroupPrediction, selectedGroupTeamCodes)
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
+  const homePath = mode === 'demo' ? '/demo' : '/'
   const leaderboardPath = mode === 'demo' ? '/demo/leaderboard' : '/leaderboard'
   const scoringSnapshotLabel = formatSnapshotTimestamp(scoringSnapshotTimestamp)
   const groupLockLabel = groupLockTime ? formatUtcAndLocalDeadline(groupLockTime.toISOString()) : 'Lock deadline unavailable'
@@ -886,7 +888,7 @@ export default function GroupStagePage() {
                   className="px-2 py-0 text-[11px] normal-case tracking-normal"
                   title="Correct qualifier not selected"
                 >
-                  {teamCode}
+                  <TeamFlagLabelV2 code={teamCode} label={teamCode} flagClassName="h-3 w-4" />
                 </Badge>
               ))}
             </div>
@@ -939,7 +941,7 @@ export default function GroupStagePage() {
                 >
                   <td>
                     <div className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate">{entry.code}</span>
+                      <TeamFlagLabelV2 code={entry.code} label={entry.code} />
                       {pickedFirst ? <Badge tone="info" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Your 1st</Badge> : null}
                       {pickedSecond ? <Badge tone="secondary" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Your 2nd</Badge> : null}
                     </div>
@@ -990,6 +992,21 @@ export default function GroupStagePage() {
         kicker="Your move"
         title="Group Stage"
         subtitle="Set your group ranking and best-third qualifiers. Updates publish on daily snapshots."
+        actions={(
+          <div className="flex items-center gap-2">
+            <ButtonLink to={homePath} size="sm" variant="secondary">
+              Back to Play Center
+            </ButtonLink>
+            {showExportMenu ? (
+              <ExportMenuV2
+                scopeLabel="Group rankings + best-third selections (you only)"
+                snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
+                lockMessage="Post-lock exports only. CSV format."
+                onDownloadCsv={handleDownloadGroupStageCsv}
+              />
+            ) : null}
+          </div>
+        )}
         metadataClassName="w-full"
         metadata={<span className="block w-full">{statusLineCopy}</span>}
       />
@@ -1018,15 +1035,6 @@ export default function GroupStagePage() {
               })}
             </div>
           </div>
-
-          {showExportMenu ? (
-            <ExportMenuV2
-              scopeLabel="Group rankings + best-third selections (you only)"
-              snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
-              lockMessage="Post-lock exports only. CSV format."
-              onDownloadCsv={handleDownloadGroupStageCsv}
-            />
-          ) : null}
         </div>
       </SectionCardV2>
 

@@ -1093,7 +1093,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537423",
@@ -1107,7 +1109,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537415",
@@ -1121,7 +1125,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537418",
@@ -1135,7 +1141,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537424",
@@ -1149,7 +1157,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537416",
@@ -1163,7 +1173,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537425",
@@ -1177,7 +1189,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537426",
@@ -1191,7 +1205,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537422",
@@ -1205,7 +1221,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537421",
@@ -1219,7 +1237,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537420",
@@ -1233,7 +1253,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537419",
@@ -1247,7 +1269,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537429",
@@ -1261,7 +1285,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537428",
@@ -1275,7 +1301,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537427",
@@ -1289,7 +1317,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537430",
@@ -1303,7 +1333,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R32",
+      "knockoutRoundIndex": 0
     },
     {
       "id": "537376",
@@ -1317,7 +1349,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537375",
@@ -1331,7 +1365,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537377",
@@ -1345,7 +1381,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537378",
@@ -1359,7 +1397,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537379",
@@ -1373,7 +1413,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537380",
@@ -1387,7 +1429,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537381",
@@ -1401,7 +1445,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537382",
@@ -1415,7 +1461,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "R16",
+      "knockoutRoundIndex": 1
     },
     {
       "id": "537383",
@@ -1429,7 +1477,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537384",
@@ -1443,7 +1493,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537385",
@@ -1457,7 +1509,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537386",
@@ -1471,7 +1525,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "QF",
+      "knockoutRoundIndex": 2
     },
     {
       "id": "537387",
@@ -1485,7 +1541,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "SF",
+      "knockoutRoundIndex": 3
     },
     {
       "id": "537388",
@@ -1499,7 +1557,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "SF",
+      "knockoutRoundIndex": 3
     },
     {
       "id": "537389",
@@ -1513,7 +1573,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "Third",
+      "knockoutRoundIndex": 4
     },
     {
       "id": "537390",
@@ -1527,7 +1589,9 @@
       "awayTeam": {
         "code": "TBD",
         "name": "TBD"
-      }
+      },
+      "round": "Final",
+      "knockoutRoundIndex": 5
     }
   ]
 }

@@ -9,6 +9,7 @@ import { useNow } from '../hooks/useNow'
 import { Badge } from './ui/Badge'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
+import TeamFlagLabelV2 from './v2/TeamFlagLabelV2'
 
 type UpcomingLock = {
   match: Match
@@ -96,8 +97,10 @@ export default function LockReminderBanner({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-2">
           <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Next lock</div>
-          <div className="text-lg font-semibold text-foreground">
-            {match.homeTeam.code} vs {match.awayTeam.code}
+          <div className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            <TeamFlagLabelV2 code={match.homeTeam.code} name={match.homeTeam.name} />
+            <span className="text-muted-foreground">vs</span>
+            <TeamFlagLabelV2 code={match.awayTeam.code} name={match.awayTeam.name} />
           </div>
           <div className="text-xs text-muted-foreground">
             {match.stage} · Locks at {formatLockTime(lockTime)}
