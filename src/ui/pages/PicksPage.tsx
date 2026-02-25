@@ -108,7 +108,8 @@ type ResultsTableProps = {
 
 const EMPTY_MATCHES: Match[] = []
 const UPCOMING_DISPLAY_WINDOW_MS = 48 * 60 * 60 * 1000
-const KO_EXTRAS_LANE_HEIGHT_PX = 36
+const MAX_RECENT_RESULTS = 5
+const KO_EXTRAS_LANE_MIN_HEIGHT_CLASS = 'min-h-[74px] md:min-h-[44px]'
 
 function normalizeKey(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase()
@@ -164,6 +165,29 @@ function parseScore(value: string): number | undefined {
   const parsed = Number(trimmed)
   if (!Number.isFinite(parsed)) return undefined
   return Math.max(0, Math.floor(parsed))
+}
+
+function kickoffSortMs(item: MatchTimelineItem): number {
+  if (typeof item.kickoffMs === 'number' && Number.isFinite(item.kickoffMs)) return item.kickoffMs
+  const parsedKickoff = new Date(item.match.kickoffUtc).getTime()
+  if (Number.isFinite(parsedKickoff)) return parsedKickoff
+  return item.sortMs
+}
+
+function sortByKickoffLatestFirst(left: MatchTimelineItem, right: MatchTimelineItem): number {
+  const kickoffDelta = kickoffSortMs(right) - kickoffSortMs(left)
+  if (kickoffDelta !== 0) return kickoffDelta
+  return right.sortMs - left.sortMs
+}
+
+function segmentedButtonClass(selected: boolean): string {
+  return [
+    'inline-flex h-7 min-w-0 items-center justify-center rounded-md border px-2 text-[11px] font-medium transition-colors',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+    selected
+      ? 'border-[color:var(--v2-row-active-border)] bg-[var(--accent-soft)] text-foreground shadow-[var(--shadow0)]'
+      : 'border-transparent text-muted-foreground hover:border-border/70 hover:bg-background/60 hover:text-foreground'
+  ].join(' ')
 }
 
 function toDraft(pick?: Pick): MatchDraft {
@@ -310,14 +334,6 @@ function formatPointsLabel(points: number): string {
   return `${points} pts`
 }
 
-function resolveRowStatus(item: MatchTimelineItem): { tone: 'info' | 'warning' | 'success' | 'secondary' | 'locked'; label: string } {
-  if (!item.editable) return { tone: 'locked', label: 'Read-only' }
-  if (item.normalizedStatus === 'live') return { tone: 'warning', label: 'Live' }
-  if (item.normalizedStatus === 'completed') return { tone: 'success', label: 'Completed' }
-  if (item.normalizedStatus === 'scheduled') return { tone: 'info', label: 'Scheduled' }
-  return { tone: 'secondary', label: 'Archived' }
-}
-
 function MatchRow({
   item,
   draft,
@@ -342,22 +358,26 @@ function MatchRow({
   const hasKoMethod = draft.koWinMethod === 'ET' || draft.koWinMethod === 'PENS'
   const validForSave = hasScores && (!requiresKoExtras || (hasKoWinner && hasKoMethod))
   const canSave = item.editable && rowDirty && validForSave && !isSaving
-  const statusMeta = resolveRowStatus(item)
   const stageLabel = match.group ? `Group ${match.group}` : match.stage
+  const kickoffLabel = formatKickoff(match.kickoffUtc)
   const rowState = !item.editable ? 'disabled' : rowDirty ? 'selected' : 'default'
   const showKoExtras = item.editable && requiresKoExtras
 
   return (
     <RowShellV2 state={rowState} className="px-2.5 py-2">
-      <div className="grid items-center gap-2 md:grid-cols-[minmax(0,2fr)_minmax(0,160px)_minmax(0,220px)] md:gap-3">
+      <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-2.5">
         <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-1.5 text-[14px] font-semibold text-foreground">
+          <div className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-foreground">
             <TeamIdentityInlineV2 code={match.homeTeam.code} name={match.homeTeam.name} size="sm" />
             <span className="shrink-0 text-muted-foreground">vs</span>
             <TeamIdentityInlineV2 code={match.awayTeam.code} name={match.awayTeam.name} size="sm" />
+            <span className="hidden shrink-0 text-[11px] font-normal text-muted-foreground md:inline">·</span>
+            <span className="hidden truncate text-[11px] font-normal text-muted-foreground md:inline">
+              {stageLabel} · {kickoffLabel}
+            </span>
           </div>
-          <div className="truncate text-[11px] text-muted-foreground">
-            {stageLabel} · {formatKickoff(match.kickoffUtc)}
+          <div className="truncate text-[11px] text-muted-foreground md:hidden">
+            {stageLabel} · {kickoffLabel}
           </div>
         </div>
 
@@ -371,7 +391,7 @@ function MatchRow({
             value={draft.homeScore}
             onChange={(event) => onHomeScoreChange(event.target.value)}
             disabled={!item.editable || isSaving}
-            className="h-8 w-16 px-2 py-1 text-center text-[13px] tabular-nums"
+            className="h-8 w-14 px-1.5 py-1 text-center text-[13px] tabular-nums"
             aria-label={`${match.homeTeam.code} score`}
           />
           <span className="text-xs text-muted-foreground">-</span>
@@ -384,16 +404,13 @@ function MatchRow({
             value={draft.awayScore}
             onChange={(event) => onAwayScoreChange(event.target.value)}
             disabled={!item.editable || isSaving}
-            className="h-8 w-16 px-2 py-1 text-center text-[13px] tabular-nums"
+            className="h-8 w-14 px-1.5 py-1 text-center text-[13px] tabular-nums"
             aria-label={`${match.awayTeam.code} score`}
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
-          <StatusTagV2 tone={statusMeta.tone}>
-            {statusMeta.label}
-          </StatusTagV2>
-          {item.editable && !requiresKoExtras ? (
+        <div className="flex min-h-8 items-center justify-start md:justify-end">
+          {item.editable && rowDirty ? (
             <Button
               size="sm"
               className="h-8 rounded-lg px-3 text-[12px]"
@@ -404,79 +421,77 @@ function MatchRow({
               Save
             </Button>
           ) : null}
-          <span className={`text-[11px] ${rowDirty ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
-            {item.editable
-              ? isSaving
-                ? 'Saving...'
-                : rowDirty
-                  ? 'Edited'
-                  : isSaved
-                    ? 'Saved'
-                    : 'No changes'
-              : 'Locked'}
-          </span>
         </div>
       </div>
 
-      <div className="mt-2" style={{ minHeight: KO_EXTRAS_LANE_HEIGHT_PX }}>
+      <div className={`mt-1.5 ${KO_EXTRAS_LANE_MIN_HEIGHT_CLASS}`}>
         {showKoExtras ? (
-          <div className="flex h-9 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap">
-            <Button
-              size="sm"
-              variant="secondary"
-              className={`h-7 rounded-md px-2 text-[11px] ${draft.eventualWinnerTeamId === 'HOME' ? 'border-primary' : ''}`}
-              onClick={() => onWinnerChange('HOME')}
-            >
-              <TeamIdentityInlineV2
-                code={match.homeTeam.code}
-                name={match.homeTeam.name}
-                className="max-w-[7.5rem]"
-                size="sm"
-              />
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              className={`h-7 rounded-md px-2 text-[11px] ${draft.eventualWinnerTeamId === 'AWAY' ? 'border-primary' : ''}`}
-              onClick={() => onWinnerChange('AWAY')}
-            >
-              <TeamIdentityInlineV2
-                code={match.awayTeam.code}
-                name={match.awayTeam.name}
-                className="max-w-[7.5rem]"
-                size="sm"
-              />
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              className={`h-7 rounded-md px-2 text-[11px] ${draft.koWinMethod === 'ET' ? 'border-primary' : ''}`}
-              onClick={() => onKoMethodChange('ET')}
-            >
-              AET
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              className={`h-7 rounded-md px-2 text-[11px] ${draft.koWinMethod === 'PENS' ? 'border-primary' : ''}`}
-              onClick={() => onKoMethodChange('PENS')}
-            >
-              Pens
-            </Button>
-            <Button
-              size="sm"
-              className="h-8 rounded-lg px-3 text-[12px]"
-              onClick={onSave}
-              disabled={!canSave}
-              loading={isSaving}
-            >
-              Save
-            </Button>
+          <div className="grid h-full content-center gap-1.5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Winner</span>
+              <div className="inline-flex min-w-0 flex-1 items-center rounded-lg border border-border/70 bg-background/55 p-0.5">
+                <button
+                  type="button"
+                  className={`${segmentedButtonClass(draft.eventualWinnerTeamId === 'HOME')} flex-1`}
+                  onClick={() => onWinnerChange('HOME')}
+                  disabled={!item.editable || isSaving}
+                  aria-label={`Set ${match.homeTeam.code} as eventual winner`}
+                  aria-pressed={draft.eventualWinnerTeamId === 'HOME'}
+                >
+                  <TeamIdentityInlineV2
+                    code={match.homeTeam.code}
+                    name={match.homeTeam.name}
+                    className="max-w-[6.5rem]"
+                    size="sm"
+                  />
+                </button>
+                <button
+                  type="button"
+                  className={`${segmentedButtonClass(draft.eventualWinnerTeamId === 'AWAY')} flex-1`}
+                  onClick={() => onWinnerChange('AWAY')}
+                  disabled={!item.editable || isSaving}
+                  aria-label={`Set ${match.awayTeam.code} as eventual winner`}
+                  aria-pressed={draft.eventualWinnerTeamId === 'AWAY'}
+                >
+                  <TeamIdentityInlineV2
+                    code={match.awayTeam.code}
+                    name={match.awayTeam.name}
+                    className="max-w-[6.5rem]"
+                    size="sm"
+                  />
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Decided in</span>
+              <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/55 p-0.5">
+                <button
+                  type="button"
+                  className={segmentedButtonClass(draft.koWinMethod === 'ET')}
+                  onClick={() => onKoMethodChange('ET')}
+                  disabled={!item.editable || isSaving}
+                  aria-label="Set match decided in AET"
+                  aria-pressed={draft.koWinMethod === 'ET'}
+                >
+                  AET
+                </button>
+                <button
+                  type="button"
+                  className={segmentedButtonClass(draft.koWinMethod === 'PENS')}
+                  onClick={() => onKoMethodChange('PENS')}
+                  disabled={!item.editable || isSaving}
+                  aria-label="Set match decided in penalties"
+                  aria-pressed={draft.koWinMethod === 'PENS'}
+                >
+                  PEN
+                </button>
+              </div>
+            </div>
           </div>
         ) : item.editable ? (
-          <div aria-hidden="true" className="h-9" />
+          <div aria-hidden="true" className="h-full rounded-md border border-transparent" />
         ) : (
-          <div className="truncate text-[11px] leading-9 text-muted-foreground">
+          <div className="flex h-full items-center truncate text-[11px] text-muted-foreground">
             {readOnlyReasonLabel(item.readOnlyReason)}
           </div>
         )}
@@ -814,6 +829,19 @@ export default function PicksPage() {
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
   const upcomingDisplayCount = upcomingDisplayMatches.length
   const scoring = scoringState.status === 'ready' ? scoringState.scoring : null
+  const recentResultsOrdered = useMemo(
+    () => [...timelineModel.recentResults].sort(sortByKickoffLatestFirst),
+    [timelineModel.recentResults]
+  )
+  const recentResultsDisplay = useMemo(
+    () => recentResultsOrdered.slice(0, MAX_RECENT_RESULTS),
+    [recentResultsOrdered]
+  )
+  const olderResultsDisplay = useMemo(() => {
+    const recentOverflow = recentResultsOrdered.slice(MAX_RECENT_RESULTS)
+    if (recentOverflow.length === 0) return timelineModel.olderResults
+    return [...recentOverflow, ...timelineModel.olderResults].sort(sortByKickoffLatestFirst)
+  }, [recentResultsOrdered, timelineModel.olderResults])
 
   useEffect(() => {
     if (!isDesktopViewport) return
@@ -1130,10 +1158,10 @@ export default function PicksPage() {
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="v2-heading-h2 text-foreground">RECENT RESULTS</h2>
-                <StatusTagV2 tone="secondary">{String(timelineModel.recentResults.length)}</StatusTagV2>
+                <StatusTagV2 tone="secondary">{String(recentResultsDisplay.length)}</StatusTagV2>
               </div>
               <ResultsTable
-                items={timelineModel.recentResults}
+                items={recentResultsDisplay}
                 picksByMatchId={pickByMatchId}
                 scoring={scoring}
                 emptyMessage="No recent results in the last 48 hours."
@@ -1144,7 +1172,7 @@ export default function PicksPage() {
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="v2-heading-h2 text-foreground">OLDER RESULTS</h2>
                 <div className="flex items-center gap-2">
-                  <StatusTagV2 tone="secondary">{String(timelineModel.olderResults.length)}</StatusTagV2>
+                  <StatusTagV2 tone="secondary">{String(olderResultsDisplay.length)}</StatusTagV2>
                   <Button size="sm" variant="secondary" onClick={() => setArchiveExpanded((current) => !current)}>
                     {archiveExpanded ? 'Hide archive' : 'Show archive'}
                   </Button>
@@ -1152,7 +1180,7 @@ export default function PicksPage() {
               </div>
               {archiveExpanded ? (
                 <ResultsTable
-                  items={timelineModel.olderResults}
+                  items={olderResultsDisplay}
                   picksByMatchId={pickByMatchId}
                   scoring={scoring}
                   emptyMessage="No older results to show."
