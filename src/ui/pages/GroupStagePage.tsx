@@ -28,14 +28,13 @@ import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
-import TeamFlagLabelV2 from '../components/v2/TeamFlagLabelV2'
+import { LeaderboardCardCurated, type LeaderboardCardRow } from '../components/v2/LeaderboardSideListV2'
+import TeamIdentityInlineV2 from '../components/v2/TeamIdentityInlineV2'
 import {
   BestThirdPicksCompact,
   GroupPicksDenseTable,
-  LeaderboardCardCurated,
   type BestThirdGroupTile,
-  type GroupStageDenseRow,
-  type LeaderboardCardRow
+  type GroupStageDenseRow
 } from '../components/group-stage/GroupStageDashboardComponents'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useGroupStageData } from '../hooks/useGroupStageData'
@@ -45,12 +44,20 @@ import { usePicksData } from '../hooks/usePicksData'
 import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useAuthState } from '../hooks/useAuthState'
+import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
+import { useFavoriteTeamPreference } from '../context/FavoriteTeamPreferenceContext'
 import { formatUtcAndLocalDeadline } from '../lib/deadline'
-import { readUserProfile } from '../lib/profilePersistence'
+import {
+  fetchRivalDirectory,
+  readUserProfile,
+  type RivalDirectoryEntry
+} from '../lib/profilePersistence'
+import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
 import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
+import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
 import { cn } from '../lib/utils'
 import {
   GROUP_STAGE_GROUP_CODES,
@@ -211,6 +218,8 @@ export default function GroupStagePage() {
   const { groupId: routeGroupIdParam } = useParams<{ groupId?: string }>()
   const mode = useRouteDataMode()
   const viewerId = useViewerId()
+  const currentUser = useCurrentUser()
+  const favoriteTeamPreference = useFavoriteTeamPreference()
   const authState = useAuthState()
   const phaseState = useTournamentPhaseState()
   const { showToast } = useToast()
@@ -233,6 +242,25 @@ export default function GroupStagePage() {
   const bestThirdAnimationTimerRef = useRef<number | null>(null)
   const selectedThirdCodeByGroupRef = useRef<Record<string, string>>({})
   const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
+  const [profileFavoriteTeamCode, setProfileFavoriteTeamCode] = useState<string | null>(null)
+  const [rivalDirectoryEntries, setRivalDirectoryEntries] = useState<RivalDirectoryEntry[]>([])
+  const viewerKeys = useMemo(
+    () =>
+      buildViewerKeySet([
+        viewerId,
+        currentUser?.id ?? null,
+        currentUser?.email ?? null,
+        currentUser?.name ?? null
+      ]),
+    [currentUser?.email, currentUser?.id, currentUser?.name, viewerId]
+  )
+  const viewerFavoriteTeamCode = useMemo(
+    () =>
+      normalizeFavoriteTeamCode(
+        favoriteTeamPreference.favoriteTeamCode ?? profileFavoriteTeamCode ?? currentUser?.favoriteTeamCode
+      ),
+    [currentUser?.favoriteTeamCode, favoriteTeamPreference.favoriteTeamCode, profileFavoriteTeamCode]
+  )
 
   const groupRouteBase = mode === 'demo' ? '/demo/group-stage' : '/group-stage'
   const routeGroupId = useMemo(() => normalizeRouteGroupId(routeGroupIdParam), [routeGroupIdParam])
@@ -271,17 +299,40 @@ export default function GroupStagePage() {
   useEffect(() => {
     let canceled = false
 
-    async function loadRivals() {
+    async function loadProfile() {
       try {
         const profile = await readUserProfile(mode, viewerId, authState.user?.email ?? null)
         if (canceled) return
         setRivalUserIds(sanitizeRivalUserIds(profile.rivalUserIds, viewerId))
+        setProfileFavoriteTeamCode(normalizeFavoriteTeamCode(profile.favoriteTeamCode))
       } catch {
-        if (!canceled) setRivalUserIds([])
+        if (canceled) return
+        setRivalUserIds([])
+        setProfileFavoriteTeamCode(null)
       }
     }
 
-    void loadRivals()
+    void loadProfile()
+    return () => {
+      canceled = true
+    }
+  }, [authState.user?.email, mode, viewerId])
+
+  useEffect(() => {
+    let canceled = false
+
+    async function loadRivalDirectory() {
+      try {
+        const entries = await fetchRivalDirectory(mode, viewerId, authState.user?.email ?? null)
+        if (canceled) return
+        setRivalDirectoryEntries(entries)
+      } catch {
+        if (canceled) return
+        setRivalDirectoryEntries([])
+      }
+    }
+
+    void loadRivalDirectory()
     return () => {
       canceled = true
     }
@@ -693,6 +744,63 @@ export default function GroupStagePage() {
     setSavingRowGroupId(null)
   }, [isReadOnly])
 
+  const rivalDirectoryByIdentity = useMemo(() => {
+    const map = new Map<string, RivalDirectoryEntry>()
+    for (const entry of rivalDirectoryEntries) {
+      const idKey = normalizeKey(entry.id)
+      const nameKey = normalizeKey(entry.displayName)
+      const emailKey = normalizeKey(entry.email)
+      if (idKey) {
+        map.set(entry.id, entry)
+        map.set(idKey, entry)
+        map.set(`id:${idKey}`, entry)
+      }
+      if (nameKey) {
+        map.set(entry.displayName, entry)
+        map.set(nameKey, entry)
+        map.set(`name:${nameKey}`, entry)
+      }
+      if (emailKey) {
+        if (entry.email) map.set(entry.email, entry)
+        map.set(emailKey, entry)
+        map.set(`email:${emailKey}`, entry)
+      }
+    }
+    return map
+  }, [rivalDirectoryEntries])
+
+  const resolveCardRowFavoriteTeamCode = useCallback(
+    ({
+      rowId,
+      rowName,
+      isYou
+    }: {
+      rowId: string
+      rowName: string
+      isYou: boolean
+    }): string | null => {
+      if (isYou) return viewerFavoriteTeamCode
+
+      const idKey = normalizeKey(rowId)
+      const nameKey = normalizeKey(rowName)
+      const candidates = [
+        idKey,
+        idKey ? `id:${idKey}` : '',
+        nameKey,
+        nameKey ? `name:${nameKey}` : ''
+      ].filter(Boolean)
+
+      for (const candidate of candidates) {
+        const match = rivalDirectoryByIdentity.get(candidate)
+        if (!match) continue
+        return normalizeFavoriteTeamCode(match.favoriteTeamCode)
+      }
+
+      return null
+    },
+    [rivalDirectoryByIdentity, viewerFavoriteTeamCode]
+  )
+
   const leaderboardRowsForCard = useMemo<LeaderboardCardRow[]>(() => {
     const sectionRows = (isFinalResultsMode
       ? finalGroupStageRows.map((row) => ({
@@ -701,25 +809,47 @@ export default function GroupStagePage() {
           points: row.points,
           movement: undefined as number | undefined,
           deltaPoints: undefined as number | undefined,
-          isYou: normalizeKey(row.entry.member.id) === normalizeKey(viewerId)
+          isYou: resolveLeaderboardIdentityKeys(row.entry).some((key) => viewerKeys.has(key)),
+          favoriteTeamCode: resolveCardRowFavoriteTeamCode({
+            rowId: row.entry.member.id || row.entry.member.name,
+            rowName: row.entry.member.name,
+            isYou: resolveLeaderboardIdentityKeys(row.entry).some((key) => viewerKeys.has(key))
+          })
         }))
       : projectedImpactRows
       .map((row) => {
         const basePoints = frozenLeaderboardRows[row.baseRank - 1]?.totalPoints ?? 0
+        const rowIdKey = normalizeKey(row.userId)
+        const rowNameKey = normalizeKey(row.name)
+        const isYou =
+          row.isYou ||
+          [
+            rowIdKey,
+            rowIdKey ? `id:${rowIdKey}` : '',
+            rowNameKey,
+            rowNameKey ? `name:${rowNameKey}` : ''
+          ]
+            .filter(Boolean)
+            .some((key) => viewerKeys.has(key))
         return {
           id: row.userId,
           name: row.name,
           points: basePoints + row.deltaPoints,
           movement: row.deltaRank,
           deltaPoints: row.deltaPoints,
-          isYou: row.isYou
+          isYou,
+          favoriteTeamCode: resolveCardRowFavoriteTeamCode({
+            rowId: row.userId,
+            rowName: row.name,
+            isYou
+          })
         }
       }))
 
     const ranked = rankRowsWithTiePriority({
       rows: sectionRows,
       getPoints: (row) => row.points,
-      getIdentityKeys: (row) => [row.id],
+      getIdentityKeys: (row) => [row.id, `id:${row.id}`, row.name, `name:${row.name}`],
       getName: (row) => row.name,
       viewerIdentity: viewerId,
       rivalIdentities: rivalUserIds
@@ -732,9 +862,19 @@ export default function GroupStagePage() {
       points: row.points,
       movement: row.movement,
       deltaPoints: row.deltaPoints,
-      isYou: row.isYou
+      isYou: row.isYou,
+      favoriteTeamCode: row.favoriteTeamCode ?? null
     }))
-  }, [finalGroupStageRows, frozenLeaderboardRows, isFinalResultsMode, projectedImpactRows, rivalUserIds, viewerId])
+  }, [
+    finalGroupStageRows,
+    frozenLeaderboardRows,
+    isFinalResultsMode,
+    projectedImpactRows,
+    resolveCardRowFavoriteTeamCode,
+    rivalUserIds,
+    viewerKeys,
+    viewerId
+  ])
 
   const selectedGroupPrediction = groupStage.data.groups[selectedStandingsGroup] ?? {}
   const selectedGroupTeamCodes = buildGroupTeamCodes(groupTeams[selectedStandingsGroup] ?? [])
@@ -888,7 +1028,7 @@ export default function GroupStagePage() {
                   className="px-2 py-0 text-[11px] normal-case tracking-normal"
                   title="Correct qualifier not selected"
                 >
-                  <TeamFlagLabelV2 code={teamCode} label={teamCode} size="xs" />
+                  <TeamIdentityInlineV2 code={teamCode} label={teamCode} size="xs" />
                 </Badge>
               ))}
             </div>
@@ -913,7 +1053,7 @@ export default function GroupStagePage() {
         </Badge>
       </div>
 
-      <div className="min-h-0 overflow-auto p-3">
+      <div className="p-3">
         <Table
           unframed
           className="[&_th]:h-9 [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:px-2 [&_td]:py-0 [&_td]:text-[14px]"
@@ -941,7 +1081,7 @@ export default function GroupStagePage() {
                 >
                   <td>
                     <div className="flex min-w-0 items-center gap-1.5">
-                      <TeamFlagLabelV2 code={entry.code} label={entry.code} />
+                      <TeamIdentityInlineV2 code={entry.code} label={entry.code} />
                       {pickedFirst ? <Badge tone="info" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Your 1st</Badge> : null}
                       {pickedSecond ? <Badge tone="secondary" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Your 2nd</Badge> : null}
                     </div>

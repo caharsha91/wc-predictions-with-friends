@@ -16,12 +16,19 @@ import {
   UsersIcon
 } from '../components/Icons'
 import LeaderboardPodium, { type LeaderboardPodiumRow } from '../components/v2/LeaderboardPodium'
+import FavoriteTeamSelectV2 from '../components/v2/FavoriteTeamSelectV2'
+import MemberAvatarV2 from '../components/v2/MemberAvatarV2'
+import MemberIdentityRowV2 from '../components/v2/MemberIdentityRowV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageShellV2 from '../components/v2/PageShellV2'
-import ProfileAvatar from '../components/v2/ProfileAvatar'
+import PanelHeaderV2 from '../components/v2/PanelHeaderV2'
+import RowShellV2 from '../components/v2/RowShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
+import StatusTagV2 from '../components/v2/StatusTagV2'
 import StatusLineV2 from '../components/v2/StatusLineV2'
+import TeamIdentityInlineV2 from '../components/v2/TeamIdentityInlineV2'
+import { useFavoriteTeamPreference } from '../context/FavoriteTeamPreferenceContext'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useAuthState } from '../hooks/useAuthState'
 import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
@@ -33,6 +40,7 @@ import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
+import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
 import { validateLastRoute } from '../lib/lastRoute'
 import {
   fetchRivalDirectory,
@@ -40,6 +48,7 @@ import {
   writeUserProfile,
   type RivalDirectoryEntry
 } from '../lib/profilePersistence'
+import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
 import { cn } from '../lib/utils'
 
 type EntryTileKey = 'group-stage' | 'match-picks' | 'knockout-bracket'
@@ -60,7 +69,7 @@ type TileStatusLine = {
 type SnapshotRow = {
   id: string
   name: string
-  photoURL: string | null
+  favoriteTeamCode: string | null
   rank: number | null
   points: number | null
   isViewer: boolean
@@ -412,14 +421,14 @@ function resolveSnapshotRow(
   id: string,
   leaderboardById: Map<string, { entry: LeaderboardEntry; rank: number }>,
   fallbackName: string,
-  photoURL: string | null,
+  favoriteTeamCode: string | null,
   isViewer: boolean
 ): SnapshotRow {
   const match = leaderboardById.get(normalizeKey(id))
   return {
     id,
     name: match?.entry.member.name ?? fallbackName,
-    photoURL,
+    favoriteTeamCode,
     rank: match?.rank ?? null,
     points: typeof match?.entry.totalPoints === 'number' ? match.entry.totalPoints : null,
     isViewer
@@ -433,6 +442,7 @@ export default function LandingPage() {
   const phaseState = useTournamentPhaseState()
   const viewerId = useViewerId()
   const currentUser = useCurrentUser()
+  const favoriteTeamPreference = useFavoriteTeamPreference()
   const authState = useAuthState()
   const now = useNow({ tickMs: 60_000 })
   const publishedSnapshot = usePublishedSnapshot()
@@ -524,7 +534,19 @@ export default function LandingPage() {
     groupStage.loadState.status === 'ready' ? formatHeaderTime(groupStage.data.updatedAt) : '—'
 
   const viewerName = currentUser?.name || authState.user?.displayName || authState.user?.email || 'You'
-  const viewerPhotoURL = authState.user?.photoURL ?? null
+  const viewerIdentityKeys = useMemo(
+    () =>
+      buildViewerKeySet([
+        viewerId,
+        currentUser?.id ?? null,
+        currentUser?.email ?? null,
+        currentUser?.name ?? null
+      ]),
+    [currentUser?.email, currentUser?.id, currentUser?.name, viewerId]
+  )
+  const viewerFavoriteTeamCode = normalizeFavoriteTeamCode(
+    favoriteTeamPreference.favoriteTeamCode ?? currentUser?.favoriteTeamCode
+  )
 
   const leaderboardById = useMemo(() => {
     const lookup = new Map<string, { entry: LeaderboardEntry; rank: number }>()
@@ -545,9 +567,70 @@ export default function LandingPage() {
       map.set(entry.id, entry)
       const key = normalizeKey(entry.id)
       if (key) map.set(key, entry)
+      if (entry.displayName) {
+        map.set(entry.displayName, entry)
+        const normalizedName = normalizeKey(entry.displayName)
+        if (normalizedName) {
+          map.set(normalizedName, entry)
+          map.set(`name:${normalizedName}`, entry)
+        }
+      }
+      if (entry.email) {
+        map.set(entry.email, entry)
+        const normalizedEmail = normalizeKey(entry.email)
+        if (normalizedEmail) {
+          map.set(normalizedEmail, entry)
+          map.set(`email:${normalizedEmail}`, entry)
+        }
+      }
+      if (key) {
+        map.set(`id:${key}`, entry)
+      }
     }
     return map
   }, [rivalsState])
+
+  const resolveSnapshotEntryFavoriteTeamCode = useMemo(() => {
+    return (entry: LeaderboardEntry): string | null => {
+      const identityKeys = resolveLeaderboardIdentityKeys(entry)
+      const isViewer = identityKeys.some((key) => viewerIdentityKeys.has(normalizeKey(key)))
+      if (isViewer) return viewerFavoriteTeamCode
+
+      const memberFavoriteTeamCode = normalizeFavoriteTeamCode(entry.member.favoriteTeamCode)
+      const lookupKeys = new Set<string>(identityKeys)
+      const memberId = normalizeKey(entry.member.id)
+      const memberEmail = normalizeKey(entry.member.email)
+      const memberName = normalizeKey(entry.member.name)
+
+      if (memberId) {
+        lookupKeys.add(memberId)
+        lookupKeys.add(`id:${memberId}`)
+      }
+      if (memberEmail) {
+        lookupKeys.add(memberEmail)
+        lookupKeys.add(`email:${memberEmail}`)
+      }
+      if (memberName) {
+        lookupKeys.add(memberName)
+        lookupKeys.add(`name:${memberName}`)
+      }
+
+      for (const key of lookupKeys) {
+        const normalized = normalizeKey(key)
+        const idLike = normalized.startsWith('id:') ? normalized.slice(3) : normalized
+        const rivalEntry =
+          rivalMap.get(key) ??
+          rivalMap.get(normalized) ??
+          rivalMap.get(idLike) ??
+          rivalMap.get(`id:${idLike}`)
+        if (!rivalEntry) continue
+        const rivalFavoriteTeamCode = normalizeFavoriteTeamCode(rivalEntry.favoriteTeamCode)
+        if (rivalFavoriteTeamCode) return rivalFavoriteTeamCode
+      }
+
+      return memberFavoriteTeamCode
+    }
+  }, [rivalMap, viewerFavoriteTeamCode, viewerIdentityKeys])
 
   const filteredRivalSuggestions = useMemo(() => {
     if (rivalsState.status !== 'ready') return []
@@ -569,19 +652,19 @@ export default function LandingPage() {
     return snapshotReady.leaderboardRows.slice(0, 3).map((entry, index) => {
       const rank = (index + 1) as 1 | 2 | 3
       const rowId = entry.member.id || `podium-${rank}`
-      const isViewer = matchesIdentity(rowId, entry.member.name, viewerId, viewerName)
-      const photoURL = isViewer ? viewerPhotoURL : (rivalMap.get(rowId)?.photoURL ?? null)
+      const isViewer = resolveLeaderboardIdentityKeys(entry).some((key) => viewerIdentityKeys.has(normalizeKey(key)))
+      const favoriteTeamCode = resolveSnapshotEntryFavoriteTeamCode(entry)
 
       return {
         id: rowId,
         name: entry.member.name,
         points: entry.totalPoints,
         rank,
-        photoURL,
+        favoriteTeamCode,
         isViewer
       } satisfies LeaderboardPodiumRow
     })
-  }, [snapshotReady, rivalMap, viewerId, viewerName, viewerPhotoURL])
+  }, [resolveSnapshotEntryFavoriteTeamCode, snapshotReady, viewerIdentityKeys])
 
   const snapshotRows = snapshotReady?.leaderboardRows ?? []
 
@@ -614,9 +697,11 @@ export default function LandingPage() {
       const snapshotEntry = leaderboardById.get(key)?.entry
       const isViewer = matchesIdentity(id, rival?.displayName ?? snapshotEntry?.member.name ?? id, viewerId, viewerName)
       const fallbackName = isViewer ? viewerName : (rival?.displayName ?? snapshotEntry?.member.name ?? id)
-      const photoURL = isViewer ? viewerPhotoURL : (rival?.photoURL ?? null)
+      const favoriteTeamCode = isViewer
+        ? viewerFavoriteTeamCode
+        : normalizeFavoriteTeamCode(rival?.favoriteTeamCode)
       const selectedIndex = isViewer ? null : getIdentityIndex(selectedRivalIndexByIdentity, id, fallbackName)
-      const baseRow = resolveSnapshotRow(id, leaderboardById, fallbackName, photoURL, isViewer)
+      const baseRow = resolveSnapshotRow(id, leaderboardById, fallbackName, favoriteTeamCode, isViewer)
 
       return {
         ...baseRow,
@@ -625,7 +710,7 @@ export default function LandingPage() {
         selectedIndex
       }
     })
-  }, [leaderboardById, rivalMap, selectedRivalIndexByIdentity, trackedStandingsIds, viewerId, viewerName, viewerPhotoURL])
+  }, [leaderboardById, rivalMap, selectedRivalIndexByIdentity, trackedStandingsIds, viewerFavoriteTeamCode, viewerId, viewerName])
 
   const isViewerOnPodium = podiumRows.some((row) => row.isViewer)
 
@@ -968,11 +1053,18 @@ export default function LandingPage() {
               const isSelectedDraggable = Boolean(row.kind === 'selected' && selectedRivalId && !profileSaving)
               const isDragging = Boolean(selectedRivalId && draggingRivalId === selectedRivalId)
               const isDragOver = Boolean(selectedRivalId && draggingRivalId && dragOverRivalId === selectedRivalId)
+              const lineupLabel =
+                row.kind === 'viewer'
+                  ? 'You'
+                  : row.kind === 'selected' && row.selectedIndex !== null
+                    ? `Rival ${row.selectedIndex + 1}`
+                    : `Snapshot fill${row.slotNumber ? ` • R${row.slotNumber}` : ''}`
 
               return (
-                <div
+                <RowShellV2
                   key={`${row.id}-${index}`}
-                  className="landing-v2-rivals-row landing-v2-rival-slot flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1.5"
+                  state={row.kind === 'viewer' ? 'you' : row.kind === 'selected' ? 'rival' : 'disabled'}
+                  className="landing-v2-rivals-row landing-v2-rival-slot px-2 py-1.5"
                   data-kind={row.kind}
                   data-draggable={isSelectedDraggable ? 'true' : 'false'}
                   data-dragging={isDragging ? 'true' : 'false'}
@@ -992,42 +1084,44 @@ export default function LandingPage() {
                   }}
                   onDragEnd={clearRivalDragState}
                 >
-                  <ProfileAvatar name={row.name} photoURL={row.photoURL} className="h-8 w-8" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[15px] font-semibold leading-tight text-[color:var(--v2-text-strong)]">
-                      {row.name}
-                    </div>
-                    <div className="text-[12px] text-muted-foreground">
+                  <MemberIdentityRowV2
+                    name={row.name}
+                    favoriteTeamCode={row.favoriteTeamCode}
+                    avatarClassName="h-12 w-[72px]"
+                    subtitle={
                       <span>
-                        {row.kind === 'viewer'
-                          ? 'You'
-                          : row.kind === 'selected' && row.selectedIndex !== null
-                            ? `Rival ${row.selectedIndex + 1}`
-                            : `Snapshot fill${row.slotNumber ? ` • R${row.slotNumber}` : ''}`}
+                        {lineupLabel}
+                        <span className="mx-1.5">·</span>
+                        <span>{row.rank ? `#${row.rank}` : 'Unranked'}</span>
+                        <span className="mx-1.5">·</span>
+                        <span>{row.points ?? '—'} pts</span>
                       </span>
-                      <span className="mx-1.5">·</span>
-                      <span>{row.rank ? `#${row.rank}` : 'Unranked'}</span>
-                      <span className="mx-1.5">·</span>
-                      <span>{row.points ?? '—'} pts</span>
-                    </div>
-                  </div>
-                  {row.kind === 'selected' && row.selectedIndex !== null && selectedRivalId ? (
-                    <div className="flex items-center gap-1">
-                      <span className="landing-v2-rival-drag-handle text-[11px] text-muted-foreground" aria-hidden="true">
-                        ::
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 rounded px-2 text-[12px]"
-                        disabled={profileSaving}
-                        onClick={() => removeRival(selectedRivalId)}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
+                    }
+                    badges={
+                      <StatusTagV2 tone={row.kind === 'viewer' ? 'info' : row.kind === 'selected' ? 'warning' : 'secondary'}>
+                        {row.kind === 'viewer' ? 'You' : row.kind === 'selected' ? 'Rival' : 'Snapshot'}
+                      </StatusTagV2>
+                    }
+                    trailing={
+                      row.kind === 'selected' && row.selectedIndex !== null && selectedRivalId ? (
+                        <div className="flex items-center gap-1">
+                          <span className="landing-v2-rival-drag-handle text-[11px] text-muted-foreground" aria-hidden="true">
+                            ::
+                          </span>
+                          <Button
+                            variant="quiet"
+                            size="xs"
+                            className="h-8 rounded px-2 text-[12px]"
+                            disabled={profileSaving}
+                            onClick={() => removeRival(selectedRivalId)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ) : null
+                    }
+                  />
+                </RowShellV2>
               )
             })}
           </div>
@@ -1086,35 +1180,40 @@ export default function LandingPage() {
                   {filteredRivalSuggestions.map((entry) => {
                     const capReached = rivalUserIds.length >= 3
                     return (
-                      <div
+                      <RowShellV2
                         key={entry.id}
-                        className="landing-v2-rivals-row flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1.5"
+                        className="landing-v2-rivals-row px-2 py-1.5"
                         data-kind="suggestion"
                       >
-                        <ProfileAvatar name={entry.displayName} photoURL={entry.photoURL ?? null} className="h-7 w-7" />
-                        <div className="min-w-0 flex-1 truncate text-[14px] font-medium text-foreground">{entry.displayName}</div>
-                        <div className="group/add relative">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="h-8 rounded px-2 text-[12px]"
-                            disabled={capReached || profileSaving}
-                            onClick={() => addRival(entry.id)}
-                            aria-describedby={capReached ? `rival-cap-tip-${entry.id}` : undefined}
-                          >
-                            Add
-                          </Button>
-                          {capReached ? (
-                            <span
-                              id={`rival-cap-tip-${entry.id}`}
-                              role="tooltip"
-                              className="landing-v2-add-tooltip pointer-events-none absolute right-[calc(100%+0.45rem)] top-1/2 z-20 -translate-y-1/2 opacity-0 transition-all group-hover/add:opacity-100"
-                            >
-                              Max 3 rivals. Remove one first.
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
+                        <MemberIdentityRowV2
+                          name={entry.displayName}
+                          favoriteTeamCode={entry.favoriteTeamCode ?? null}
+                          avatarClassName="h-12 w-[72px]"
+                          trailing={(
+                            <div className="group/add relative">
+                              <Button
+                                variant="tertiary"
+                                size="xs"
+                                className="h-8 rounded px-2 text-[12px]"
+                                disabled={capReached || profileSaving}
+                                onClick={() => addRival(entry.id)}
+                                aria-describedby={capReached ? `rival-cap-tip-${entry.id}` : undefined}
+                              >
+                                Add
+                              </Button>
+                              {capReached ? (
+                                <span
+                                  id={`rival-cap-tip-${entry.id}`}
+                                  role="tooltip"
+                                  className="landing-v2-add-tooltip pointer-events-none absolute right-[calc(100%+0.45rem)] top-1/2 z-20 -translate-y-1/2 opacity-0 transition-all group-hover/add:opacity-100"
+                                >
+                                  Max 3 rivals. Remove one first.
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
+                        />
+                      </RowShellV2>
                     )
                   })}
                 </div>
@@ -1151,6 +1250,25 @@ export default function LandingPage() {
           </>
         )}
       />
+
+      <SectionCardV2 tone="panel" density="none" className="p-4 md:hidden">
+        <PanelHeaderV2
+          title="Favorite Team"
+          subtitle="Pick your team identity for avatars and rival views."
+          meta="Use sidebar on desktop."
+          actions={favoriteTeamPreference.isSaving ? <StatusTagV2 tone="warning">Saving...</StatusTagV2> : <StatusTagV2 tone="secondary">Profile</StatusTagV2>}
+        />
+        <div className="mt-3">
+          <FavoriteTeamSelectV2
+            value={viewerFavoriteTeamCode}
+            disabled={favoriteTeamPreference.isLoading}
+            loading={favoriteTeamPreference.isSaving}
+            onChange={favoriteTeamPreference.setFavoriteTeamCode}
+            variant="default"
+            menuPlacement="bottom"
+          />
+        </div>
+      </SectionCardV2>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ENTRY_TILES.map((tile) => {

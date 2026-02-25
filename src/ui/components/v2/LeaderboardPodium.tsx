@@ -1,13 +1,14 @@
 import { ButtonLink } from '../ui/Button'
 import { useRouteDataMode } from '../../hooks/useRouteDataMode'
 import { cn } from '../../lib/utils'
+import MemberAvatarV2 from './MemberAvatarV2'
 
 export type LeaderboardPodiumRow = {
   id: string
   name: string
   points: number | null
   rank: 1 | 2 | 3
-  photoURL?: string | null
+  favoriteTeamCode?: string | null
   isViewer?: boolean
 }
 
@@ -60,7 +61,17 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className, 
           >
             <div className="flex items-center justify-between gap-2">
               <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">#{slot.rank}</div>
-              {slot.row?.isViewer ? <span className="landing-v2-podium-you-badge">You</span> : null}
+              <div className="flex items-center gap-1.5">
+                {slot.row ? (
+                  <MemberAvatarV2
+                    name={slot.row.name}
+                    favoriteTeamCode={slot.row.favoriteTeamCode}
+                    size="sm"
+                    className="h-12 w-[72px]"
+                  />
+                ) : null}
+                {slot.row?.isViewer ? <span className="landing-v2-podium-you-badge">You</span> : null}
+              </div>
             </div>
             <div className="mt-2 truncate text-2xl font-semibold leading-tight text-[color:var(--v2-text-strong)] md:text-3xl">
               {slot.row?.name ?? '—'}

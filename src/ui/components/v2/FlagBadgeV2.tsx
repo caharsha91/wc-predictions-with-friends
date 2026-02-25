@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { cn } from '../../lib/utils'
 
-export type FlagBadgeSize = 'xs' | 'sm' | 'md'
+export type FlagBadgeSize = 'xs' | 'sm' | 'md' | 'avatar'
 
 type FlagBadgeV2Props = {
   src: string
@@ -13,9 +13,10 @@ type FlagBadgeV2Props = {
 }
 
 const SIZE_CLASS_BY_VARIANT: Record<FlagBadgeSize, string> = {
-  xs: 'h-3 w-4',
-  sm: 'h-3.5 w-4.5',
-  md: 'h-4 w-5'
+  xs: 'h-7 w-11',
+  sm: 'h-9 w-14',
+  md: 'h-10 w-16',
+  avatar: 'h-12 w-[72px]'
 }
 
 export default function FlagBadgeV2({
@@ -41,7 +42,7 @@ export default function FlagBadgeV2({
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[4px] border border-border/70 bg-background/70',
+        'inline-flex shrink-0 items-center justify-center overflow-hidden',
         SIZE_CLASS_BY_VARIANT[size],
         className
       )}

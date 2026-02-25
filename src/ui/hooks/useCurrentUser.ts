@@ -8,6 +8,7 @@ import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import { useAuthState } from './useAuthState'
 import { useRouteDataMode } from './useRouteDataMode'
 import type { Member } from '../../types/members'
+import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
 
 type UserState =
   | { status: 'loading' }
@@ -136,7 +137,8 @@ export function useCurrentUser() {
                   name: user.displayName || user.email || 'User',
                   email: user.email || undefined,
                   authUid: user.uid || undefined,
-                  isMember: false
+                  isMember: false,
+                  favoriteTeamCode: null
                 }
               })
             }
@@ -159,7 +161,8 @@ export function useCurrentUser() {
                 email: user.email || undefined,
                 authUid: user.uid || undefined,
                 isAdmin: false,
-                isMember: false
+                isMember: false,
+                favoriteTeamCode: null
               }
               const payload: MemberCache = {
                 authUid: user.uid,
@@ -175,7 +178,7 @@ export function useCurrentUser() {
             const memberRef = doc(firebaseDb, 'leagues', leagueId, 'members', normalizedEmail)
             const memberSnap = await getDoc(memberRef)
             const memberData = memberSnap.exists() ? (memberSnap.data() as Member) : null
-            const memberId = (typeof memberData?.id === 'string' && memberData.id.trim()) || ''
+            const memberId = (typeof memberData?.id === 'string' && memberData.id.trim()) || normalizedEmail || ''
             const authUid = (typeof memberData?.authUid === 'string' && memberData.authUid.trim()) || ''
             const memberIsAdmin = memberData?.isAdmin === true
             const isMember = memberSnap.exists() && memberId.length > 0
@@ -188,7 +191,8 @@ export function useCurrentUser() {
               name: fallbackName,
               email: fallbackEmail,
               isAdmin: memberIsAdmin,
-              isMember
+              isMember,
+              favoriteTeamCode: normalizeFavoriteTeamCode(memberData?.favoriteTeamCode)
             }
             const payload: MemberCache = {
               authUid: user.uid,

@@ -4,7 +4,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] shadow-[var(--shadow0)]',
+  'inline-flex items-center rounded-full border font-semibold shadow-[var(--shadow0)]',
   {
     variants: {
       tone: {
@@ -16,10 +16,21 @@ const badgeVariants = cva(
         secondary:
           'border-[rgba(var(--secondary-rgb),0.52)] bg-[rgba(var(--secondary-rgb),0.14)] text-foreground',
         locked: 'border-[rgba(var(--warn-rgb),0.46)] bg-[rgba(var(--warn-rgb),0.14)] text-foreground'
+      },
+      size: {
+        xs: 'h-[var(--v2-chip-height-sm)] px-[var(--v2-chip-pad-x-sm)] text-[var(--v2-chip-text-sm)]',
+        sm: 'px-2.5 py-1 text-[11px]',
+        md: 'px-3 py-1.5 text-[12px]'
+      },
+      case: {
+        normal: 'normal-case tracking-normal',
+        upper: 'uppercase tracking-[0.16em]'
       }
     },
     defaultVariants: {
-      tone: 'default'
+      tone: 'default',
+      size: 'sm',
+      case: 'upper'
     }
   }
 )
@@ -29,9 +40,9 @@ type BadgeProps = HTMLAttributes<HTMLSpanElement> &
     children: ReactNode
   }
 
-export function Badge({ tone, children, className, ...props }: BadgeProps) {
+export function Badge({ tone, size, case: caseVariant, children, className, ...props }: BadgeProps) {
   return (
-    <span {...props} className={cn(badgeVariants({ tone }), className)}>
+    <span {...props} className={cn(badgeVariants({ tone, size, case: caseVariant }), className)}>
       {children}
     </span>
   )

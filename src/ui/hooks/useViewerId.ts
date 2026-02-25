@@ -94,7 +94,7 @@ async function resolveDemoViewerId({
 export function useViewerId() {
   const user = useCurrentUser()
   const [viewerId, setViewerId] = useState<string>(() => {
-    const currentMemberId = user?.id ?? CURRENT_USER_ID
+    const currentMemberId = user?.id?.trim() || user?.email?.trim() || CURRENT_USER_ID
     if (typeof window !== 'undefined' && isDemoPath(getCurrentAppPathname())) {
       return readDemoViewerId() ?? currentMemberId
     }
@@ -109,7 +109,7 @@ export function useViewerId() {
     const sync = () => {
       const version = syncVersion + 1
       syncVersion = version
-      const currentMemberId = user?.id ?? CURRENT_USER_ID
+      const currentMemberId = user?.id?.trim() || user?.email?.trim() || CURRENT_USER_ID
       if (!isDemoPath(getCurrentAppPathname())) {
         setViewerId(currentMemberId)
         return
@@ -142,7 +142,7 @@ export function useViewerId() {
       window.removeEventListener('wc-demo-controls-changed', sync as EventListener)
       window.removeEventListener('hashchange', sync)
     }
-  }, [user?.id])
+  }, [user?.email, user?.id])
 
   return viewerId
 }

@@ -1,6 +1,6 @@
 const PLACEHOLDER_CODE_TOKENS = new Set(['', 'TBD', 'TBC', '?'])
 
-const CANONICAL_TEAM_CODES = [
+export const CANONICAL_TEAM_CODES = [
   'ALG',
   'ARG',
   'AUS',
@@ -45,26 +45,99 @@ const CANONICAL_TEAM_CODES = [
   'UZB'
 ] as const
 
-function normalizeBasePath(basePath: string): string {
-  const trimmed = basePath.trim()
-  if (!trimmed) return '/'
-  const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
-  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`
-}
+export type CanonicalTeamCode = (typeof CANONICAL_TEAM_CODES)[number]
 
-// Use BASE_URL so GitHub Pages subpath deploys resolve assets under /<repo>/...
-// instead of absolute root (/flags/...), which causes 404s.
-const PUBLIC_BASE_PATH = normalizeBasePath(import.meta.env.BASE_URL ?? '/')
+const TEAM_NAME_BY_CODE = {
+  ALG: 'Algeria',
+  ARG: 'Argentina',
+  AUS: 'Australia',
+  AUT: 'Austria',
+  BEL: 'Belgium',
+  BRA: 'Brazil',
+  CAN: 'Canada',
+  CIV: "Cote d'Ivoire",
+  COL: 'Colombia',
+  CPV: 'Cape Verde',
+  CRO: 'Croatia',
+  CUR: 'Curacao',
+  ECU: 'Ecuador',
+  EGY: 'Egypt',
+  ENG: 'England',
+  ESP: 'Spain',
+  FRA: 'France',
+  GER: 'Germany',
+  GHA: 'Ghana',
+  HAI: 'Haiti',
+  IRN: 'Iran',
+  JOR: 'Jordan',
+  JPN: 'Japan',
+  KOR: 'South Korea',
+  KSA: 'Saudi Arabia',
+  MAR: 'Morocco',
+  MEX: 'Mexico',
+  NED: 'Netherlands',
+  NOR: 'Norway',
+  NZL: 'New Zealand',
+  PAN: 'Panama',
+  PAR: 'Paraguay',
+  POR: 'Portugal',
+  QAT: 'Qatar',
+  RSA: 'South Africa',
+  SCO: 'Scotland',
+  SEN: 'Senegal',
+  SUI: 'Switzerland',
+  TUN: 'Tunisia',
+  URU: 'Uruguay',
+  USA: 'United States',
+  UZB: 'Uzbekistan'
+} as const satisfies Record<CanonicalTeamCode, string>
 
-function resolveFlagAssetPath(assetName: string): string {
-  return `${PUBLIC_BASE_PATH}flags/${assetName}.svg`
-}
+export const UNKNOWN_FLAG_ASSET_PATH = '/flags/unknown.svg'
 
-export const PLACEHOLDER_FLAG_ASSET_PATH = resolveFlagAssetPath('placeholder')
-
-export const TEAM_FLAG_ASSET_BY_CODE: Record<string, string> = Object.fromEntries(
-  CANONICAL_TEAM_CODES.map((code) => [code, resolveFlagAssetPath(code)])
-)
+export const TEAM_FLAG_ASSET_BY_CODE = {
+  ALG: '/flags/lib/dz.svg',
+  ARG: '/flags/lib/ar.svg',
+  AUS: '/flags/lib/au.svg',
+  AUT: '/flags/lib/at.svg',
+  BEL: '/flags/lib/be.svg',
+  BRA: '/flags/lib/br.svg',
+  CAN: '/flags/lib/ca.svg',
+  CIV: '/flags/lib/ci.svg',
+  COL: '/flags/lib/co.svg',
+  CPV: '/flags/lib/cv.svg',
+  CRO: '/flags/lib/hr.svg',
+  CUR: '/flags/lib/cw.svg',
+  ECU: '/flags/lib/ec.svg',
+  EGY: '/flags/lib/eg.svg',
+  ENG: '/flags/lib/gb-eng.svg',
+  ESP: '/flags/lib/es.svg',
+  FRA: '/flags/lib/fr.svg',
+  GER: '/flags/lib/de.svg',
+  GHA: '/flags/lib/gh.svg',
+  HAI: '/flags/lib/ht.svg',
+  IRN: '/flags/lib/ir.svg',
+  JOR: '/flags/lib/jo.svg',
+  JPN: '/flags/lib/jp.svg',
+  KOR: '/flags/lib/kr.svg',
+  KSA: '/flags/lib/sa.svg',
+  MAR: '/flags/lib/ma.svg',
+  MEX: '/flags/lib/mx.svg',
+  NED: '/flags/lib/nl.svg',
+  NOR: '/flags/lib/no.svg',
+  NZL: '/flags/lib/nz.svg',
+  PAN: '/flags/lib/pa.svg',
+  PAR: '/flags/lib/py.svg',
+  POR: '/flags/lib/pt.svg',
+  QAT: '/flags/lib/qa.svg',
+  RSA: '/flags/lib/za.svg',
+  SCO: '/flags/lib/gb-sct.svg',
+  SEN: '/flags/lib/sn.svg',
+  SUI: '/flags/lib/ch.svg',
+  TUN: '/flags/lib/tn.svg',
+  URU: '/flags/lib/uy.svg',
+  USA: '/flags/lib/us.svg',
+  UZB: '/flags/lib/uz.svg'
+} as const satisfies Record<CanonicalTeamCode, string>
 
 function normalizeCode(value: string | null | undefined): string {
   return String(value ?? '')
@@ -89,6 +162,24 @@ export function isPlaceholderTeamCodeOrLabel(value: string | null | undefined): 
   return false
 }
 
+export function isCanonicalTeamCode(value: string | null | undefined): value is CanonicalTeamCode {
+  const normalized = normalizeCode(value)
+  return Object.prototype.hasOwnProperty.call(TEAM_FLAG_ASSET_BY_CODE, normalized)
+}
+
+export function normalizeFavoriteTeamCode(value: string | null | undefined): CanonicalTeamCode | null {
+  if (isPlaceholderTeamCodeOrLabel(value)) return null
+  const normalized = normalizeCode(value)
+  return isCanonicalTeamCode(normalized) ? normalized : null
+}
+
+export function buildCanonicalTeamOptions(): Array<{ code: CanonicalTeamCode; name: string }> {
+  return CANONICAL_TEAM_CODES.map((code) => ({
+    code,
+    name: TEAM_NAME_BY_CODE[code]
+  }))
+}
+
 type ResolveTeamFlagMetaInput = {
   code?: string | null
   name?: string | null
@@ -96,7 +187,7 @@ type ResolveTeamFlagMetaInput = {
 }
 
 export type TeamFlagMeta = {
-  kind: 'canonical' | 'placeholder' | 'unknown'
+  kind: 'canonical' | 'unknown'
   assetPath: string
   textPrimary: string
   textSecondary: string | null
@@ -108,20 +199,7 @@ export function resolveTeamFlagMeta({ code, name, label }: ResolveTeamFlagMetaIn
   const normalizedLabel = normalizeLabel(label)
   const effectiveLabel = normalizedLabel || normalizedCode || normalizedName || 'TBD'
 
-  if (
-    isPlaceholderTeamCodeOrLabel(effectiveLabel) ||
-    isPlaceholderTeamCodeOrLabel(normalizedCode) ||
-    isPlaceholderTeamCodeOrLabel(normalizedName)
-  ) {
-    return {
-      kind: 'placeholder',
-      assetPath: PLACEHOLDER_FLAG_ASSET_PATH,
-      textPrimary: effectiveLabel,
-      textSecondary: null
-    }
-  }
-
-  if (normalizedCode && TEAM_FLAG_ASSET_BY_CODE[normalizedCode]) {
+  if (isCanonicalTeamCode(normalizedCode)) {
     return {
       kind: 'canonical',
       assetPath: TEAM_FLAG_ASSET_BY_CODE[normalizedCode],
@@ -133,7 +211,7 @@ export function resolveTeamFlagMeta({ code, name, label }: ResolveTeamFlagMetaIn
 
   return {
     kind: 'unknown',
-    assetPath: PLACEHOLDER_FLAG_ASSET_PATH,
+    assetPath: UNKNOWN_FLAG_ASSET_PATH,
     textPrimary: effectiveLabel,
     textSecondary: null
   }

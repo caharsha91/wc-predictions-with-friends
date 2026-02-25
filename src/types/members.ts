@@ -16,6 +16,7 @@ export type Member = {
   isAdmin?: boolean
   isMember?: boolean
   theme?: ThemePreference
+  favoriteTeamCode?: string | null
 }
 
 export type MembersFile = {

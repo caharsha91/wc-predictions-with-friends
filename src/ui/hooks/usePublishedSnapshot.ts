@@ -13,6 +13,7 @@ import { resolveStoredTopTwo } from '../../lib/groupRanking'
 import type { GroupPrediction } from '../../types/bracket'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import type { Match } from '../../types/matches'
+import { useDemoScenarioState } from './useDemoScenarioState'
 import { useRouteDataMode } from './useRouteDataMode'
 
 type PublishedSnapshotState =
@@ -174,6 +175,7 @@ function buildProjectedGroupStagePointsByUser({
 
 export function usePublishedSnapshot() {
   const mode = useRouteDataMode()
+  const demoScenario = useDemoScenarioState()
   const [state, setState] = useState<PublishedSnapshotState>({ status: 'loading' })
 
   useEffect(() => {
@@ -229,7 +231,7 @@ export function usePublishedSnapshot() {
     return () => {
       canceled = true
     }
-  }, [mode])
+  }, [demoScenario, mode])
 
   return useMemo(() => ({ state }), [state])
 }

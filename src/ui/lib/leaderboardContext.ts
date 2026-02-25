@@ -11,16 +11,45 @@ export type LeaderboardUserContext = {
   below: RankedLeaderboardEntry | null
 }
 
+function normalizeIdentity(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? ''
+}
+
 export function resolveLeaderboardIdentityKeys(entry: LeaderboardEntry): string[] {
-  if (!entry.member.id) return []
-  return [entry.member.id.toLowerCase()]
+  const keys = new Set<string>()
+  const memberId = normalizeIdentity(entry.member.id)
+  const memberEmail = normalizeIdentity(entry.member.email)
+  const memberName = normalizeIdentity(entry.member.name)
+
+  if (memberId) {
+    keys.add(memberId)
+    keys.add(`id:${memberId}`)
+  }
+
+  if (memberEmail) {
+    keys.add(memberEmail)
+    keys.add(`email:${memberEmail}`)
+  }
+
+  if (memberName) {
+    keys.add(`name:${memberName}`)
+    if (!memberId && !memberEmail) {
+      keys.add(memberName)
+    }
+  }
+
+  return [...keys]
 }
 
 export function buildViewerKeySet(values: Array<string | null | undefined>): Set<string> {
   const keys = new Set<string>()
   for (const value of values) {
-    const normalized = value?.trim().toLowerCase()
-    if (normalized) keys.add(normalized)
+    const normalized = normalizeIdentity(value)
+    if (!normalized) continue
+    keys.add(normalized)
+    keys.add(`id:${normalized}`)
+    keys.add(`email:${normalized}`)
+    keys.add(`name:${normalized}`)
   }
   return keys
 }

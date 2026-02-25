@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
 import { cn } from '../../lib/utils'
-import { PLACEHOLDER_FLAG_ASSET_PATH, resolveTeamFlagMeta } from '../../lib/teamFlag'
+import { UNKNOWN_FLAG_ASSET_PATH, resolveTeamFlagMeta } from '../../lib/teamFlag'
 import FlagBadgeV2, { type FlagBadgeSize } from './FlagBadgeV2'
 
 type TeamFlagLabelV2Props = {
@@ -33,7 +33,7 @@ export default function TeamFlagLabelV2({
 
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
-      <FlagBadgeV2 src={meta.assetPath} fallbackSrc={PLACEHOLDER_FLAG_ASSET_PATH} size={size} className={flagClassName} />
+      <FlagBadgeV2 src={meta.assetPath} fallbackSrc={UNKNOWN_FLAG_ASSET_PATH} size={size} className={flagClassName} />
       <span className={cn('min-w-0', truncate ? 'truncate' : undefined)}>
         <span className={cn('text-current', truncate ? 'truncate' : undefined, primaryClassName)}>
           {meta.textPrimary}

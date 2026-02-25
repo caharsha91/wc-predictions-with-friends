@@ -16,12 +16,17 @@ const buttonVariants = cva(
           'border-[var(--secondary-cta-border)] [background:var(--secondary-cta-bg)] text-foreground shadow-[var(--secondary-cta-shadow)] hover:[background:var(--secondary-cta-hover-bg)]',
         ghost:
           'border-transparent bg-transparent text-fg1 hover:border-border0 hover:bg-[var(--accent-soft)] hover:text-foreground',
+        tertiary:
+          'border-border/70 bg-background/55 text-foreground shadow-[var(--shadow0)] hover:border-[var(--v2-border-strong)] hover:bg-background/70',
+        quiet:
+          'border-transparent bg-transparent text-muted-foreground shadow-none hover:border-border/70 hover:bg-background/50 hover:text-foreground',
         pill:
           'border-border1 bg-[var(--accent-soft)] text-foreground shadow-[var(--shadow0)] hover:border-primary hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow1)] data-[active=true]:border-[var(--pill-active-border)] data-[active=true]:[background:var(--pill-active-bg)] data-[active=true]:shadow-[var(--pill-active-shadow)] disabled:shadow-none',
         pillSecondary:
           'border-[rgba(var(--secondary-rgb),0.46)] bg-[rgba(var(--secondary-rgb),0.12)] text-foreground shadow-[var(--shadow0)] hover:border-secondary hover:bg-[rgba(var(--secondary-rgb),0.2)] hover:shadow-[var(--shadow1)] data-[active=true]:border-secondary data-[active=true]:bg-[rgba(var(--secondary-rgb),0.26)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
       },
       size: {
+        xs: 'h-8 px-2.5 text-[11px]',
         sm: 'h-9 px-3 text-xs',
         md: 'h-10 px-4 text-sm'
       }

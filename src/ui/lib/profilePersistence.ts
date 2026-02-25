@@ -5,27 +5,32 @@ import type { DataMode } from '../../lib/dataMode'
 import { firebaseAuth, firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import {
   clearDemoLastRoute,
+  readDemoFavoriteTeamCode,
   readDemoLastRoute,
   readDemoRivalUserIds,
+  writeDemoFavoriteTeamCode,
   writeDemoLastRoute,
   writeDemoRivalUserIds
 } from './demoPersistence'
+import { normalizeFavoriteTeamCode } from './teamFlag'
 
 export type UserProfile = {
   lastRoute: string | null
   rivalUserIds: string[]
+  favoriteTeamCode: string | null
 }
 
 export type RivalDirectoryEntry = {
   id: string
   displayName: string
-  photoURL?: string | null
+  favoriteTeamCode?: string | null
   email?: string | null
 }
 
 type ProfileDoc = {
   lastRoute?: unknown
   rivalUserIds?: unknown
+  favoriteTeamCode?: unknown
 }
 
 type MemberDoc = ProfileDoc & {
@@ -34,7 +39,7 @@ type MemberDoc = ProfileDoc & {
   email?: unknown
   name?: unknown
   handle?: unknown
-  photoURL?: unknown
+  favoriteTeamCode?: unknown
 }
 
 function normalizeRoute(value: unknown): string | null {
@@ -69,29 +74,32 @@ function resolveMemberDocId(explicitEmail?: string | null): string | null {
 }
 
 export async function readUserProfile(mode: DataMode, memberId: string, email?: string | null): Promise<UserProfile> {
-  void memberId
   if (mode === 'demo') {
     return {
       lastRoute: readDemoLastRoute(),
-      rivalUserIds: readDemoRivalUserIds()
+      rivalUserIds: readDemoRivalUserIds(),
+      favoriteTeamCode: normalizeFavoriteTeamCode(readDemoFavoriteTeamCode(memberId))
     }
   }
 
   if (hasFirebase && firebaseDb) {
     const memberDocId = resolveMemberDocId(email)
-    if (!memberDocId) return { lastRoute: null, rivalUserIds: [] }
+    if (!memberDocId) return { lastRoute: null, rivalUserIds: [], favoriteTeamCode: null }
     const snapshot = await getDoc(doc(firebaseDb, 'leagues', getLeagueId(), 'members', memberDocId))
     if (snapshot.exists()) {
       const data = snapshot.data() as ProfileDoc
       return {
         lastRoute: normalizeRoute(data.lastRoute),
-        rivalUserIds: normalizeRivalUserIds(data.rivalUserIds)
+        rivalUserIds: normalizeRivalUserIds(data.rivalUserIds),
+        favoriteTeamCode: normalizeFavoriteTeamCode(
+          typeof data.favoriteTeamCode === 'string' || data.favoriteTeamCode == null ? data.favoriteTeamCode : null
+        )
       }
     }
-    return { lastRoute: null, rivalUserIds: [] }
+    return { lastRoute: null, rivalUserIds: [], favoriteTeamCode: null }
   }
 
-  return { lastRoute: null, rivalUserIds: [] }
+  return { lastRoute: null, rivalUserIds: [], favoriteTeamCode: null }
 }
 
 export async function writeUserProfile(
@@ -100,10 +108,10 @@ export async function writeUserProfile(
   patch: Partial<UserProfile>,
   email?: string | null
 ): Promise<void> {
-  void memberId
   const normalizedPatch: Partial<UserProfile> = {}
   if ('lastRoute' in patch) normalizedPatch.lastRoute = normalizeRoute(patch.lastRoute ?? null)
   if ('rivalUserIds' in patch) normalizedPatch.rivalUserIds = normalizeRivalUserIds(patch.rivalUserIds ?? [])
+  if ('favoriteTeamCode' in patch) normalizedPatch.favoriteTeamCode = normalizeFavoriteTeamCode(patch.favoriteTeamCode ?? null)
 
   if (mode === 'demo') {
     if ('lastRoute' in normalizedPatch) {
@@ -112,6 +120,9 @@ export async function writeUserProfile(
     }
     if ('rivalUserIds' in normalizedPatch) {
       writeDemoRivalUserIds(normalizedPatch.rivalUserIds ?? [])
+    }
+    if ('favoriteTeamCode' in normalizedPatch) {
+      writeDemoFavoriteTeamCode(memberId, normalizedPatch.favoriteTeamCode ?? null)
     }
     return
   }
@@ -127,9 +138,10 @@ export async function writeUserProfile(
     }
     payload.email = memberDocId
     if (currentAuthUser?.displayName) payload.displayName = currentAuthUser.displayName
-    payload.photoURL = currentAuthUser?.photoURL ?? null
+    if (currentAuthUser?.uid) payload.authUid = currentAuthUser.uid
     if ('lastRoute' in normalizedPatch) payload.lastRoute = normalizedPatch.lastRoute ?? null
     if ('rivalUserIds' in normalizedPatch) payload.rivalUserIds = normalizedPatch.rivalUserIds ?? []
+    if ('favoriteTeamCode' in normalizedPatch) payload.favoriteTeamCode = normalizedPatch.favoriteTeamCode ?? null
     await setDoc(doc(firebaseDb, 'leagues', getLeagueId(), 'members', memberDocId), payload, { merge: true })
     return
   }
@@ -147,7 +159,7 @@ export async function fetchRivalDirectory(
       .map((member) => ({
         id: member.id,
         displayName: member.name,
-        photoURL: null
+        favoriteTeamCode: normalizeFavoriteTeamCode(member.favoriteTeamCode)
       }))
   }
 
@@ -171,7 +183,9 @@ export async function fetchRivalDirectory(
       entries.push({
         id: entryId,
         displayName,
-        photoURL: typeof data.photoURL === 'string' ? data.photoURL : null,
+        favoriteTeamCode: normalizeFavoriteTeamCode(
+          typeof data.favoriteTeamCode === 'string' || data.favoriteTeamCode == null ? data.favoriteTeamCode : null
+        ),
         email: entryEmail
       })
     }
@@ -185,6 +199,6 @@ export async function fetchRivalDirectory(
     .map((member) => ({
       id: member.id,
       displayName: member.name,
-      photoURL: null
+      favoriteTeamCode: normalizeFavoriteTeamCode(member.favoriteTeamCode)
     }))
 }

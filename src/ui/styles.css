@@ -2077,3 +2077,55 @@
     scroll-behavior: auto !important;
   }
 }
+
+@media (min-width: 768px) and (min-height: 700px) {
+  .app-shell-root {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app-shell-grid {
+    height: 100dvh;
+    min-height: 100dvh;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .app-shell-sidebar {
+    overflow: hidden !important;
+  }
+
+  .app-shell-main {
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 699px) {
+  .app-shell-root {
+    height: auto !important;
+    min-height: 100dvh;
+    overflow-y: auto !important;
+  }
+
+  .app-shell-grid {
+    height: auto !important;
+    min-height: 100dvh;
+  }
+
+  .app-shell-main {
+    min-height: 0 !important;
+    overflow-y: visible !important;
+  }
+
+  .app-shell-sidebar {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .app-shell-sidebar [aria-label='Primary'] {
+    overflow: visible !important;
+  }
+}

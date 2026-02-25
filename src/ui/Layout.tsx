@@ -14,7 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from './components/ui/DropdownMenu'
-import { UsersIcon } from './components/Icons'
+import FavoriteTeamSelectV2 from './components/v2/FavoriteTeamSelectV2'
+import MemberAvatarV2 from './components/v2/MemberAvatarV2'
+import { FavoriteTeamPreferenceProvider, useFavoriteTeamPreference } from './context/FavoriteTeamPreferenceContext'
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import { useEasterEggs } from './hooks/useEasterEggs'
@@ -124,9 +126,47 @@ function SidebarNavSection({
   )
 }
 
+function SidebarFavoriteTeamModule({
+  favoriteTeamCode,
+  compact,
+  loading,
+  saving,
+  onChange
+}: {
+  favoriteTeamCode: string | null
+  compact: boolean
+  loading: boolean
+  saving: boolean
+  onChange: (nextFavoriteTeamCode: string | null) => void
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-nav-hover-bg)]',
+        compact ? 'p-2' : 'p-2.5'
+      )}
+      aria-label="Favorite team preference"
+    >
+      {compact ? null : (
+        <div className="mb-2 px-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--sidebar-nav-muted)]">
+          Favorite team
+        </div>
+      )}
+      <FavoriteTeamSelectV2
+        value={favoriteTeamCode}
+        disabled={loading}
+        loading={saving}
+        onChange={onChange}
+        variant="sidebar"
+        menuPlacement="top"
+      />
+    </div>
+  )
+}
+
 function SidebarAccountMenu({
   name,
-  photoURL,
+  favoriteTeamCode,
   onSignOut,
   onToggleDemoMode,
   canToggleDemoMode,
@@ -134,7 +174,7 @@ function SidebarAccountMenu({
   compact
 }: {
   name: string
-  photoURL?: string | null
+  favoriteTeamCode?: string | null
   onSignOut: () => Promise<void>
   onToggleDemoMode: () => Promise<void>
   canToggleDemoMode: boolean
@@ -156,15 +196,7 @@ function SidebarAccountMenu({
           type="button"
           aria-label="Open account menu"
         >
-          {photoURL ? (
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-bg2">
-              <img src={photoURL} alt={name} className="h-full w-full rounded-full object-cover" loading="lazy" />
-            </span>
-          ) : (
-            <div className="landing-v2-avatar-fallback flex h-8 w-8 items-center justify-center rounded-full border text-[color:var(--v2-text-strong)]">
-              <UsersIcon className="h-[62%] w-[62%]" />
-            </div>
-          )}
+          <MemberAvatarV2 name={name} favoriteTeamCode={favoriteTeamCode} size="md" />
           {compact ? null : (
             <>
               <div className="flex-1 pr-2">
@@ -300,7 +332,7 @@ function DemoBanner() {
   )
 }
 
-function LayoutFrame() {
+function LayoutFrameContent() {
   const navigate = useNavigate()
   const location = useLocation()
   const mode = useRouteDataMode()
@@ -322,6 +354,7 @@ function LayoutFrame() {
     onLogoPointerCancel,
     onLastUpdatedTap
   } = useEasterEggs()
+  const favoriteTeamPreference = useFavoriteTeamPreference()
 
   async function handleSignIn() {
     if (!firebaseAuth) return
@@ -347,21 +380,24 @@ function LayoutFrame() {
 
   async function handleToggleDemoMode() {
     if (!canAccessAdmin) return
+    const emitDemoControlsChangedAfterNavigation = () => {
+      if (typeof window === 'undefined') return
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('wc-demo-controls-changed'))
+      }, 0)
+    }
+
     if (isDemoRoute) {
       const nextPath = `${toDefaultPath(location.pathname)}${location.search}${location.hash}`
       navigate(nextPath, { replace: true })
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('wc-demo-controls-changed'))
-      }
+      emitDemoControlsChangedAfterNavigation()
       return
     }
 
     await ensureDemoDefaults()
     const nextPath = `${toDemoPath(location.pathname)}${location.search}${location.hash}`
     navigate(nextPath, { replace: true })
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('wc-demo-controls-changed'))
-    }
+    emitDemoControlsChangedAfterNavigation()
   }
 
   function handleMainClickCapture(event: MouseEvent<HTMLElement>) {
@@ -444,19 +480,19 @@ function LayoutFrame() {
 
   return (
     <div
-      className="min-h-screen bg-background bg-[var(--shell-bg-overlay)] bg-no-repeat"
+      className="app-shell-root min-h-screen bg-background bg-[var(--shell-bg-overlay)] bg-no-repeat md:h-[100dvh] md:overflow-hidden"
       data-pop-highlight={popHighlightActive ? 'true' : 'false'}
     >
       <div
         data-testid="app-shell-grid"
         className={cn(
-          'min-h-screen md:grid',
+          'app-shell-grid min-h-screen md:grid md:h-[100dvh] md:overflow-hidden',
           sidebarCompact ? 'md:grid-cols-[96px_minmax(0,1fr)]' : 'md:grid-cols-[320px_minmax(0,1fr)]'
         )}
       >
         <aside
           data-testid="app-shell-sidebar"
-          className="hidden min-h-screen flex-col border-r border-[var(--shell-sidebar-divider)] bg-[var(--sidebar-bg)] px-3 py-4 shadow-[var(--shadow1)] md:flex"
+          className="app-shell-sidebar hidden h-full flex-col border-r border-[var(--shell-sidebar-divider)] bg-[var(--sidebar-bg)] px-3 py-4 shadow-[var(--shadow1)] md:flex md:overflow-hidden"
         >
           <div className="space-y-3 px-1 pb-4">
             <BrandLogo
@@ -474,7 +510,7 @@ function LayoutFrame() {
             />
           </div>
 
-          <div className="flex-1 space-y-6 overflow-y-auto pr-1" aria-label="Primary">
+          <div className="flex-1 space-y-6 pr-1" aria-label="Primary">
             <SidebarNavSection title="Main" items={mainNavItems} compact={sidebarCompact} />
             {canAccessAdmin ? (
               <div className="space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-4">
@@ -495,9 +531,18 @@ function LayoutFrame() {
 
           <div className="mt-4 shrink-0 space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-3">
             {authState.user ? (
+              <SidebarFavoriteTeamModule
+                favoriteTeamCode={favoriteTeamPreference.favoriteTeamCode}
+                compact={sidebarCompact}
+                loading={favoriteTeamPreference.isLoading}
+                saving={favoriteTeamPreference.isSaving}
+                onChange={favoriteTeamPreference.setFavoriteTeamCode}
+              />
+            ) : null}
+            {authState.user ? (
               <SidebarAccountMenu
                 name={user?.name || authState.user.displayName || authState.user.email || 'Signed in'}
-                photoURL={authState.user.photoURL ?? null}
+                favoriteTeamCode={favoriteTeamPreference.favoriteTeamCode}
                 onSignOut={handleSignOut}
                 onToggleDemoMode={handleToggleDemoMode}
                 canToggleDemoMode={canAccessAdmin}
@@ -520,12 +565,12 @@ function LayoutFrame() {
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-col">
           {isDemoRoute ? <DemoBanner /> : null}
           <main
             data-testid="app-shell-main"
             className={cn(
-              'relative z-10 flex-1 overflow-y-auto',
+              'app-shell-main relative z-10 flex-1 overflow-y-auto md:min-h-0',
               appContentRoute ? 'px-4 py-5 md:px-6 lg:px-8 xl:px-10' : 'container py-5'
             )}
             onClickCapture={handleMainClickCapture}
@@ -535,6 +580,14 @@ function LayoutFrame() {
         </div>
       </div>
     </div>
+  )
+}
+
+function LayoutFrame() {
+  return (
+    <FavoriteTeamPreferenceProvider>
+      <LayoutFrameContent />
+    </FavoriteTeamPreferenceProvider>
   )
 }
 

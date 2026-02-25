@@ -213,6 +213,23 @@
   --v2-glow-strong: color-mix(in srgb, var(--glow-color) 68%, transparent);
   --v2-text-strong: color-mix(in srgb, var(--foreground) 96%, transparent);
   --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 92%, transparent);
+  --v2-panel-primary-bg: var(--card);
+  --v2-panel-side-bg: var(--card);
+  --v2-panel-inset-bg: var(--muted);
+  --v2-panel-primary-border: var(--v2-border-medium);
+  --v2-panel-side-border: var(--v2-border-soft);
+  --v2-row-bg: color-mix(in srgb, var(--card) 88%, transparent);
+  --v2-row-hover-bg: color-mix(in srgb, var(--accent-soft) 32%, transparent);
+  --v2-row-selected-bg: color-mix(in srgb, var(--accent-soft) 36%, transparent);
+  --v2-row-you-bg: rgba(var(--info-rgb), 0.14);
+  --v2-row-rival-bg: rgba(var(--secondary-rgb), 0.14);
+  --v2-row-border: var(--v2-border-soft);
+  --v2-row-active-border: var(--v2-border-strong);
+  --v2-chip-height-sm: 1.3rem;
+  --v2-chip-pad-x-sm: 0.45rem;
+  --v2-chip-text-sm: 10px;
+  --v2-kicker-text: var(--page-header-kicker);
+  --v2-meta-text: var(--page-header-subtitle);
 }
 
 :root[data-mode='light'] {
@@ -316,6 +333,21 @@
     linear-gradient(130deg, color-mix(in srgb, var(--card) 96%, transparent) 0%, var(--v2-surface-blend-soft) 100%);
 }
 
+.v2-card-tone-side {
+  border-color: var(--v2-panel-side-border);
+  background: var(--v2-panel-side-bg);
+}
+
+.v2-card-tone-inset {
+  border-color: color-mix(in srgb, var(--v2-panel-side-border) 78%, transparent);
+  background: var(--v2-panel-inset-bg);
+}
+
+.v2-card-tone-row {
+  border-color: var(--v2-row-border);
+  background: var(--v2-row-bg);
+}
+
 .v2-card-glow {
   box-shadow:
     0 0 0 1px var(--v2-glow-soft),
@@ -346,6 +378,87 @@
 
 .v2-section-card {
   border-color: var(--v2-border-medium);
+}
+
+.v2-panel-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--v2-border-soft) 86%, transparent);
+}
+
+.v2-panel-header-kicker {
+  color: var(--v2-kicker-text);
+}
+
+.v2-panel-header-title {
+  color: var(--v2-text-strong);
+}
+
+.v2-panel-header-subtitle,
+.v2-panel-header-meta {
+  color: var(--v2-meta-text);
+}
+
+.v2-row-shell {
+  border-color: var(--v2-row-border);
+  background: var(--v2-row-bg);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.v2-row-shell.v2-row-interactive:hover {
+  background: var(--v2-row-hover-bg);
+  border-color: color-mix(in srgb, var(--v2-row-active-border) 62%, var(--v2-row-border) 38%);
+}
+
+.v2-row-shell.v2-row-tone-muted {
+  background: color-mix(in srgb, var(--v2-row-bg) 68%, var(--muted) 32%);
+}
+
+.v2-row-shell.v2-row-tone-inset {
+  background: color-mix(in srgb, var(--v2-row-bg) 64%, var(--background) 36%);
+}
+
+.v2-row-shell.v2-row-state-selected {
+  background: var(--v2-row-selected-bg);
+  border-color: color-mix(in srgb, var(--v2-row-active-border) 70%, var(--v2-row-border) 30%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 64%, transparent);
+}
+
+.v2-row-shell.v2-row-state-you {
+  background: var(--v2-row-you-bg);
+  border-color: color-mix(in srgb, var(--info) 50%, var(--v2-row-border) 50%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgba(var(--info-rgb), 0.42) 68%, transparent);
+}
+
+.v2-row-shell.v2-row-state-rival {
+  background: var(--v2-row-rival-bg);
+  border-color: color-mix(in srgb, rgba(var(--secondary-rgb), 0.62) 64%, var(--v2-row-border) 36%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgba(var(--secondary-rgb), 0.36) 58%, transparent);
+}
+
+.v2-row-shell.v2-row-state-disabled {
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+.v2-status-tag {
+  height: var(--v2-chip-height-sm);
+  padding-inline: var(--v2-chip-pad-x-sm);
+  font-size: var(--v2-chip-text-sm);
+}
+
+.v2-team-identity-inline {
+  min-width: 0;
+}
+
+.v2-member-identity-name {
+  color: var(--v2-text-strong);
+}
+
+.v2-member-identity-subline {
+  color: var(--v2-text-muted);
 }
 
 .landing-v2-canvas {
@@ -604,16 +717,6 @@
 
 .landing-v2-current-time {
   letter-spacing: 0.01em;
-}
-
-.landing-v2-avatar-fallback {
-  border-color: color-mix(in srgb, var(--v2-border-strong) 78%, var(--v2-glow-soft) 22%);
-  background:
-    radial-gradient(120% 120% at 24% 22%, color-mix(in srgb, var(--v2-glow-medium) 44%, transparent), transparent 66%),
-    linear-gradient(132deg, rgba(var(--primary-rgb), 0.7) 0%, rgba(var(--secondary-rgb), 0.72) 100%);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--v2-glow-medium) 42%, transparent),
-    0 8px 16px color-mix(in srgb, var(--v2-glow-medium) 22%, transparent);
 }
 
 .landing-v2-card {

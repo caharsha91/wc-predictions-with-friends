@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { getCurrentAppPathname, isDemoPath } from '../../lib/dataMode'
 import { readDemoNowOverride } from '../lib/demoControls'
+import { useRouteDataMode } from './useRouteDataMode'
 
 type UseNowOptions = {
   tickMs?: number
@@ -17,13 +18,14 @@ function resolveNow(): Date {
 
 export function useNow(options: UseNowOptions = {}): Date {
   const { tickMs = 0 } = options
+  const mode = useRouteDataMode()
   const [now, setNow] = useState<Date>(() => resolveNow())
 
   useEffect(() => {
     setNow(resolveNow())
     if (typeof window === 'undefined') return
 
-    const isDemo = isDemoPath(getCurrentAppPathname())
+    const isDemo = mode === 'demo'
     if (isDemo) {
       const sync = () => setNow(resolveNow())
       window.addEventListener('storage', sync)
@@ -39,7 +41,7 @@ export function useNow(options: UseNowOptions = {}): Date {
     if (!tickMs) return
     const id = window.setInterval(() => setNow(resolveNow()), tickMs)
     return () => window.clearInterval(id)
-  }, [tickMs])
+  }, [mode, tickMs])
 
   return now
 }

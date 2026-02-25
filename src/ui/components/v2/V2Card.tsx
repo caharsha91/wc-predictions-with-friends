@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from 'react'
 
 import { cn } from '../../lib/utils'
 
-export type V2CardTone = 'default' | 'hero' | 'tile' | 'panel' | 'subtle'
+export type V2CardTone = 'default' | 'hero' | 'tile' | 'panel' | 'subtle' | 'side' | 'inset' | 'row'
 
 type V2CardProps = HTMLAttributes<HTMLElement> & {
   children: ReactNode
@@ -29,7 +29,13 @@ export default function V2Card({
           ? 'v2-card-tone-panel'
           : tone === 'subtle'
             ? 'v2-card-tone-subtle'
-            : 'v2-card-tone-default'
+            : tone === 'side'
+              ? 'v2-card-tone-side'
+              : tone === 'inset'
+                ? 'v2-card-tone-inset'
+                : tone === 'row'
+                  ? 'v2-card-tone-row'
+                  : 'v2-card-tone-default'
 
   return (
     <Tag

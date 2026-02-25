@@ -131,6 +131,31 @@
   --v2-wash-via: rgba(246, 242, 252, 0.93);
   --v2-wash-to: rgba(236, 229, 249, 0.9);
   --v2-glow-color: rgba(var(--primary-rgb), 0.26);
+
+  --v2-panel-primary-bg:
+    radial-gradient(118% 128% at 0% 0%, rgba(var(--primary-rgb), 0.1), transparent 68%),
+    linear-gradient(132deg, rgba(255, 255, 255, 0.9) 0%, rgba(242, 237, 251, 0.88) 100%);
+  --v2-panel-side-bg:
+    radial-gradient(120% 128% at 100% 0%, rgba(var(--secondary-rgb), 0.12), transparent 70%),
+    linear-gradient(132deg, rgba(250, 248, 254, 0.9) 0%, rgba(241, 237, 249, 0.88) 100%);
+  --v2-panel-inset-bg:
+    linear-gradient(130deg, rgba(246, 243, 252, 0.92) 0%, rgba(240, 236, 248, 0.9) 100%);
+  --v2-panel-primary-border: rgba(185, 188, 224, 0.62);
+  --v2-panel-side-border: rgba(185, 188, 224, 0.54);
+
+  --v2-row-bg: rgba(255, 255, 255, 0.64);
+  --v2-row-hover-bg: rgba(110, 106, 210, 0.12);
+  --v2-row-selected-bg: rgba(110, 106, 210, 0.14);
+  --v2-row-you-bg: rgba(34, 211, 238, 0.12);
+  --v2-row-rival-bg: rgba(154, 68, 178, 0.1);
+  --v2-row-border: rgba(185, 188, 224, 0.56);
+  --v2-row-active-border: rgba(110, 106, 210, 0.62);
+
+  --v2-chip-height-sm: 1.3rem;
+  --v2-chip-pad-x-sm: 0.45rem;
+  --v2-chip-text-sm: 10px;
+  --v2-kicker-text: rgba(75, 78, 119, 0.82);
+  --v2-meta-text: rgba(75, 78, 119, 0.74);
 }
 
 :root[data-mode='dark'] {
@@ -264,4 +289,29 @@
   --v2-wash-via: rgba(43, 47, 72, 0.94);
   --v2-wash-to: rgba(55, 59, 88, 0.92);
   --v2-glow-color: rgba(var(--primary-rgb), 0.34);
+
+  --v2-panel-primary-bg:
+    radial-gradient(118% 128% at 0% 0%, rgba(var(--primary-rgb), 0.2), transparent 68%),
+    linear-gradient(132deg, rgba(34, 38, 59, 0.96) 0%, rgba(41, 45, 70, 0.94) 100%);
+  --v2-panel-side-bg:
+    radial-gradient(120% 128% at 100% 0%, rgba(var(--secondary-rgb), 0.2), transparent 70%),
+    linear-gradient(132deg, rgba(30, 34, 54, 0.96) 0%, rgba(38, 42, 65, 0.94) 100%);
+  --v2-panel-inset-bg:
+    linear-gradient(130deg, rgba(31, 35, 56, 0.96) 0%, rgba(36, 40, 62, 0.94) 100%);
+  --v2-panel-primary-border: rgba(110, 106, 210, 0.48);
+  --v2-panel-side-border: rgba(154, 156, 195, 0.42);
+
+  --v2-row-bg: rgba(24, 28, 45, 0.56);
+  --v2-row-hover-bg: rgba(110, 106, 210, 0.24);
+  --v2-row-selected-bg: rgba(110, 106, 210, 0.3);
+  --v2-row-you-bg: rgba(34, 211, 238, 0.2);
+  --v2-row-rival-bg: rgba(154, 68, 178, 0.2);
+  --v2-row-border: rgba(154, 156, 195, 0.46);
+  --v2-row-active-border: rgba(125, 120, 224, 0.66);
+
+  --v2-chip-height-sm: 1.3rem;
+  --v2-chip-pad-x-sm: 0.45rem;
+  --v2-chip-text-sm: 10px;
+  --v2-kicker-text: rgba(200, 200, 222, 0.84);
+  --v2-meta-text: rgba(200, 200, 222, 0.76);
 }

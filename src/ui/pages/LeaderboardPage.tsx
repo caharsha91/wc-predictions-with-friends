@@ -6,28 +6,33 @@ import { firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import type { LeaderboardEntry } from '../../types/leaderboard'
 import type { Pick } from '../../types/picks'
 import { Alert } from '../components/ui/Alert'
-import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import PanelState from '../components/ui/PanelState'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import LeaderboardPodium from '../components/v2/LeaderboardPodium'
+import MemberIdentityRowV2 from '../components/v2/MemberIdentityRowV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageShellV2 from '../components/v2/PageShellV2'
+import RowShellV2 from '../components/v2/RowShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
+import SideListPanelV2 from '../components/v2/SideListPanelV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
+import StatusTagV2 from '../components/v2/StatusTagV2'
 import { LEADERBOARD_LIST_PAGE_SIZE } from '../constants/pagination'
+import { useFavoriteTeamPreference } from '../context/FavoriteTeamPreferenceContext'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
+import { useCurrentUser } from '../hooks/useCurrentUser'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
 import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
 import { fetchRivalDirectory, readUserProfile, type RivalDirectoryEntry } from '../lib/profilePersistence'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
-import { cn } from '../lib/utils'
+import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
 
 const RANK_SNAPSHOT_STORAGE_KEY = 'wc-leaderboard-rank-snapshot'
 
@@ -48,6 +53,7 @@ type RankSnapshot = {
 type RivalFocusRow = {
   id: string
   name: string
+  favoriteTeamCode: string | null
   rank: number | null
   points: number | null
   rankDelta: number | null
@@ -282,67 +288,57 @@ function RivalFocusPanel({
   const rivalRows = rows.filter((row) => row.kind === 'rival')
 
   return (
-    <section className="landing-v2-standings-panel rounded-xl border p-3 md:p-4" aria-label="Rival focus panel">
-      <div className="landing-v2-rivals-header-row flex flex-wrap items-center justify-between gap-2">
-        <div className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-strong)]">Rival focus</div>
-        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
-          <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
-          <span>{selectedCount}/3 selected</span>
-        </div>
-      </div>
-
-      <div className="mt-3 space-y-2">
+    <SideListPanelV2
+      title="Rival focus"
+      subtitle={<SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />}
+      meta={`${selectedCount}/3 selected`}
+      className="landing-v2-standings-panel"
+      contentClassName="space-y-2"
+      footer={
+        <Button size="xs" variant="tertiary" className="h-8 rounded-lg px-3 text-[12px]" onClick={onManageRivals}>
+          Manage rivals
+        </Button>
+      }
+    >
+      <div className="space-y-2">
         {rows.map((row) => (
-          <div
+          <RowShellV2
             key={`rival-focus-${row.kind}-${row.id}`}
-            className={cn(
-              'flex items-center justify-between gap-3 rounded-lg border px-3 py-2',
-              row.kind === 'you'
-                ? 'border-[color:var(--v2-glow-medium)] bg-[rgba(var(--info-rgb),0.08)]'
-                : 'border-border/70 bg-background/40'
-            )}
+            state={row.kind === 'you' ? 'you' : 'rival'}
+            className="px-3 py-2"
+            interactive={false}
           >
-            <div className="min-w-0">
-              <div className="truncate text-[14px] font-semibold text-foreground">{row.name}</div>
-              <div className="mt-1 flex flex-wrap items-center gap-1">
-                <Badge tone={row.kind === 'you' ? 'info' : 'warning'} className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                  {row.kind === 'you' ? 'You' : row.rivalSlot ? `Rival ${row.rivalSlot}` : 'Rival'}
-                </Badge>
-                {row.rankDelta !== null ? (
-                  <Badge tone={movementTone(row.rankDelta)} className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                    {rankDeltaLabel(row.rankDelta)}
-                  </Badge>
-                ) : null}
-                {row.pointsDelta !== null ? (
-                  <Badge tone={movementTone(row.pointsDelta)} className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                    {pointsDeltaLabel(row.pointsDelta)}
-                  </Badge>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="text-right text-[12px] text-muted-foreground">
-              <div className="tabular-nums font-semibold text-foreground">{row.rank ? `#${row.rank}` : 'Unranked'}</div>
-              <div className="tabular-nums">{row.points ?? '-'} pts</div>
-            </div>
-          </div>
+            <MemberIdentityRowV2
+              name={row.name}
+              favoriteTeamCode={row.favoriteTeamCode}
+              avatarClassName="h-12 w-[72px]"
+              subtitle={<span>{row.rank ? `#${row.rank}` : 'Unranked'} • {row.points ?? '-'} pts</span>}
+              badges={(
+                <>
+                  <StatusTagV2 tone={row.kind === 'you' ? 'info' : 'warning'}>
+                    {row.kind === 'you' ? 'You' : row.rivalSlot ? `Rival ${row.rivalSlot}` : 'Rival'}
+                  </StatusTagV2>
+                  {row.rankDelta !== null ? (
+                    <StatusTagV2 tone={movementTone(row.rankDelta)}>{rankDeltaLabel(row.rankDelta)}</StatusTagV2>
+                  ) : null}
+                  {row.pointsDelta !== null ? (
+                    <StatusTagV2 tone={movementTone(row.pointsDelta)}>{pointsDeltaLabel(row.pointsDelta)}</StatusTagV2>
+                  ) : null}
+                </>
+              )}
+            />
+          </RowShellV2>
         ))}
       </div>
 
       {rivalRows.length === 0 ? (
         <PanelState
-          className="mt-3 text-xs"
+          className="mt-2 text-xs"
           tone="empty"
           message="No rivals selected. Add rivals on the landing page to track head-to-head movement here."
         />
       ) : null}
-
-      <div className="mt-3">
-        <Button size="sm" variant="secondary" className="h-8 rounded-lg px-3 text-[12px]" onClick={onManageRivals}>
-          Manage rivals
-        </Button>
-      </div>
-    </section>
+    </SideListPanelV2>
   )
 }
 
@@ -353,10 +349,13 @@ export default function LeaderboardPage() {
   const mode = useRouteDataMode()
   const phaseState = useTournamentPhaseState()
   const isDesktopViewport = useMediaQuery('(min-width: 768px)')
+  const currentUser = useCurrentUser()
+  const favoriteTeamPreference = useFavoriteTeamPreference()
 
   const [page, setPage] = useState(1)
   const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
   const [rivalDirectoryEntries, setRivalDirectoryEntries] = useState<RivalDirectoryEntry[]>([])
+  const [profileFavoriteTeamCode, setProfileFavoriteTeamCode] = useState<string | null>(null)
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [previousSnapshot, setPreviousSnapshot] = useState<RankSnapshot | null>(null)
   const [isCurrentRowVisible, setIsCurrentRowVisible] = useState(true)
@@ -365,8 +364,24 @@ export default function LeaderboardPage() {
   const currentRowRef = useRef<HTMLDivElement | null>(null)
   const landingRoot = mode === 'demo' ? '/demo' : '/'
 
-  const viewerKeys = useMemo(() => buildViewerKeySet([userId]), [userId])
+  const viewerKeys = useMemo(
+    () =>
+      buildViewerKeySet([
+        userId,
+        currentUser?.id ?? null,
+        currentUser?.email ?? null,
+        currentUser?.name ?? null
+      ]),
+    [currentUser?.email, currentUser?.id, currentUser?.name, userId]
+  )
   const rivalKeys = useMemo(() => buildViewerKeySet(rivalUserIds), [rivalUserIds])
+  const viewerFavoriteTeamCode = useMemo(
+    () =>
+      normalizeFavoriteTeamCode(
+        favoriteTeamPreference.favoriteTeamCode ?? profileFavoriteTeamCode ?? currentUser?.favoriteTeamCode
+      ),
+    [currentUser?.favoriteTeamCode, favoriteTeamPreference.favoriteTeamCode, profileFavoriteTeamCode]
+  )
 
   const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
 
@@ -431,10 +446,12 @@ export default function LeaderboardPage() {
         if (canceled) return
         setRivalDirectoryEntries(directory)
         setRivalUserIds(resolvePersistedRivalIds(mode, profile.rivalUserIds, userId, directory))
+        setProfileFavoriteTeamCode(normalizeFavoriteTeamCode(profile.favoriteTeamCode))
       } catch {
         if (canceled) return
         setRivalDirectoryEntries([])
         setRivalUserIds([])
+        setProfileFavoriteTeamCode(null)
       }
     }
 
@@ -537,11 +554,26 @@ export default function LeaderboardPage() {
 
     for (const entry of rivalDirectoryEntries) {
       const rawId = entry.id?.trim()
-      if (!rawId) continue
-      const normalizedId = normalizeIdentity(rawId)
-      lookup.set(rawId, entry)
-      lookup.set(normalizedId, entry)
-      lookup.set(`id:${normalizedId}`, entry)
+      const rawName = entry.displayName?.trim()
+      const rawEmail = entry.email?.trim()
+      const normalizedName = normalizeIdentity(rawName)
+      const normalizedEmail = normalizeIdentity(rawEmail)
+      if (rawId) {
+        const normalizedId = normalizeIdentity(rawId)
+        lookup.set(rawId, entry)
+        lookup.set(normalizedId, entry)
+        lookup.set(`id:${normalizedId}`, entry)
+      }
+      if (rawName) lookup.set(rawName, entry)
+      if (normalizedName) {
+        lookup.set(normalizedName, entry)
+        lookup.set(`name:${normalizedName}`, entry)
+      }
+      if (rawEmail) lookup.set(rawEmail, entry)
+      if (normalizedEmail) {
+        lookup.set(normalizedEmail, entry)
+        lookup.set(`email:${normalizedEmail}`, entry)
+      }
     }
 
     return lookup
@@ -573,6 +605,47 @@ export default function LeaderboardPage() {
       if (typeof slot === 'number') return slot
     }
     return null
+  }
+
+  function resolveEntryFavoriteTeamCode(entry: LeaderboardEntry): string | null {
+    if (isCurrentUserEntry(entry)) {
+      return viewerFavoriteTeamCode
+    }
+
+    const memberFavoriteTeamCode = normalizeFavoriteTeamCode(entry.member.favoriteTeamCode)
+    const keys = new Set<string>(resolveLeaderboardIdentityKeys(entry))
+    const memberId = normalizeIdentity(entry.member.id)
+    const memberEmail = normalizeIdentity(entry.member.email)
+    const memberName = normalizeIdentity(entry.member.name)
+
+    if (memberId) {
+      keys.add(memberId)
+      keys.add(`id:${memberId}`)
+    }
+    if (memberEmail) {
+      keys.add(memberEmail)
+      keys.add(`email:${memberEmail}`)
+    }
+    if (memberName) {
+      keys.add(memberName)
+      keys.add(`name:${memberName}`)
+    }
+
+    for (const key of keys) {
+      const normalizedKey = normalizeIdentity(key)
+      const idLikeKey = normalizedKey.startsWith('id:') ? normalizedKey.slice(3) : normalizedKey
+      const rivalEntry =
+        rivalDirectoryByIdentity.get(key) ??
+        rivalDirectoryByIdentity.get(normalizedKey) ??
+        rivalDirectoryByIdentity.get(idLikeKey) ??
+        rivalDirectoryByIdentity.get(`id:${idLikeKey}`)
+      if (rivalEntry) {
+        const rivalFavoriteTeamCode = normalizeFavoriteTeamCode(rivalEntry.favoriteTeamCode)
+        if (rivalFavoriteTeamCode) return rivalFavoriteTeamCode
+      }
+    }
+
+    return memberFavoriteTeamCode
   }
 
   const userContext = useMemo(() => {
@@ -637,6 +710,7 @@ export default function LeaderboardPage() {
       rows.push({
         id: currentEntry.member.id ?? userId,
         name: currentEntry.member.name,
+        favoriteTeamCode: viewerFavoriteTeamCode,
         rank: userContext.current.rank,
         points: currentEntry.totalPoints,
         rankDelta: typeof previousRank === 'number' ? previousRank - userContext.current.rank : null,
@@ -648,6 +722,7 @@ export default function LeaderboardPage() {
       rows.push({
         id: userId,
         name: 'You',
+        favoriteTeamCode: viewerFavoriteTeamCode,
         rank: null,
         points: null,
         rankDelta: null,
@@ -670,11 +745,13 @@ export default function LeaderboardPage() {
         rivalDirectoryByIdentity.get(rivalLookupKey)
       const rivalDisplayName =
         rivalDirectoryEntry?.displayName?.trim() || lookup?.entry.member.name.trim() || rawRivalId || 'Unknown rival'
+      const rivalFavoriteTeamCode = normalizeFavoriteTeamCode(rivalDirectoryEntry?.favoriteTeamCode)
 
       if (!lookup) {
         rows.push({
           id: rivalId,
           name: rivalDisplayName,
+          favoriteTeamCode: rivalFavoriteTeamCode,
           rank: null,
           points: null,
           rankDelta: null,
@@ -691,6 +768,7 @@ export default function LeaderboardPage() {
       rows.push({
         id: rivalId,
         name: rivalDisplayName,
+        favoriteTeamCode: rivalFavoriteTeamCode,
         rank: lookup.rank,
         points: lookup.entry.totalPoints,
         rankDelta: typeof previousRank === 'number' ? previousRank - lookup.rank : null,
@@ -701,7 +779,15 @@ export default function LeaderboardPage() {
     }
 
     return rows
-  }, [activeRowsByIdentity, previousSnapshot, rivalDirectoryByIdentity, rivalUserIds, userContext, userId])
+  }, [
+    activeRowsByIdentity,
+    previousSnapshot,
+    rivalDirectoryByIdentity,
+    rivalUserIds,
+    userContext,
+    userId,
+    viewerFavoriteTeamCode
+  ])
 
   useEffect(() => {
     setPage(1)
@@ -755,13 +841,15 @@ export default function LeaderboardPage() {
   const pageRows = activeRows.slice(start, start + LEADERBOARD_LIST_PAGE_SIZE)
 
   const stickyUserRow = userContext?.current.entry ?? null
+  const stickyUserFavoriteTeamCode = stickyUserRow ? resolveEntryFavoriteTeamCode(stickyUserRow) : null
   const shouldShowStickyRow = Boolean(stickyUserRow) && !isCurrentRowVisible
 
   const podiumRows = activeRows.slice(0, 3).map((entry, index) => ({
     id: entry.member.id || `podium-${index + 1}`,
     name: entry.member.name,
     points: entry.totalPoints,
-    rank: Math.min(3, Math.max(1, rankByEntryKey.get(getEntryIdentityKey(entry)) ?? index + 1)) as 1 | 2 | 3,
+    rank: (index + 1) as 1 | 2 | 3,
+    favoriteTeamCode: resolveEntryFavoriteTeamCode(entry),
     isViewer: isCurrentUserEntry(entry)
   }))
 
@@ -890,59 +978,48 @@ export default function LeaderboardPage() {
                 const isTopThree = rank <= 3
                 const previousRank = previousSnapshot?.ranks[entryKey]
                 const movementDelta = typeof previousRank === 'number' ? previousRank - rank : null
+                const rowState = isYou ? 'you' : isRival ? 'rival' : isTopThree ? 'selected' : 'default'
+                const favoriteTeamCode = resolveEntryFavoriteTeamCode(entry)
 
                 return (
-                  <article
+                  <RowShellV2
                     key={`leaderboard-row-${entryKey}`}
                     ref={isYou ? currentRowRef : null}
-                    className={cn(
-                      'rounded-xl border px-3 py-3 transition-colors focus-within:ring-2 focus-within:ring-ring',
-                      isYou
-                        ? 'border-[color:var(--v2-glow-medium)] bg-[rgba(var(--info-rgb),0.1)]'
-                        : isRival
-                          ? 'border-[rgba(var(--secondary-rgb),0.55)] bg-[rgba(var(--secondary-rgb),0.08)]'
-                          : isTopThree
-                            ? 'border-[rgba(var(--primary-rgb),0.45)] bg-[rgba(var(--primary-rgb),0.07)]'
-                            : 'border-border/70 bg-background/35 hover:bg-background/60'
-                    )}
+                    state={rowState}
+                    className="rounded-xl px-3 py-3 focus-within:ring-2 focus-within:ring-ring"
                   >
                     <div className="hidden grid-cols-[72px_minmax(260px,1fr)_110px_72px_72px_72px_72px] items-center gap-2 md:grid">
                       <div className="text-base font-semibold tabular-nums text-foreground">#{rank}</div>
 
                       <div className="min-w-0">
-                        <div className="truncate text-[15px] font-semibold text-foreground">{entry.member.name}</div>
-                        <div className="mt-1 flex flex-wrap items-center gap-1">
-                          {isYou ? (
-                            <Badge tone="info" className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                              You
-                            </Badge>
-                          ) : null}
-                          {!isYou && isRival ? (
-                            <Badge tone="warning" className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                              {rivalSlot ? `Rival ${rivalSlot}` : 'Rival'}
-                            </Badge>
-                          ) : null}
-                          {isTopThree ? (
-                            <Badge tone="success" className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                              Top 3
-                            </Badge>
-                          ) : null}
-                          {shouldShowMomentumPill(movementDelta) ? (
-                            <Badge tone={movementTone(movementDelta)} className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                              {movementLabel(movementDelta)}
-                            </Badge>
-                          ) : null}
-                          {entryBadges.map((badge) => (
-                            <Badge
-                              key={`${entryKey}-${badge.kind}`}
-                              tone={socialBadgeTone(badge.kind)}
-                              className="px-2 py-0 text-[10px] normal-case tracking-normal"
-                              title={badge.description}
-                            >
-                              {badge.label}
-                            </Badge>
-                          ))}
-                        </div>
+                        <MemberIdentityRowV2
+                          name={entry.member.name}
+                          favoriteTeamCode={favoriteTeamCode}
+                          avatarClassName="h-12 w-[72px]"
+                          badges={(
+                            <>
+                              {isYou ? <StatusTagV2 tone="info">You</StatusTagV2> : null}
+                              {!isYou && isRival ? (
+                                <StatusTagV2 tone="warning">
+                                  {rivalSlot ? `Rival ${rivalSlot}` : 'Rival'}
+                                </StatusTagV2>
+                              ) : null}
+                              {isTopThree ? <StatusTagV2 tone="success">Top 3</StatusTagV2> : null}
+                              {shouldShowMomentumPill(movementDelta) ? (
+                                <StatusTagV2 tone={movementTone(movementDelta)}>{movementLabel(movementDelta)}</StatusTagV2>
+                              ) : null}
+                              {entryBadges.map((badge) => (
+                                <StatusTagV2
+                                  key={`${entryKey}-${badge.kind}`}
+                                  tone={socialBadgeTone(badge.kind)}
+                                  title={badge.description}
+                                >
+                                  {badge.label}
+                                </StatusTagV2>
+                              ))}
+                            </>
+                          )}
+                        />
                       </div>
 
                       <div className="text-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
@@ -954,9 +1031,14 @@ export default function LeaderboardPage() {
 
                     <div className="space-y-2 md:hidden">
                       <div className="flex items-start justify-between gap-2">
-                        <div>
+                        <div className="min-w-0">
                           <div className="text-base font-semibold tabular-nums text-foreground">#{rank}</div>
-                          <div className="truncate text-[15px] font-semibold text-foreground">{entry.member.name}</div>
+                          <MemberIdentityRowV2
+                            name={entry.member.name}
+                            favoriteTeamCode={favoriteTeamCode}
+                            avatarClassName="h-12 w-[72px]"
+                            className="mt-1"
+                          />
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
@@ -966,34 +1048,27 @@ export default function LeaderboardPage() {
 
                       <div className="flex flex-wrap items-center gap-1">
                         {isYou ? (
-                          <Badge tone="info" className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                            You
-                          </Badge>
+                          <StatusTagV2 tone="info">You</StatusTagV2>
                         ) : null}
                         {!isYou && isRival ? (
-                          <Badge tone="warning" className="px-2 py-0 text-[10px] normal-case tracking-normal">
+                          <StatusTagV2 tone="warning">
                             {rivalSlot ? `Rival ${rivalSlot}` : 'Rival'}
-                          </Badge>
+                          </StatusTagV2>
                         ) : null}
                         {isTopThree ? (
-                          <Badge tone="success" className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                            Top 3
-                          </Badge>
+                          <StatusTagV2 tone="success">Top 3</StatusTagV2>
                         ) : null}
                         {shouldShowMomentumPill(movementDelta) ? (
-                          <Badge tone={movementTone(movementDelta)} className="px-2 py-0 text-[10px] normal-case tracking-normal">
-                            {movementLabel(movementDelta)}
-                          </Badge>
+                          <StatusTagV2 tone={movementTone(movementDelta)}>{movementLabel(movementDelta)}</StatusTagV2>
                         ) : null}
                         {entryBadges.map((badge) => (
-                          <Badge
+                          <StatusTagV2
                             key={`${entryKey}-mobile-${badge.kind}`}
                             tone={socialBadgeTone(badge.kind)}
-                            className="px-2 py-0 text-[10px] normal-case tracking-normal"
                             title={badge.description}
                           >
                             {badge.label}
-                          </Badge>
+                          </StatusTagV2>
                         ))}
                       </div>
 
@@ -1004,7 +1079,7 @@ export default function LeaderboardPage() {
                         <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Bracket {entry.bracketPoints}</div>
                       </div>
                     </div>
-                  </article>
+                  </RowShellV2>
                 )
               })}
             </div>
@@ -1047,11 +1122,14 @@ export default function LeaderboardPage() {
         <div className="fixed inset-x-4 bottom-4 z-40 mx-auto max-w-5xl" data-testid="leaderboard-sticky-user-row">
           <div className="rounded-xl border border-[color:var(--v2-glow-medium)] bg-background/95 p-3 shadow-[0_0_0_1px_color-mix(in_srgb,var(--v2-glow-medium)_65%,transparent),var(--shadow1)] backdrop-blur-md">
             <div className="flex items-center justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Your row</div>
-                <div className="text-sm font-semibold text-foreground">
-                  #{userContext.current.rank} {stickyUserRow.member.name}
-                </div>
+                <MemberIdentityRowV2
+                  name={`#${userContext.current.rank} ${stickyUserRow.member.name}`}
+                  favoriteTeamCode={stickyUserFavoriteTeamCode}
+                  avatarClassName="h-12 w-[72px]"
+                  className="mt-1"
+                />
                 <div className="text-xs text-muted-foreground">{stickyUserRow.totalPoints} pts</div>
               </div>
               <Button size="sm" variant="secondary" className="h-8 rounded-lg px-3 text-[12px]" onClick={jumpToCurrentUserRow}>

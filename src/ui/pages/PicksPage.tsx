@@ -7,13 +7,8 @@ import { getPickOutcome, getPredictedWinner, isPickComplete, upsertPick } from '
 import type { Match } from '../../types/matches'
 import type { Pick, PickAdvances } from '../../types/picks'
 import type { KnockoutStage, ScoringConfig, StageScoring } from '../../types/scoring'
-import {
-  LeaderboardCardCurated,
-  RightRailSticky,
-  type LeaderboardCardRow
-} from '../components/group-stage/GroupStageDashboardComponents'
+import type { LeaderboardCardRow } from '../components/v2/LeaderboardSideListV2'
 import { Alert } from '../components/ui/Alert'
-import { Badge } from '../components/ui/Badge'
 import { Button, ButtonLink } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import {
@@ -26,12 +21,18 @@ import {
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
+import { LeaderboardCardCurated, RightRailSticky } from '../components/v2/LeaderboardSideListV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageShellV2 from '../components/v2/PageShellV2'
+import RowShellV2 from '../components/v2/RowShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
-import TeamFlagLabelV2 from '../components/v2/TeamFlagLabelV2'
+import StatusTagV2 from '../components/v2/StatusTagV2'
+import TeamIdentityInlineV2 from '../components/v2/TeamIdentityInlineV2'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
+import { useFavoriteTeamPreference } from '../context/FavoriteTeamPreferenceContext'
+import { useAuthState } from '../hooks/useAuthState'
+import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
@@ -40,14 +41,20 @@ import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
+import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
 import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
 import {
   computeMatchTimelineModel,
   type MatchReadOnlyReason,
   type MatchTimelineItem
 } from '../lib/matchTimeline'
-import { readUserProfile } from '../lib/profilePersistence'
+import {
+  fetchRivalDirectory,
+  readUserProfile,
+  type RivalDirectoryEntry
+} from '../lib/profilePersistence'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
+import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
 
 type KoWinMethod = 'ET' | 'PENS'
 
@@ -101,6 +108,7 @@ type ResultsTableProps = {
 
 const EMPTY_MATCHES: Match[] = []
 const UPCOMING_DISPLAY_WINDOW_MS = 48 * 60 * 60 * 1000
+const KO_EXTRAS_LANE_HEIGHT_PX = 36
 
 function normalizeKey(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase()
@@ -336,15 +344,17 @@ function MatchRow({
   const canSave = item.editable && rowDirty && validForSave && !isSaving
   const statusMeta = resolveRowStatus(item)
   const stageLabel = match.group ? `Group ${match.group}` : match.stage
+  const rowState = !item.editable ? 'disabled' : rowDirty ? 'selected' : 'default'
+  const showKoExtras = item.editable && requiresKoExtras
 
   return (
-    <div className="rounded-lg border border-border/65 bg-background/35 px-2.5 py-2">
+    <RowShellV2 state={rowState} className="px-2.5 py-2">
       <div className="grid items-center gap-2 md:grid-cols-[minmax(0,2fr)_minmax(0,160px)_minmax(0,220px)] md:gap-3">
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1.5 text-[14px] font-semibold text-foreground">
-            <TeamFlagLabelV2 code={match.homeTeam.code} name={match.homeTeam.name} />
+            <TeamIdentityInlineV2 code={match.homeTeam.code} name={match.homeTeam.name} size="sm" />
             <span className="shrink-0 text-muted-foreground">vs</span>
-            <TeamFlagLabelV2 code={match.awayTeam.code} name={match.awayTeam.name} />
+            <TeamIdentityInlineV2 code={match.awayTeam.code} name={match.awayTeam.name} size="sm" />
           </div>
           <div className="truncate text-[11px] text-muted-foreground">
             {stageLabel} · {formatKickoff(match.kickoffUtc)}
@@ -380,9 +390,9 @@ function MatchRow({
         </div>
 
         <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
-          <Badge tone={statusMeta.tone} className="h-6 px-2 text-[11px] normal-case tracking-normal">
+          <StatusTagV2 tone={statusMeta.tone}>
             {statusMeta.label}
-          </Badge>
+          </StatusTagV2>
           {item.editable && !requiresKoExtras ? (
             <Button
               size="sm"
@@ -408,68 +418,76 @@ function MatchRow({
         </div>
       </div>
 
-      {item.editable && requiresKoExtras ? (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <Button
-            size="sm"
-            variant="secondary"
-            className={`h-7 rounded-md px-2 text-[11px] ${draft.eventualWinnerTeamId === 'HOME' ? 'border-primary' : ''}`}
-            onClick={() => onWinnerChange('HOME')}
-          >
-            <TeamFlagLabelV2
-              code={match.homeTeam.code}
-              name={match.homeTeam.name}
-              className="max-w-[7.5rem]"
+      <div className="mt-2" style={{ minHeight: KO_EXTRAS_LANE_HEIGHT_PX }}>
+        {showKoExtras ? (
+          <div className="flex h-9 items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap">
+            <Button
               size="sm"
-            />
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            className={`h-7 rounded-md px-2 text-[11px] ${draft.eventualWinnerTeamId === 'AWAY' ? 'border-primary' : ''}`}
-            onClick={() => onWinnerChange('AWAY')}
-          >
-            <TeamFlagLabelV2
-              code={match.awayTeam.code}
-              name={match.awayTeam.name}
-              className="max-w-[7.5rem]"
+              variant="secondary"
+              className={`h-7 rounded-md px-2 text-[11px] ${draft.eventualWinnerTeamId === 'HOME' ? 'border-primary' : ''}`}
+              onClick={() => onWinnerChange('HOME')}
+            >
+              <TeamIdentityInlineV2
+                code={match.homeTeam.code}
+                name={match.homeTeam.name}
+                className="max-w-[7.5rem]"
+                size="sm"
+              />
+            </Button>
+            <Button
               size="sm"
-            />
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            className={`h-7 rounded-md px-2 text-[11px] ${draft.koWinMethod === 'ET' ? 'border-primary' : ''}`}
-            onClick={() => onKoMethodChange('ET')}
-          >
-            AET
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            className={`h-7 rounded-md px-2 text-[11px] ${draft.koWinMethod === 'PENS' ? 'border-primary' : ''}`}
-            onClick={() => onKoMethodChange('PENS')}
-          >
-            Pens
-          </Button>
-          <Button
-            size="sm"
-            className="h-8 rounded-lg px-3 text-[12px]"
-            onClick={onSave}
-            disabled={!canSave}
-            loading={isSaving}
-          >
-            Save
-          </Button>
+              variant="secondary"
+              className={`h-7 rounded-md px-2 text-[11px] ${draft.eventualWinnerTeamId === 'AWAY' ? 'border-primary' : ''}`}
+              onClick={() => onWinnerChange('AWAY')}
+            >
+              <TeamIdentityInlineV2
+                code={match.awayTeam.code}
+                name={match.awayTeam.name}
+                className="max-w-[7.5rem]"
+                size="sm"
+              />
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              className={`h-7 rounded-md px-2 text-[11px] ${draft.koWinMethod === 'ET' ? 'border-primary' : ''}`}
+              onClick={() => onKoMethodChange('ET')}
+            >
+              AET
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              className={`h-7 rounded-md px-2 text-[11px] ${draft.koWinMethod === 'PENS' ? 'border-primary' : ''}`}
+              onClick={() => onKoMethodChange('PENS')}
+            >
+              Pens
+            </Button>
+            <Button
+              size="sm"
+              className="h-8 rounded-lg px-3 text-[12px]"
+              onClick={onSave}
+              disabled={!canSave}
+              loading={isSaving}
+            >
+              Save
+            </Button>
+          </div>
+        ) : item.editable ? (
+          <div aria-hidden="true" className="h-9" />
+        ) : (
+          <div className="truncate text-[11px] leading-9 text-muted-foreground">
+            {readOnlyReasonLabel(item.readOnlyReason)}
+          </div>
+        )}
+      </div>
+
+      {rowError ? (
+        <div className="mt-1 text-[11px] text-destructive">
+          {rowError}
         </div>
       ) : null}
-
-      {!item.editable ? (
-        <div className="mt-1 text-[11px] text-muted-foreground">{readOnlyReasonLabel(item.readOnlyReason)}</div>
-      ) : null}
-
-      {rowError ? <div className="mt-1 text-[11px] text-destructive">{rowError}</div> : null}
-    </div>
+    </RowShellV2>
   )
 }
 
@@ -484,9 +502,9 @@ function ResultRow({ item, pick, scoring }: ResultRowProps) {
       <td>
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-foreground">
-            <TeamFlagLabelV2 code={match.homeTeam.code} name={match.homeTeam.name} />
+            <TeamIdentityInlineV2 code={match.homeTeam.code} name={match.homeTeam.name} />
             <span className="shrink-0 text-muted-foreground">vs</span>
-            <TeamFlagLabelV2 code={match.awayTeam.code} name={match.awayTeam.name} />
+            <TeamIdentityInlineV2 code={match.awayTeam.code} name={match.awayTeam.name} />
           </div>
           <div className="truncate text-[11px] text-muted-foreground">
             {stageLabel} · {formatKickoff(match.kickoffUtc)}
@@ -496,9 +514,9 @@ function ResultRow({ item, pick, scoring }: ResultRowProps) {
       <td className="text-[13px] tabular-nums">{resolvePredictedLabel(pick)}</td>
       <td className="text-[13px] tabular-nums">{resolveActualLabel(match)}</td>
       <td>
-        <Badge tone={resultTone(outcome)} className="h-6 px-2 text-[11px] normal-case tracking-normal">
+        <StatusTagV2 tone={resultTone(outcome)}>
           {resultLabel(outcome)}
-        </Badge>
+        </StatusTagV2>
       </td>
       <td className="text-right text-[13px] font-semibold tabular-nums text-foreground">
         {points === null ? '—' : formatPointsLabel(points)}
@@ -539,6 +557,9 @@ export default function PicksPage() {
   const location = useLocation()
   const mode = useRouteDataMode()
   const viewerId = useViewerId()
+  const currentUser = useCurrentUser()
+  const favoriteTeamPreference = useFavoriteTeamPreference()
+  const authState = useAuthState()
   const now = useNow({ tickMs: 300_000 })
   const isDesktopViewport = useMediaQuery('(min-width: 1024px)')
   const picksState = usePicksData()
@@ -554,6 +575,25 @@ export default function PicksPage() {
   const [rowErrorByMatchId, setRowErrorByMatchId] = useState<Record<string, string>>({})
   const [scoringState, setScoringState] = useState<ScoringState>({ status: 'loading' })
   const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
+  const [profileFavoriteTeamCode, setProfileFavoriteTeamCode] = useState<string | null>(null)
+  const [rivalDirectoryEntries, setRivalDirectoryEntries] = useState<RivalDirectoryEntry[]>([])
+  const viewerKeys = useMemo(
+    () =>
+      buildViewerKeySet([
+        viewerId,
+        currentUser?.id ?? null,
+        currentUser?.email ?? null,
+        currentUser?.name ?? null
+      ]),
+    [currentUser?.email, currentUser?.id, currentUser?.name, viewerId]
+  )
+  const viewerFavoriteTeamCode = useMemo(
+    () =>
+      normalizeFavoriteTeamCode(
+        favoriteTeamPreference.favoriteTeamCode ?? profileFavoriteTeamCode ?? currentUser?.favoriteTeamCode
+      ),
+    [currentUser?.favoriteTeamCode, favoriteTeamPreference.favoriteTeamCode, profileFavoriteTeamCode]
+  )
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
 
@@ -580,21 +620,44 @@ export default function PicksPage() {
   useEffect(() => {
     let canceled = false
 
-    async function loadRivals() {
+    async function loadProfile() {
       try {
-        const profile = await readUserProfile(mode, viewerId)
+        const profile = await readUserProfile(mode, viewerId, authState.user?.email ?? null)
         if (canceled) return
         setRivalUserIds(sanitizeRivalUserIds(profile.rivalUserIds, viewerId))
+        setProfileFavoriteTeamCode(normalizeFavoriteTeamCode(profile.favoriteTeamCode))
       } catch {
-        if (!canceled) setRivalUserIds([])
+        if (canceled) return
+        setRivalUserIds([])
+        setProfileFavoriteTeamCode(null)
       }
     }
 
-    void loadRivals()
+    void loadProfile()
     return () => {
       canceled = true
     }
-  }, [mode, viewerId])
+  }, [authState.user?.email, mode, viewerId])
+
+  useEffect(() => {
+    let canceled = false
+
+    async function loadRivalDirectory() {
+      try {
+        const entries = await fetchRivalDirectory(mode, viewerId, authState.user?.email ?? null)
+        if (canceled) return
+        setRivalDirectoryEntries(entries)
+      } catch {
+        if (canceled) return
+        setRivalDirectoryEntries([])
+      }
+    }
+
+    void loadRivalDirectory()
+    return () => {
+      canceled = true
+    }
+  }, [authState.user?.email, mode, viewerId])
 
   useEffect(() => {
     if (!savedMatchId) return
@@ -646,6 +709,63 @@ export default function PicksPage() {
   const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
   const isMatchPicksFinal = useMemo(() => areMatchesCompleted(matches), [matches])
 
+  const rivalDirectoryByIdentity = useMemo(() => {
+    const map = new Map<string, RivalDirectoryEntry>()
+    for (const entry of rivalDirectoryEntries) {
+      const idKey = normalizeKey(entry.id)
+      const nameKey = normalizeKey(entry.displayName)
+      const emailKey = normalizeKey(entry.email)
+      if (idKey) {
+        map.set(entry.id, entry)
+        map.set(idKey, entry)
+        map.set(`id:${idKey}`, entry)
+      }
+      if (nameKey) {
+        map.set(entry.displayName, entry)
+        map.set(nameKey, entry)
+        map.set(`name:${nameKey}`, entry)
+      }
+      if (emailKey) {
+        if (entry.email) map.set(entry.email, entry)
+        map.set(emailKey, entry)
+        map.set(`email:${emailKey}`, entry)
+      }
+    }
+    return map
+  }, [rivalDirectoryEntries])
+
+  const resolveCardRowFavoriteTeamCode = useCallback(
+    ({
+      rowId,
+      rowName,
+      isYou
+    }: {
+      rowId: string
+      rowName: string
+      isYou: boolean
+    }): string | null => {
+      if (isYou) return viewerFavoriteTeamCode
+
+      const idKey = normalizeKey(rowId)
+      const nameKey = normalizeKey(rowName)
+      const candidates = [
+        idKey,
+        idKey ? `id:${idKey}` : '',
+        nameKey,
+        nameKey ? `name:${nameKey}` : ''
+      ].filter(Boolean)
+
+      for (const candidate of candidates) {
+        const match = rivalDirectoryByIdentity.get(candidate)
+        if (!match) continue
+        return normalizeFavoriteTeamCode(match.favoriteTeamCode)
+      }
+
+      return null
+    },
+    [rivalDirectoryByIdentity, viewerFavoriteTeamCode]
+  )
+
   const leaderboardRowsForCard = useMemo<LeaderboardCardRow[]>(() => {
     if (!snapshotReady) return []
     const sectionRows = buildLeaderboardPresentation({
@@ -655,19 +775,24 @@ export default function PicksPage() {
       leaderboardRows: snapshotReady.leaderboardRows
     }).rows.map((entry) => {
       const sectionPoints = entry.exactPoints + entry.resultPoints + entry.knockoutPoints
-      const memberKey = normalizeKey(entry.member.id)
+      const isYou = resolveLeaderboardIdentityKeys(entry).some((key) => viewerKeys.has(key))
       return {
         id: entry.member.id || entry.member.name,
         name: entry.member.name,
         points: sectionPoints,
-        isYou: memberKey.length > 0 && memberKey === normalizeKey(viewerId)
+        isYou,
+        favoriteTeamCode: resolveCardRowFavoriteTeamCode({
+          rowId: entry.member.id || entry.member.name,
+          rowName: entry.member.name,
+          isYou
+        })
       }
     })
 
     const ranked = rankRowsWithTiePriority({
       rows: sectionRows,
       getPoints: (row) => row.points,
-      getIdentityKeys: (row) => [row.id],
+      getIdentityKeys: (row) => [row.id, `id:${row.id}`, row.name, `name:${row.name}`],
       getName: (row) => row.name,
       viewerIdentity: viewerId,
       rivalIdentities: rivalUserIds
@@ -678,9 +803,10 @@ export default function PicksPage() {
       name: row.name,
       rank,
       points: row.points,
-      isYou: row.isYou
+      isYou: row.isYou,
+      favoriteTeamCode: row.favoriteTeamCode ?? null
     }))
-  }, [rivalUserIds, snapshotReady, viewerId])
+  }, [resolveCardRowFavoriteTeamCode, rivalUserIds, snapshotReady, viewerId, viewerKeys])
 
   const leaderboardPath = location.pathname.startsWith('/demo/') ? '/demo/leaderboard' : '/leaderboard'
   const homePath = mode === 'demo' ? '/demo' : '/'
@@ -954,7 +1080,7 @@ export default function PicksPage() {
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="v2-heading-h2 text-foreground">UPCOMING</h2>
-                <Badge tone="info">{upcomingDisplayCount}</Badge>
+                <StatusTagV2 tone="info">{String(upcomingDisplayCount)}</StatusTagV2>
               </div>
 
               {upcomingDisplayMatches.length === 0 ? (
@@ -1004,7 +1130,7 @@ export default function PicksPage() {
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="v2-heading-h2 text-foreground">RECENT RESULTS</h2>
-                <Badge tone="secondary">{timelineModel.recentResults.length}</Badge>
+                <StatusTagV2 tone="secondary">{String(timelineModel.recentResults.length)}</StatusTagV2>
               </div>
               <ResultsTable
                 items={timelineModel.recentResults}
@@ -1018,7 +1144,7 @@ export default function PicksPage() {
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="v2-heading-h2 text-foreground">OLDER RESULTS</h2>
                 <div className="flex items-center gap-2">
-                  <Badge tone="secondary">{timelineModel.olderResults.length}</Badge>
+                  <StatusTagV2 tone="secondary">{String(timelineModel.olderResults.length)}</StatusTagV2>
                   <Button size="sm" variant="secondary" onClick={() => setArchiveExpanded((current) => !current)}>
                     {archiveExpanded ? 'Hide archive' : 'Show archive'}
                   </Button>

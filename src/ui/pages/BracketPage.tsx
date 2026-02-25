@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import { isMatchCompleted } from '../../lib/matchStatus'
@@ -18,9 +18,11 @@ import Skeleton from '../components/ui/Skeleton'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageShellV2 from '../components/v2/PageShellV2'
+import RowShellV2 from '../components/v2/RowShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
-import TeamFlagLabelV2 from '../components/v2/TeamFlagLabelV2'
+import StatusTagV2 from '../components/v2/StatusTagV2'
+import TeamIdentityInlineV2 from '../components/v2/TeamIdentityInlineV2'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useBracketKnockoutData } from '../hooks/useBracketKnockoutData'
 import { useMediaQuery } from '../hooks/useMediaQuery'
@@ -90,6 +92,27 @@ type BracketConnector = {
   path: string
   dashed?: boolean
 }
+
+const DESKTOP_BRACKET_MIN_SCALE = 0.72
+
+const BRACKET_NODE_METRICS = {
+  paddingX: 8,
+  paddingY: 8,
+  headerHeight: 14,
+  sectionGap: 6,
+  teamRowHeight: 34,
+  teamRowGap: 4,
+  footerHeight: 20
+} as const
+
+const BRACKET_NODE_CARD_HEIGHT =
+  BRACKET_NODE_METRICS.paddingY * 2 +
+  BRACKET_NODE_METRICS.headerHeight +
+  BRACKET_NODE_METRICS.sectionGap +
+  BRACKET_NODE_METRICS.teamRowHeight * 2 +
+  BRACKET_NODE_METRICS.teamRowGap +
+  BRACKET_NODE_METRICS.sectionGap +
+  BRACKET_NODE_METRICS.footerHeight
 
 function isTbdLabel(value: string | undefined): boolean {
   const normalized = String(value ?? '').trim().toLowerCase()
@@ -349,26 +372,31 @@ function BracketSummaryPanel({
               const homeLabel = resolveTeamDisplayLabel(match.homeTeam)
               const awayLabel = resolveTeamDisplayLabel(match.awayTeam)
               return (
-                <div key={`summary-${round.stage}-${match.match.id}`} className="flex items-center justify-between gap-2">
+                <RowShellV2
+                  key={`summary-${round.stage}-${match.match.id}`}
+                  tone="inset"
+                  interactive={false}
+                  className="flex items-center justify-between gap-2 px-2 py-1"
+                >
                   <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <TeamFlagLabelV2
+                    <TeamIdentityInlineV2
                       code={match.homeTeam.code}
                       name={match.homeTeam.name}
                       label={homeLabel}
                       size="sm"
                     />
                     <span className="shrink-0">vs</span>
-                    <TeamFlagLabelV2
+                    <TeamIdentityInlineV2
                       code={match.awayTeam.code}
                       name={match.awayTeam.name}
                       label={awayLabel}
                       size="sm"
                     />
                   </div>
-                  <span className="shrink-0 rounded-full border border-border/70 bg-background/55 px-2 py-0.5 text-[10px] text-foreground">
+                  <StatusTagV2 tone="secondary" className="shrink-0">
                     {resolvePickedWinnerCode(match)}
-                  </span>
-                </div>
+                  </StatusTagV2>
+                </RowShellV2>
               )
             })}
           </div>
@@ -395,6 +423,7 @@ function BracketMatchNode({
     const baseClass = selected
       ? 'border-[rgba(var(--primary-rgb),0.55)] bg-[rgba(var(--primary-rgb),0.12)] text-foreground'
       : 'border-border/60 bg-background/40 text-muted-foreground'
+    const dotClass = selected ? 'text-foreground' : 'text-muted-foreground'
 
     if (interactive) {
       return (
@@ -403,57 +432,84 @@ function BracketMatchNode({
           className={`flex w-full items-center justify-between gap-1 rounded-md border px-2 py-1 text-[11px] transition hover:border-[rgba(var(--primary-rgb),0.48)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${baseClass}`}
           aria-label={`Set ${label} as winner`}
           aria-pressed={selected}
+          style={{ height: BRACKET_NODE_METRICS.teamRowHeight }}
           onClick={() => onPick(match, teamSide)}
         >
-          <TeamFlagLabelV2
+          <TeamIdentityInlineV2
             code={team.code}
             name={team.name}
             label={label}
             className={side === 'right' ? 'min-w-0 flex-1 justify-end text-right' : 'min-w-0 flex-1'}
             size="sm"
           />
-          <span className="shrink-0 text-[10px] uppercase tracking-[0.08em]">
-            {selected ? 'Picked' : 'Pick'}
+          <span aria-hidden="true" className={`shrink-0 text-[11px] leading-none ${dotClass}`}>
+            {selected ? '●' : '○'}
           </span>
+          <span className="sr-only">{selected ? 'Selected' : 'Not selected'}</span>
         </button>
       )
     }
 
     return (
-      <div className={`flex items-center justify-between gap-1 rounded-md border px-2 py-1 text-[11px] ${baseClass}`}>
-        <TeamFlagLabelV2
+      <div
+        className={`flex items-center justify-between gap-1 rounded-md border px-2 py-1 text-[11px] ${baseClass}`}
+        style={{ height: BRACKET_NODE_METRICS.teamRowHeight }}
+      >
+        <TeamIdentityInlineV2
           code={team.code}
           name={team.name}
           label={label}
           className={side === 'right' ? 'min-w-0 flex-1 justify-end text-right' : 'min-w-0 flex-1'}
           size="sm"
         />
-        <span className="shrink-0 text-[10px]">{selected ? '●' : '○'}</span>
+        <span aria-hidden="true" className={`shrink-0 text-[11px] leading-none ${dotClass}`}>
+          {selected ? '●' : '○'}
+        </span>
+        <span className="sr-only">{selected ? 'Selected' : 'Not selected'}</span>
       </div>
     )
   }
 
   return (
     <article
-      className={`h-full overflow-hidden rounded-xl border border-border/70 bg-background/55 p-2 shadow-[var(--shadow1)] backdrop-blur-sm ${resultSurfaceClass(match.result)}`}
+      className={`h-full overflow-hidden rounded-xl border border-border/70 bg-background/55 shadow-[var(--shadow1)] backdrop-blur-sm ${resultSurfaceClass(match.result)}`}
+      style={{
+        padding: `${BRACKET_NODE_METRICS.paddingY}px ${BRACKET_NODE_METRICS.paddingX}px`
+      }}
       data-stage={match.stage}
     >
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+      <div className="flex items-center justify-between gap-2 overflow-hidden" style={{ height: BRACKET_NODE_METRICS.headerHeight }}>
+        <span className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
           {STAGE_SHORT_LABELS[match.stage]}
         </span>
-        <span className="text-[10px] text-muted-foreground">{formatKickoff(match.match.kickoffUtc)}</span>
+        <span className="truncate text-[10px] text-muted-foreground">{formatKickoff(match.match.kickoffUtc)}</span>
       </div>
 
-      <div className="space-y-1.5">
+      <div
+        className="flex flex-col"
+        style={{
+          marginTop: BRACKET_NODE_METRICS.sectionGap,
+          rowGap: BRACKET_NODE_METRICS.teamRowGap
+        }}
+      >
         {renderTeamRow('HOME', homeLabel)}
         {renderTeamRow('AWAY', awayLabel)}
       </div>
 
-      <div className="mt-1.5 flex min-w-0 items-center justify-between gap-2">
-        <Badge tone={resultTone(match.result)} className="shrink-0 px-1.5 py-0 text-[10px]">
-          {resultLabel(match.result)}
-        </Badge>
+      <div
+        className="flex min-w-0 items-center justify-between gap-2"
+        style={{
+          marginTop: BRACKET_NODE_METRICS.sectionGap,
+          height: BRACKET_NODE_METRICS.footerHeight
+        }}
+      >
+        {match.result !== 'pending' ? (
+          <StatusTagV2 tone={resultTone(match.result)} className="h-5 shrink-0 px-2 text-[10px]">
+            {resultLabel(match.result)}
+          </StatusTagV2>
+        ) : (
+          <span aria-hidden="true" className="h-5" />
+        )}
       </div>
     </article>
   )
@@ -468,6 +524,11 @@ function DesktopVisualBracket({
   bracketEditable: boolean
   onPick: (match: ResolvedMatch, winner: MatchWinner) => void
 }) {
+  const viewportRef = useRef<HTMLDivElement | null>(null)
+  const firstNodeRef = useRef<HTMLDivElement | null>(null)
+  const [fitBounds, setFitBounds] = useState<{ width: number; availableHeight: number } | null>(null)
+  const [supportsResizeObserver, setSupportsResizeObserver] = useState(true)
+
   const layout = useMemo(() => {
     const byStage = new Map<KnockoutStage, RoundModel>()
     for (const round of rounds) byStage.set(round.stage, round)
@@ -482,7 +543,7 @@ function DesktopVisualBracket({
     const thirdMatch = stageMatches('Third')[0] ?? null
 
     const cardWidth = 208
-    const cardHeight = 112
+    const cardHeight = BRACKET_NODE_CARD_HEIGHT
     const rowGap = 14
     const columnGap = 54
     const topPad = 46
@@ -681,63 +742,229 @@ function DesktopVisualBracket({
     }
   }, [bracketEditable, rounds])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (typeof window.ResizeObserver !== 'function') {
+      setSupportsResizeObserver(false)
+      return
+    }
+
+    const node = viewportRef.current
+    if (!node) return
+
+    setSupportsResizeObserver(true)
+
+    const updateBounds = () => {
+      const rect = node.getBoundingClientRect()
+      const viewportBottomPadding = 20
+      const availableHeight = Math.max(0, window.innerHeight - rect.top - viewportBottomPadding)
+      setFitBounds({
+        width: Math.max(0, rect.width),
+        availableHeight
+      })
+    }
+
+    updateBounds()
+
+    const observer = new window.ResizeObserver(() => {
+      updateBounds()
+    })
+    observer.observe(node)
+
+    window.addEventListener('resize', updateBounds)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateBounds)
+    }
+  }, [layout.height, layout.width])
+
   if (layout.nodes.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+      <div ref={viewportRef} className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
         No bracket fixtures are available in this snapshot.
       </div>
     )
   }
 
+  const fitScale = fitBounds
+    ? Math.min(1, fitBounds.width / layout.width, fitBounds.availableHeight / layout.height)
+    : 1
+  const shouldUseCompactFallback = !supportsResizeObserver || fitScale < DESKTOP_BRACKET_MIN_SCALE
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    if (shouldUseCompactFallback || layout.nodes.length === 0) return
+    const node = firstNodeRef.current
+    if (!node) return
+    const measuredHeight = node.offsetHeight
+    if (Math.abs(measuredHeight - layout.cardHeight) > 1) {
+      console.warn(
+        `[BracketPage] cardHeight mismatch: layout=${layout.cardHeight}px rendered=${measuredHeight}px`
+      )
+    }
+  }, [layout.cardHeight, layout.nodes.length, shouldUseCompactFallback])
+
+  if (shouldUseCompactFallback) {
+    return (
+      <div ref={viewportRef} className="space-y-2">
+        <div className="rounded-lg border border-border/70 bg-background/45 px-3 py-2 text-xs text-muted-foreground">
+          Compact bracket view enabled for readability on this viewport.
+        </div>
+        {rounds.map((round) => (
+          <div
+            key={`desktop-compact-round-${round.stage}`}
+            className="rounded-xl border border-border/70 bg-background/35 p-2.5"
+          >
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-foreground">
+                {STAGE_LABELS[round.stage]}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <StatusTagV2 tone={round.editable ? 'secondary' : 'locked'}>
+                  {round.editable ? 'Open' : 'Locked'}
+                </StatusTagV2>
+                <StatusTagV2 tone={round.complete ? 'success' : 'warning'}>
+                  {round.picked}/{round.total}
+                </StatusTagV2>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {round.matches.map((match) => {
+                const homeLabel = resolveTeamDisplayLabel(match.homeTeam)
+                const awayLabel = resolveTeamDisplayLabel(match.awayTeam)
+                return (
+                  <div
+                    key={`desktop-compact-match-${round.stage}-${match.match.id}`}
+                    className={`rounded-lg border border-border/70 p-2.5 ${resultSurfaceClass(match.result)}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
+                          <TeamIdentityInlineV2
+                            code={match.homeTeam.code}
+                            name={match.homeTeam.name}
+                            label={homeLabel}
+                          />
+                          <span className="shrink-0 text-muted-foreground">vs</span>
+                          <TeamIdentityInlineV2
+                            code={match.awayTeam.code}
+                            name={match.awayTeam.name}
+                            label={awayLabel}
+                          />
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">{formatKickoff(match.match.kickoffUtc)}</div>
+                      </div>
+                      {match.result !== 'pending' ? (
+                        <StatusTagV2 tone={resultTone(match.result)}>{resultLabel(match.result)}</StatusTagV2>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <Button
+                        size="sm"
+                        variant={match.pickedWinner === 'HOME' ? 'primary' : 'secondary'}
+                        disabled={!round.editable}
+                        aria-label={`Set ${homeLabel} as winner`}
+                        onClick={() => onPick(match, 'HOME')}
+                      >
+                        <TeamIdentityInlineV2
+                          code={match.homeTeam.code}
+                          name={match.homeTeam.name}
+                          label={homeLabel}
+                          className="max-w-full"
+                        />
+                        <span className="ml-1">advances</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={match.pickedWinner === 'AWAY' ? 'primary' : 'secondary'}
+                        disabled={!round.editable}
+                        aria-label={`Set ${awayLabel} as winner`}
+                        onClick={() => onPick(match, 'AWAY')}
+                      >
+                        <TeamIdentityInlineV2
+                          code={match.awayTeam.code}
+                          name={match.awayTeam.name}
+                          label={awayLabel}
+                          className="max-w-full"
+                        />
+                        <span className="ml-1">advances</span>
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const scaledWidth = layout.width * fitScale
+  const scaledHeight = layout.height * fitScale
+
   return (
-    <div className="overflow-x-auto pb-1">
+    <div ref={viewportRef} className="w-full overflow-hidden pb-1">
       <div
-        className="relative rounded-2xl border border-border/70 bg-[linear-gradient(135deg,rgba(var(--primary-rgb),0.08),transparent_55%)]"
-        style={{ width: layout.width, minWidth: layout.width, height: layout.height }}
+        className="relative mx-auto"
+        style={{ width: scaledWidth, height: scaledHeight }}
       >
-        <svg
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          viewBox={`0 0 ${layout.width} ${layout.height}`}
-          preserveAspectRatio="none"
+        <div
+          className="relative rounded-2xl border border-border/70 bg-[linear-gradient(135deg,rgba(var(--primary-rgb),0.08),transparent_55%)]"
+          style={{
+            width: layout.width,
+            height: layout.height,
+            transform: `scale(${fitScale})`,
+            transformOrigin: 'top left'
+          }}
         >
-          {layout.connectors.map((connector) => (
-            <path
-              key={connector.id}
-              d={connector.path}
-              fill="none"
-              stroke="rgba(var(--info-rgb), 0.38)"
-              strokeWidth="1.6"
-              strokeDasharray={connector.dashed ? '4 4' : undefined}
-              strokeLinecap="round"
-            />
+          <svg
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            viewBox={`0 0 ${layout.width} ${layout.height}`}
+            preserveAspectRatio="none"
+          >
+            {layout.connectors.map((connector) => (
+              <path
+                key={connector.id}
+                d={connector.path}
+                fill="none"
+                stroke="rgba(var(--info-rgb), 0.38)"
+                strokeWidth="1.6"
+                strokeDasharray={connector.dashed ? '4 4' : undefined}
+                strokeLinecap="round"
+              />
+            ))}
+          </svg>
+
+          {layout.labels.map((label) => (
+            <div
+              key={label.id}
+              className="pointer-events-none absolute -translate-x-1/2 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
+              style={{ left: label.x + layout.cardWidth / 2, top: 12 }}
+            >
+              {label.label}
+            </div>
           ))}
-        </svg>
 
-        {layout.labels.map((label) => (
-          <div
-            key={label.id}
-            className="pointer-events-none absolute -translate-x-1/2 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
-            style={{ left: label.x + layout.cardWidth / 2, top: 12 }}
-          >
-            {label.label}
-          </div>
-        ))}
-
-        {layout.nodes.map((node) => (
-          <div
-            key={node.id}
-            className="absolute"
-            style={{
-              left: node.x,
-              top: node.y,
-              width: layout.cardWidth,
-              height: layout.cardHeight
-            }}
-          >
-            <BracketMatchNode node={node} onPick={onPick} />
-          </div>
-        ))}
+          {layout.nodes.map((node, index) => (
+            <div
+              key={node.id}
+              ref={index === 0 ? firstNodeRef : null}
+              className="absolute"
+              style={{
+                left: node.x,
+                top: node.y,
+                width: layout.cardWidth,
+                height: layout.cardHeight
+              }}
+            >
+              <BracketMatchNode node={node} onPick={onPick} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -1111,13 +1338,13 @@ export default function BracketPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
-                            <TeamFlagLabelV2
+                            <TeamIdentityInlineV2
                               code={match.homeTeam.code}
                               name={match.homeTeam.name}
                               label={resolveTeamDisplayLabel(match.homeTeam)}
                             />
                             <span className="shrink-0 text-muted-foreground">vs</span>
-                            <TeamFlagLabelV2
+                            <TeamIdentityInlineV2
                               code={match.awayTeam.code}
                               name={match.awayTeam.name}
                               label={resolveTeamDisplayLabel(match.awayTeam)}
@@ -1125,7 +1352,9 @@ export default function BracketPage() {
                           </div>
                           <div className="text-[11px] text-muted-foreground">{formatKickoff(match.match.kickoffUtc)}</div>
                         </div>
-                        <Badge tone={resultTone(match.result)}>{resultLabel(match.result)}</Badge>
+                        {match.result !== 'pending' ? (
+                          <Badge tone={resultTone(match.result)}>{resultLabel(match.result)}</Badge>
+                        ) : null}
                       </div>
 
                       <div className="grid gap-2 sm:grid-cols-2">
@@ -1136,7 +1365,7 @@ export default function BracketPage() {
                           aria-label={`Set ${resolveTeamDisplayLabel(match.homeTeam)} as winner`}
                           onClick={() => void handlePick(match, 'HOME')}
                         >
-                          <TeamFlagLabelV2
+                          <TeamIdentityInlineV2
                             code={match.homeTeam.code}
                             name={match.homeTeam.name}
                             label={resolveTeamDisplayLabel(match.homeTeam)}
@@ -1151,7 +1380,7 @@ export default function BracketPage() {
                           aria-label={`Set ${resolveTeamDisplayLabel(match.awayTeam)} as winner`}
                           onClick={() => void handlePick(match, 'AWAY')}
                         >
-                          <TeamFlagLabelV2
+                          <TeamIdentityInlineV2
                             code={match.awayTeam.code}
                             name={match.awayTeam.name}
                             label={resolveTeamDisplayLabel(match.awayTeam)}
