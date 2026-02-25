@@ -95,8 +95,6 @@ type BracketConnector = {
   dashed?: boolean
 }
 
-const DESKTOP_BRACKET_MIN_SCALE = 0.72
-
 const BRACKET_NODE_METRICS = {
   paddingX: 8,
   paddingY: 8,
@@ -421,24 +419,26 @@ function BracketMatchNode({
   const homeLabel = resolveTeamDisplayLabel(match.homeTeam)
   const awayLabel = resolveTeamDisplayLabel(match.awayTeam)
   const cardShellClass = isActiveRound
-    ? 'border-border/56 bg-background/46'
-    : 'border-border/38 bg-background/30'
-  const metadataTextClass = isActiveRound ? 'text-muted-foreground' : 'text-muted-foreground/75'
+    ? 'border-border/52 bg-background/44 shadow-[var(--shadow1)]'
+    : 'border-border/18 bg-background/18 shadow-none'
+  const metadataTextClass = isActiveRound ? 'text-muted-foreground' : 'text-muted-foreground/55'
 
   function renderTeamRow(teamSide: MatchWinner, label: string) {
     const selected = match.pickedWinner === teamSide
     const team = teamSide === 'HOME' ? match.homeTeam : match.awayTeam
-    const selectedClass = 'border-[rgba(var(--primary-rgb),0.58)] bg-[rgba(var(--primary-rgb),0.13)] text-foreground'
+    const selectedClass = 'border-[rgba(var(--primary-rgb),0.62)] bg-[rgba(var(--primary-rgb),0.18)] text-foreground'
     const unselectedClass = isActiveRound
-      ? 'border-border/50 bg-background/36 text-muted-foreground'
-      : 'border-border/34 bg-background/26 text-muted-foreground/80'
+      ? 'border-transparent bg-background/34 text-muted-foreground'
+      : 'border-transparent bg-background/18 text-muted-foreground/72'
     const baseClass = selected
       ? selectedClass
       : unselectedClass
-    const dotClass = selected ? 'text-foreground' : isActiveRound ? 'text-muted-foreground' : 'text-muted-foreground/80'
-    const hoverClass = isActiveRound
-      ? 'hover:border-border/70 hover:bg-background/46 hover:text-foreground'
-      : 'hover:border-border/52 hover:bg-background/32 hover:text-foreground'
+    const dotClass = selected ? 'text-foreground' : isActiveRound ? 'text-muted-foreground' : 'text-muted-foreground/72'
+    const hoverClass = selected
+      ? 'hover:border-[rgba(var(--primary-rgb),0.68)] hover:bg-[rgba(var(--primary-rgb),0.2)] hover:text-foreground'
+      : isActiveRound
+        ? 'hover:border-border/32 hover:bg-background/44 hover:text-foreground'
+        : 'hover:border-border/20 hover:bg-background/24 hover:text-foreground/90'
 
     if (interactive) {
       return (
@@ -487,7 +487,7 @@ function BracketMatchNode({
 
   return (
     <article
-      className={`h-full overflow-hidden rounded-xl border shadow-[var(--shadow1)] backdrop-blur-sm ${cardShellClass} ${resultSurfaceClass(match.result)}`}
+      className={`h-full overflow-hidden rounded-xl border backdrop-blur-sm ${cardShellClass} ${resultSurfaceClass(match.result)}`}
       style={{
         padding: `${BRACKET_NODE_METRICS.paddingY}px ${BRACKET_NODE_METRICS.paddingX}px`
       }}
@@ -521,7 +521,7 @@ function BracketMatchNode({
         {match.result !== 'pending' ? (
           <StatusTagV2
             tone={resultTone(match.result)}
-            className={`h-5 shrink-0 px-2 text-[10px] ${isActiveRound ? '' : 'opacity-90'}`}
+            className={`h-5 shrink-0 px-2 text-[10px] ${isActiveRound ? '' : 'opacity-75'}`}
           >
             {resultLabel(match.result)}
           </StatusTagV2>
@@ -546,7 +546,7 @@ function DesktopVisualBracket({
 }) {
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const firstNodeRef = useRef<HTMLDivElement | null>(null)
-  const [fitBounds, setFitBounds] = useState<{ width: number; availableHeight: number } | null>(null)
+  const [fitBounds, setFitBounds] = useState<{ availableHeight: number } | null>(null)
   const [supportsResizeObserver, setSupportsResizeObserver] = useState(true)
 
   const layout = useMemo(() => {
@@ -781,7 +781,6 @@ function DesktopVisualBracket({
       const viewportBottomPadding = 20
       const availableHeight = Math.max(0, window.innerHeight - rect.top - viewportBottomPadding)
       setFitBounds({
-        width: Math.max(0, rect.width),
         availableHeight
       })
     }
@@ -808,10 +807,8 @@ function DesktopVisualBracket({
     )
   }
 
-  const fitScale = fitBounds
-    ? Math.min(1, fitBounds.width / layout.width, fitBounds.availableHeight / layout.height)
-    : 1
-  const shouldUseCompactFallback = !supportsResizeObserver || fitScale < DESKTOP_BRACKET_MIN_SCALE
+  const shouldUseCompactFallback = !supportsResizeObserver
+  const canvasMaxHeight = fitBounds ? Math.max(420, fitBounds.availableHeight) : undefined
 
   useEffect(() => {
     if (!import.meta.env.DEV) return
@@ -924,23 +921,23 @@ function DesktopVisualBracket({
     )
   }
 
-  const scaledWidth = layout.width * fitScale
-  const scaledHeight = layout.height * fitScale
   const isStageActive = (stage: KnockoutStage) => stage === activeStage
 
   return (
-    <div ref={viewportRef} className="w-full overflow-hidden pb-1">
+    <div
+      ref={viewportRef}
+      className="w-full overflow-x-auto overflow-y-auto pb-1"
+      style={{ maxHeight: canvasMaxHeight }}
+    >
       <div
         className="relative mx-auto"
-        style={{ width: scaledWidth, height: scaledHeight }}
+        style={{ width: layout.width, height: layout.height }}
       >
         <div
           className="relative rounded-2xl border border-border/70 bg-[linear-gradient(135deg,rgba(var(--primary-rgb),0.08),transparent_55%)]"
           style={{
             width: layout.width,
-            height: layout.height,
-            transform: `scale(${fitScale})`,
-            transformOrigin: 'top left'
+            height: layout.height
           }}
         >
           <svg
@@ -957,8 +954,8 @@ function DesktopVisualBracket({
                   key={connector.id}
                   d={connector.path}
                   fill="none"
-                  stroke={touchesActiveStage ? 'rgba(var(--info-rgb), 0.28)' : 'rgba(var(--info-rgb), 0.16)'}
-                  strokeWidth={touchesActiveStage ? 1.35 : 1.15}
+                  stroke={touchesActiveStage ? 'rgba(var(--info-rgb), 0.20)' : 'rgba(var(--info-rgb), 0.10)'}
+                  strokeWidth={touchesActiveStage ? 1.05 : 0.85}
                   strokeDasharray={connector.dashed ? '4 4' : undefined}
                   strokeLinecap="round"
                 />
@@ -970,7 +967,7 @@ function DesktopVisualBracket({
             <div
               key={label.id}
               className={`pointer-events-none absolute -translate-x-1/2 text-[11px] font-medium uppercase tracking-[0.14em] ${
-                isStageActive(label.stage) ? 'text-muted-foreground' : 'text-muted-foreground/70'
+                isStageActive(label.stage) ? 'text-muted-foreground' : 'text-muted-foreground/52'
               }`}
               style={{ left: label.x + layout.cardWidth / 2, top: 12 }}
             >
