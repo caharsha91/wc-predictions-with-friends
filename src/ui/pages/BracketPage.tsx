@@ -90,6 +90,8 @@ type BracketNode = {
 type BracketConnector = {
   id: string
   path: string
+  sourceStage: KnockoutStage
+  targetStage: KnockoutStage
   dashed?: boolean
 }
 
@@ -408,28 +410,41 @@ function BracketSummaryPanel({
 
 function BracketMatchNode({
   node,
+  isActiveRound,
   onPick
 }: {
   node: BracketNode
+  isActiveRound: boolean
   onPick: (match: ResolvedMatch, winner: MatchWinner) => void
 }) {
   const { match, interactive, side } = node
   const homeLabel = resolveTeamDisplayLabel(match.homeTeam)
   const awayLabel = resolveTeamDisplayLabel(match.awayTeam)
+  const cardShellClass = isActiveRound
+    ? 'border-border/56 bg-background/46'
+    : 'border-border/38 bg-background/30'
+  const metadataTextClass = isActiveRound ? 'text-muted-foreground' : 'text-muted-foreground/75'
 
   function renderTeamRow(teamSide: MatchWinner, label: string) {
     const selected = match.pickedWinner === teamSide
     const team = teamSide === 'HOME' ? match.homeTeam : match.awayTeam
+    const selectedClass = 'border-[rgba(var(--primary-rgb),0.58)] bg-[rgba(var(--primary-rgb),0.13)] text-foreground'
+    const unselectedClass = isActiveRound
+      ? 'border-border/50 bg-background/36 text-muted-foreground'
+      : 'border-border/34 bg-background/26 text-muted-foreground/80'
     const baseClass = selected
-      ? 'border-[rgba(var(--primary-rgb),0.55)] bg-[rgba(var(--primary-rgb),0.12)] text-foreground'
-      : 'border-border/60 bg-background/40 text-muted-foreground'
-    const dotClass = selected ? 'text-foreground' : 'text-muted-foreground'
+      ? selectedClass
+      : unselectedClass
+    const dotClass = selected ? 'text-foreground' : isActiveRound ? 'text-muted-foreground' : 'text-muted-foreground/80'
+    const hoverClass = isActiveRound
+      ? 'hover:border-border/70 hover:bg-background/46 hover:text-foreground'
+      : 'hover:border-border/52 hover:bg-background/32 hover:text-foreground'
 
     if (interactive) {
       return (
         <button
           type="button"
-          className={`flex w-full items-center justify-between gap-1 rounded-md border px-2 py-1 text-[11px] transition hover:border-[rgba(var(--primary-rgb),0.48)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${baseClass}`}
+          className={`flex w-full items-center justify-between gap-1 rounded-md border px-2 py-1 text-[11px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${baseClass} ${hoverClass}`}
           aria-label={`Set ${label} as winner`}
           aria-pressed={selected}
           style={{ height: BRACKET_NODE_METRICS.teamRowHeight }}
@@ -472,17 +487,17 @@ function BracketMatchNode({
 
   return (
     <article
-      className={`h-full overflow-hidden rounded-xl border border-border/70 bg-background/55 shadow-[var(--shadow1)] backdrop-blur-sm ${resultSurfaceClass(match.result)}`}
+      className={`h-full overflow-hidden rounded-xl border shadow-[var(--shadow1)] backdrop-blur-sm ${cardShellClass} ${resultSurfaceClass(match.result)}`}
       style={{
         padding: `${BRACKET_NODE_METRICS.paddingY}px ${BRACKET_NODE_METRICS.paddingX}px`
       }}
       data-stage={match.stage}
     >
       <div className="flex items-center justify-between gap-2 overflow-hidden" style={{ height: BRACKET_NODE_METRICS.headerHeight }}>
-        <span className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        <span className={`truncate text-[10px] font-medium uppercase tracking-[0.14em] ${metadataTextClass}`}>
           {STAGE_SHORT_LABELS[match.stage]}
         </span>
-        <span className="truncate text-[10px] text-muted-foreground">{formatKickoff(match.match.kickoffUtc)}</span>
+        <span className={`truncate text-[10px] ${metadataTextClass}`}>{formatKickoff(match.match.kickoffUtc)}</span>
       </div>
 
       <div
@@ -504,7 +519,10 @@ function BracketMatchNode({
         }}
       >
         {match.result !== 'pending' ? (
-          <StatusTagV2 tone={resultTone(match.result)} className="h-5 shrink-0 px-2 text-[10px]">
+          <StatusTagV2
+            tone={resultTone(match.result)}
+            className={`h-5 shrink-0 px-2 text-[10px] ${isActiveRound ? '' : 'opacity-90'}`}
+          >
             {resultLabel(match.result)}
           </StatusTagV2>
         ) : (
@@ -518,10 +536,12 @@ function BracketMatchNode({
 function DesktopVisualBracket({
   rounds,
   bracketEditable,
+  activeStage,
   onPick
 }: {
   rounds: RoundModel[]
   bracketEditable: boolean
+  activeStage: KnockoutStage
   onPick: (match: ResolvedMatch, winner: MatchWinner) => void
 }) {
   const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -680,6 +700,8 @@ function DesktopVisualBracket({
       connectors.push({
         id: `${source.id}->${target.id}-${direction}-${dashed ? 'd' : 's'}`,
         path: connectorPath(startX, startY, endX, endY, direction),
+        sourceStage: source.match.stage,
+        targetStage: target.match.stage,
         dashed
       })
     }
@@ -720,15 +742,15 @@ function DesktopVisualBracket({
     const maxBottom = nodes.reduce((max, node) => Math.max(max, node.y + cardHeight), 0)
     const minHeight = Math.max(560, maxBottom + bottomPad)
 
-    const labels = [
-      { id: 'lbl-r32-l', label: 'Round of 32', x: xR32Left },
-      { id: 'lbl-r16-l', label: 'Round of 16', x: xR16Left },
-      { id: 'lbl-qf-l', label: 'Quarterfinals', x: xQfLeft },
-      { id: 'lbl-sf', label: 'Semifinals', x: (xSfLeft + xSfRight) / 2 },
-      { id: 'lbl-final', label: 'Final', x: xFinal },
-      { id: 'lbl-r32-r', label: 'Round of 32', x: xR32Right },
-      { id: 'lbl-r16-r', label: 'Round of 16', x: xR16Right },
-      { id: 'lbl-qf-r', label: 'Quarterfinals', x: xQfRight }
+    const labels: Array<{ id: string; label: string; x: number; stage: KnockoutStage }> = [
+      { id: 'lbl-r32-l', label: 'Round of 32', x: xR32Left, stage: 'R32' },
+      { id: 'lbl-r16-l', label: 'Round of 16', x: xR16Left, stage: 'R16' },
+      { id: 'lbl-qf-l', label: 'Quarterfinals', x: xQfLeft, stage: 'QF' },
+      { id: 'lbl-sf', label: 'Semifinals', x: (xSfLeft + xSfRight) / 2, stage: 'SF' },
+      { id: 'lbl-final', label: 'Final', x: xFinal, stage: 'Final' },
+      { id: 'lbl-r32-r', label: 'Round of 32', x: xR32Right, stage: 'R32' },
+      { id: 'lbl-r16-r', label: 'Round of 16', x: xR16Right, stage: 'R16' },
+      { id: 'lbl-qf-r', label: 'Quarterfinals', x: xQfRight, stage: 'QF' }
     ]
 
     return {
@@ -904,6 +926,7 @@ function DesktopVisualBracket({
 
   const scaledWidth = layout.width * fitScale
   const scaledHeight = layout.height * fitScale
+  const isStageActive = (stage: KnockoutStage) => stage === activeStage
 
   return (
     <div ref={viewportRef} className="w-full overflow-hidden pb-1">
@@ -926,23 +949,29 @@ function DesktopVisualBracket({
             viewBox={`0 0 ${layout.width} ${layout.height}`}
             preserveAspectRatio="none"
           >
-            {layout.connectors.map((connector) => (
-              <path
-                key={connector.id}
-                d={connector.path}
-                fill="none"
-                stroke="rgba(var(--info-rgb), 0.38)"
-                strokeWidth="1.6"
-                strokeDasharray={connector.dashed ? '4 4' : undefined}
-                strokeLinecap="round"
-              />
-            ))}
+            {layout.connectors.map((connector) => {
+              const touchesActiveStage =
+                isStageActive(connector.sourceStage) || isStageActive(connector.targetStage)
+              return (
+                <path
+                  key={connector.id}
+                  d={connector.path}
+                  fill="none"
+                  stroke={touchesActiveStage ? 'rgba(var(--info-rgb), 0.28)' : 'rgba(var(--info-rgb), 0.16)'}
+                  strokeWidth={touchesActiveStage ? 1.35 : 1.15}
+                  strokeDasharray={connector.dashed ? '4 4' : undefined}
+                  strokeLinecap="round"
+                />
+              )
+            })}
           </svg>
 
           {layout.labels.map((label) => (
             <div
               key={label.id}
-              className="pointer-events-none absolute -translate-x-1/2 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
+              className={`pointer-events-none absolute -translate-x-1/2 text-[11px] font-medium uppercase tracking-[0.14em] ${
+                isStageActive(label.stage) ? 'text-muted-foreground' : 'text-muted-foreground/70'
+              }`}
               style={{ left: label.x + layout.cardWidth / 2, top: 12 }}
             >
               {label.label}
@@ -961,7 +990,11 @@ function DesktopVisualBracket({
                 height: layout.cardHeight
               }}
             >
-              <BracketMatchNode node={node} onPick={onPick} />
+              <BracketMatchNode
+                node={node}
+                isActiveRound={isStageActive(node.match.stage)}
+                onPick={onPick}
+              />
             </div>
           ))}
         </div>
@@ -1273,6 +1306,7 @@ export default function BracketPage() {
           <DesktopVisualBracket
             rounds={loadedRounds}
             bracketEditable={bracketEditable}
+            activeStage={activeRound.stage}
             onPick={(match, winner) => {
               void handlePick(match, winner)
             }}

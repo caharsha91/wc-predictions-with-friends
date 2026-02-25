@@ -1,5 +1,18 @@
 const PLACEHOLDER_CODE_TOKENS = new Set(['', 'TBD', 'TBC', '?'])
 
+function resolvePublicAssetPath(assetPath: string): string {
+  const normalizedAssetPath = String(assetPath ?? '').trim()
+  if (!normalizedAssetPath) return normalizedAssetPath
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(normalizedAssetPath) || normalizedAssetPath.startsWith('data:')) {
+    return normalizedAssetPath
+  }
+
+  const base = import.meta.env.BASE_URL || '/'
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`
+  const strippedAssetPath = normalizedAssetPath.replace(/^\/+/, '')
+  return `${normalizedBase}${strippedAssetPath}`
+}
+
 export const CANONICAL_TEAM_CODES = [
   'ALG',
   'ARG',
@@ -92,7 +105,7 @@ const TEAM_NAME_BY_CODE = {
   UZB: 'Uzbekistan'
 } as const satisfies Record<CanonicalTeamCode, string>
 
-export const UNKNOWN_FLAG_ASSET_PATH = '/flags/unknown.svg'
+export const UNKNOWN_FLAG_ASSET_PATH = resolvePublicAssetPath('/flags/unknown.svg')
 
 export const TEAM_FLAG_ASSET_BY_CODE = {
   ALG: '/flags/lib/dz.svg',
@@ -202,7 +215,7 @@ export function resolveTeamFlagMeta({ code, name, label }: ResolveTeamFlagMetaIn
   if (isCanonicalTeamCode(normalizedCode)) {
     return {
       kind: 'canonical',
-      assetPath: TEAM_FLAG_ASSET_BY_CODE[normalizedCode],
+      assetPath: resolvePublicAssetPath(TEAM_FLAG_ASSET_BY_CODE[normalizedCode]),
       textPrimary: normalizedCode,
       textSecondary:
         normalizedName && normalizeCode(normalizedName) !== normalizedCode ? normalizedName : null
