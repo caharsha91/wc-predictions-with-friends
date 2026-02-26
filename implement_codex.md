@@ -705,7 +705,7 @@ Goal:
 
 - Add contextual per-screen exports while keeping Admin Console Exports working.
 - Remove JSON and PNG export types across all export surfaces (user and admin).
-- CSV is the only supported export format across all export surfaces.
+- XLSX is the only supported export format across all export surfaces.
 - Do not add Exports tile to Landing.
 
 Where user exports appear:
@@ -752,13 +752,13 @@ Export UI must show:
 
 Export types for v2 (implementation order):
 
-1. Download CSV (page-relevant scope, flattened)
+1. Download XLSX (page-relevant scope, flattened)
 
 Global rule:
 
 - JSON export and PNG export are not available anywhere (user or admin).
 
-Per-surface CSV scope:
+Per-surface XLSX scope:
 
 - Group Stage: user group rankings + best-8 third selections
 - Match Picks: user picks + KO extras if present
@@ -771,7 +771,7 @@ Required export metadata:
 - `snapshotAsOf`
 - `viewerUserId`
 - `mode` (`demo` or `prod`)
-- CSV format includes these as metadata header rows at the top of the file (not repeated per data row).
+- XLSX format includes these as metadata header rows at the top of the file (not repeated per data row).
 
 Data safety rule:
 
@@ -779,15 +779,15 @@ Data safety rule:
 
 Migration phases:
 
-- Phase A: ship contextual exports on the four user surfaces and enforce CSV-only export types across user and admin.
+- Phase A: ship contextual exports on the four user surfaces and enforce XLSX-only export types across user and admin.
 - Phase B: optional cleanup to reuse v2 export components in admin tooling.
 
 Acceptance:
 
 - Export button never appears on mobile.
 - Export visibility follows `tournamentPhase`/lock state.
-- CSV exports work in demo and prod.
-- Only CSV export options appear across user and admin surfaces.
+- XLSX exports work in demo and prod.
+- Only XLSX export options appear across user and admin surfaces.
 - JSON and PNG export options do not appear anywhere.
 - Required metadata included.
 - No rival metadata included.
@@ -925,16 +925,15 @@ Chunk 9 - Knockout Bracket v2:
 
 Chunk 10 - Final polish:
 
+- Update styling for the admin pages to match the other pages (use landing as reference)
 - spacing, hierarchy, micro-interactions
-- Cross-surface consistency pass for layout, typography, interface behavior, and overall look/feel across Landing, Group Stage, Match Picks, Knockout Bracket, and Leaderboard (desktop and mobile).
-- Rival Mode behavior consistency and secrecy validation
-- Dedicated Landing Rivals UX review/update (loading/empty/error/saving states, cap-3 messaging, selection/removal affordances, mobile ergonomics)
-- Enforce CSV-only exports across all surfaces
+- address excessive borders
+- Cross-surface consistency pass for layout, typography, interface behavior, and overall look/feel across Landing, Group Stage, Match Picks, Knockout Bracket, Admin pages and Leaderboard (desktop and mobile).
+- Enforce XLSX-only exports across all surfaces
 - Remove JSON/PNG export options everywhere
-- Confirm at least one Rival Mode overlay per supported page
-- Fill remaining missing UX states
-- Add a documented staged plan for members identity migration (email-keyed member doc IDs -> UID-keyed member doc IDs) as a post-v2 follow-up.
-- Acceptance: cross-surface layout/typography/interaction/look-and-feel consistency is complete; visual polish is consistent; exports are CSV-only; rival behavior remains post-lock/read-only; required Rival Mode overlays and missing UX states are complete
+- Ensure Light mode is consistent across - ask for screenshots if needed.
+- Acceptance: cross-surface layout/typography/interaction/look-and-feel consistency is complete; visual polish is consistent; exports are XLSX-only; rival behavior remains post-lock/read-only; required Rival Mode overlays and missing UX states are complete
+
 
 Global Rival Mode acceptance checklist:
 

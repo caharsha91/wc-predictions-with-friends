@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { collection, getDocs } from 'firebase/firestore'
-import writeXlsxFile, { type Cell, type Columns, type SheetData } from 'write-excel-file'
 
 import { combineBracketPredictions } from '../../lib/bracket'
 import {
@@ -30,11 +29,9 @@ import type { ScoringConfig } from '../../types/scoring'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
 import DetailsDisclosure from '../components/ui/DetailsDisclosure'
 import { SelectField } from '../components/ui/Field'
 import PanelState from '../components/ui/PanelState'
-import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Progress from '../components/ui/Progress'
 import {
   Sheet,
@@ -46,8 +43,14 @@ import {
 } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
+import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import SectionCardV2 from '../components/v2/SectionCardV2'
+import SnapshotStamp from '../components/v2/SnapshotStamp'
+import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
+import { downloadWorkbook } from '../lib/exportWorkbook'
 
 type ExportIntent =
   | 'USER_PICKS'
@@ -326,35 +329,6 @@ function dedupeIds(ids: Array<string | null | undefined>): string[] {
     set.add(normalized)
   }
   return [...set]
-}
-
-function toCell(value: string | number | boolean | Date | null | undefined): Cell {
-  if (value === null || value === undefined || value === '') return null
-  if (value instanceof Date) return { value }
-  if (typeof value === 'number') return { value }
-  if (typeof value === 'boolean') return { value }
-  return { value: String(value) }
-}
-
-function toSheetData(headers: string[], rows: SheetSpec['rows']): SheetData {
-  const headerRow = headers.map((header) => ({ value: header, fontWeight: 'bold' as const }))
-  const dataRows = rows.map((row) => row.map((cell) => toCell(cell)))
-  return [headerRow, ...dataRows]
-}
-
-async function downloadWorkbook(fileName: string, sheets: SheetSpec[]) {
-  const sheetNames = sheets.map((sheet) => sheet.name)
-  const data = sheets.map((sheet) => toSheetData(sheet.headers, sheet.rows))
-  const columns: Columns[] = sheets.map((sheet) => {
-    const widths = sheet.widths ?? sheet.headers.map(() => 20)
-    return widths.map((width) => ({ width }))
-  })
-
-  await writeXlsxFile(data, {
-    fileName,
-    sheets: sheetNames,
-    columns
-  })
 }
 
 function getWorkbookRowCount(sheets: SheetSpec[]): number {
@@ -1280,6 +1254,8 @@ const PRESET_FIELD_PREVIEW: Record<
 export default function AdminExportsPage() {
   // QA-SMOKE: route=/admin?tab=exports and /demo/admin?tab=exports ; checklist-id=smoke-admin-exports
   const dataMode = useRouteDataMode()
+  const phaseState = useTournamentPhaseState()
+  const isDesktopViewport = useMediaQuery('(min-width: 768px)')
   const { showToast, updateToast } = useToast()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [selectedPresetId, setSelectedPresetId] = useState<ExportPresetId>('USER_PICKS_WORKBOOK')
@@ -1289,6 +1265,12 @@ export default function AdminExportsPage() {
   const [exportProgress, setExportProgress] = useState(0)
   const [fieldPreviewOpen, setFieldPreviewOpen] = useState(false)
   const [exportHistory, setExportHistory] = useState<ExportHistoryEntry[]>([])
+  const exportGateMessage = !isDesktopViewport
+    ? 'Exports are available on desktop only.'
+    : !phaseState.lockFlags.exportsVisible
+      ? 'Exports unlock after tournament lock windows are reached.'
+      : null
+  const canExport = exportGateMessage === null
 
   useEffect(() => {
     let canceled = false
@@ -1545,6 +1527,14 @@ export default function AdminExportsPage() {
     options?: { intentOverride?: ExportIntent; overrideLabel?: string }
   ) {
     if (state.status !== 'ready') return
+    if (!canExport) {
+      showToast({
+        tone: 'warning',
+        title: 'Exports unavailable',
+        message: exportGateMessage ?? 'Exports are currently unavailable.'
+      })
+      return
+    }
 
     const startMs = performance.now()
     const fallbackPreset =
@@ -1657,23 +1647,26 @@ export default function AdminExportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeroPanel
+    <div className="space-y-4">
+      <PageHeaderV2
+        variant="hero"
+        className="landing-v2-hero"
         kicker="Admin"
         title="Exports"
         subtitle="Outcome-first export presets with workbook previews and trust-signal feedback."
-        meta={
-          <div className="text-right text-xs text-muted-foreground" data-last-updated="true">
-            <div className="uppercase tracking-[0.2em]">Last updated (offline)</div>
-            <div className="text-sm font-semibold text-foreground">
-              {formatDateTime(state.bundle.offlineLastUpdated)}
-            </div>
-          </div>
+        metadata={
+          <>
+            <SnapshotStamp timestamp={state.bundle.offlineLastUpdated} prefix="Offline " />
+            <span className="h-3 w-px bg-border" aria-hidden="true" />
+            <span>{canExport ? 'Export window active.' : exportGateMessage}</span>
+          </>
         }
-      >
+      />
+
+      <SectionCardV2 tone="panel" density="none" className="p-4 md:p-5">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {EXPORT_PRESETS.map((preset) => (
-            <Card key={preset.id} className="rounded-2xl border-border/60 p-4">
+            <SectionCardV2 key={preset.id} tone="tile" density="none" className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-1">
                   <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preset</div>
@@ -1690,12 +1683,12 @@ export default function AdminExportsPage() {
               >
                 Select preset
               </Button>
-            </Card>
+            </SectionCardV2>
           ))}
         </div>
-      </PageHeroPanel>
+      </SectionCardV2>
 
-      <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+      <SectionCardV2 tone="panel" density="none" className="p-4 sm:p-5">
         <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-4">
             {(selectedPreset.requires === 'user' || selectedPreset.requires === 'both') ? (
@@ -1738,37 +1731,45 @@ export default function AdminExportsPage() {
               />
             )}
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                disabled={exportStatus === 'exporting'}
-                onClick={() => void runExport(selectedPresetId)}
-              >
-                {selectedPreset.primaryActionLabel}
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setFieldPreviewOpen(true)}>
-                Preview fields
-              </Button>
-              <Badge tone={exportStatus === 'exporting' ? 'warning' : 'secondary'}>
-                {exportStatus === 'exporting' ? 'Preparing export' : 'Ready'}
-              </Badge>
-            </div>
-            {exportStatus === 'exporting' || exportProgress > 0 ? (
-              <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">
-                  {exportStatus === 'exporting' ? 'Batch export in progress...' : 'Batch export complete'}
+            {!canExport ? (
+              <Alert tone="warning" title="Exports unavailable">
+                {exportGateMessage}
+              </Alert>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    disabled={exportStatus === 'exporting'}
+                    onClick={() => void runExport(selectedPresetId)}
+                  >
+                    {selectedPreset.primaryActionLabel}
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setFieldPreviewOpen(true)}>
+                    Preview fields
+                  </Button>
+                  <Badge tone={exportStatus === 'exporting' ? 'warning' : 'secondary'}>
+                    {exportStatus === 'exporting' ? 'Preparing export' : 'Ready'}
+                  </Badge>
                 </div>
-                <Progress
-                  value={exportProgress}
-                  intent={exportStatus === 'exporting' ? 'momentum' : 'success'}
-                  size="sm"
-                  aria-label="Export batch progress"
-                />
-              </div>
-            ) : null}
+                {exportStatus === 'exporting' || exportProgress > 0 ? (
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">
+                      {exportStatus === 'exporting' ? 'Batch export in progress...' : 'Batch export complete'}
+                    </div>
+                    <Progress
+                      value={exportProgress}
+                      intent={exportStatus === 'exporting' ? 'momentum' : 'success'}
+                      size="sm"
+                      aria-label="Export batch progress"
+                    />
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
 
-          <div className="rounded-2xl border border-border/60 bg-card p-4">
+          <SectionCardV2 tone="subtle" density="none" className="p-4">
             <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preset summary</div>
             <div className="mt-2 text-base font-semibold text-foreground">{selectedPreset.label}</div>
             <div className="mt-1 text-sm text-muted-foreground">{selectedPreset.description}</div>
@@ -1776,7 +1777,7 @@ export default function AdminExportsPage() {
 
             <div className="mt-3 space-y-2">
               {selectedPresetFieldPreview.map((sheet) => (
-                <div key={`${selectedPresetId}-${sheet.sheet}`} className="rounded-xl border border-border/60 bg-bg2/40 p-2">
+                <div key={`${selectedPresetId}-${sheet.sheet}`} className="rounded-xl border border-border/50 bg-bg2/35 p-2">
                   <div className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground">
                     {sheet.sheet}
                   </div>
@@ -1787,53 +1788,55 @@ export default function AdminExportsPage() {
                 </div>
               ))}
             </div>
+          </SectionCardV2>
+        </div>
+      </SectionCardV2>
+
+      {canExport ? (
+        <DetailsDisclosure title="Advanced exports" meta="Optional">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {(selectedPreset.requires === 'user' || selectedPreset.requires === 'both') ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={exportStatus === 'exporting'}
+                onClick={() =>
+                  void runExport('USER_PICKS_WORKBOOK', {
+                    intentOverride: 'USER_RESULTS',
+                    overrideLabel: 'User results workbook'
+                  })
+                }
+              >
+                Download user results workbook
+              </Button>
+            ) : null}
+
+            {(selectedPreset.requires === 'matchday' || selectedPreset.requires === 'both') && selectedPresetId !== 'MATCHDAY_LEADERBOARD_SNAPSHOT' ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={exportStatus === 'exporting'}
+                onClick={() => void runExport('MATCHDAY_LEADERBOARD_SNAPSHOT')}
+              >
+                Download matchday leaderboard snapshot
+              </Button>
+            ) : null}
+
+            {(selectedPreset.requires === 'matchday' || selectedPreset.requires === 'both') && selectedPresetId === 'MATCHDAY_LEADERBOARD_SNAPSHOT' ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={exportStatus === 'exporting'}
+                onClick={() => void runExport('MATCHDAY_PICKS_WORKBOOK')}
+              >
+                Download matchday picks workbook
+              </Button>
+            ) : null}
           </div>
-        </div>
-      </Card>
+        </DetailsDisclosure>
+      ) : null}
 
-      <DetailsDisclosure title="Advanced exports" meta="Optional">
-        <div className="grid gap-3 sm:grid-cols-2">
-          {(selectedPreset.requires === 'user' || selectedPreset.requires === 'both') ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={exportStatus === 'exporting'}
-              onClick={() =>
-                void runExport('USER_PICKS_WORKBOOK', {
-                  intentOverride: 'USER_RESULTS',
-                  overrideLabel: 'User results workbook'
-                })
-              }
-            >
-              Download user results workbook
-            </Button>
-          ) : null}
-
-          {(selectedPreset.requires === 'matchday' || selectedPreset.requires === 'both') && selectedPresetId !== 'MATCHDAY_LEADERBOARD_SNAPSHOT' ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={exportStatus === 'exporting'}
-              onClick={() => void runExport('MATCHDAY_LEADERBOARD_SNAPSHOT')}
-            >
-              Download matchday leaderboard snapshot
-            </Button>
-          ) : null}
-
-          {(selectedPreset.requires === 'matchday' || selectedPreset.requires === 'both') && selectedPresetId === 'MATCHDAY_LEADERBOARD_SNAPSHOT' ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={exportStatus === 'exporting'}
-              onClick={() => void runExport('MATCHDAY_PICKS_WORKBOOK')}
-            >
-              Download matchday picks workbook
-            </Button>
-          ) : null}
-        </div>
-      </DetailsDisclosure>
-
-      <Card className="rounded-2xl border-border/60 p-4 sm:p-5">
+      <SectionCardV2 tone="panel" density="none" className="p-4 sm:p-5">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div>
             <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Export history</div>
@@ -1890,7 +1893,7 @@ export default function AdminExportsPage() {
             </tbody>
           </Table>
         )}
-      </Card>
+      </SectionCardV2>
 
       <Sheet open={fieldPreviewOpen} onOpenChange={setFieldPreviewOpen}>
         <SheetContent side="right" className="w-[96vw] max-w-3xl">
@@ -1926,13 +1929,13 @@ export default function AdminExportsPage() {
           </div>
           <SheetFooter>
             <div className="flex w-full justify-end">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setFieldPreviewOpen(false)}
-                >
-                  Close
-                </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setFieldPreviewOpen(false)}
+              >
+                Close
+              </Button>
             </div>
           </SheetFooter>
         </SheetContent>

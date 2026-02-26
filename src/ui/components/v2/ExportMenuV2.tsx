@@ -5,7 +5,7 @@ type ExportMenuV2Props = {
   scopeLabel: string
   snapshotLabel: string
   lockMessage: string
-  onDownloadCsv: () => void
+  onDownloadXlsx: () => void
   disabled?: boolean
 }
 
@@ -13,7 +13,7 @@ export default function ExportMenuV2({
   scopeLabel,
   snapshotLabel,
   lockMessage,
-  onDownloadCsv,
+  onDownloadXlsx,
   disabled = false
 }: ExportMenuV2Props) {
   return (
@@ -33,12 +33,12 @@ export default function ExportMenuV2({
         </div>
         <DropdownMenuItem
           className="mt-1"
-          onSelect={(event) => {
-            event.preventDefault()
-            onDownloadCsv()
-          }}
-        >
-          Download CSV
+            onSelect={(event) => {
+              event.preventDefault()
+              onDownloadXlsx()
+            }}
+          >
+          Download XLSX
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

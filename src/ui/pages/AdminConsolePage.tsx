@@ -1,8 +1,10 @@
 import { useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { Card } from '../components/ui/Card'
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/Tabs'
+import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import PageShellV2 from '../components/v2/PageShellV2'
+import SectionCardV2 from '../components/v2/SectionCardV2'
 import AdminExportsPage from './AdminExportsPage'
 import AdminUsersPage from './AdminUsersPage'
 import DemoControlsPage from './DemoControlsPage'
@@ -54,8 +56,16 @@ export default function AdminConsolePage() {
   }, [activeTab, location.hash, location.pathname, location.search, navigate])
 
   return (
-    <div className="space-y-4">
-      <Card className="rounded-2xl border-border/60 p-3 sm:p-4">
+    <PageShellV2 className="landing-v2-canvas p-4">
+      <PageHeaderV2
+        variant="hero"
+        className="landing-v2-hero"
+        kicker="Admin"
+        title="Admin Console"
+        subtitle="Manage players, exports, and demo controls with the same v2 workspace system."
+      />
+
+      <SectionCardV2 tone="panel" density="none" className="p-3 sm:p-4">
         <Tabs
           value={activeTab}
           onValueChange={(nextValue) => {
@@ -72,7 +82,7 @@ export default function AdminConsolePage() {
             )
           }}
         >
-          <TabsList className="h-auto w-full flex-wrap justify-start rounded-2xl bg-bg2 p-1">
+          <TabsList className="h-auto w-full flex-wrap justify-start rounded-2xl bg-bg2/70 p-1">
             <TabsTrigger value="players" aria-label="Open players admin tab">
               Players
             </TabsTrigger>
@@ -84,11 +94,11 @@ export default function AdminConsolePage() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-      </Card>
+      </SectionCardV2>
 
       {activeTab === 'players' ? <AdminUsersPage /> : null}
       {activeTab === 'exports' ? <AdminExportsPage /> : null}
       {activeTab === 'demo' ? <DemoControlsPage /> : null}
-    </div>
+    </PageShellV2>
   )
 }

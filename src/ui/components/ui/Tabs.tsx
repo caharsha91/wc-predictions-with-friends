@@ -12,7 +12,7 @@ export function TabsList({
   return (
     <TabsPrimitive.List
       className={cn(
-        'inline-flex h-10 items-center gap-2 rounded-full border border-border bg-bg2 p-1 text-fg1',
+        'inline-flex h-10 items-center gap-2 rounded-full border border-border/70 bg-bg2/70 p-1 text-fg1',
         className
       )}
       {...props}
@@ -27,7 +27,7 @@ export function TabsTrigger({
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'egg-pop-target inline-flex h-8 items-center justify-center rounded-full px-4 text-xs font-semibold uppercase tracking-[0.16em] transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-bg2 data-[state=active]:border data-[state=active]:border-border1 data-[state=active]:bg-[var(--accent-soft)] data-[state=active]:text-foreground',
+        'egg-pop-target inline-flex h-8 items-center justify-center rounded-full border border-transparent px-4 text-xs font-semibold uppercase tracking-[0.16em] transition hover:border-border/70 hover:bg-background/45 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-bg2 data-[state=active]:border data-[state=active]:border-border/70 data-[state=active]:bg-background/70 data-[state=active]:text-foreground',
         className
       )}
       {...props}

@@ -8,9 +8,10 @@ import ConfirmationModal from '../components/ConfirmationModal'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
-import PageHeroPanel from '../components/ui/PageHeroPanel'
+import { SelectField } from '../components/ui/Field'
 import Progress from '../components/ui/Progress'
+import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import SectionCardV2 from '../components/v2/SectionCardV2'
 import {
   DEMO_SCENARIO_OPTIONS,
   type DemoScenarioId,
@@ -286,7 +287,9 @@ export default function DemoControlsPage() {
   if (state.status === 'loading') {
     return (
       <div className="space-y-4">
-        <Card className="rounded-2xl border-border/60 p-4">Loading demo controls…</Card>
+        <SectionCardV2 tone="panel" density="none" className="p-4">
+          Loading demo controls…
+        </SectionCardV2>
       </div>
     )
   }
@@ -303,33 +306,34 @@ export default function DemoControlsPage() {
   const currentViewer = readDemoViewerId()
 
   return (
-    <div className="space-y-6">
-      <PageHeroPanel
+    <div className="space-y-4">
+      <PageHeaderV2
+        variant="section"
         kicker="Demo admin"
         title="Demo Controls"
         subtitle="Control scenario timing, selected demo user, and demo snapshot reload behavior."
-      >
-        <div className="flex flex-wrap gap-2">
-          <Badge tone="info">Current scenario: {currentScenario}</Badge>
-          <Badge tone="secondary">Current viewer: {currentViewer ?? 'none'}</Badge>
-        </div>
-      </PageHeroPanel>
+        metadata={
+          <>
+            <Badge tone="info">Current scenario: {currentScenario}</Badge>
+            <Badge tone="secondary">Current viewer: {currentViewer ?? 'none'}</Badge>
+          </>
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="rounded-2xl border-border/60 p-4">
+        <SectionCardV2 tone="panel" density="none" className="p-4">
           <div className="space-y-3">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Scenario</div>
-            <select
+            <SelectField
+              label="Scenario"
               value={selectedScenario}
               onChange={(event) => setSelectedScenario(event.target.value as DemoScenarioId)}
-              className="w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground"
             >
               {DEMO_SCENARIO_OPTIONS.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.label}
                 </option>
               ))}
-            </select>
+            </SelectField>
             <div className="text-xs text-muted-foreground">Local time: {toLabel(scenarioNow)}</div>
             <div className="text-xs text-muted-foreground">Relative: {toRelativeLabel(scenarioNow)}</div>
             <div className="flex flex-wrap gap-2">
@@ -341,22 +345,21 @@ export default function DemoControlsPage() {
               </Button>
             </div>
           </div>
-        </Card>
+        </SectionCardV2>
 
-        <Card className="rounded-2xl border-border/60 p-4">
+        <SectionCardV2 tone="panel" density="none" className="p-4">
           <div className="space-y-3">
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Viewer</div>
-            <select
+            <SelectField
+              label="Viewer"
               value={selectedViewerId}
               onChange={(event) => setSelectedViewerId(event.target.value)}
-              className="w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground"
             >
               {state.members.map((member) => (
                 <option key={member.id} value={member.id}>
                   {member.name} ({member.id})
                 </option>
               ))}
-            </select>
+            </SelectField>
             <div className="flex flex-wrap gap-2">
               <Button onClick={applyViewer} disabled={!selectedViewerId}>
                 Apply Viewer
@@ -366,10 +369,10 @@ export default function DemoControlsPage() {
               </Button>
             </div>
           </div>
-        </Card>
+        </SectionCardV2>
       </div>
 
-      <Card className="rounded-2xl border-border/60 p-4">
+      <SectionCardV2 tone="panel" density="none" className="p-4">
         <div className="space-y-3">
           <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Session + Data</div>
           <div className="text-sm text-muted-foreground">
@@ -402,7 +405,7 @@ export default function DemoControlsPage() {
             </div>
           ) : null}
         </div>
-      </Card>
+      </SectionCardV2>
 
       <ConfirmationModal
         isOpen={confirmationConfig !== null}

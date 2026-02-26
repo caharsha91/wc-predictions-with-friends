@@ -7,12 +7,12 @@ import type { Member } from '../../types/members'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
 import { InputField } from '../components/ui/Field'
-import PageHeroPanel from '../components/ui/PageHeroPanel'
 import Progress from '../components/ui/Progress'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import Table from '../components/ui/Table'
+import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import SectionCardV2 from '../components/v2/SectionCardV2'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 
@@ -227,19 +227,21 @@ export default function AdminUsersPage() {
   const memberCount = entries.length - adminCount
 
   return (
-    <div className="space-y-6">
-      <PageHeroPanel
+    <div className="space-y-4">
+      <PageHeaderV2
+        variant="section"
         kicker="Admin"
         title="Players"
         subtitle="Manage member allowlist and admin access."
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          {canManageMembers ? <Badge tone="success">Writable</Badge> : <Badge tone="warning">Read-only</Badge>}
-          <Badge tone="secondary">Total {entries.length}</Badge>
-          <Badge tone="secondary">Admins {adminCount}</Badge>
-          <Badge tone="secondary">Members {memberCount}</Badge>
-        </div>
-      </PageHeroPanel>
+        metadata={
+          <>
+            {canManageMembers ? <Badge tone="success">Writable</Badge> : <Badge tone="warning">Read-only</Badge>}
+            <Badge tone="secondary">Total {entries.length}</Badge>
+            <Badge tone="secondary">Admins {adminCount}</Badge>
+            <Badge tone="secondary">Members {memberCount}</Badge>
+          </>
+        }
+      />
 
       {!hasFirebase ? (
         <Alert tone="warning" title="Firebase not configured">
@@ -252,7 +254,7 @@ export default function AdminUsersPage() {
         </Alert>
       ) : null}
 
-      <Card className="rounded-2xl border-border/60 p-4">
+      <SectionCardV2 tone="panel" density="none" className="p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Roster</div>
@@ -299,7 +301,7 @@ export default function AdminUsersPage() {
             </tbody>
           </Table>
         ) : null}
-      </Card>
+      </SectionCardV2>
 
       <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
         <SheetContent side="right" className="w-[96vw] max-w-lg">

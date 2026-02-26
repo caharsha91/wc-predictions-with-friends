@@ -59,6 +59,7 @@ import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
 import { cn } from '../lib/utils'
+import { downloadWorkbook } from '../lib/exportWorkbook'
 import {
   GROUP_STAGE_GROUP_CODES,
   stripLegacyGroupStageParams
@@ -187,28 +188,6 @@ function groupJumpStatusClass(status: GroupJumpStatus): string {
   if (status === 'locked') return 'border-[rgba(var(--warn-rgb),0.46)] text-foreground'
   if (status === 'complete') return 'border-[rgba(var(--primary-rgb),0.5)] text-foreground'
   return 'border-border text-muted-foreground'
-}
-
-function csvEscape(value: string): string {
-  if (!/[",\n]/.test(value)) return value
-  return `"${value.replace(/"/g, '""')}"`
-}
-
-function rowsToCsv(rows: string[][]): string {
-  return rows.map((row) => row.map((value) => csvEscape(value)).join(',')).join('\n')
-}
-
-function downloadCsvFile(fileName: string, content: string) {
-  if (typeof window === 'undefined') return
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
-  const url = window.URL.createObjectURL(blob)
-  const anchor = window.document.createElement('a')
-  anchor.href = url
-  anchor.download = fileName
-  window.document.body.append(anchor)
-  anchor.click()
-  anchor.remove()
-  window.URL.revokeObjectURL(url)
 }
 
 export default function GroupStagePage() {
@@ -905,7 +884,7 @@ export default function GroupStagePage() {
     }
   }, [groupStage, showToast])
 
-  const handleDownloadGroupStageCsv = useCallback(() => {
+  const handleDownloadGroupStageXlsx = useCallback(() => {
     const exportedAt = new Date().toISOString()
     const snapshotAsOf = snapshotReady?.snapshotTimestamp ?? ''
     const rows: string[][] = [
@@ -941,9 +920,17 @@ export default function GroupStagePage() {
 
     const safeViewerId = viewerId.replace(/[^a-z0-9_-]/gi, '-').toLowerCase()
     const stamp = exportedAt.replace(/[:.]/g, '-')
-    const fileName = `group-stage-${safeViewerId || 'viewer'}-${stamp}.csv`
-    downloadCsvFile(fileName, rowsToCsv(rows))
-  }, [bestThirds, groupStage.data.groups, groupTeams, mode, snapshotReady?.snapshotTimestamp, viewerId])
+    const fileName = `group-stage-${safeViewerId || 'viewer'}-${stamp}.xlsx`
+    void downloadWorkbook(fileName, [
+      {
+        name: 'GroupStage',
+        rows,
+        headerRowIndices: [5, 19]
+      }
+    ]).catch(() => {
+      showToast({ tone: 'danger', title: 'Export failed', message: 'Unable to prepare group stage export.' })
+    })
+  }, [bestThirds, groupStage.data.groups, groupTeams, mode, showToast, snapshotReady?.snapshotTimestamp, viewerId])
 
   if (
     picksState.state.status === 'loading' ||
@@ -1141,8 +1128,8 @@ export default function GroupStagePage() {
               <ExportMenuV2
                 scopeLabel="Group rankings + best-third selections (you only)"
                 snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
-                lockMessage="Post-lock exports only. CSV format."
-                onDownloadCsv={handleDownloadGroupStageCsv}
+                lockMessage="Post-lock exports only. XLSX format."
+                onDownloadXlsx={handleDownloadGroupStageXlsx}
               />
             ) : null}
           </div>

@@ -31,6 +31,7 @@ import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
+import { downloadWorkbook } from '../lib/exportWorkbook'
 
 const STAGE_LABELS: Record<KnockoutStage, string> = {
   R32: 'Round of 32',
@@ -180,28 +181,6 @@ function resolveTeamBySide(match: ResolvedMatch, side: MatchWinner): TeamDisplay
 function resolvePickedWinnerCode(match: ResolvedMatch): string {
   if (!match.pickedWinner) return '—'
   return resolveTeamDisplayLabel(resolveTeamBySide(match, match.pickedWinner))
-}
-
-function csvEscape(value: string): string {
-  if (!/[",\n]/.test(value)) return value
-  return `"${value.replace(/"/g, '""')}"`
-}
-
-function rowsToCsv(rows: string[][]): string {
-  return rows.map((row) => row.map((value) => csvEscape(value)).join(',')).join('\n')
-}
-
-function downloadCsvFile(fileName: string, content: string) {
-  if (typeof window === 'undefined') return
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
-  const url = window.URL.createObjectURL(blob)
-  const anchor = window.document.createElement('a')
-  anchor.href = url
-  anchor.download = fileName
-  window.document.body.append(anchor)
-  anchor.click()
-  anchor.remove()
-  window.URL.revokeObjectURL(url)
 }
 
 function resolveSourceTeam(
@@ -1129,7 +1108,7 @@ export default function BracketPage() {
     setReviewSheetOpen(true)
   }
 
-  function handleDownloadBracketCsv() {
+  function handleDownloadBracketXlsx() {
     if (!readyBracketState) return
 
     const exportedAt = new Date().toISOString()
@@ -1188,8 +1167,16 @@ export default function BracketPage() {
 
     const safeViewerId = viewerId.replace(/[^a-z0-9_-]/gi, '-').toLowerCase()
     const stamp = exportedAt.replace(/[:.]/g, '-')
-    const fileName = `knockout-bracket-${safeViewerId || 'viewer'}-${stamp}.csv`
-    downloadCsvFile(fileName, rowsToCsv(rows))
+    const fileName = `knockout-bracket-${safeViewerId || 'viewer'}-${stamp}.xlsx`
+    void downloadWorkbook(fileName, [
+      {
+        name: 'KnockoutBracket',
+        rows,
+        headerRowIndices: [5]
+      }
+    ]).catch(() => {
+      showToast({ tone: 'danger', title: 'Export failed', message: 'Unable to prepare knockout bracket export.' })
+    })
   }
 
   if (bracket.loadState.status === 'loading' || publishedSnapshot.state.status === 'loading') {
@@ -1258,8 +1245,8 @@ export default function BracketPage() {
               <ExportMenuV2
                 scopeLabel="Knockout winners-only picks (you only)"
                 snapshotLabel={snapshotLabel}
-                lockMessage="Post-lock exports only. CSV format."
-                onDownloadCsv={handleDownloadBracketCsv}
+                lockMessage="Post-lock exports only. XLSX format."
+                onDownloadXlsx={handleDownloadBracketXlsx}
               />
             ) : null}
           </div>

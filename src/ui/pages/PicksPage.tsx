@@ -54,6 +54,7 @@ import {
 } from '../lib/profilePersistence'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { normalizeFavoriteTeamCode, resolveTeamFlagMeta } from '../lib/teamFlag'
+import { downloadWorkbook } from '../lib/exportWorkbook'
 
 type KoWinMethod = 'ET' | 'PENS'
 
@@ -227,22 +228,6 @@ function fromMatchPickDecidedIn(value: MatchPickDecidedIn): '' | KoWinMethod {
   if (value === 'AET') return 'ET'
   if (value === 'PEN') return 'PENS'
   return ''
-}
-
-function rowsToCsv(rows: string[][]): string {
-  return rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
-}
-
-function downloadCsvFile(fileName: string, content: string) {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  document.body.append(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
 }
 
 function getActualOutcome(match: Match): 'WIN' | 'LOSS' | 'DRAW' | undefined {
@@ -804,7 +789,7 @@ export default function PicksPage() {
     [clearRowError, pickByMatchId]
   )
 
-  const handleDownloadMatchPicksCsv = useCallback(() => {
+  const handleDownloadMatchPicksXlsx = useCallback(() => {
     const exportedAt = new Date().toISOString()
     const rows: string[][] = [
       ['exportedAt', exportedAt],
@@ -848,9 +833,17 @@ export default function PicksPage() {
 
     const safeViewerId = viewerId.replace(/[^a-z0-9_-]/gi, '-').toLowerCase()
     const stamp = exportedAt.replace(/[:.]/g, '-')
-    const fileName = `match-picks-${safeViewerId || 'viewer'}-${stamp}.csv`
-    downloadCsvFile(fileName, rowsToCsv(rows))
-  }, [matches, mode, pickByMatchId, snapshotReady?.snapshotTimestamp, viewerId])
+    const fileName = `match-picks-${safeViewerId || 'viewer'}-${stamp}.xlsx`
+    void downloadWorkbook(fileName, [
+      {
+        name: 'MatchPicks',
+        rows,
+        headerRowIndices: [5]
+      }
+    ]).catch(() => {
+      showToast({ tone: 'danger', title: 'Export failed', message: 'Unable to prepare match picks export.' })
+    })
+  }, [matches, mode, pickByMatchId, showToast, snapshotReady?.snapshotTimestamp, viewerId])
 
   async function handleSaveMatch(item: MatchTimelineItem) {
     const match = item.match
@@ -984,8 +977,8 @@ export default function PicksPage() {
               <ExportMenuV2
                 scopeLabel="Match picks + KO extras (you only)"
                 snapshotLabel={formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}
-                lockMessage="Post-lock exports only. CSV format."
-                onDownloadCsv={handleDownloadMatchPicksCsv}
+                lockMessage="Post-lock exports only. XLSX format."
+                onDownloadXlsx={handleDownloadMatchPicksXlsx}
               />
             ) : null}
           </div>

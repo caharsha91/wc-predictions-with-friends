@@ -26,6 +26,7 @@ import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useViewerId } from '../hooks/useViewerId'
 import { useCurrentUser } from '../hooks/useCurrentUser'
+import { useToast } from '../hooks/useToast'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
 import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
@@ -33,6 +34,7 @@ import { fetchRivalDirectory, readUserProfile, type RivalDirectoryEntry } from '
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
+import { downloadWorkbook } from '../lib/exportWorkbook'
 
 const RANK_SNAPSHOT_STORAGE_KEY = 'wc-leaderboard-rank-snapshot'
 
@@ -69,28 +71,6 @@ function formatTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit'
   })
-}
-
-function csvEscape(value: string): string {
-  if (!/[",\n]/.test(value)) return value
-  return `"${value.replace(/"/g, '""')}"`
-}
-
-function rowsToCsv(rows: string[][]): string {
-  return rows.map((row) => row.map((value) => csvEscape(value)).join(',')).join('\n')
-}
-
-function downloadCsvFile(fileName: string, content: string) {
-  if (typeof window === 'undefined') return
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
-  const url = window.URL.createObjectURL(blob)
-  const anchor = window.document.createElement('a')
-  anchor.href = url
-  anchor.download = fileName
-  window.document.body.append(anchor)
-  anchor.click()
-  anchor.remove()
-  window.URL.revokeObjectURL(url)
 }
 
 function getEntryIdentityKey(entry: LeaderboardEntry): string {
@@ -347,6 +327,7 @@ export default function LeaderboardPage() {
   const location = useLocation()
   const userId = useViewerId()
   const mode = useRouteDataMode()
+  const { showToast } = useToast()
   const phaseState = useTournamentPhaseState()
   const isDesktopViewport = useMediaQuery('(min-width: 768px)')
   const currentUser = useCurrentUser()
@@ -855,7 +836,7 @@ export default function LeaderboardPage() {
 
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
 
-  function handleDownloadLeaderboardCsv() {
+  function handleDownloadLeaderboardXlsx() {
     const exportedAt = new Date().toISOString()
     const snapshotAsOf = snapshotTimestamp || 'Snapshot unavailable'
     const exportRows = activeBaseRows
@@ -895,8 +876,16 @@ export default function LeaderboardPage() {
 
     const safeViewerId = userId.replace(/[^a-z0-9_-]/gi, '-').toLowerCase()
     const stamp = exportedAt.replace(/[:.]/g, '-')
-    const fileName = `leaderboard-${safeViewerId || 'viewer'}-${stamp}.csv`
-    downloadCsvFile(fileName, rowsToCsv(rows))
+    const fileName = `leaderboard-${safeViewerId || 'viewer'}-${stamp}.xlsx`
+    void downloadWorkbook(fileName, [
+      {
+        name: 'Leaderboard',
+        rows,
+        headerRowIndices: [5]
+      }
+    ]).catch(() => {
+      showToast({ tone: 'danger', title: 'Export failed', message: 'Unable to prepare leaderboard export.' })
+    })
   }
 
   function jumpToCurrentUserRow() {
@@ -921,8 +910,8 @@ export default function LeaderboardPage() {
             <ExportMenuV2
               scopeLabel="Full leaderboard snapshot (all members)"
               snapshotLabel={formatSnapshotTimestamp(snapshotTimestamp)}
-              lockMessage="Post-lock exports only. CSV format."
-              onDownloadCsv={handleDownloadLeaderboardCsv}
+              lockMessage="Post-lock exports only. XLSX format."
+              onDownloadXlsx={handleDownloadLeaderboardXlsx}
             />
           ) : undefined
         }
