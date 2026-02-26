@@ -996,13 +996,6 @@ function buildMatchdayWorkbookSheets(
   ]
 }
 
-async function loadExportPicksAndBracketData(): Promise<{
-  picksFile: PicksFile
-  bracketFile: BracketPredictionsFile
-}> {
-  return loadExportPicksAndBracketDataForMode('default')
-}
-
 async function loadExportPicksAndBracketDataForMode(
   dataMode: DataMode
 ): Promise<{
@@ -1086,10 +1079,6 @@ async function loadExportPicksAndBracketDataForMode(
   }
 }
 
-async function loadMembers(): Promise<ExportMember[]> {
-  return loadMembersForMode('default')
-}
-
 async function loadMembersForMode(dataMode: DataMode): Promise<ExportMember[]> {
   if (dataMode === 'demo') {
     const membersFile = await fetchMembers({ mode: 'demo' })
@@ -1129,10 +1118,6 @@ async function loadMembersForMode(dataMode: DataMode): Promise<ExportMember[]> {
     const message = error instanceof Error ? error.message : 'Unknown Firestore error.'
     throw new Error(`Failed to read members from Firestore. ${message}`)
   }
-}
-
-async function loadBundle(): Promise<SnapshotBundle> {
-  return loadBundleForMode('default')
 }
 
 async function loadBundleForMode(dataMode: DataMode): Promise<SnapshotBundle> {

@@ -49,6 +49,7 @@
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --motion-duration-fast: 160ms;
   --motion-ease-standard: ease-in-out;
+  --motion-ease-emphasis: cubic-bezier(0.16, 1, 0.3, 1);
 
   --radius: var(--radius-md);
   --v2-h1-size: clamp(1.625rem, 1.2rem + 1.2vw, 2.25rem);
@@ -79,11 +80,16 @@
   --surface-1: color-mix(in srgb, var(--card) 94%, transparent);
   --surface-2: color-mix(in srgb, var(--card) 82%, var(--muted) 18%);
   --surface-3: color-mix(in srgb, var(--muted) 72%, transparent);
+  --surface-card: var(--card);
+  --surface-border: var(--border);
+  --surface-hover: var(--surface-2);
   --surface-muted: var(--bg2);
   --divider: color-mix(in srgb, var(--border) 42%, transparent);
   --border-subtle: color-mix(in srgb, var(--border) 58%, transparent);
   --border-strong: var(--border1);
+  --row-border: var(--border-soft);
   --text: var(--fg0);
+  --text-primary: var(--fg0);
   --text-secondary: var(--fg1);
   --text-muted: var(--fg2);
 
@@ -167,6 +173,7 @@
   --status-final: var(--status-success);
   --status-locked: var(--status-warn);
   --status-alert: var(--status-warn);
+  --status-danger-soft: rgba(var(--danger-rgb), 0.14);
 
   --shadow: var(--shadow0);
   --shadow-xs: var(--shadow0);

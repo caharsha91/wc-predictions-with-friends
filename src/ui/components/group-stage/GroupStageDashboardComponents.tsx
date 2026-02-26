@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from 'react'
+import { useEffect, useState, type DragEvent, type ReactNode } from 'react'
 
 import type { GroupPrediction } from '../../../types/bracket'
 import type { BestThirdStatus, GroupPlacementStatus } from '../../../lib/groupStageSnapshot'

@@ -64,15 +64,6 @@ type RivalFocusRow = {
   rivalSlot?: number | null
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
 function getEntryIdentityKey(entry: LeaderboardEntry): string {
   const id = entry.member.id?.trim().toLowerCase()
   if (id) return `id:${id}`
