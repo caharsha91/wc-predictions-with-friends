@@ -115,8 +115,7 @@ function TeamButton({
       ? 'cursor-pointer hover:-translate-y-px hover:bg-[var(--surface-1)]'
       : 'cursor-default',
     activeTone === 'score' ? 'bg-[rgba(var(--info-rgb),0.12)]' : undefined,
-    activeTone === 'manual' ? 'bg-[rgba(var(--warn-rgb),0.12)]' : undefined,
-    activeTone ? 'motion-safe:animate-pulse' : undefined
+    activeTone === 'manual' ? 'bg-[rgba(var(--warn-rgb),0.12)]' : undefined
   )
 
   const content = (

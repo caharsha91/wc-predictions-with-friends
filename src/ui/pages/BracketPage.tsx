@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import { isMatchCompleted } from '../../lib/matchStatus'
@@ -30,6 +30,7 @@ import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
+import { cn } from '../lib/utils'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { downloadWorkbook } from '../lib/exportWorkbook'
 
@@ -114,6 +115,41 @@ const BRACKET_NODE_CARD_HEIGHT =
   BRACKET_NODE_METRICS.teamRowGap +
   BRACKET_NODE_METRICS.sectionGap +
   BRACKET_NODE_METRICS.footerHeight
+
+const BRACKET_WINNER_HIGHLIGHT_STYLE: CSSProperties = {
+  boxShadow: '0 0 15px rgba(var(--info-rgb),0.65), inset 0 0 0 1px rgba(var(--info-rgb),0.42)'
+}
+
+function bracketWinnerChoiceClass({
+  selected,
+  interactive,
+  disabled = false,
+  compact = false
+}: {
+  selected: boolean
+  interactive: boolean
+  disabled?: boolean
+  compact?: boolean
+}): string {
+  return cn(
+    'flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-all',
+    compact ? 'text-[12px]' : 'text-[11px]',
+    selected ? 'bg-[rgba(var(--info-rgb),0.12)] text-foreground' : 'bg-[var(--surface-2)] text-muted-foreground',
+    interactive
+      ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+      : undefined,
+    disabled
+      ? 'cursor-not-allowed opacity-60'
+      : interactive
+        ? 'cursor-pointer hover:-translate-y-px hover:bg-[var(--surface-1)] hover:text-foreground'
+        : 'cursor-default'
+  )
+}
+
+function bracketWinnerChoiceStyle(selected: boolean, style?: CSSProperties): CSSProperties | undefined {
+  if (selected) return { ...style, ...BRACKET_WINNER_HIGHLIGHT_STYLE }
+  return style
+}
 
 function isTbdLabel(value: string | undefined): boolean {
   const normalized = String(value ?? '').trim().toLowerCase()
@@ -398,68 +434,56 @@ function BracketMatchNode({
   const homeLabel = resolveTeamDisplayLabel(match.homeTeam)
   const awayLabel = resolveTeamDisplayLabel(match.awayTeam)
   const cardShellClass = isActiveRound
-    ? 'border-border/52 bg-background/44 shadow-[var(--shadow1)]'
-    : 'border-border/18 bg-background/18 shadow-none'
+    ? 'border-border/34 bg-background/42 shadow-[var(--shadow1)]'
+    : 'border-border/12 bg-background/16 shadow-none'
   const metadataTextClass = isActiveRound ? 'text-muted-foreground' : 'text-muted-foreground/55'
 
   function renderTeamRow(teamSide: MatchWinner, label: string) {
     const selected = match.pickedWinner === teamSide
     const team = teamSide === 'HOME' ? match.homeTeam : match.awayTeam
-    const selectedClass = 'border-[rgba(var(--primary-rgb),0.62)] bg-[rgba(var(--primary-rgb),0.18)] text-foreground'
-    const unselectedClass = isActiveRound
-      ? 'border-transparent bg-background/34 text-muted-foreground'
-      : 'border-transparent bg-background/18 text-muted-foreground/72'
-    const baseClass = selected
-      ? selectedClass
-      : unselectedClass
-    const dotClass = selected ? 'text-foreground' : isActiveRound ? 'text-muted-foreground' : 'text-muted-foreground/72'
-    const hoverClass = selected
-      ? 'hover:border-[rgba(var(--primary-rgb),0.68)] hover:bg-[rgba(var(--primary-rgb),0.2)] hover:text-foreground'
-      : isActiveRound
-        ? 'hover:border-border/32 hover:bg-background/44 hover:text-foreground'
-        : 'hover:border-border/20 hover:bg-background/24 hover:text-foreground/90'
+    const teamIdentityClass = side === 'right' ? 'min-w-0 flex-1 justify-end text-right' : 'min-w-0 flex-1'
+    const choiceClass = bracketWinnerChoiceClass({
+      selected,
+      interactive,
+      compact: false
+    })
+    const choiceStyle = bracketWinnerChoiceStyle(selected, { height: BRACKET_NODE_METRICS.teamRowHeight })
 
     if (interactive) {
       return (
         <button
           type="button"
-          className={`flex w-full items-center justify-between gap-1 rounded-md border px-2 py-1 text-[11px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${baseClass} ${hoverClass}`}
+          className={choiceClass}
           aria-label={`Set ${label} as winner`}
           aria-pressed={selected}
-          style={{ height: BRACKET_NODE_METRICS.teamRowHeight }}
+          style={choiceStyle}
           onClick={() => onPick(match, teamSide)}
         >
           <TeamIdentityInlineV2
             code={team.code}
             name={team.name}
             label={label}
-            className={side === 'right' ? 'min-w-0 flex-1 justify-end text-right' : 'min-w-0 flex-1'}
+            className={teamIdentityClass}
             size="sm"
           />
-          <span aria-hidden="true" className={`shrink-0 text-[11px] leading-none ${dotClass}`}>
-            {selected ? '●' : '○'}
-          </span>
-          <span className="sr-only">{selected ? 'Selected' : 'Not selected'}</span>
+          <span className="sr-only">{selected ? 'Selected winner' : 'Not selected'}</span>
         </button>
       )
     }
 
     return (
       <div
-        className={`flex items-center justify-between gap-1 rounded-md border px-2 py-1 text-[11px] ${baseClass}`}
-        style={{ height: BRACKET_NODE_METRICS.teamRowHeight }}
+        className={choiceClass}
+        style={choiceStyle}
       >
         <TeamIdentityInlineV2
           code={team.code}
           name={team.name}
           label={label}
-          className={side === 'right' ? 'min-w-0 flex-1 justify-end text-right' : 'min-w-0 flex-1'}
+          className={teamIdentityClass}
           size="sm"
         />
-        <span aria-hidden="true" className={`shrink-0 text-[11px] leading-none ${dotClass}`}>
-          {selected ? '●' : '○'}
-        </span>
-        <span className="sr-only">{selected ? 'Selected' : 'Not selected'}</span>
+        <span className="sr-only">{selected ? 'Selected winner' : 'Not selected'}</span>
       </div>
     )
   }
@@ -780,7 +804,7 @@ function DesktopVisualBracket({
 
   if (layout.nodes.length === 0) {
     return (
-      <div ref={viewportRef} className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
+      <div ref={viewportRef} className="rounded-xl border border-dashed border-border/45 p-4 text-sm text-muted-foreground">
         No bracket fixtures are available in this snapshot.
       </div>
     )
@@ -805,13 +829,13 @@ function DesktopVisualBracket({
   if (shouldUseCompactFallback) {
     return (
       <div ref={viewportRef} className="space-y-2">
-        <div className="rounded-lg border border-border/70 bg-background/45 px-3 py-2 text-xs text-muted-foreground">
+        <div className="rounded-lg border border-border/45 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
           Compact bracket view enabled for readability on this viewport.
         </div>
         {rounds.map((round) => (
           <div
             key={`desktop-compact-round-${round.stage}`}
-            className="rounded-xl border border-border/70 bg-background/35 p-2.5"
+            className="rounded-xl border border-border/45 bg-background/30 p-2.5"
           >
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-foreground">
@@ -834,7 +858,7 @@ function DesktopVisualBracket({
                 return (
                   <div
                     key={`desktop-compact-match-${round.stage}-${match.match.id}`}
-                    className={`rounded-lg border border-border/70 p-2.5 ${resultSurfaceClass(match.result)}`}
+                    className={`rounded-lg border border-border/45 p-2.5 ${resultSurfaceClass(match.result)}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -859,36 +883,50 @@ function DesktopVisualBracket({
                     </div>
 
                     <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                      <Button
-                        size="sm"
-                        variant={match.pickedWinner === 'HOME' ? 'primary' : 'secondary'}
+                      <button
+                        type="button"
+                        className={bracketWinnerChoiceClass({
+                          selected: match.pickedWinner === 'HOME',
+                          interactive: true,
+                          disabled: !round.editable,
+                          compact: true
+                        })}
+                        style={bracketWinnerChoiceStyle(match.pickedWinner === 'HOME')}
                         disabled={!round.editable}
                         aria-label={`Set ${homeLabel} as winner`}
+                        aria-pressed={match.pickedWinner === 'HOME'}
                         onClick={() => onPick(match, 'HOME')}
                       >
                         <TeamIdentityInlineV2
                           code={match.homeTeam.code}
                           name={match.homeTeam.name}
                           label={homeLabel}
-                          className="max-w-full"
+                          className="max-w-full flex-1"
                         />
-                        <span className="ml-1">advances</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={match.pickedWinner === 'AWAY' ? 'primary' : 'secondary'}
+                        <span className="ml-auto shrink-0 text-[10px] uppercase tracking-[0.12em] text-current/85">advances</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={bracketWinnerChoiceClass({
+                          selected: match.pickedWinner === 'AWAY',
+                          interactive: true,
+                          disabled: !round.editable,
+                          compact: true
+                        })}
+                        style={bracketWinnerChoiceStyle(match.pickedWinner === 'AWAY')}
                         disabled={!round.editable}
                         aria-label={`Set ${awayLabel} as winner`}
+                        aria-pressed={match.pickedWinner === 'AWAY'}
                         onClick={() => onPick(match, 'AWAY')}
                       >
                         <TeamIdentityInlineV2
                           code={match.awayTeam.code}
                           name={match.awayTeam.name}
                           label={awayLabel}
-                          className="max-w-full"
+                          className="max-w-full flex-1"
                         />
-                        <span className="ml-1">advances</span>
-                      </Button>
+                        <span className="ml-auto shrink-0 text-[10px] uppercase tracking-[0.12em] text-current/85">advances</span>
+                      </button>
                     </div>
                   </div>
                 )
@@ -913,7 +951,7 @@ function DesktopVisualBracket({
         style={{ width: layout.width, height: layout.height }}
       >
         <div
-          className="relative rounded-2xl border border-border/70 bg-[linear-gradient(135deg,rgba(var(--primary-rgb),0.08),transparent_55%)]"
+          className="relative rounded-2xl border border-border/38 bg-[linear-gradient(135deg,rgba(var(--primary-rgb),0.08),transparent_55%)]"
           style={{
             width: layout.width,
             height: layout.height
@@ -1311,7 +1349,7 @@ export default function BracketPage() {
                         ? 'border-[rgba(var(--primary-rgb),0.5)] bg-background/60 text-foreground'
                         : round.complete
                           ? 'border-[rgba(var(--primary-rgb),0.38)] bg-background/35 text-foreground'
-                          : 'border-border/70 bg-background/25 text-muted-foreground'
+                          : 'border-border/55 bg-background/25 text-muted-foreground'
                     }`}
                     disabled={!(round.unlocked || round.complete || round.stage === activeRound.stage)}
                     onClick={() => setActiveStage(round.stage)}
@@ -1342,7 +1380,7 @@ export default function BracketPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border/60 bg-background/45 px-3 py-2 text-xs text-muted-foreground">
+              <div className="rounded-lg border border-border/42 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
                 {roundHelperCopy(activeRound, nextRound, bracketEditable)}
               </div>
 
@@ -1350,7 +1388,7 @@ export default function BracketPage() {
                 {activeRound.matches.map((match) => (
                   <div
                     key={`${activeRound.stage}-${match.match.id}`}
-                    className={`rounded-xl border border-border/70 p-2.5 ${resultSurfaceClass(match.result)}`}
+                    className={`rounded-xl border border-border/45 p-2.5 ${resultSurfaceClass(match.result)}`}
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
@@ -1376,36 +1414,50 @@ export default function BracketPage() {
                       </div>
 
                       <div className="grid gap-2 sm:grid-cols-2">
-                        <Button
-                          size="sm"
-                          variant={match.pickedWinner === 'HOME' ? 'primary' : 'secondary'}
+                        <button
+                          type="button"
+                          className={bracketWinnerChoiceClass({
+                            selected: match.pickedWinner === 'HOME',
+                            interactive: true,
+                            disabled: !activeRound.editable,
+                            compact: true
+                          })}
+                          style={bracketWinnerChoiceStyle(match.pickedWinner === 'HOME')}
                           disabled={!activeRound.editable}
                           aria-label={`Set ${resolveTeamDisplayLabel(match.homeTeam)} as winner`}
+                          aria-pressed={match.pickedWinner === 'HOME'}
                           onClick={() => void handlePick(match, 'HOME')}
                         >
                           <TeamIdentityInlineV2
                             code={match.homeTeam.code}
                             name={match.homeTeam.name}
                             label={resolveTeamDisplayLabel(match.homeTeam)}
-                            className="max-w-full"
+                            className="max-w-full flex-1"
                           />
-                          <span className="ml-1">advances</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={match.pickedWinner === 'AWAY' ? 'primary' : 'secondary'}
+                          <span className="ml-auto shrink-0 text-[10px] uppercase tracking-[0.12em] text-current/85">advances</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={bracketWinnerChoiceClass({
+                            selected: match.pickedWinner === 'AWAY',
+                            interactive: true,
+                            disabled: !activeRound.editable,
+                            compact: true
+                          })}
+                          style={bracketWinnerChoiceStyle(match.pickedWinner === 'AWAY')}
                           disabled={!activeRound.editable}
                           aria-label={`Set ${resolveTeamDisplayLabel(match.awayTeam)} as winner`}
+                          aria-pressed={match.pickedWinner === 'AWAY'}
                           onClick={() => void handlePick(match, 'AWAY')}
                         >
                           <TeamIdentityInlineV2
                             code={match.awayTeam.code}
                             name={match.awayTeam.name}
                             label={resolveTeamDisplayLabel(match.awayTeam)}
-                            className="max-w-full"
+                            className="max-w-full flex-1"
                           />
-                          <span className="ml-1">advances</span>
-                        </Button>
+                          <span className="ml-auto shrink-0 text-[10px] uppercase tracking-[0.12em] text-current/85">advances</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1418,7 +1470,7 @@ export default function BracketPage() {
 
       {!isDesktopRailViewport && activeRound ? (
         <div className="fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+0.35rem)] z-40 px-3 lg:hidden">
-          <div className="rounded-xl border border-border/70 bg-background/90 p-2.5 shadow-[var(--shadow1)] backdrop-blur-sm">
+          <div className="rounded-xl border border-border/45 bg-background/90 p-2.5 shadow-[var(--shadow1)] backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
