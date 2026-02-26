@@ -8,9 +8,9 @@ import type { Match } from '../../types/matches'
 import type { Pick, PickAdvances } from '../../types/picks'
 import type { KnockoutStage, ScoringConfig, StageScoring } from '../../types/scoring'
 import type { LeaderboardCardRow } from '../components/v2/LeaderboardSideListV2'
+import MatchPick, { type MatchPickChange, type MatchPickDecidedIn } from '../components/MatchPick'
 import { Alert } from '../components/ui/Alert'
 import { Button, ButtonLink } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
 import {
   Sheet,
   SheetContent,
@@ -24,7 +24,6 @@ import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import { LeaderboardCardCurated, RightRailSticky } from '../components/v2/LeaderboardSideListV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageShellV2 from '../components/v2/PageShellV2'
-import RowShellV2 from '../components/v2/RowShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
 import StatusTagV2 from '../components/v2/StatusTagV2'
@@ -54,7 +53,7 @@ import {
   type RivalDirectoryEntry
 } from '../lib/profilePersistence'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
-import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
+import { normalizeFavoriteTeamCode, resolveTeamFlagMeta } from '../lib/teamFlag'
 
 type KoWinMethod = 'ET' | 'PENS'
 
@@ -85,11 +84,7 @@ type MatchRowProps = {
   rowDirty: boolean
   rowError?: string
   isSaving: boolean
-  isSaved: boolean
-  onHomeScoreChange: (value: string) => void
-  onAwayScoreChange: (value: string) => void
-  onWinnerChange: (value: '' | PickAdvances) => void
-  onKoMethodChange: (value: '' | KoWinMethod) => void
+  onDraftChange: (next: MatchDraft) => void
   onSave: () => void
 }
 
@@ -109,7 +104,6 @@ type ResultsTableProps = {
 const EMPTY_MATCHES: Match[] = []
 const UPCOMING_DISPLAY_WINDOW_MS = 48 * 60 * 60 * 1000
 const MAX_RECENT_RESULTS = 5
-const KO_EXTRAS_LANE_MIN_HEIGHT_CLASS = 'min-h-[74px] md:min-h-[44px]'
 
 function normalizeKey(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase()
@@ -180,16 +174,6 @@ function sortByKickoffLatestFirst(left: MatchTimelineItem, right: MatchTimelineI
   return right.sortMs - left.sortMs
 }
 
-function segmentedButtonClass(selected: boolean): string {
-  return [
-    'inline-flex h-7 min-w-0 items-center justify-center rounded-md border px-2 text-[11px] font-medium transition-colors',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-    selected
-      ? 'border-[color:var(--v2-row-active-border)] bg-[var(--accent-soft)] text-foreground shadow-[var(--shadow0)]'
-      : 'border-transparent text-muted-foreground hover:border-border/70 hover:bg-background/60 hover:text-foreground'
-  ].join(' ')
-}
-
 function toDraft(pick?: Pick): MatchDraft {
   return {
     homeScore: typeof pick?.homeScore === 'number' ? String(pick.homeScore) : '',
@@ -230,6 +214,18 @@ function resolveActualLabel(match: Match): string {
 function resolveWinnerTeamCode(match: Match, winnerSide?: PickAdvances): string {
   if (winnerSide === 'HOME') return match.homeTeam.code
   if (winnerSide === 'AWAY') return match.awayTeam.code
+  return ''
+}
+
+function toMatchPickDecidedIn(value: '' | KoWinMethod): MatchPickDecidedIn {
+  if (value === 'ET') return 'AET'
+  if (value === 'PENS') return 'PEN'
+  return 'REG'
+}
+
+function fromMatchPickDecidedIn(value: MatchPickDecidedIn): '' | KoWinMethod {
+  if (value === 'AET') return 'ET'
+  if (value === 'PEN') return 'PENS'
   return ''
 }
 
@@ -340,11 +336,7 @@ function MatchRow({
   rowDirty,
   rowError,
   isSaving,
-  isSaved,
-  onHomeScoreChange,
-  onAwayScoreChange,
-  onWinnerChange,
-  onKoMethodChange,
+  onDraftChange,
   onSave
 }: MatchRowProps) {
   const match = item.match
@@ -361,148 +353,79 @@ function MatchRow({
   const stageLabel = match.group ? `Group ${match.group}` : match.stage
   const kickoffLabel = formatKickoff(match.kickoffUtc)
   const rowState = !item.editable ? 'disabled' : rowDirty ? 'selected' : 'default'
-  const showKoExtras = item.editable && requiresKoExtras
+  const homeFlagPath = resolveTeamFlagMeta({ code: match.homeTeam.code, name: match.homeTeam.name }).assetPath
+  const awayFlagPath = resolveTeamFlagMeta({ code: match.awayTeam.code, name: match.awayTeam.name }).assetPath
+  const scoreA = parsedHome ?? 0
+  const scoreB = parsedAway ?? 0
+
+  function handleMatchPickChange(next: MatchPickChange) {
+    if (!item.editable || isSaving) return
+    onDraftChange({
+      homeScore: String(next.scoreA),
+      awayScore: String(next.scoreB),
+      eventualWinnerTeamId: next.selectedWinnerId === 'HOME' || next.selectedWinnerId === 'AWAY' ? next.selectedWinnerId : '',
+      koWinMethod: fromMatchPickDecidedIn(next.decidedIn)
+    })
+  }
 
   return (
-    <RowShellV2 state={rowState} className="px-2.5 py-2">
-      <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-2.5">
+    <div className="space-y-1.5">
+      <div className="flex min-w-0 items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-foreground">
-            <TeamIdentityInlineV2 code={match.homeTeam.code} name={match.homeTeam.name} size="sm" />
-            <span className="shrink-0 text-muted-foreground">vs</span>
-            <TeamIdentityInlineV2 code={match.awayTeam.code} name={match.awayTeam.name} size="sm" />
-            <span className="hidden shrink-0 text-[11px] font-normal text-muted-foreground md:inline">·</span>
-            <span className="hidden truncate text-[11px] font-normal text-muted-foreground md:inline">
-              {stageLabel} · {kickoffLabel}
-            </span>
-          </div>
-          <div className="truncate text-[11px] text-muted-foreground md:hidden">
+          <div className="truncate text-[11px] text-muted-foreground">
             {stageLabel} · {kickoffLabel}
           </div>
         </div>
-
-        <div className="flex items-center justify-start gap-1.5 md:justify-center">
-          <Input
-            id={`score-home-${match.id}`}
-            type="number"
-            min={0}
-            step={1}
-            inputMode="numeric"
-            value={draft.homeScore}
-            onChange={(event) => onHomeScoreChange(event.target.value)}
-            disabled={!item.editable || isSaving}
-            className="h-8 w-14 px-1.5 py-1 text-center text-[13px] tabular-nums"
-            aria-label={`${match.homeTeam.code} score`}
-          />
-          <span className="text-xs text-muted-foreground">-</span>
-          <Input
-            id={`score-away-${match.id}`}
-            type="number"
-            min={0}
-            step={1}
-            inputMode="numeric"
-            value={draft.awayScore}
-            onChange={(event) => onAwayScoreChange(event.target.value)}
-            disabled={!item.editable || isSaving}
-            className="h-8 w-14 px-1.5 py-1 text-center text-[13px] tabular-nums"
-            aria-label={`${match.awayTeam.code} score`}
-          />
-        </div>
-
-        <div className="flex min-h-8 items-center justify-start md:justify-end">
-          {item.editable && rowDirty ? (
-            <Button
-              size="sm"
-              className="h-8 rounded-lg px-3 text-[12px]"
-              onClick={onSave}
-              disabled={!canSave}
-              loading={isSaving}
-            >
-              Save
-            </Button>
-          ) : null}
-        </div>
+        {item.editable && rowDirty ? (
+          <Button
+            size="sm"
+            className="h-8 rounded-lg px-3 text-[12px]"
+            onClick={onSave}
+            disabled={!canSave}
+            loading={isSaving}
+          >
+            Save
+          </Button>
+        ) : null}
       </div>
 
-      <div className={`mt-1.5 ${KO_EXTRAS_LANE_MIN_HEIGHT_CLASS}`}>
-        {showKoExtras ? (
-          <div className="grid h-full content-center gap-1.5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Winner</span>
-              <div className="inline-flex min-w-0 flex-1 items-center rounded-lg border border-border/70 bg-background/55 p-0.5">
-                <button
-                  type="button"
-                  className={`${segmentedButtonClass(draft.eventualWinnerTeamId === 'HOME')} flex-1`}
-                  onClick={() => onWinnerChange('HOME')}
-                  disabled={!item.editable || isSaving}
-                  aria-label={`Set ${match.homeTeam.code} as eventual winner`}
-                  aria-pressed={draft.eventualWinnerTeamId === 'HOME'}
-                >
-                  <TeamIdentityInlineV2
-                    code={match.homeTeam.code}
-                    name={match.homeTeam.name}
-                    className="max-w-[6.5rem]"
-                    size="sm"
-                  />
-                </button>
-                <button
-                  type="button"
-                  className={`${segmentedButtonClass(draft.eventualWinnerTeamId === 'AWAY')} flex-1`}
-                  onClick={() => onWinnerChange('AWAY')}
-                  disabled={!item.editable || isSaving}
-                  aria-label={`Set ${match.awayTeam.code} as eventual winner`}
-                  aria-pressed={draft.eventualWinnerTeamId === 'AWAY'}
-                >
-                  <TeamIdentityInlineV2
-                    code={match.awayTeam.code}
-                    name={match.awayTeam.name}
-                    className="max-w-[6.5rem]"
-                    size="sm"
-                  />
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Decided in</span>
-              <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/55 p-0.5">
-                <button
-                  type="button"
-                  className={segmentedButtonClass(draft.koWinMethod === 'ET')}
-                  onClick={() => onKoMethodChange('ET')}
-                  disabled={!item.editable || isSaving}
-                  aria-label="Set match decided in AET"
-                  aria-pressed={draft.koWinMethod === 'ET'}
-                >
-                  AET
-                </button>
-                <button
-                  type="button"
-                  className={segmentedButtonClass(draft.koWinMethod === 'PENS')}
-                  onClick={() => onKoMethodChange('PENS')}
-                  disabled={!item.editable || isSaving}
-                  aria-label="Set match decided in penalties"
-                  aria-pressed={draft.koWinMethod === 'PENS'}
-                >
-                  PEN
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : item.editable ? (
-          <div aria-hidden="true" className="h-full rounded-md border border-transparent" />
-        ) : (
-          <div className="flex h-full items-center truncate text-[11px] text-muted-foreground">
-            {readOnlyReasonLabel(item.readOnlyReason)}
-          </div>
-        )}
-      </div>
+      <MatchPick
+        matchId={match.id}
+        isKnockout={isKnockout}
+        teamA={{
+          id: 'HOME',
+          name: match.homeTeam.name,
+          abbr: match.homeTeam.code,
+          flagUrl: homeFlagPath
+        }}
+        teamB={{
+          id: 'AWAY',
+          name: match.awayTeam.name,
+          abbr: match.awayTeam.code,
+          flagUrl: awayFlagPath
+        }}
+        scoreA={scoreA}
+        scoreB={scoreB}
+        decidedIn={toMatchPickDecidedIn(draft.koWinMethod)}
+        selectedWinnerId={
+          draft.eventualWinnerTeamId === 'HOME' || draft.eventualWinnerTeamId === 'AWAY'
+            ? draft.eventualWinnerTeamId
+            : undefined
+        }
+        disabled={!item.editable || isSaving}
+        knockoutDrawEnabled={requiresKoExtras}
+        rowState={rowState}
+        onChange={handleMatchPickChange}
+      />
 
-      {rowError ? (
-        <div className="mt-1 text-[11px] text-destructive">
-          {rowError}
+      {!item.editable ? (
+        <div className="truncate text-[11px] text-muted-foreground">
+          {readOnlyReasonLabel(item.readOnlyReason)}
         </div>
       ) : null}
-    </RowShellV2>
+
+      {rowError ? <div className="text-[11px] text-destructive">{rowError}</div> : null}
+    </div>
   )
 }
 
@@ -548,7 +471,7 @@ function ResultsTable({ items, picksByMatchId, scoring, emptyMessage }: ResultsT
   return (
     <Table
       unframed
-      className="[&_th]:h-8 [&_th]:px-2 [&_th]:py-0 [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-[0.14em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:px-2 [&_td]:py-1.5"
+      className="[&_th]:h-8 [&_th]:border-b-[color:var(--divider)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-[0.14em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:var(--divider)] [&_td]:px-2 [&_td]:py-1.5"
     >
       <thead>
         <tr>
@@ -1132,20 +1055,8 @@ export default function PicksPage() {
                         rowDirty={rowDirty}
                         rowError={rowErrorByMatchId[match.id]}
                         isSaving={savingMatchId === match.id}
-                        isSaved={savedMatchId === match.id && !rowDirty}
-                        onHomeScoreChange={(value) => {
-                          if (!/^\d*$/.test(value)) return
-                          updateDraft(match.id, (current) => ({ ...current, homeScore: value }))
-                        }}
-                        onAwayScoreChange={(value) => {
-                          if (!/^\d*$/.test(value)) return
-                          updateDraft(match.id, (current) => ({ ...current, awayScore: value }))
-                        }}
-                        onWinnerChange={(value) => {
-                          updateDraft(match.id, (current) => ({ ...current, eventualWinnerTeamId: value }))
-                        }}
-                        onKoMethodChange={(value) => {
-                          updateDraft(match.id, (current) => ({ ...current, koWinMethod: value }))
+                        onDraftChange={(nextDraft) => {
+                          updateDraft(match.id, () => nextDraft)
                         }}
                         onSave={() => void handleSaveMatch(item)}
                       />

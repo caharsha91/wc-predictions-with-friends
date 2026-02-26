@@ -195,7 +195,7 @@ export function LeaderboardCardCurated({
       title={title}
       subtitle={snapshotLabel === SNAPSHOT_UNAVAILABLE_LABEL ? snapshotLabel : `As of ${snapshotLabel}`}
       className="group-stage-v2-leaderboard"
-      contentClassName="space-y-1.5"
+      contentClassName="v2-list-divider space-y-0"
       footer={
         leaderboardPath ? (
           <ButtonLink to={leaderboardPath} size="xs" variant="tertiary" className="h-7 rounded-md px-2">
@@ -209,7 +209,7 @@ export function LeaderboardCardCurated({
         const rowState = row.isYou ? 'you' : rivalSlot ? 'rival' : 'default'
 
         return (
-          <RowShellV2 key={`leaderboard-row-wrap-${row.id}`} state={rowState} className="min-h-11 px-3 py-2" interactive>
+          <RowShellV2 key={`leaderboard-row-wrap-${row.id}`} state={rowState} className="min-h-11 px-2 py-1.5" interactive>
             <MemberIdentityRowV2
               name={`#${row.rank} ${row.name}`}
               favoriteTeamCode={row.favoriteTeamCode ?? null}
@@ -248,7 +248,7 @@ export function LeaderboardCardCurated({
               tone="inset"
               state="disabled"
               interactive={false}
-              className="min-h-11 border-dashed"
+              className="min-h-11 px-2 py-1.5"
               aria-hidden="true"
             >
               <div className="h-2 w-24 rounded bg-border/60" />

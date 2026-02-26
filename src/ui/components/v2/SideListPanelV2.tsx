@@ -38,7 +38,7 @@ export default function SideListPanelV2({
         divider
       />
       <div className={cn('space-y-1.5 p-3', contentClassName)}>{children}</div>
-      {footer ? <div className="border-t border-border/60 px-3 py-2">{footer}</div> : null}
+      {footer ? <div className="border-t border-[var(--divider)] px-3 py-2">{footer}</div> : null}
     </SectionCardV2>
   )
 }

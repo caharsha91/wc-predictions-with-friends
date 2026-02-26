@@ -89,7 +89,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--ring);
+    outline: 2px solid var(--focus-ring-strong);
     outline-offset: 2px;
   }
 

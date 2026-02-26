@@ -76,9 +76,12 @@
   --bg: var(--bg0);
   --panel: var(--bg1);
   --surface: var(--bg1);
-  --surface-2: var(--bg2);
+  --surface-1: color-mix(in srgb, var(--card) 94%, transparent);
+  --surface-2: color-mix(in srgb, var(--card) 82%, var(--muted) 18%);
+  --surface-3: color-mix(in srgb, var(--muted) 72%, transparent);
   --surface-muted: var(--bg2);
-  --divider: var(--border0);
+  --divider: color-mix(in srgb, var(--border) 42%, transparent);
+  --border-subtle: color-mix(in srgb, var(--border) 58%, transparent);
   --border-strong: var(--border1);
   --text: var(--fg0);
   --text-secondary: var(--fg1);
@@ -175,6 +178,7 @@
   --row-hover-shadow: var(--shadow1);
   --button-shadow: var(--shadow1);
   --header-shadow: var(--shadow0);
+  --focus-ring-strong: color-mix(in srgb, var(--ring) 82%, var(--foreground) 18%);
 
   --focus-ring: rgba(var(--primary-rgb), var(--focus-alpha));
   --glow: rgba(var(--primary-rgb), var(--glow-alpha));
@@ -254,7 +258,7 @@
   --pill-bg-alpha: 0.05;
 
   --noise-color: rgba(110, 106, 210, 0.03);
-  --input-bg: var(--bg1);
+  --input-bg: var(--surface-3);
 }
 
 :root[data-mode='dark'] {
@@ -279,7 +283,7 @@
   --pill-bg-alpha: 0.1;
 
   --noise-color: rgba(110, 106, 210, 0.05);
-  --input-bg: var(--bg2);
+  --input-bg: var(--surface-3);
 }
 
 .v2-wash-surface {
@@ -288,24 +292,23 @@
 
 .v2-glow-surface {
   box-shadow:
-    0 0 0 1px var(--v2-glow-soft),
     0 14px 30px color-mix(in srgb, var(--v2-glow-medium) 44%, transparent),
     var(--shadow1);
 }
 
 .v2-card-base {
-  border-color: var(--v2-border-medium);
+  border-color: var(--border-subtle);
   background:
     radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--v2-glow-soft) 34%, transparent), transparent 64%),
     linear-gradient(132deg, var(--v2-surface-blend-strong) 0%, var(--v2-surface-blend-soft) 100%);
 }
 
 .v2-card-tone-default {
-  border-color: var(--v2-border-medium);
+  border-color: var(--border-subtle);
 }
 
 .v2-card-tone-hero {
-  border-color: var(--v2-border-strong);
+  border-color: var(--v2-border-medium);
   background:
     radial-gradient(140% 140% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 42%, transparent), transparent 62%),
     radial-gradient(130% 130% at 100% 100%, rgba(var(--secondary-rgb), 0.22), transparent 68%),
@@ -313,14 +316,14 @@
 }
 
 .v2-card-tone-tile {
-  border-color: var(--v2-border-strong);
+  border-color: var(--v2-border-medium);
   background:
     radial-gradient(130% 130% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 34%, transparent), transparent 66%),
     linear-gradient(134deg, var(--v2-surface-blend-strong) 0%, var(--v2-surface-blend-soft) 100%);
 }
 
 .v2-card-tone-panel {
-  border-color: var(--v2-border-medium);
+  border-color: var(--border-subtle);
   background:
     radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 34%, transparent), transparent 64%),
     linear-gradient(132deg, var(--v2-surface-blend-strong) 0%, var(--v2-surface-blend-soft) 100%);
@@ -350,8 +353,7 @@
 
 .v2-card-glow {
   box-shadow:
-    0 0 0 1px var(--v2-glow-soft),
-    0 16px 32px color-mix(in srgb, var(--v2-glow-medium) 36%, transparent),
+    0 14px 28px color-mix(in srgb, var(--v2-glow-medium) 30%, transparent),
     var(--shadow1);
 }
 
@@ -377,11 +379,11 @@
 }
 
 .v2-section-card {
-  border-color: var(--v2-border-medium);
+  border-color: var(--border-subtle);
 }
 
 .v2-panel-header {
-  border-bottom: 1px solid color-mix(in srgb, var(--v2-border-soft) 86%, transparent);
+  border-bottom: 1px solid var(--divider);
 }
 
 .v2-panel-header-kicker {
@@ -398,8 +400,8 @@
 }
 
 .v2-row-shell {
-  border-color: var(--v2-row-border);
-  background: var(--v2-row-bg);
+  border-color: transparent;
+  background: var(--surface-2);
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
@@ -408,8 +410,9 @@
 }
 
 .v2-row-shell.v2-row-interactive:hover {
-  background: var(--v2-row-hover-bg);
-  border-color: color-mix(in srgb, var(--v2-row-active-border) 62%, var(--v2-row-border) 38%);
+  background: var(--surface-1);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 
 .v2-row-shell.v2-row-tone-muted {
@@ -422,19 +425,19 @@
 
 .v2-row-shell.v2-row-state-selected {
   background: var(--v2-row-selected-bg);
-  border-color: color-mix(in srgb, var(--v2-row-active-border) 70%, var(--v2-row-border) 30%);
+  border-color: transparent;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 64%, transparent);
 }
 
 .v2-row-shell.v2-row-state-you {
   background: var(--v2-row-you-bg);
-  border-color: color-mix(in srgb, var(--info) 50%, var(--v2-row-border) 50%);
+  border-color: transparent;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, rgba(var(--info-rgb), 0.42) 68%, transparent);
 }
 
 .v2-row-shell.v2-row-state-rival {
   background: var(--v2-row-rival-bg);
-  border-color: color-mix(in srgb, rgba(var(--secondary-rgb), 0.62) 64%, var(--v2-row-border) 36%);
+  border-color: transparent;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, rgba(var(--secondary-rgb), 0.36) 58%, transparent);
 }
 
@@ -459,6 +462,12 @@
 
 .v2-member-identity-subline {
   color: var(--v2-text-muted);
+}
+
+.v2-list-divider > * + * {
+  border-top: 1px solid var(--divider);
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
 }
 
 .landing-v2-canvas {
