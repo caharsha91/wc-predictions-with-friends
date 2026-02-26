@@ -99,12 +99,12 @@ type BracketConnector = {
 
 const BRACKET_NODE_METRICS = {
   paddingX: 8,
-  paddingY: 8,
+  paddingY: 6,
   headerHeight: 14,
-  sectionGap: 6,
+  sectionGap: 4,
   teamRowHeight: 34,
   teamRowGap: 4,
-  footerHeight: 20
+  footerHeight: 12
 } as const
 
 const BRACKET_NODE_CARD_HEIGHT =
@@ -524,13 +524,11 @@ function BracketMatchNode({
         {match.result !== 'pending' ? (
           <StatusTagV2
             tone={resultTone(match.result)}
-            className={`h-5 shrink-0 px-2 text-[10px] ${isActiveRound ? '' : 'opacity-75'}`}
+            className={`h-4 shrink-0 px-1.5 text-[9px] ${isActiveRound ? '' : 'opacity-75'}`}
           >
             {resultLabel(match.result)}
           </StatusTagV2>
-        ) : (
-          <span aria-hidden="true" className="h-5" />
-        )}
+        ) : null}
       </div>
     </article>
   )
@@ -570,7 +568,7 @@ function DesktopVisualBracket({
     const rowGap = 14
     const columnGap = 54
     const topPad = 46
-    const bottomPad = 28
+    const bottomPad = 12
     const fallbackStep = cardHeight + rowGap
 
     const leftR32Y = buildBasePositions(leftR32.length, cardHeight, rowGap)
@@ -743,7 +741,7 @@ function DesktopVisualBracket({
 
     const width = xR32Right + cardWidth
     const maxBottom = nodes.reduce((max, node) => Math.max(max, node.y + cardHeight), 0)
-    const minHeight = Math.max(560, maxBottom + bottomPad)
+    const minHeight = Math.max(480, maxBottom + bottomPad)
 
     const labels: Array<{ id: string; label: string; x: number; stage: KnockoutStage }> = [
       { id: 'lbl-r32-l', label: 'Round of 32', x: xR32Left, stage: 'R32' },
@@ -950,68 +948,60 @@ function DesktopVisualBracket({
         className="relative mx-auto"
         style={{ width: layout.width, height: layout.height }}
       >
-        <div
-          className="relative rounded-2xl border border-border/38 bg-[linear-gradient(135deg,rgba(var(--primary-rgb),0.08),transparent_55%)]"
-          style={{
-            width: layout.width,
-            height: layout.height
-          }}
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          viewBox={`0 0 ${layout.width} ${layout.height}`}
+          preserveAspectRatio="none"
         >
-          <svg
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            viewBox={`0 0 ${layout.width} ${layout.height}`}
-            preserveAspectRatio="none"
-          >
-            {layout.connectors.map((connector) => {
-              const touchesActiveStage =
-                isStageActive(connector.sourceStage) || isStageActive(connector.targetStage)
-              return (
-                <path
-                  key={connector.id}
-                  d={connector.path}
-                  fill="none"
-                  stroke={touchesActiveStage ? 'rgba(var(--info-rgb), 0.20)' : 'rgba(var(--info-rgb), 0.10)'}
-                  strokeWidth={touchesActiveStage ? 1.05 : 0.85}
-                  strokeDasharray={connector.dashed ? '4 4' : undefined}
-                  strokeLinecap="round"
-                />
-              )
-            })}
-          </svg>
-
-          {layout.labels.map((label) => (
-            <div
-              key={label.id}
-              className={`pointer-events-none absolute -translate-x-1/2 text-[11px] font-medium uppercase tracking-[0.14em] ${
-                isStageActive(label.stage) ? 'text-muted-foreground' : 'text-muted-foreground/52'
-              }`}
-              style={{ left: label.x + layout.cardWidth / 2, top: 12 }}
-            >
-              {label.label}
-            </div>
-          ))}
-
-          {layout.nodes.map((node, index) => (
-            <div
-              key={node.id}
-              ref={index === 0 ? firstNodeRef : null}
-              className="absolute"
-              style={{
-                left: node.x,
-                top: node.y,
-                width: layout.cardWidth,
-                height: layout.cardHeight
-              }}
-            >
-              <BracketMatchNode
-                node={node}
-                isActiveRound={isStageActive(node.match.stage)}
-                onPick={onPick}
+          {layout.connectors.map((connector) => {
+            const touchesActiveStage =
+              isStageActive(connector.sourceStage) || isStageActive(connector.targetStage)
+            return (
+              <path
+                key={connector.id}
+                d={connector.path}
+                fill="none"
+                stroke={touchesActiveStage ? 'rgba(var(--info-rgb), 0.20)' : 'rgba(var(--info-rgb), 0.10)'}
+                strokeWidth={touchesActiveStage ? 1.05 : 0.85}
+                strokeDasharray={connector.dashed ? '4 4' : undefined}
+                strokeLinecap="round"
               />
-            </div>
-          ))}
-        </div>
+            )
+          })}
+        </svg>
+
+        {layout.labels.map((label) => (
+          <div
+            key={label.id}
+            className={`pointer-events-none absolute -translate-x-1/2 text-[11px] font-medium uppercase tracking-[0.14em] ${
+              isStageActive(label.stage) ? 'text-muted-foreground' : 'text-muted-foreground/52'
+            }`}
+            style={{ left: label.x + layout.cardWidth / 2, top: 12 }}
+          >
+            {label.label}
+          </div>
+        ))}
+
+        {layout.nodes.map((node, index) => (
+          <div
+            key={node.id}
+            ref={index === 0 ? firstNodeRef : null}
+            className="absolute"
+            style={{
+              left: node.x,
+              top: node.y,
+              width: layout.cardWidth,
+              height: layout.cardHeight
+            }}
+          >
+            <BracketMatchNode
+              node={node}
+              isActiveRound={isStageActive(node.match.stage)}
+              onPick={onPick}
+            />
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -1311,8 +1301,8 @@ export default function BracketPage() {
           </div>
         </SectionCardV2>
       ) : isDesktopRailViewport ? (
-        <SectionCardV2 tone="panel" className="p-3 md:p-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Knockout bracket</div>
             </div>
@@ -1333,7 +1323,7 @@ export default function BracketPage() {
               void handlePick(match, winner)
             }}
           />
-        </SectionCardV2>
+        </div>
       ) : (
         <div className="space-y-3 pb-28">
           <SectionCardV2 tone="panel" className="p-3 md:p-4">
