@@ -899,9 +899,8 @@ export default function LeaderboardPage() {
         actions={
           showExportMenu ? (
             <ExportMenuV2
-              scopeLabel="Full leaderboard snapshot (all members)"
-              snapshotLabel={formatSnapshotTimestamp(snapshotTimestamp)}
-              lockMessage="Post-lock exports only. XLSX format."
+              contextLabel="Download the latest leaderboard workbook for all members."
+              snapshotLabel={`Snapshot ${formatSnapshotTimestamp(snapshotTimestamp)}`}
               onDownloadXlsx={handleDownloadLeaderboardXlsx}
             />
           ) : undefined

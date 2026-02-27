@@ -230,8 +230,7 @@ function toDemoPath(pathname: string): string {
   if (pathname === '/match-picks') return '/demo/match-picks'
   if (pathname === '/knockout-bracket') return '/demo/knockout-bracket'
   if (pathname === '/leaderboard') return '/demo/leaderboard'
-  if (pathname === '/admin') return '/demo/admin'
-  if (pathname.startsWith('/admin/')) return '/demo/admin'
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return `/demo${pathname}`
 
   // Legacy /play* aliases are still mapped during transition.
   if (pathname === '/play') return '/demo'
@@ -255,8 +254,9 @@ function toDefaultPath(pathname: string): string {
   if (pathname === '/demo/match-picks') return '/match-picks'
   if (pathname === '/demo/knockout-bracket') return '/knockout-bracket'
   if (pathname === '/demo/leaderboard') return '/leaderboard'
-  if (pathname === '/demo/admin') return '/admin'
-  if (pathname.startsWith('/demo/admin/')) return '/admin'
+  if (pathname === '/demo/admin' || pathname.startsWith('/demo/admin/')) {
+    return pathname.replace('/demo', '')
+  }
 
   // Legacy /demo/play* aliases are still mapped during transition.
   if (pathname === '/demo/play') return '/'

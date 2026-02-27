@@ -975,9 +975,8 @@ export default function PicksPage() {
             </ButtonLink>
             {showExportMenu ? (
               <ExportMenuV2
-                scopeLabel="Match picks + KO extras (you only)"
-                snapshotLabel={formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}
-                lockMessage="Post-lock exports only. XLSX format."
+                contextLabel="Download your match picks workbook from the latest snapshot."
+                snapshotLabel={`Snapshot ${formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}`}
                 onDownloadXlsx={handleDownloadMatchPicksXlsx}
               />
             ) : null}

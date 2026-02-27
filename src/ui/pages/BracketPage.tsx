@@ -1272,9 +1272,8 @@ export default function BracketPage() {
             </ButtonLink>
             {showExportMenu ? (
               <ExportMenuV2
-                scopeLabel="Knockout winners-only picks (you only)"
-                snapshotLabel={snapshotLabel}
-                lockMessage="Post-lock exports only. XLSX format."
+                contextLabel="Download your knockout bracket workbook from the latest snapshot."
+                snapshotLabel={`Snapshot ${snapshotLabel}`}
                 onDownloadXlsx={handleDownloadBracketXlsx}
               />
             ) : null}

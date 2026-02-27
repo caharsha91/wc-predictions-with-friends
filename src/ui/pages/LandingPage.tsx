@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { buildGroupTeamCodes, isStrictGroupRanking } from '../../lib/groupRanking'
+import { buildGroupStandingsSnapshot } from '../../lib/groupStageSnapshot'
 import { getDateKeyInTimeZone, getGroupOutcomesLockTime, getLockTime, isMatchLocked } from '../../lib/matches'
 import { findPick, isPickComplete } from '../../lib/picks'
 import type { LeaderboardEntry } from '../../types/leaderboard'
@@ -46,6 +47,10 @@ import {
   writeUserProfile,
   type RivalDirectoryEntry
 } from '../lib/profilePersistence'
+import {
+  buildBestThirdCandidatesByGroup,
+  buildSelectedBestThirdGroups
+} from '../lib/groupStageBestThirdSelection'
 import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
 import { cn } from '../lib/utils'
 
@@ -711,6 +716,28 @@ export default function LandingPage() {
   }, [leaderboardById, rivalMap, selectedRivalIndexByIdentity, trackedStandingsIds, viewerFavoriteTeamCode, viewerId, viewerName])
 
   const isViewerOnPodium = podiumRows.some((row) => row.isViewer)
+  const snapshotMatches = snapshotReady?.matches ?? matches
+  const groupStandings = useMemo(() => buildGroupStandingsSnapshot(snapshotMatches), [snapshotMatches])
+  const groupsFinal = groupStage.groupIds.length > 0 && groupStandings.completeGroups.size === groupStage.groupIds.length
+  const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
+  const groupClosed = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
+  const bestThirdReadOnly = groupClosed || groupStage.isLocked || Boolean(snapshotReady?.groupStageComplete)
+  const bestThirdCandidatesByGroup = useMemo(
+    () =>
+      buildBestThirdCandidatesByGroup({
+        groups: groupStage.data.groups,
+        groupTeams,
+        standingsByGroup: groupStandings.standingsByGroup,
+        isReadOnly: bestThirdReadOnly,
+        groupsFinal
+      }),
+    [bestThirdReadOnly, groupStage.data.groups, groupStandings.standingsByGroup, groupTeams, groupsFinal]
+  )
+  const selectedBestThirdGroups = useMemo(
+    () => buildSelectedBestThirdGroups(groupStage.data.bestThirds, bestThirdCandidatesByGroup),
+    [bestThirdCandidatesByGroup, groupStage.data.bestThirds]
+  )
+  const selectedBestThirdCount = selectedBestThirdGroups.size
 
   const groupCompletion = useMemo(() => {
     let groupsDone = 0
@@ -721,7 +748,7 @@ export default function LandingPage() {
         groupsDone += 1
       }
     }
-    const bestThirdDone = Math.min(8, groupStage.data.bestThirds.filter(Boolean).length)
+    const bestThirdDone = selectedBestThirdCount
     const groupsTotal = groupStage.groupIds.length
     const groupsRemaining = Math.max(0, groupsTotal - groupsDone)
     const bestThirdRemaining = Math.max(0, 8 - bestThirdDone)
@@ -731,7 +758,7 @@ export default function LandingPage() {
       bestThirdDone,
       pending: groupsRemaining + bestThirdRemaining
     }
-  }, [groupStage.data.bestThirds, groupStage.data.groups, groupStage.groupIds, groupTeams])
+  }, [groupStage.data.groups, groupStage.groupIds, groupTeams, selectedBestThirdCount])
 
   const queueMatches = useMemo<QueueMatch[]>(() => {
     return matches
@@ -772,8 +799,6 @@ export default function LandingPage() {
     [knockoutData.completeMatches, knockoutData.totalMatches]
   )
 
-  const groupLockTime = useMemo(() => getGroupOutcomesLockTime(matches), [matches])
-  const groupClosed = groupLockTime ? now.getTime() >= groupLockTime.getTime() : false
   const knockoutAvailable =
     phaseState.tournamentPhase === 'KO_OPEN' ||
     phaseState.tournamentPhase === 'KO_LOCKED' ||

@@ -11,7 +11,7 @@ import { InputField } from '../components/ui/Field'
 import Progress from '../components/ui/Progress'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '../components/ui/Sheet'
 import Table from '../components/ui/Table'
-import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import AdminWorkspaceShellV2 from '../components/v2/AdminWorkspaceShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
@@ -154,7 +154,11 @@ export default function AdminUsersPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!firestoreEnabled || !firebaseDb) {
-      showToast({ title: 'Save failed', message: 'Local config is read-only for member writes.', tone: 'danger' })
+      showToast({
+        title: 'Save failed',
+        message: 'This environment is read-only. Roster updates are disabled.',
+        tone: 'danger'
+      })
       return
     }
 
@@ -227,92 +231,91 @@ export default function AdminUsersPage() {
   const memberCount = entries.length - adminCount
 
   return (
-    <div className="space-y-4">
-      <PageHeaderV2
-        variant="section"
-        kicker="Admin"
-        title="Players"
-        subtitle="Manage member allowlist and admin access."
-        metadata={
-          <>
-            {canManageMembers ? <Badge tone="success">Writable</Badge> : <Badge tone="warning">Read-only</Badge>}
-            <Badge tone="secondary">Total {entries.length}</Badge>
-            <Badge tone="secondary">Admins {adminCount}</Badge>
-            <Badge tone="secondary">Members {memberCount}</Badge>
-          </>
-        }
-      />
-
-      {!hasFirebase ? (
-        <Alert tone="warning" title="Firebase not configured">
-          Showing read-only member data from static JSON.
-        </Alert>
-      ) : null}
-      {state.status === 'error' ? (
-        <Alert tone="danger" title="Unable to load members">
-          {state.message}
-        </Alert>
-      ) : null}
-
-      <SectionCardV2 tone="panel" density="none" className="p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Roster</div>
-            <div className="text-lg font-semibold text-foreground">Invite-only players</div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="secondary">Total {entries.length}</Badge>
-            <Badge tone="secondary">Admins {adminCount}</Badge>
-            <Badge tone="secondary">Members {memberCount}</Badge>
-            <Button type="button" size="sm" onClick={startCreate} disabled={!canManageMembers}>
-              Add player
-            </Button>
-          </div>
-        </div>
-
-        {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading players...</div> : null}
-        {state.status === 'ready' && entries.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No players found.</div>
+    <AdminWorkspaceShellV2
+      title="Players"
+      subtitle="Manage roster access and admin permissions."
+      metadata={
+        <>
+          {canManageMembers ? <Badge tone="success">Updates enabled</Badge> : <Badge tone="warning">Read-only mode</Badge>}
+          <Badge tone="secondary">Total {entries.length}</Badge>
+          <Badge tone="secondary">Admins {adminCount}</Badge>
+          <Badge tone="secondary">Members {memberCount}</Badge>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {!canManageMembers ? (
+          <Alert tone="warning" title="Read-only roster view">
+            {isDemoMode
+              ? 'Demo mode uses snapshot data for roster display only.'
+              : 'Live roster updates are unavailable in this environment.'}
+          </Alert>
+        ) : null}
+        {state.status === 'error' ? (
+          <Alert tone="danger" title="Unable to load members">
+            {state.message}
+          </Alert>
         ) : null}
 
-        {state.status === 'ready' && entries.length > 0 ? (
-          <Table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry) => (
-                <tr key={entry.docId}>
-                  <td className="font-semibold text-foreground">{entry.name || 'Unnamed user'}</td>
-                  <td>{entry.email}</td>
-                  <td>{entry.isAdmin ? <Badge tone="info">Admin</Badge> : <Badge>Member</Badge>}</td>
-                  <td>
-                    <Button type="button" size="sm" variant="secondary" onClick={() => startEdit(entry)}>
-                      Edit
-                    </Button>
-                  </td>
+        <SectionCardV2 tone="panel" density="none" className="p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Roster</div>
+              <div className="text-lg font-semibold text-foreground">League players</div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="secondary">Total {entries.length}</Badge>
+              <Badge tone="secondary">Admins {adminCount}</Badge>
+              <Badge tone="secondary">Members {memberCount}</Badge>
+              <Button type="button" size="sm" onClick={startCreate} disabled={!canManageMembers}>
+                Add player
+              </Button>
+            </div>
+          </div>
+
+          {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading players...</div> : null}
+          {state.status === 'ready' && entries.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No players found in the roster.</div>
+          ) : null}
+
+          {state.status === 'ready' && entries.length > 0 ? (
+            <Table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
-        ) : null}
-      </SectionCardV2>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.docId}>
+                    <td className="font-semibold text-foreground">{entry.name || 'Unnamed user'}</td>
+                    <td>{entry.email}</td>
+                    <td>{entry.isAdmin ? <Badge tone="info">Admin</Badge> : <Badge>Member</Badge>}</td>
+                    <td>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => startEdit(entry)}>
+                        Edit
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : null}
+        </SectionCardV2>
 
-      <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
-        <SheetContent side="right" className="w-[96vw] max-w-lg">
-          <SheetHeader>
-            <SheetTitle>{editing ? 'Edit Player' : 'Add Player'}</SheetTitle>
-            <SheetDescription>
-              {editing
-                ? 'Update player details and admin access.'
-                : 'Create a new player in the invite-only roster.'}
-            </SheetDescription>
-          </SheetHeader>
+        <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
+          <SheetContent side="right" className="w-[96vw] max-w-lg">
+            <SheetHeader>
+              <SheetTitle>{editing ? 'Edit Player' : 'Add Player'}</SheetTitle>
+              <SheetDescription>
+                {editing
+                  ? 'Update player details and admin permissions.'
+                  : 'Add a player to the invite-only league roster.'}
+              </SheetDescription>
+            </SheetHeader>
 
           <form className="space-y-3 px-4 py-3" onSubmit={handleSubmit}>
             <InputField
@@ -340,7 +343,7 @@ export default function AdminUsersPage() {
               onChange={(event) => setMemberId(event.target.value)}
               disabled={!canManageMembers}
               placeholder="Auto-generated member identity"
-              helperText="Auto-generated app identity used for picks, bracket, leaderboard, and rivals."
+              helperText="Core identity used across picks, bracket, leaderboard, and rivals."
               required
             />
             <InputField
@@ -350,7 +353,7 @@ export default function AdminUsersPage() {
               readOnly
               disabled
               placeholder="Not set"
-              helperText="Firebase Auth metadata (read-only). App identity uses Member ID only."
+              helperText="Authentication reference (read-only). Member ID is used for league data."
             />
             <label className="flex items-center gap-2 text-sm text-foreground">
               <input
@@ -380,23 +383,24 @@ export default function AdminUsersPage() {
                 ) : null}
 
                 <div className="flex w-full flex-wrap justify-end gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setEditorOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" disabled={!canManageMembers || formStatus === 'saving'}>
-                  {editing ? 'Save player' : 'Add player'}
-                </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setEditorOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm" disabled={!canManageMembers || formStatus === 'saving'}>
+                    {editing ? 'Save player' : 'Add player'}
+                  </Button>
                 </div>
               </div>
             </SheetFooter>
           </form>
-        </SheetContent>
-      </Sheet>
-    </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </AdminWorkspaceShellV2>
   )
 }

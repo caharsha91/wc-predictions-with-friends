@@ -10,7 +10,7 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { SelectField } from '../components/ui/Field'
 import Progress from '../components/ui/Progress'
-import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import AdminWorkspaceShellV2 from '../components/v2/AdminWorkspaceShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import {
   DEMO_SCENARIO_OPTIONS,
@@ -102,8 +102,12 @@ function resolveScenarioNow(matches: Match[], scenario: DemoScenarioId): Date | 
   return null
 }
 
+function getScenarioLabel(scenario: DemoScenarioId): string {
+  return DEMO_SCENARIO_OPTIONS.find((option) => option.id === scenario)?.label ?? scenario
+}
+
 export default function DemoControlsPage() {
-  // QA-SMOKE: route=/demo/admin?tab=demo ; checklist-id=smoke-demo-controls
+  // QA-SMOKE: route=/admin/controls and /demo/admin/controls ; checklist-id=smoke-demo-controls
   const navigate = useNavigate()
   const location = useLocation()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
@@ -158,14 +162,22 @@ export default function DemoControlsPage() {
     writeDemoNowOverride(scenarioNow.toISOString())
     emitDemoScenarioChanged(previousScenario, selectedScenario)
     emitControlsChanged()
-    showToast({ tone: 'success', title: 'Scenario applied', message: selectedScenario })
+    showToast({
+      tone: 'success',
+      title: 'Scenario updated',
+      message: getScenarioLabel(selectedScenario)
+    })
   }
 
   function applyViewer() {
     if (!selectedViewerId) return
     writeDemoViewerId(selectedViewerId)
     emitControlsChanged()
-    showToast({ tone: 'success', title: 'Viewer applied', message: selectedViewerId })
+    const viewerLabel =
+      state.status === 'ready'
+        ? state.members.find((member) => member.id === selectedViewerId)?.name ?? selectedViewerId
+        : selectedViewerId
+    showToast({ tone: 'success', title: 'Viewer updated', message: viewerLabel })
   }
 
   async function reloadSnapshots() {
@@ -238,7 +250,7 @@ export default function DemoControlsPage() {
     window.setTimeout(() => setSessionProgress(0), 1_100)
     showToast({ tone: 'success', title: 'Live mode restored' })
     if (isDemoRoute) {
-      navigate('/admin?tab=demo#demo', { replace: true })
+      navigate('/admin/controls', { replace: true })
     }
   }
 
@@ -271,152 +283,152 @@ export default function DemoControlsPage() {
     if (pendingAction === 'clear-session') {
       return {
         title: 'Clear demo session?',
-        description: 'This removes demo scenario, viewer, and demo-mode local storage overrides.',
+        description: 'This clears demo scenario and viewer settings saved in this browser.',
         confirmLabel: 'Clear session'
       }
     }
     return {
-      title: isDemoRoute ? 'Reset to live mode?' : 'Clear demo mode data?',
+      title: isDemoRoute ? 'Exit demo mode?' : 'Clear demo mode data?',
       description: isDemoRoute
-        ? 'This exits demo mode and clears demo overrides so you return to live admin data.'
+        ? 'This exits demo mode and clears demo overrides so you return to live league data.'
         : 'This clears demo overrides currently stored in your browser.',
-      confirmLabel: 'Reset to Live'
+      confirmLabel: 'Return to live'
     }
   }, [isDemoRoute, pendingAction])
 
-  if (state.status === 'loading') {
-    return (
-      <div className="space-y-4">
-        <SectionCardV2 tone="panel" density="none" className="p-4">
-          Loading demo controls…
-        </SectionCardV2>
-      </div>
-    )
-  }
-
-  if (state.status === 'error') {
-    return (
-      <Alert tone="danger" title="Unable to load demo controls">
-        {state.message}
-      </Alert>
-    )
-  }
-
   const currentScenario = readDemoScenario()
   const currentViewer = readDemoViewerId()
+  const currentViewerLabel =
+    state.status === 'ready'
+      ? state.members.find((member) => member.id === currentViewer)?.name ?? (currentViewer ?? 'none')
+      : currentViewer ?? 'none'
 
   return (
-    <div className="space-y-4">
-      <PageHeaderV2
-        variant="section"
-        kicker="Demo admin"
-        title="Demo Controls"
-        subtitle="Control scenario timing, selected demo user, and demo snapshot reload behavior."
-        metadata={
+    <AdminWorkspaceShellV2
+      title="Demo Controls"
+      subtitle="Manage demo timeline scenarios, viewer context, and demo session data."
+      metadata={
+        <>
+          <Badge tone="info">Scenario: {getScenarioLabel(currentScenario)}</Badge>
+          <Badge tone="secondary">Viewer: {currentViewerLabel}</Badge>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {state.status === 'loading' ? (
+          <SectionCardV2 tone="panel" density="none" className="p-4">
+            Loading demo controls...
+          </SectionCardV2>
+        ) : null}
+
+        {state.status === 'error' ? (
+          <Alert tone="danger" title="Unable to load demo controls">
+            {state.message}
+          </Alert>
+        ) : null}
+
+        {state.status === 'ready' ? (
           <>
-            <Badge tone="info">Current scenario: {currentScenario}</Badge>
-            <Badge tone="secondary">Current viewer: {currentViewer ?? 'none'}</Badge>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <SectionCardV2 tone="panel" density="none" className="p-4">
+                <div className="space-y-3">
+                  <SelectField
+                    label="Scenario"
+                    value={selectedScenario}
+                    onChange={(event) => setSelectedScenario(event.target.value as DemoScenarioId)}
+                  >
+                    {DEMO_SCENARIO_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <div className="text-xs text-muted-foreground">Local time: {toLabel(scenarioNow)}</div>
+                  <div className="text-xs text-muted-foreground">Relative: {toRelativeLabel(scenarioNow)}</div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={applyScenario} disabled={!scenarioNow}>
+                      Apply scenario
+                    </Button>
+                    <Button variant="secondary" onClick={() => navigate('/demo')}>
+                      Open demo play center
+                    </Button>
+                  </div>
+                </div>
+              </SectionCardV2>
+
+              <SectionCardV2 tone="panel" density="none" className="p-4">
+                <div className="space-y-3">
+                  <SelectField
+                    label="Viewer"
+                    value={selectedViewerId}
+                    onChange={(event) => setSelectedViewerId(event.target.value)}
+                  >
+                    {state.members.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name} ({member.id})
+                      </option>
+                    ))}
+                  </SelectField>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={applyViewer} disabled={!selectedViewerId}>
+                      Switch viewer
+                    </Button>
+                    <Button variant="secondary" onClick={() => navigate('/demo/leaderboard')}>
+                      Open demo leaderboard
+                    </Button>
+                  </div>
+                </div>
+              </SectionCardV2>
+            </div>
+
+            <SectionCardV2 tone="panel" density="none" className="p-4">
+              <div className="space-y-3">
+                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Session + Data</div>
+                <div className="text-sm text-muted-foreground">
+                  Reload snapshots after updating demo source data.
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" onClick={() => setPendingAction('reload-snapshots')}>
+                    Reload demo snapshots
+                  </Button>
+                  <Button variant="secondary" onClick={() => setPendingAction('clear-session')}>
+                    Clear demo session
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setPendingAction('reset-to-live')}
+                    className="border-[var(--border-danger)] bg-[rgba(var(--danger-rgb),0.15)] text-foreground hover:bg-[rgba(var(--danger-rgb),0.26)]"
+                  >
+                    Return to live mode
+                  </Button>
+                </div>
+                {sessionProgress > 0 ? (
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">{sessionProgressLabel}</div>
+                    <Progress
+                      value={sessionProgress}
+                      intent={sessionProgressIntent}
+                      size="sm"
+                      aria-label="Demo session progress"
+                    />
+                  </div>
+                ) : null}
+              </div>
+            </SectionCardV2>
           </>
-        }
-      />
+        ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SectionCardV2 tone="panel" density="none" className="p-4">
-          <div className="space-y-3">
-            <SelectField
-              label="Scenario"
-              value={selectedScenario}
-              onChange={(event) => setSelectedScenario(event.target.value as DemoScenarioId)}
-            >
-              {DEMO_SCENARIO_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </SelectField>
-            <div className="text-xs text-muted-foreground">Local time: {toLabel(scenarioNow)}</div>
-            <div className="text-xs text-muted-foreground">Relative: {toRelativeLabel(scenarioNow)}</div>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={applyScenario} disabled={!scenarioNow}>
-                Apply Scenario Time
-              </Button>
-              <Button variant="secondary" onClick={() => navigate('/demo')}>
-                Open Demo Play
-              </Button>
-            </div>
-          </div>
-        </SectionCardV2>
-
-        <SectionCardV2 tone="panel" density="none" className="p-4">
-          <div className="space-y-3">
-            <SelectField
-              label="Viewer"
-              value={selectedViewerId}
-              onChange={(event) => setSelectedViewerId(event.target.value)}
-            >
-              {state.members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name} ({member.id})
-                </option>
-              ))}
-            </SelectField>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={applyViewer} disabled={!selectedViewerId}>
-                Apply Viewer
-              </Button>
-              <Button variant="secondary" onClick={() => navigate('/demo/leaderboard')}>
-                Open Demo League
-              </Button>
-            </div>
-          </div>
-        </SectionCardV2>
+        <ConfirmationModal
+          isOpen={confirmationConfig !== null}
+          title={confirmationConfig?.title ?? ''}
+          description={confirmationConfig?.description ?? ''}
+          confirmLabel={confirmationConfig?.confirmLabel}
+          onCancel={() => setPendingAction(null)}
+          onConfirm={() => void runConfirmedAction()}
+          isDestructive
+          isLoading={isActionRunning}
+        />
       </div>
-
-      <SectionCardV2 tone="panel" density="none" className="p-4">
-        <div className="space-y-3">
-          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Session + Data</div>
-          <div className="text-sm text-muted-foreground">
-            Use reload after regenerating demo files with `npm run demo:simulate ...`.
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setPendingAction('reload-snapshots')}>
-              Reload Demo Snapshots
-            </Button>
-            <Button variant="secondary" onClick={() => setPendingAction('clear-session')}>
-              Clear Demo Session
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setPendingAction('reset-to-live')}
-              className="border-[var(--border-danger)] bg-[rgba(var(--danger-rgb),0.15)] text-foreground hover:bg-[rgba(var(--danger-rgb),0.26)]"
-            >
-              Reset to Live
-            </Button>
-          </div>
-          {sessionProgress > 0 ? (
-            <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">{sessionProgressLabel}</div>
-              <Progress
-                value={sessionProgress}
-                intent={sessionProgressIntent}
-                size="sm"
-                aria-label="Demo session progress"
-              />
-            </div>
-          ) : null}
-        </div>
-      </SectionCardV2>
-
-      <ConfirmationModal
-        isOpen={confirmationConfig !== null}
-        title={confirmationConfig?.title ?? ''}
-        description={confirmationConfig?.description ?? ''}
-        confirmLabel={confirmationConfig?.confirmLabel}
-        onCancel={() => setPendingAction(null)}
-        onConfirm={() => void runConfirmedAction()}
-        isDestructive
-        isLoading={isActionRunning}
-      />
-    </div>
+    </AdminWorkspaceShellV2>
   )
 }

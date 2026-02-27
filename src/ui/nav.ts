@@ -34,7 +34,16 @@ export const MAIN_NAV: NavItem[] = [
 ]
 
 export const ADMIN_NAV: NavItem[] = [
-  { to: '/admin', label: 'Admin Console', icon: AdminIcon, end: true }
+  {
+    to: '/admin',
+    label: 'Admin Console',
+    icon: AdminIcon,
+    children: [
+      { to: '/admin/players', label: 'Players', end: true },
+      { to: '/admin/exports', label: 'Exports', end: true },
+      { to: '/admin/controls', label: 'Demo Controls', end: true }
+    ]
+  }
 ]
 
 export const DEMO_MAIN_NAV: NavItem[] = [
@@ -53,5 +62,14 @@ export const DEMO_MAIN_NAV: NavItem[] = [
 ]
 
 export const DEMO_ADMIN_NAV: NavItem[] = [
-  { to: '/demo/admin', label: 'Admin Console', icon: AdminIcon, end: true }
+  {
+    to: '/demo/admin',
+    label: 'Admin Console',
+    icon: AdminIcon,
+    children: [
+      { to: '/demo/admin/players', label: 'Players', end: true },
+      { to: '/demo/admin/exports', label: 'Exports', end: true },
+      { to: '/demo/admin/controls', label: 'Demo Controls', end: true }
+    ]
+  }
 ]

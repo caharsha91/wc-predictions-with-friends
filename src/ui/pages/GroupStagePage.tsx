@@ -66,6 +66,11 @@ import {
 } from '../lib/groupStageFilters'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildProjectedImpactRows } from '../lib/projectedImpact'
+import {
+  buildBestThirdCandidatesByGroup,
+  buildBestThirdCodesFromSelectedGroups,
+  buildSelectedBestThirdGroups
+} from '../lib/groupStageBestThirdSelection'
 
 const BEST_THIRD_SLOTS = BEST_THIRD_SLOT_COUNT
 const DEFAULT_GROUP_QUALIFIER_POINTS = 3
@@ -96,27 +101,6 @@ function normalizeBestThirds(bestThirds: string[]): string[] {
   const next = [...bestThirds]
   while (next.length < BEST_THIRD_SLOTS) next.push('')
   return next.slice(0, BEST_THIRD_SLOTS)
-}
-
-type BestThirdCandidateByGroupEntry = {
-  ready: boolean
-  thirdCode: string
-  thirdTeamName: string
-}
-
-function buildBestThirdCodesFromSelectedGroups(
-  selectedGroupIds: Set<string>,
-  candidatesByGroup: Map<string, BestThirdCandidateByGroupEntry>
-): string[] {
-  const nextCodes: string[] = []
-  for (const groupId of GROUP_STAGE_GROUP_CODES) {
-    if (!selectedGroupIds.has(groupId)) continue
-    const candidate = candidatesByGroup.get(groupId)
-    if (!candidate?.ready || !candidate.thirdCode) continue
-    nextCodes.push(candidate.thirdCode)
-    if (nextCodes.length >= BEST_THIRD_SLOTS) break
-  }
-  return normalizeBestThirds(nextCodes)
 }
 
 function getCompletionCount(
@@ -336,57 +320,25 @@ export default function GroupStagePage() {
   const isFinalResultsMode = Boolean(snapshotReady?.groupStageComplete)
   const isReadOnly = groupClosed || isFinalResultsMode
 
-  const bestThirdCandidatesByGroup = useMemo(() => {
-    const next = new Map<string, BestThirdCandidateByGroupEntry>()
+  const bestThirdCandidatesByGroup = useMemo(
+    () =>
+      buildBestThirdCandidatesByGroup({
+        groups: groupStage.data.groups,
+        groupTeams,
+        standingsByGroup: standings.standingsByGroup,
+        isReadOnly,
+        groupsFinal
+      }),
+    [groupStage.data.groups, groupTeams, groupsFinal, isReadOnly, standings.standingsByGroup]
+  )
 
-    for (const groupId of GROUP_STAGE_GROUP_CODES) {
-      const teams = groupTeams[groupId] ?? []
-      const teamCodes = buildGroupTeamCodes(teams)
-      const prediction = groupStage.data.groups[groupId] ?? {}
-      const isStrict = isStrictGroupRanking(prediction.ranking, teamCodes)
-      const ranking = isStrict ? buildGroupRankingForDisplay(prediction, teamCodes) : []
-      const thirdCode = ranking[2] ?? ''
-      let resolvedThirdCode = thirdCode
-
-      if (!resolvedThirdCode && (isReadOnly || groupsFinal)) {
-        const topTwo = resolveStoredTopTwo(prediction, teamCodes)
-        const excluded = new Set([topTwo.first, topTwo.second].filter(Boolean))
-        const standingsCodes = (standings.standingsByGroup.get(groupId) ?? []).map((entry) => entry.code)
-        resolvedThirdCode = standingsCodes.find((code) => !excluded.has(code)) ?? ''
-        if (!resolvedThirdCode) {
-          resolvedThirdCode = teamCodes.find((code) => !excluded.has(code)) ?? ''
-        }
-      }
-
-      const thirdTeamName =
-        teams.find((team) => team.code === resolvedThirdCode)?.name ??
-        (resolvedThirdCode ? resolvedThirdCode : '')
-
-      next.set(groupId, {
-        ready: (isStrict || isReadOnly || groupsFinal) && Boolean(resolvedThirdCode),
-        thirdCode: resolvedThirdCode,
-        thirdTeamName
-      })
-    }
-
-    return next
-  }, [groupStage.data.groups, groupTeams, groupsFinal, isReadOnly, standings.standingsByGroup])
-
-  const selectedBestThirdGroups = useMemo(() => {
-    const selectedCodes = new Set(normalizeTeamCodes(bestThirds))
-    const selected = new Set<string>()
-    for (const groupId of GROUP_STAGE_GROUP_CODES) {
-      const candidate = bestThirdCandidatesByGroup.get(groupId)
-      if (!candidate?.ready || !candidate.thirdCode) continue
-      if (selectedCodes.has(candidate.thirdCode)) {
-        selected.add(groupId)
-      }
-    }
-    return selected
-  }, [bestThirdCandidatesByGroup, bestThirds])
+  const selectedBestThirdGroups = useMemo(
+    () => buildSelectedBestThirdGroups(bestThirds, bestThirdCandidatesByGroup),
+    [bestThirdCandidatesByGroup, bestThirds]
+  )
 
   const selectedBestThirdCodes = useMemo(
-    () => buildBestThirdCodesFromSelectedGroups(selectedBestThirdGroups, bestThirdCandidatesByGroup),
+    () => buildBestThirdCodesFromSelectedGroups(selectedBestThirdGroups, bestThirdCandidatesByGroup, BEST_THIRD_SLOTS),
     [bestThirdCandidatesByGroup, selectedBestThirdGroups]
   )
 
@@ -1126,9 +1078,8 @@ export default function GroupStagePage() {
             </ButtonLink>
             {showExportMenu ? (
               <ExportMenuV2
-                scopeLabel="Group rankings + best-third selections (you only)"
-                snapshotLabel={formatSnapshotTimestamp(scoringSnapshotTimestamp)}
-                lockMessage="Post-lock exports only. XLSX format."
+                contextLabel="Download your group rankings and best-third selections workbook."
+                snapshotLabel={`Snapshot ${formatSnapshotTimestamp(scoringSnapshotTimestamp)}`}
                 onDownloadXlsx={handleDownloadGroupStageXlsx}
               />
             ) : null}

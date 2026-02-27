@@ -29,7 +29,6 @@ import type { ScoringConfig } from '../../types/scoring'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
-import DetailsDisclosure from '../components/ui/DetailsDisclosure'
 import { SelectField } from '../components/ui/Field'
 import PanelState from '../components/ui/PanelState'
 import Progress from '../components/ui/Progress'
@@ -43,7 +42,7 @@ import {
 } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
-import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import AdminWorkspaceShellV2 from '../components/v2/AdminWorkspaceShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
@@ -134,9 +133,6 @@ type ExportPreset = {
   id: ExportPresetId
   label: string
   description: string
-  scopeSummary: string
-  outputSummary: string
-  useCaseSummary: string
   requires: 'user' | 'matchday' | 'both'
 }
 
@@ -144,37 +140,25 @@ const EXPORT_PRESETS: ExportPreset[] = [
   {
     id: 'USER_PICKS_WORKBOOK',
     label: 'User picks workbook',
-    description: 'One user across all matchdays with picks, outcomes, bracket, and results.',
-    scopeSummary: 'Single player, all submitted matchdays',
-    outputSummary: 'XLSX workbook (5 sheets)',
-    useCaseSummary: 'Player audit + support handoff',
+    description: 'Download one player across all submitted matchdays.',
     requires: 'user'
   },
   {
     id: 'MATCHDAY_PICKS_WORKBOOK',
     label: 'Matchday picks workbook',
-    description: 'One matchday across all users with submitted pick rows only.',
-    scopeSummary: 'Single matchday, all players',
-    outputSummary: 'XLSX workbook (2 sheets)',
-    useCaseSummary: 'Submission review for lock windows',
+    description: 'Download all submitted picks for one matchday.',
     requires: 'matchday'
   },
   {
     id: 'MATCHDAY_LEADERBOARD_SNAPSHOT',
     label: 'Matchday leaderboard snapshot',
-    description: 'Standalone leaderboard snapshot for a selected matchday.',
-    scopeSummary: 'Leaderboard through one matchday',
-    outputSummary: 'XLSX workbook (2 sheets)',
-    useCaseSummary: 'Snapshot verification and sharing',
+    description: 'Download standings through a selected matchday.',
     requires: 'matchday'
   },
   {
     id: 'FULL_AUDIT_PACK',
     label: 'Full audit pack',
-    description: 'Combined workbook for one user and one matchday in one download.',
-    scopeSummary: 'Single player + single matchday bundle',
-    outputSummary: 'XLSX workbook (9 sheets)',
-    useCaseSummary: 'Comprehensive dispute review',
+    description: 'Download user and matchday workbooks together.',
     requires: 'both'
   }
 ]
@@ -1020,7 +1004,7 @@ async function loadExportPicksAndBracketDataForMode(
 
   if (!hasFirebase || !firebaseDb) {
     throw new Error(
-      'Admin exports require Firebase configuration. Set VITE_FIREBASE_* env vars and sign in as an admin.'
+      'Exports are unavailable in this environment. Connect the live data source and sign in with admin access.'
     )
   }
 
@@ -1099,15 +1083,15 @@ async function loadMembersForMode(dataMode: DataMode): Promise<ExportMember[]> {
 
   if (!hasFirebase || !firebaseDb) {
     throw new Error(
-      'Admin exports require Firebase configuration. Set VITE_FIREBASE_* env vars and sign in as an admin.'
+      'Exports are unavailable in this environment. Connect the live data source and sign in with admin access.'
     )
   }
 
   try {
     const snapshot = await getDocs(collection(firebaseDb, 'leagues', getLeagueId(), 'members'))
-      return snapshot.docs.map((docSnap) => {
-        const data = docSnap.data() as Partial<ExportMember>
-        const email = (data.email ?? docSnap.id).toLowerCase()
+    return snapshot.docs.map((docSnap) => {
+      const data = docSnap.data() as Partial<ExportMember>
+      const email = (data.email ?? docSnap.id).toLowerCase()
       const id =
         typeof data.id === 'string' && data.id.trim()
           ? data.id
@@ -1245,7 +1229,7 @@ const PRESET_FIELD_PREVIEW: Record<
 }
 
 export default function AdminExportsPage() {
-  // QA-SMOKE: route=/admin?tab=exports and /demo/admin?tab=exports ; checklist-id=smoke-admin-exports
+  // QA-SMOKE: route=/admin/exports and /demo/admin/exports ; checklist-id=smoke-admin-exports
   const dataMode = useRouteDataMode()
   const phaseState = useTournamentPhaseState()
   const isDesktopViewport = useMediaQuery('(min-width: 768px)')
@@ -1329,20 +1313,20 @@ export default function AdminExportsPage() {
   const noDataHint = useMemo(() => {
     if (state.status !== 'ready') return null
     if (selectedPreset.requires === 'user' && selectedUserPickCount === 0) {
-      return selectedUser ? `No data: ${selectedUser.name} has not submitted any picks yet.` : 'No data for selected user.'
+      return selectedUser ? `${selectedUser.name} has no submitted picks yet.` : 'Select a user with submitted picks.'
     }
     if (selectedPreset.requires === 'matchday' && selectedMatchdayPickCount === 0) {
-      return selectedMatchday ? `No data: no picks were submitted for ${selectedMatchday}.` : 'No data for selected matchday.'
+      return selectedMatchday ? `No picks were submitted for ${selectedMatchday}.` : 'Select a matchday with submitted picks.'
     }
     if (selectedPreset.requires === 'both') {
       if (selectedUserPickCount === 0 && selectedMatchdayPickCount === 0) {
-        return `No data: ${selectedUser?.name ?? 'selected user'} has no picks and ${selectedMatchday || 'selected matchday'} has no submitted picks.`
+        return `${selectedUser?.name ?? 'Selected user'} has no picks and ${selectedMatchday || 'selected matchday'} has no submitted picks.`
       }
       if (selectedUserPickCount === 0) {
-        return `No data: ${selectedUser?.name ?? 'selected user'} has not submitted any picks yet.`
+        return `${selectedUser?.name ?? 'Selected user'} has no submitted picks yet.`
       }
       if (selectedMatchdayPickCount === 0) {
-        return `No data: no picks were submitted for ${selectedMatchday || 'selected matchday'}.`
+        return `No picks were submitted for ${selectedMatchday || 'selected matchday'}.`
       }
     }
     return null
@@ -1360,36 +1344,11 @@ export default function AdminExportsPage() {
   )
   const requiresUser = selectedPreset.requires === 'user' || selectedPreset.requires === 'both'
   const requiresMatchday = selectedPreset.requires === 'matchday' || selectedPreset.requires === 'both'
-
-  async function copyExportConfig() {
-    const payload: Record<string, string> = {
-      presetId: selectedPresetId
-    }
-    if (requiresUser && selectedUser?.id) payload.userId = selectedUser.id
-    if (requiresMatchday && selectedMatchday) payload.matchday = selectedMatchday
-
-    const serialized = JSON.stringify(payload, null, 2)
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(serialized)
-        showToast({ tone: 'success', title: 'Config copied', message: 'Export config copied to clipboard.' })
-        return
-      }
-    } catch {
-      showToast({
-        tone: 'warning',
-        title: 'Copy failed',
-        message: 'Unable to write export config to clipboard.'
-      })
-      return
-    }
-
-    showToast({
-      tone: 'warning',
-      title: 'Clipboard unavailable',
-      message: 'Clipboard access is unavailable in this browser context.'
-    })
-  }
+  const showQuickUserResults = canExport && requiresUser
+  const showQuickMatchdaySnapshot =
+    canExport && requiresMatchday && selectedPresetId !== 'MATCHDAY_LEADERBOARD_SNAPSHOT'
+  const showQuickMatchdayPicks =
+    canExport && requiresMatchday && selectedPresetId === 'MATCHDAY_LEADERBOARD_SNAPSHOT'
 
   function resolveSelectedUserData(user: UserOption) {
     const candidateIds = dedupeIds([user.id, user.email, ...user.candidateIds])
@@ -1660,375 +1619,380 @@ export default function AdminExportsPage() {
 
   if (state.status === 'loading') {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-24 rounded-2xl" />
-        <Skeleton className="h-80 rounded-2xl" />
-      </div>
+      <AdminWorkspaceShellV2
+        title="Exports"
+        subtitle="Generate operational workbooks from the latest league snapshot."
+        metadata={<Badge tone="secondary">Loading export workspace</Badge>}
+      >
+        <div className="space-y-4">
+          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-80 rounded-2xl" />
+        </div>
+      </AdminWorkspaceShellV2>
     )
   }
 
   if (state.status === 'error') {
     return (
-      <Alert tone="danger" title="Unable to load exports">
-        {state.message}
-      </Alert>
+      <AdminWorkspaceShellV2
+        title="Exports"
+        subtitle="Generate operational workbooks from the latest league snapshot."
+        metadata={<Badge tone="warning">Export workspace unavailable</Badge>}
+      >
+        <Alert tone="danger" title="Unable to load exports">
+          {state.message}
+        </Alert>
+      </AdminWorkspaceShellV2>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <PageHeaderV2
-        variant="section"
-        kicker="Admin exports"
-        title="Exports"
-        subtitle="Pick a preset, configure its scope, and download a workbook that matches the published snapshot."
-        metadata={
-          <>
-            <SnapshotStamp timestamp={state.bundle.offlineLastUpdated} prefix="Offline " />
-            <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span>{canExport ? 'Export window active.' : exportGateMessage}</span>
-            <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span>{`Window ${phaseState.tournamentPhase === 'FINAL' ? 'Final' : 'Live'}`}</span>
-          </>
-        }
-      />
+    <AdminWorkspaceShellV2
+      title="Exports"
+      subtitle="Download league workbooks with clear presets and focused actions."
+      metadata={
+        <>
+          <SnapshotStamp timestamp={state.bundle.offlineLastUpdated} prefix="Offline " />
+          <span>{canExport ? 'Exports available' : exportGateMessage}</span>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <SectionCardV2 tone="panel" density="none" className="p-4 md:p-5">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preset picker</div>
+                <h2 className="mt-1 text-[length:var(--v2-h3-size)] font-semibold tracking-[0.01em] text-foreground">
+                  Choose workbook type
+                </h2>
+              </div>
 
-      <SectionCardV2 tone="panel" density="none" className="p-4 md:p-5">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-          <div className="space-y-3">
-            <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preset picker</div>
-              <h2 className="mt-1 text-[length:var(--v2-h3-size)] font-semibold tracking-[0.01em] text-foreground">Choose export intent</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Single-select radio cards. Choose one preset, then configure scope on the right.</p>
+              <div role="radiogroup" aria-label="Export presets" className="grid gap-3 sm:grid-cols-2">
+                {EXPORT_PRESETS.map((preset) => {
+                  const isSelected = selectedPresetId === preset.id
+                  const presetSheetCount = PRESET_FIELD_PREVIEW[preset.id]?.length ?? 0
+                  const requirementLabels =
+                    preset.requires === 'both'
+                      ? ['Needs user', 'Needs matchday']
+                      : preset.requires === 'user'
+                        ? ['Needs user']
+                        : ['Needs matchday']
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      onClick={() => setSelectedPresetId(preset.id)}
+                      className={cn(
+                        'group rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                        isSelected
+                          ? 'border-[color:color-mix(in_srgb,var(--v2-border-medium)_80%,transparent)] bg-background/66 shadow-[var(--shadow0)]'
+                          : 'border-border/45 bg-bg2/18 hover:border-border/60 hover:bg-bg2/30'
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <div className="text-sm font-semibold text-foreground">{preset.label}</div>
+                          <p className="text-[12px] leading-snug text-muted-foreground">{preset.description}</p>
+                        </div>
+                        <span
+                          className={cn(
+                            'inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-2 text-[10px] font-semibold uppercase tracking-[0.1em]',
+                            isSelected
+                              ? 'border-transparent bg-[rgba(var(--primary-rgb),0.24)] text-foreground shadow-[var(--shadow0)]'
+                              : 'border-transparent bg-background/45 text-muted-foreground'
+                          )}
+                        >
+                          {isSelected ? '✓' : ''}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {requirementLabels.map((label) => (
+                          <span
+                            key={`${preset.id}-${label}`}
+                            className="inline-flex items-center rounded-full bg-background/52 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground"
+                          >
+                            {label}
+                          </span>
+                        ))}
+                        <span className="inline-flex items-center rounded-full bg-background/52 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
+                          {presetSheetCount} sheets
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            <div role="radiogroup" aria-label="Export presets" className="grid gap-3 sm:grid-cols-2">
-              {EXPORT_PRESETS.map((preset) => {
-                const isSelected = selectedPresetId === preset.id
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    onClick={() => setSelectedPresetId(preset.id)}
-                    className={cn(
-                      'group rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                      isSelected
-                        ? 'border-[color:color-mix(in_srgb,var(--v2-border-medium)_80%,transparent)] bg-background/66 shadow-[var(--shadow0)]'
-                        : 'border-border/45 bg-bg2/18 hover:border-border/60 hover:bg-bg2/30'
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-0.5">
-                        <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preset</div>
-                        <div className="text-sm font-semibold text-foreground">{preset.label}</div>
-                      </div>
-                      <span
-                        className={cn(
-                          'inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-2 text-[10px] font-semibold uppercase tracking-[0.1em]',
-                          isSelected
-                            ? 'border-transparent bg-[rgba(var(--primary-rgb),0.24)] text-foreground shadow-[var(--shadow0)]'
-                            : 'border-transparent bg-background/45 text-muted-foreground'
-                        )}
-                      >
-                        {isSelected ? '✓' : ''}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{preset.description}</p>
-                    <div className="mt-3 space-y-1 text-[11px] leading-tight text-muted-foreground">
-                      <div>
-                        <span className="font-semibold uppercase tracking-[0.12em] text-foreground/90">Scope</span>{' '}
-                        {preset.scopeSummary}
-                      </div>
-                      <div>
-                        <span className="font-semibold uppercase tracking-[0.12em] text-foreground/90">Output</span>{' '}
-                        {preset.outputSummary}
-                      </div>
-                      <div>
-                        <span className="font-semibold uppercase tracking-[0.12em] text-foreground/90">Use</span>{' '}
-                        {preset.useCaseSummary}
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <SectionCardV2 tone="subtle" density="none" className="border-border/45 p-4">
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Configuration</div>
-                  <div className="mt-1 text-base font-semibold text-foreground">{selectedPreset.label}</div>
-                  <div className="mt-1 text-sm text-muted-foreground">{selectedPreset.description}</div>
-                </div>
-                <Badge
-                  tone={exportStatus === 'exporting' ? 'warning' : 'secondary'}
-                  case="normal"
-                  className="border-transparent bg-background/55 shadow-none"
-                >
-                  {exportStatus === 'exporting' ? 'Preparing...' : 'Ready'}
-                </Badge>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                {requiresUser ? (
-                  <SelectField
-                    label="User"
-                    value={selectedUserId}
-                    onChange={(event) => setSelectedUserId(event.target.value)}
-                  >
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name} ({user.email ?? user.id}) - {user.picksCount} picks
-                      </option>
-                    ))}
-                  </SelectField>
-                ) : null}
-
-                {requiresMatchday ? (
-                  <SelectField
-                    label="Matchday"
-                    value={selectedMatchday}
-                    onChange={(event) => setSelectedMatchday(event.target.value)}
-                  >
-                    {matchdays.map((matchday) => (
-                      <option key={matchday} value={matchday}>
-                        {matchday}
-                      </option>
-                    ))}
-                  </SelectField>
-                ) : null}
-              </div>
-
-              <div className="rounded-xl bg-bg2/28 p-3">
-                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">What's included</div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedPresetSheets.map((sheet) => (
-                    <span
-                      key={`${selectedPreset.id}-${sheet}`}
-                      className="inline-flex items-center rounded-full bg-background/52 px-2.5 py-1 text-[11px] text-muted-foreground"
-                    >
-                      {sheet}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {noDataHint ? (
-                <Alert tone="warning" title="No data">
-                  {noDataHint}
-                </Alert>
-              ) : (
-                <PanelState
-                  className="text-xs"
-                  message="Data found for this preset. Download will include only rows that match this selection."
-                  tone="loading"
-                />
-              )}
-
-              {!canExport ? (
-                <Alert tone="warning" title="Exports unavailable">
-                  {exportGateMessage}
-                </Alert>
-              ) : (
-                <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      size="sm"
-                      loading={exportStatus === 'exporting'}
-                      disabled={exportStatus === 'exporting'}
-                      onClick={() => void runExport(selectedPresetId)}
-                    >
-                      {exportStatus === 'exporting' ? 'Preparing...' : 'Download XLSX'}
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => setFieldPreviewOpen(true)}>
-                      Preview fields
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="quiet"
-                      disabled={exportStatus === 'exporting'}
-                      onClick={() => void copyExportConfig()}
-                    >
-                      Copy export config
-                    </Button>
+            <SectionCardV2 tone="subtle" density="none" className="border-border/45 p-4">
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Configuration</div>
+                    <div className="mt-1 text-base font-semibold text-foreground">{selectedPreset.label}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">{selectedPreset.description}</div>
                   </div>
-                  {exportStatus === 'exporting' || exportProgress > 0 ? (
-                    <div className="space-y-1">
-                      <div className="text-xs text-muted-foreground">
-                        {exportStatus === 'exporting' ? 'Batch export in progress...' : 'Batch export complete'}
-                      </div>
-                      <Progress
-                        value={exportProgress}
-                        intent={exportStatus === 'exporting' ? 'momentum' : 'success'}
-                        size="sm"
-                        aria-label="Export batch progress"
-                      />
-                    </div>
+                  <Badge
+                    tone={exportStatus === 'exporting' ? 'warning' : 'secondary'}
+                    case="normal"
+                    className="border-transparent bg-background/55 shadow-none"
+                  >
+                    {exportStatus === 'exporting' ? 'Preparing' : 'Ready'}
+                  </Badge>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {requiresUser ? (
+                    <SelectField
+                      label="User"
+                      value={selectedUserId}
+                      onChange={(event) => setSelectedUserId(event.target.value)}
+                    >
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} ({user.email ?? user.id}) - {user.picksCount} picks
+                        </option>
+                      ))}
+                    </SelectField>
                   ) : null}
-                </>
+
+                  {requiresMatchday ? (
+                    <SelectField
+                      label="Matchday"
+                      value={selectedMatchday}
+                      onChange={(event) => setSelectedMatchday(event.target.value)}
+                    >
+                      {matchdays.map((matchday) => (
+                        <option key={matchday} value={matchday}>
+                          {matchday}
+                        </option>
+                      ))}
+                    </SelectField>
+                  ) : null}
+                </div>
+
+                <div className="rounded-xl bg-bg2/28 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">What's included</div>
+                    <button
+                      type="button"
+                      className="text-[11px] font-medium text-muted-foreground underline-offset-2 transition hover:text-foreground hover:underline"
+                      onClick={() => setFieldPreviewOpen(true)}
+                    >
+                      View fields
+                    </button>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedPresetSheets.map((sheet) => (
+                      <span
+                        key={`${selectedPreset.id}-${sheet}`}
+                        className="inline-flex items-center rounded-full bg-background/52 px-2.5 py-1 text-[11px] text-muted-foreground"
+                      >
+                        {sheet}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {noDataHint ? (
+                  <Alert tone="warning" title="No exportable rows">
+                    {noDataHint}
+                  </Alert>
+                ) : (
+                  <div className="text-xs text-muted-foreground">Ready to export.</div>
+                )}
+
+                {!canExport ? (
+                  <Alert tone="warning" title="Exports unavailable">
+                    {exportGateMessage}
+                  </Alert>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        loading={exportStatus === 'exporting'}
+                        disabled={exportStatus === 'exporting'}
+                        onClick={() => void runExport(selectedPresetId)}
+                      >
+                        {exportStatus === 'exporting' ? 'Preparing...' : 'Download .xlsx'}
+                      </Button>
+                    </div>
+
+                    {showQuickUserResults || showQuickMatchdaySnapshot || showQuickMatchdayPicks ? (
+                      <div className="space-y-2">
+                        <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                          Quick actions
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {showQuickUserResults ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={exportStatus === 'exporting'}
+                              onClick={() =>
+                                void runExport('USER_PICKS_WORKBOOK', {
+                                  intentOverride: 'USER_RESULTS',
+                                  overrideLabel: 'User results workbook'
+                                })
+                              }
+                            >
+                              Download results-only workbook
+                            </Button>
+                          ) : null}
+
+                          {showQuickMatchdaySnapshot ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={exportStatus === 'exporting'}
+                              onClick={() => void runExport('MATCHDAY_LEADERBOARD_SNAPSHOT')}
+                            >
+                              Download matchday leaderboard snapshot
+                            </Button>
+                          ) : null}
+
+                          {showQuickMatchdayPicks ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={exportStatus === 'exporting'}
+                              onClick={() => void runExport('MATCHDAY_PICKS_WORKBOOK')}
+                            >
+                              Download matchday picks workbook
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {exportStatus === 'exporting' || exportProgress > 0 ? (
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">
+                          {exportStatus === 'exporting' ? 'Preparing workbook...' : 'Export complete'}
+                        </div>
+                        <Progress
+                          value={exportProgress}
+                          intent={exportStatus === 'exporting' ? 'momentum' : 'success'}
+                          size="sm"
+                          aria-label="Export batch progress"
+                        />
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </SectionCardV2>
+          </div>
+        </SectionCardV2>
+
+        <SectionCardV2 tone="panel" density="none" className="p-4 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Recent exports</div>
+              <div className="text-sm text-muted-foreground">This session</div>
+            </div>
+            {exportHistory.length > 0 ? (
+              <Badge tone="secondary" className="border-transparent bg-background/55 shadow-none">
+                {exportHistory.length} runs
+              </Badge>
+            ) : null}
+          </div>
+
+          {exportHistory.length === 0 ? (
+            <PanelState message="No exports yet." tone="empty" />
+          ) : (
+            <Table
+              unframed
+              className="[&_th]:border-b-[color:color-mix(in_srgb,var(--border)_45%,transparent)] [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)]"
+            >
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Workbook</th>
+                  <th>Status</th>
+                  <th>Rows</th>
+                  <th>File</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {exportHistory.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td className="font-semibold text-foreground">{entry.presetLabel}</td>
+                    <td>
+                      <Badge tone={entry.status === 'success' ? 'success' : 'danger'}>
+                        {entry.status === 'success' ? 'Success' : 'Failed'}
+                      </Badge>
+                    </td>
+                    <td>{entry.rowCount}</td>
+                    <td className="max-w-[260px] truncate">{entry.fileName}</td>
+                    <td>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setSelectedPresetId(entry.presetId)
+                          if (entry.selectedUserId) setSelectedUserId(entry.selectedUserId)
+                          if (entry.selectedMatchday) setSelectedMatchday(entry.selectedMatchday)
+                        }}
+                      >
+                        Reuse preset
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </SectionCardV2>
+
+        <Sheet open={fieldPreviewOpen} onOpenChange={setFieldPreviewOpen}>
+          <SheetContent side="right" className="w-[96vw] max-w-3xl">
+            <SheetHeader>
+              <SheetTitle>Field Preview</SheetTitle>
+              <SheetDescription>{selectedPreset.label}</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-3 px-4 py-3">
+              {selectedPresetFieldPreview.length === 0 ? (
+                <PanelState message="No field preview is available for this preset." tone="empty" />
+              ) : (
+                <Table>
+                  <thead>
+                    <tr>
+                      <th>Sheet</th>
+                      <th>Columns included</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedPresetFieldPreview.map((sheet) => (
+                      <tr key={`${selectedPreset.id}-${sheet.sheet}`}>
+                        <td className="font-semibold text-foreground">{sheet.sheet}</td>
+                        <td>{sheet.columns.join(', ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
               )}
             </div>
-          </SectionCardV2>
-        </div>
-      </SectionCardV2>
-
-      {canExport ? (
-        <DetailsDisclosure title="Advanced exports" meta="Optional" className="border-border/45 bg-bg2/18">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {requiresUser ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={exportStatus === 'exporting'}
-                onClick={() =>
-                  void runExport('USER_PICKS_WORKBOOK', {
-                    intentOverride: 'USER_RESULTS',
-                    overrideLabel: 'User results workbook'
-                  })
-                }
-              >
-                Download user results workbook
-              </Button>
-            ) : null}
-
-            {requiresMatchday && selectedPresetId !== 'MATCHDAY_LEADERBOARD_SNAPSHOT' ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={exportStatus === 'exporting'}
-                onClick={() => void runExport('MATCHDAY_LEADERBOARD_SNAPSHOT')}
-              >
-                Download matchday leaderboard snapshot
-              </Button>
-            ) : null}
-
-            {requiresMatchday && selectedPresetId === 'MATCHDAY_LEADERBOARD_SNAPSHOT' ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={exportStatus === 'exporting'}
-                onClick={() => void runExport('MATCHDAY_PICKS_WORKBOOK')}
-              >
-                Download matchday picks workbook
-              </Button>
-            ) : null}
-          </div>
-        </DetailsDisclosure>
-      ) : null}
-
-      <SectionCardV2 tone="panel" density="none" className="p-4 sm:p-5">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <div>
-            <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Export history</div>
-            <div className="text-sm text-muted-foreground">Current browser session only.</div>
-          </div>
-          {exportHistory.length > 0 ? (
-            <Badge tone="secondary" className="border-transparent bg-background/55 shadow-none">
-              {exportHistory.length} runs
-            </Badge>
-          ) : null}
-        </div>
-
-        {exportHistory.length === 0 ? (
-          <PanelState message="No exports yet in this session." tone="empty" />
-        ) : (
-          <Table
-            unframed
-            className="[&_th]:border-b-[color:color-mix(in_srgb,var(--border)_45%,transparent)] [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)]"
-          >
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Preset</th>
-                <th>Status</th>
-                <th>Rows</th>
-                <th>Duration</th>
-                <th>File</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {exportHistory.map((entry) => (
-                <tr key={entry.id}>
-                  <td>{new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                  <td className="font-semibold text-foreground">{entry.presetLabel}</td>
-                  <td>
-                    <Badge tone={entry.status === 'success' ? 'success' : 'danger'}>
-                      {entry.status === 'success' ? 'Success' : 'Failed'}
-                    </Badge>
-                  </td>
-                  <td>{entry.rowCount}</td>
-                  <td>{(entry.durationMs / 1000).toFixed(1)}s</td>
-                  <td className="max-w-[260px] truncate">{entry.fileName}</td>
-                  <td>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        setSelectedPresetId(entry.presetId)
-                        if (entry.selectedUserId) setSelectedUserId(entry.selectedUserId)
-                        if (entry.selectedMatchday) setSelectedMatchday(entry.selectedMatchday)
-                      }}
-                    >
-                      Reuse preset
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
-      </SectionCardV2>
-
-      <Sheet open={fieldPreviewOpen} onOpenChange={setFieldPreviewOpen}>
-        <SheetContent side="right" className="w-[96vw] max-w-3xl">
-          <SheetHeader>
-            <SheetTitle>Field Preview</SheetTitle>
-            <SheetDescription>{selectedPreset.label}</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-3 px-4 py-3">
-            {selectedPresetFieldPreview.length === 0 ? (
-              <PanelState message="No field preview is available for this preset." tone="empty" />
-            ) : (
-              <Table>
-                <thead>
-                  <tr>
-                    <th>Sheet</th>
-                    <th>Columns included</th>
-                    <th>Row source</th>
-                    <th>Date scope</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedPresetFieldPreview.map((sheet) => (
-                    <tr key={`${selectedPreset.id}-${sheet.sheet}`}>
-                      <td className="font-semibold text-foreground">{sheet.sheet}</td>
-                      <td>{sheet.columns.join(', ')}</td>
-                      <td>{sheet.rowSource}</td>
-                      <td>{sheet.dateScope}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            )}
-          </div>
-          <SheetFooter>
-            <div className="flex w-full justify-end">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setFieldPreviewOpen(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
-    </div>
+            <SheetFooter>
+              <div className="flex w-full justify-end">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setFieldPreviewOpen(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </AdminWorkspaceShellV2>
   )
 }
