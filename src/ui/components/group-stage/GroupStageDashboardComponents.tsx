@@ -245,7 +245,7 @@ export function GroupPicksDenseTable({
   return (
     <SectionCardV2 tone="panel" density="none" className="group-stage-v2-table rounded-xl overflow-hidden">
       <div className="flex flex-col">
-        <div className="flex min-h-11 flex-wrap items-center gap-2 border-b border-border/60 px-3">
+        <div className="flex min-h-11 flex-wrap items-center gap-2 border-b border-border/35 px-3">
           <div className="text-[13px] font-semibold tracking-[0.02em] text-foreground">Group picks</div>
           <div className="text-[13px] text-muted-foreground">{groupsDone}/{groupsTotal} groups complete</div>
         </div>
@@ -267,13 +267,13 @@ export function GroupPicksDenseTable({
                 <div
                   key={`group-row-${row.groupId}`}
                   className={cn(
-                    'rounded-xl border border-border/60 p-3',
+                    'rounded-xl p-3 shadow-[var(--shadow0)]',
                     rowSurfaceClass(row.rowResult),
                     saveStatus === 'error' ? 'ring-1 ring-destructive/40' : undefined
                   )}
                 >
                   <div className="mb-3 flex flex-wrap items-center gap-2 text-[13px]">
-                    <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg border border-border text-[12px] font-medium text-foreground">
+                    <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg bg-background/55 text-[12px] font-medium text-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_26%,transparent)]">
                       {row.groupId}
                     </span>
                     <span className={cn('font-medium', row.rankingComplete ? 'text-foreground' : 'text-muted-foreground')}>
@@ -324,7 +324,7 @@ export function GroupPicksDenseTable({
                           interactive={!isDragDisabled}
                         >
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-border text-[11px] font-semibold text-muted-foreground">
+                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-background/55 text-[11px] font-semibold text-muted-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_24%,transparent)]">
                               {index + 1}
                             </span>
                             <TeamIdentityInlineV2
@@ -428,7 +428,7 @@ export function BestThirdPicksCompact({
 
   return (
     <SectionCardV2 tone="panel" density="none" className="group-stage-v2-best-third rounded-xl overflow-hidden">
-      <div className="flex h-10 items-center gap-2 border-b border-border/60 px-3">
+      <div className="flex h-10 items-center gap-2 border-b border-border/35 px-3">
         <div className="min-w-0 flex-1">
           <div className="truncate text-[13px] font-semibold tracking-[0.02em] text-foreground">{meterLabel}</div>
         </div>
@@ -484,7 +484,7 @@ export function BestThirdPicksCompact({
                     </span>
                   </div>
 
-                  <div className="min-h-11 rounded-lg border border-border bg-background px-2 py-2 text-[13px] text-foreground">
+                  <div className="min-h-11 rounded-lg bg-background/55 px-2 py-2 text-[13px] text-foreground">
                     {showNotReady ? (
                       <span className="text-muted-foreground">Complete ranking 1-4 first.</span>
                     ) : (

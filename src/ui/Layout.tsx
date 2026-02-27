@@ -126,47 +126,12 @@ function SidebarNavSection({
   )
 }
 
-function SidebarFavoriteTeamModule({
-  favoriteTeamCode,
-  compact,
-  loading,
-  saving,
-  onChange
-}: {
-  favoriteTeamCode: string | null
-  compact: boolean
-  loading: boolean
-  saving: boolean
-  onChange: (nextFavoriteTeamCode: string | null) => void
-}) {
-  return (
-    <div
-      className={cn(
-        'rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-nav-hover-bg)]',
-        compact ? 'p-2' : 'p-2.5'
-      )}
-      aria-label="Favorite team preference"
-    >
-      {compact ? null : (
-        <div className="mb-2 px-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--sidebar-nav-muted)]">
-          Favorite team
-        </div>
-      )}
-      <FavoriteTeamSelectV2
-        value={favoriteTeamCode}
-        disabled={loading}
-        loading={saving}
-        onChange={onChange}
-        variant="sidebar"
-        menuPlacement="top"
-      />
-    </div>
-  )
-}
-
 function SidebarAccountMenu({
   name,
   favoriteTeamCode,
+  favoriteTeamLoading,
+  favoriteTeamSaving,
+  onFavoriteTeamChange,
   onSignOut,
   onToggleDemoMode,
   canToggleDemoMode,
@@ -175,6 +140,9 @@ function SidebarAccountMenu({
 }: {
   name: string
   favoriteTeamCode?: string | null
+  favoriteTeamLoading: boolean
+  favoriteTeamSaving: boolean
+  onFavoriteTeamChange: (nextFavoriteTeamCode: string | null) => void
   onSignOut: () => Promise<void>
   onToggleDemoMode: () => Promise<void>
   canToggleDemoMode: boolean
@@ -214,7 +182,21 @@ function SidebarAccountMenu({
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top" className="min-w-[220px]">
+      <DropdownMenuContent align="start" side="top" className="min-w-[260px] overflow-visible">
+        <div className="rounded-md border border-border/80 bg-[var(--surface-muted)] p-2">
+          <div className="mb-2 px-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--sidebar-nav-muted)]">
+            Favorite team
+          </div>
+          <FavoriteTeamSelectV2
+            value={favoriteTeamCode}
+            disabled={favoriteTeamLoading}
+            loading={favoriteTeamSaving}
+            onChange={onFavoriteTeamChange}
+            variant="sidebar"
+            menuPlacement="top"
+          />
+        </div>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => setMode('light')}>
           Theme: Light {!isSystemMode && mode === 'light' ? '✓' : ''}
         </DropdownMenuItem>
@@ -531,18 +513,12 @@ function LayoutFrameContent() {
 
           <div className="mt-4 shrink-0 space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-3">
             {authState.user ? (
-              <SidebarFavoriteTeamModule
-                favoriteTeamCode={favoriteTeamPreference.favoriteTeamCode}
-                compact={sidebarCompact}
-                loading={favoriteTeamPreference.isLoading}
-                saving={favoriteTeamPreference.isSaving}
-                onChange={favoriteTeamPreference.setFavoriteTeamCode}
-              />
-            ) : null}
-            {authState.user ? (
               <SidebarAccountMenu
                 name={user?.name || authState.user.displayName || authState.user.email || 'Signed in'}
                 favoriteTeamCode={favoriteTeamPreference.favoriteTeamCode}
+                favoriteTeamLoading={favoriteTeamPreference.isLoading}
+                favoriteTeamSaving={favoriteTeamPreference.isSaving}
+                onFavoriteTeamChange={favoriteTeamPreference.setFavoriteTeamCode}
                 onSignOut={handleSignOut}
                 onToggleDemoMode={handleToggleDemoMode}
                 canToggleDemoMode={canAccessAdmin}

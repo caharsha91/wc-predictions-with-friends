@@ -593,7 +593,7 @@
 }
 
 .group-stage-v2-group-nav {
-  border-color: var(--v2-border-medium);
+  border-color: color-mix(in srgb, var(--v2-border-soft) 72%, transparent);
   background:
     radial-gradient(120% 130% at 0% 100%, rgba(var(--secondary-rgb), 0.16), transparent 70%),
     linear-gradient(
@@ -608,9 +608,9 @@
 .group-stage-v2-best-third,
 .group-stage-v2-standings,
 .group-stage-v2-leaderboard {
-  border-color: var(--v2-border-medium);
+  border-color: color-mix(in srgb, var(--v2-border-soft) 70%, transparent);
   background:
-    radial-gradient(118% 126% at 100% 100%, rgba(var(--secondary-rgb), 0.12), transparent 72%),
+    radial-gradient(118% 126% at 100% 100%, rgba(var(--secondary-rgb), 0.1), transparent 72%),
     linear-gradient(
       132deg,
       color-mix(in srgb, var(--card) 94%, transparent) 0%,
@@ -624,7 +624,7 @@
 
 .group-stage-v2-best-third-tile {
   min-height: 7.4rem;
-  border-color: color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+  border-color: color-mix(in srgb, var(--v2-border-soft) 62%, transparent);
   background: color-mix(in srgb, var(--background) 92%, transparent);
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
@@ -635,15 +635,15 @@
 
 .group-stage-v2-best-third-tile:hover {
   background: color-mix(in srgb, var(--accent-soft) 32%, transparent);
-  border-color: color-mix(in srgb, var(--v2-glow-medium) 52%, var(--v2-border-medium) 48%);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 46%, transparent);
+  border-color: color-mix(in srgb, var(--v2-glow-medium) 42%, var(--v2-border-soft) 58%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 34%, transparent);
   transform: translateY(-1px);
 }
 
 .group-stage-v2-best-third-tile[data-selected='true'] {
-  border-color: color-mix(in srgb, var(--v2-glow-medium) 62%, var(--v2-border-medium) 38%);
+  border-color: color-mix(in srgb, var(--v2-glow-medium) 54%, var(--v2-border-soft) 46%);
   background: color-mix(in srgb, var(--accent-soft) 34%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 54%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 42%, transparent);
 }
 
 .group-stage-v2-best-third-tile[data-disabled='true'] {

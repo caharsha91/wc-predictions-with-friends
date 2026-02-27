@@ -1033,7 +1033,7 @@ export default function GroupStagePage() {
 
   const standingsPanel = (
     <SectionCardV2 tone="panel" density="none" className="group-stage-v2-standings min-h-0 rounded-xl overflow-hidden">
-      <div className="flex h-11 items-center justify-between gap-2 border-b border-border/60 px-3">
+      <div className="flex h-11 items-center justify-between gap-2 border-b border-border/35 px-3">
         <div className="text-[13px] font-semibold tracking-[0.02em] text-foreground">Standings</div>
         <Badge tone="secondary" className="h-7 rounded-full px-2 text-[12px] normal-case tracking-normal">
           Group {selectedStandingsGroup}
@@ -1043,7 +1043,7 @@ export default function GroupStagePage() {
       <div className="p-3">
         <Table
           unframed
-          className="[&_th]:h-9 [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:px-2 [&_td]:py-0 [&_td]:text-[14px]"
+          className="[&_th]:h-9 [&_th]:border-b-[color:color-mix(in_srgb,var(--border)_42%,transparent)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)] [&_td]:px-2 [&_td]:py-0 [&_td]:text-[14px]"
         >
           <thead>
             <tr>
@@ -1062,7 +1062,7 @@ export default function GroupStagePage() {
                   key={`group-standing-${selectedStandingsGroup}-${entry.code}`}
                   className={cn(
                     pickedFirst || pickedSecond
-                      ? 'bg-background/80 ring-1 ring-border'
+                      ? 'bg-background/72 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--v2-glow-soft)_56%,transparent)]'
                       : 'hover:bg-background/45 transition-colors'
                   )}
                 >

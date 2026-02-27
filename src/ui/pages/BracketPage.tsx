@@ -747,8 +747,9 @@ function DesktopVisualBracket({
       { id: 'lbl-r32-l', label: 'Round of 32', x: xR32Left, stage: 'R32' },
       { id: 'lbl-r16-l', label: 'Round of 16', x: xR16Left, stage: 'R16' },
       { id: 'lbl-qf-l', label: 'Quarterfinals', x: xQfLeft, stage: 'QF' },
-      { id: 'lbl-sf', label: 'Semifinals', x: (xSfLeft + xSfRight) / 2, stage: 'SF' },
+      { id: 'lbl-sf-l', label: 'Semifinal', x: xSfLeft, stage: 'SF' },
       { id: 'lbl-final', label: 'Final', x: xFinal, stage: 'Final' },
+      { id: 'lbl-sf-r', label: 'Semifinal', x: xSfRight, stage: 'SF' },
       { id: 'lbl-r32-r', label: 'Round of 32', x: xR32Right, stage: 'R32' },
       { id: 'lbl-r16-r', label: 'Round of 16', x: xR16Right, stage: 'R16' },
       { id: 'lbl-qf-r', label: 'Quarterfinals', x: xQfRight, stage: 'QF' }

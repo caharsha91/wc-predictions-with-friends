@@ -3,7 +3,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '../ui/DropdownMenu'
 
@@ -29,24 +28,27 @@ export default function ExportMenuV2({
           Export
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="w-[292px] overflow-hidden rounded-xl border-border/75 p-0">
-        <div className="space-y-3 px-3 py-3">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Export</div>
-          <div className="space-y-2">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-[286px] overflow-hidden rounded-xl border-border/45 bg-background/92 p-2 backdrop-blur-md"
+      >
+        <div className="space-y-2.5 rounded-lg bg-bg2/20 px-2.5 py-2.5">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Export</div>
+          <div className="space-y-1.5">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Scope</div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Scope</div>
               <div className="mt-0.5 text-[12px] leading-snug text-foreground">{scopeLabel}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Snapshot</div>
+              <div className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Snapshot</div>
               <div className="mt-0.5 text-[12px] leading-snug text-foreground">{snapshotLabel}</div>
             </div>
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">{lockMessage}</p>
         </div>
-        <DropdownMenuSeparator className="my-0" />
         <DropdownMenuItem
-          className="m-2 rounded-lg"
+          className="mt-1 rounded-lg bg-background/45"
           onSelect={(event) => {
             event.preventDefault()
             onDownloadXlsx()

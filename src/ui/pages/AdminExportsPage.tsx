@@ -1715,8 +1715,8 @@ export default function AdminExportsPage() {
                     className={cn(
                       'group rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                       isSelected
-                        ? 'border-[var(--v2-border-strong)] bg-background/70 shadow-[var(--shadow1)]'
-                        : 'border-border/70 bg-bg2/25 hover:border-border hover:bg-bg2/40'
+                        ? 'border-[color:color-mix(in_srgb,var(--v2-border-medium)_80%,transparent)] bg-background/66 shadow-[var(--shadow0)]'
+                        : 'border-border/45 bg-bg2/18 hover:border-border/60 hover:bg-bg2/30'
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -1728,8 +1728,8 @@ export default function AdminExportsPage() {
                         className={cn(
                           'inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-2 text-[10px] font-semibold uppercase tracking-[0.1em]',
                           isSelected
-                            ? 'border-[rgba(var(--primary-rgb),0.55)] bg-[rgba(var(--primary-rgb),0.16)] text-foreground'
-                            : 'border-border/70 bg-background/55 text-muted-foreground'
+                            ? 'border-transparent bg-[rgba(var(--primary-rgb),0.24)] text-foreground shadow-[var(--shadow0)]'
+                            : 'border-transparent bg-background/45 text-muted-foreground'
                         )}
                       >
                         {isSelected ? '✓' : ''}
@@ -1756,7 +1756,7 @@ export default function AdminExportsPage() {
             </div>
           </div>
 
-          <SectionCardV2 tone="subtle" density="none" className="p-4">
+          <SectionCardV2 tone="subtle" density="none" className="border-border/45 p-4">
             <div className="space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
@@ -1764,7 +1764,11 @@ export default function AdminExportsPage() {
                   <div className="mt-1 text-base font-semibold text-foreground">{selectedPreset.label}</div>
                   <div className="mt-1 text-sm text-muted-foreground">{selectedPreset.description}</div>
                 </div>
-                <Badge tone={exportStatus === 'exporting' ? 'warning' : 'secondary'} case="normal">
+                <Badge
+                  tone={exportStatus === 'exporting' ? 'warning' : 'secondary'}
+                  case="normal"
+                  className="border-transparent bg-background/55 shadow-none"
+                >
                   {exportStatus === 'exporting' ? 'Preparing...' : 'Ready'}
                 </Badge>
               </div>
@@ -1799,13 +1803,16 @@ export default function AdminExportsPage() {
                 ) : null}
               </div>
 
-              <div className="rounded-xl border border-border/70 bg-bg2/35 p-3">
+              <div className="rounded-xl bg-bg2/28 p-3">
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">What's included</div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {selectedPresetSheets.map((sheet) => (
-                    <Badge key={`${selectedPreset.id}-${sheet}`} tone="secondary" case="normal" className="tracking-normal">
+                    <span
+                      key={`${selectedPreset.id}-${sheet}`}
+                      className="inline-flex items-center rounded-full bg-background/52 px-2.5 py-1 text-[11px] text-muted-foreground"
+                    >
                       {sheet}
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               </div>
@@ -1870,7 +1877,7 @@ export default function AdminExportsPage() {
       </SectionCardV2>
 
       {canExport ? (
-        <DetailsDisclosure title="Advanced exports" meta="Optional">
+        <DetailsDisclosure title="Advanced exports" meta="Optional" className="border-border/45 bg-bg2/18">
           <div className="grid gap-3 sm:grid-cols-2">
             {requiresUser ? (
               <Button
@@ -1920,14 +1927,19 @@ export default function AdminExportsPage() {
             <div className="text-sm text-muted-foreground">Current browser session only.</div>
           </div>
           {exportHistory.length > 0 ? (
-            <Badge tone="secondary">{exportHistory.length} runs</Badge>
+            <Badge tone="secondary" className="border-transparent bg-background/55 shadow-none">
+              {exportHistory.length} runs
+            </Badge>
           ) : null}
         </div>
 
         {exportHistory.length === 0 ? (
           <PanelState message="No exports yet in this session." tone="empty" />
         ) : (
-          <Table>
+          <Table
+            unframed
+            className="[&_th]:border-b-[color:color-mix(in_srgb,var(--border)_45%,transparent)] [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)]"
+          >
             <thead>
               <tr>
                 <th>Time</th>
