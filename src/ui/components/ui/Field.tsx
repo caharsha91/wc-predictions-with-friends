@@ -46,7 +46,7 @@ export function InputField({
     <div className={cn('space-y-1', className)}>
       <label
         className={cn(
-          'text-xs uppercase tracking-[0.22em] text-muted-foreground',
+          'text-[13px] uppercase tracking-[0.12em] text-muted-foreground',
           labelHidden && 'sr-only'
         )}
         htmlFor={fieldId}
@@ -61,12 +61,12 @@ export function InputField({
         aria-describedby={describedBy}
       />
       {helperText ? (
-        <div className="text-xs text-muted-foreground" id={helperId}>
+        <div className="text-[13px] text-muted-foreground" id={helperId}>
           {helperText}
         </div>
       ) : null}
       {error ? (
-        <div className="text-xs text-destructive" id={errorId} role="alert">
+        <div className="text-[13px] text-destructive" id={errorId} role="alert">
           {error}
         </div>
       ) : null}
@@ -89,7 +89,7 @@ export function SelectField({
     <div className={cn('space-y-1', className)}>
       <label
         className={cn(
-          'text-xs uppercase tracking-[0.22em] text-muted-foreground',
+          'text-[13px] uppercase tracking-[0.12em] text-muted-foreground',
           labelHidden && 'sr-only'
         )}
         htmlFor={fieldId}
@@ -106,12 +106,12 @@ export function SelectField({
         {children}
       </select>
       {helperText ? (
-        <div className="text-xs text-muted-foreground" id={helperId}>
+        <div className="text-[13px] text-muted-foreground" id={helperId}>
           {helperText}
         </div>
       ) : null}
       {error ? (
-        <div className="text-xs text-destructive" id={errorId} role="alert">
+        <div className="text-[13px] text-destructive" id={errorId} role="alert">
           {error}
         </div>
       ) : null}
@@ -133,7 +133,7 @@ export function TextareaField({
     <div className={cn('space-y-1', className)}>
       <label
         className={cn(
-          'text-xs uppercase tracking-[0.22em] text-muted-foreground',
+          'text-[13px] uppercase tracking-[0.12em] text-muted-foreground',
           labelHidden && 'sr-only'
         )}
         htmlFor={fieldId}
@@ -148,12 +148,12 @@ export function TextareaField({
         aria-describedby={describedBy}
       />
       {helperText ? (
-        <div className="text-xs text-muted-foreground" id={helperId}>
+        <div className="text-[13px] text-muted-foreground" id={helperId}>
           {helperText}
         </div>
       ) : null}
       {error ? (
-        <div className="text-xs text-destructive" id={errorId} role="alert">
+        <div className="text-[13px] text-destructive" id={errorId} role="alert">
           {error}
         </div>
       ) : null}

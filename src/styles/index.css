@@ -54,7 +54,7 @@
     pointer-events: none;
     background-image: radial-gradient(var(--noise-color) 0.5px, transparent 0.5px);
     background-size: 3px 3px;
-    opacity: 0.5;
+    opacity: var(--noise-opacity, 0.5);
     mix-blend-mode: soft-light;
     z-index: 0;
   }

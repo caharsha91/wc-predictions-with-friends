@@ -69,7 +69,7 @@ export function SheetTitle({
 }: ComponentPropsWithoutRef<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={cn('text-sm font-semibold uppercase tracking-[0.18em]', className)}
+      className={cn('text-sm font-semibold uppercase tracking-[0.14em]', className)}
       {...props}
     />
   )

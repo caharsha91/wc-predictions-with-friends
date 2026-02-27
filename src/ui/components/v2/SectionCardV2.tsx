@@ -19,7 +19,11 @@ export default function SectionCardV2({
   const roleTone = role === 'side' ? 'side' : role === 'inset' ? 'inset' : 'panel'
   const resolvedTone = tone ?? roleTone
   const densityClass =
-    density === 'none' ? 'p-0' : density === 'compact' ? 'px-3 py-3 md:px-4 md:py-4' : 'px-4 py-4 md:px-5 md:py-5'
+    density === 'none'
+      ? 'p-0'
+      : density === 'compact'
+        ? 'px-3 py-3.5 md:px-4 md:py-4'
+        : 'px-4 py-5 md:px-5 md:py-6'
 
   return (
     <V2Card {...props} tone={resolvedTone} className={cn('v2-section-card rounded-2xl', densityClass, className)}>

@@ -383,7 +383,7 @@ export default function DemoControlsPage() {
 
             <SectionCardV2 tone="panel" density="none" className="p-4">
               <div className="space-y-3">
-                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Session + Data</div>
+                <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Session + Data</div>
                 <div className="text-sm text-muted-foreground">
                   Reload snapshots after updating demo source data.
                 </div>

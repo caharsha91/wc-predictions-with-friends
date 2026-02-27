@@ -191,7 +191,7 @@ export default function FavoriteTeamSelectV2({
             imageClassName="h-full w-full object-cover"
           />
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Favorite team
             </div>
             <div className="truncate text-[13px] font-semibold text-foreground">

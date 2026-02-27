@@ -260,7 +260,7 @@ export default function AdminUsersPage() {
         <SectionCardV2 tone="panel" density="none" className="p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Roster</div>
+              <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Roster</div>
               <div className="text-lg font-semibold text-foreground">League players</div>
             </div>
             <div className="flex flex-wrap items-center gap-2">

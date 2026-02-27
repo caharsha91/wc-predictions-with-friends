@@ -86,7 +86,7 @@ function parseInputScore(raw: string, fallback: number): number {
 
 function segmentClass(selected: boolean, disabled: boolean): string {
   return cn(
-    'inline-flex h-9 min-w-[3.2rem] flex-1 items-center justify-center rounded-md px-2 text-[11px] font-medium uppercase tracking-[0.12em] transition-colors',
+    'inline-flex h-9 min-w-[3.2rem] flex-1 items-center justify-center rounded-md px-2 text-[12px] font-medium uppercase tracking-[0.1em] transition-colors',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-strong)] focus-visible:ring-offset-1 focus-visible:ring-offset-background',
     selected
       ? 'bg-[var(--surface-1)] text-foreground shadow-[inset_0_0_0_1px_var(--border-subtle)]'
@@ -129,7 +129,7 @@ function TeamButton({
       <span className="min-w-0">
         <span className="block truncate text-[12px] font-semibold text-foreground">{team.abbr ?? team.name}</span>
         {team.abbr && team.abbr !== team.name ? (
-          <span className="block truncate text-[10px] text-muted-foreground">{team.name}</span>
+          <span className="block truncate text-[11px] text-muted-foreground">{team.name}</span>
         ) : null}
       </span>
     </>

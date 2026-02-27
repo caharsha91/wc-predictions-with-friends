@@ -30,7 +30,7 @@ export default function LoginPage() {
     <div className="mx-auto flex min-h-[45vh] w-full max-w-2xl items-center py-6">
       <Card className="w-full rounded-2xl border-border/60 p-6">
         <div className="space-y-4">
-          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Private league</div>
+          <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Private league</div>
           <h1 className="text-xl font-semibold uppercase tracking-[0.12em] text-foreground">Login</h1>
           {hasFirebase ? (
             <div className="text-sm text-muted-foreground">

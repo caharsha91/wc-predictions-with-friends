@@ -33,7 +33,7 @@ export function Alert({ tone, title, children, className, ...props }: AlertProps
       className={cn(alertVariants({ tone }), className)}
       role={tone === 'danger' ? 'alert' : 'status'}
     >
-      {title ? <div className="mb-1 text-xs uppercase tracking-[0.2em] text-muted-foreground">{title}</div> : null}
+      {title ? <div className="mb-1 text-[12px] uppercase tracking-[0.12em] text-muted-foreground">{title}</div> : null}
       <div>{children}</div>
     </div>
   )

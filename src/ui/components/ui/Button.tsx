@@ -26,8 +26,8 @@ const buttonVariants = cva(
           'border-[rgba(var(--secondary-rgb),0.46)] bg-[rgba(var(--secondary-rgb),0.12)] text-foreground shadow-[var(--shadow0)] hover:border-secondary hover:bg-[rgba(var(--secondary-rgb),0.2)] hover:shadow-[var(--shadow1)] data-[active=true]:border-secondary data-[active=true]:bg-[rgba(var(--secondary-rgb),0.26)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
       },
       size: {
-        xs: 'h-8 px-2.5 text-[11px]',
-        sm: 'h-9 px-3 text-xs',
+        xs: 'h-8 px-2.5 text-[12px]',
+        sm: 'h-9 px-3 text-[13px]',
         md: 'h-10 px-4 text-sm'
       }
     },

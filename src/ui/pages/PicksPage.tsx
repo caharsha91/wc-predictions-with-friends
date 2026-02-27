@@ -456,7 +456,7 @@ function ResultsTable({ items, picksByMatchId, scoring, emptyMessage }: ResultsT
   return (
     <Table
       unframed
-      className="[&_th]:h-8 [&_th]:border-b-[color:var(--divider)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-[0.14em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:var(--divider)] [&_td]:px-2 [&_td]:py-1.5"
+      className="[&_th]:h-8 [&_th]:border-b-[color:var(--divider)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-[0.1em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:var(--divider)] [&_td]:px-2 [&_td]:py-1.5"
     >
       <thead>
         <tr>

@@ -374,8 +374,8 @@ function BracketSummaryPanel({
           key={`summary-${round.stage}`}
           className={`rounded-xl border p-2.5 ${
             round.stage === activeStage
-              ? 'border-[rgba(var(--primary-rgb),0.48)] bg-background/60'
-              : 'border-border/70 bg-background/35'
+              ? 'border-[rgba(var(--primary-rgb),0.36)] bg-background/60'
+              : 'border-border/50 bg-background/35'
           }`}
         >
           <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -434,7 +434,7 @@ function BracketMatchNode({
   const homeLabel = resolveTeamDisplayLabel(match.homeTeam)
   const awayLabel = resolveTeamDisplayLabel(match.awayTeam)
   const cardShellClass = isActiveRound
-    ? 'border-border/34 bg-background/42 shadow-[var(--shadow1)]'
+    ? 'border-border/24 bg-background/42 shadow-[var(--shadow1)]'
     : 'border-border/12 bg-background/16 shadow-none'
   const metadataTextClass = isActiveRound ? 'text-muted-foreground' : 'text-muted-foreground/55'
 
@@ -497,10 +497,10 @@ function BracketMatchNode({
       data-stage={match.stage}
     >
       <div className="flex items-center justify-between gap-2 overflow-hidden" style={{ height: BRACKET_NODE_METRICS.headerHeight }}>
-        <span className={`truncate text-[10px] font-medium uppercase tracking-[0.14em] ${metadataTextClass}`}>
+        <span className={`truncate text-[11px] font-medium uppercase tracking-[0.1em] ${metadataTextClass}`}>
           {STAGE_SHORT_LABELS[match.stage]}
         </span>
-        <span className={`truncate text-[10px] ${metadataTextClass}`}>{formatKickoff(match.match.kickoffUtc)}</span>
+        <span className={`truncate text-[11px] ${metadataTextClass}`}>{formatKickoff(match.match.kickoffUtc)}</span>
       </div>
 
       <div
@@ -803,7 +803,7 @@ function DesktopVisualBracket({
 
   if (layout.nodes.length === 0) {
     return (
-      <div ref={viewportRef} className="rounded-xl border border-dashed border-border/45 p-4 text-sm text-muted-foreground">
+      <div ref={viewportRef} className="rounded-xl border border-dashed border-border/35 p-4 text-sm text-muted-foreground">
         No bracket fixtures are available in this snapshot.
       </div>
     )
@@ -828,13 +828,13 @@ function DesktopVisualBracket({
   if (shouldUseCompactFallback) {
     return (
       <div ref={viewportRef} className="space-y-2">
-        <div className="rounded-lg border border-border/45 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
+        <div className="rounded-lg border border-border/35 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
           Compact bracket view enabled for readability on this viewport.
         </div>
         {rounds.map((round) => (
           <div
             key={`desktop-compact-round-${round.stage}`}
-            className="rounded-xl border border-border/45 bg-background/30 p-2.5"
+            className="rounded-xl border border-border/35 bg-background/30 p-2.5"
           >
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-foreground">
@@ -857,7 +857,7 @@ function DesktopVisualBracket({
                 return (
                   <div
                     key={`desktop-compact-match-${round.stage}-${match.match.id}`}
-                    className={`rounded-lg border border-border/45 p-2.5 ${resultSurfaceClass(match.result)}`}
+                    className={`rounded-lg border border-border/35 p-2.5 ${resultSurfaceClass(match.result)}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -902,7 +902,7 @@ function DesktopVisualBracket({
                           label={homeLabel}
                           className="max-w-full flex-1"
                         />
-                        <span className="ml-auto shrink-0 text-[10px] uppercase tracking-[0.12em] text-current/85">advances</span>
+                        <span className="ml-auto shrink-0 text-[11px] uppercase tracking-[0.08em] text-current/85">advances</span>
                       </button>
                       <button
                         type="button"
@@ -924,7 +924,7 @@ function DesktopVisualBracket({
                           label={awayLabel}
                           className="max-w-full flex-1"
                         />
-                        <span className="ml-auto shrink-0 text-[10px] uppercase tracking-[0.12em] text-current/85">advances</span>
+                        <span className="ml-auto shrink-0 text-[11px] uppercase tracking-[0.08em] text-current/85">advances</span>
                       </button>
                     </div>
                   </div>
@@ -975,7 +975,7 @@ function DesktopVisualBracket({
         {layout.labels.map((label) => (
           <div
             key={label.id}
-            className={`pointer-events-none absolute -translate-x-1/2 text-[11px] font-medium uppercase tracking-[0.14em] ${
+            className={`pointer-events-none absolute -translate-x-1/2 text-[12px] font-medium uppercase tracking-[0.1em] ${
               isStageActive(label.stage) ? 'text-muted-foreground' : 'text-muted-foreground/52'
             }`}
             style={{ left: label.x + layout.cardWidth / 2, top: 12 }}
@@ -1304,7 +1304,7 @@ export default function BracketPage() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Knockout bracket</div>
+              <div className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Knockout bracket</div>
             </div>
             <div className="flex items-center gap-2">
               {!bracketEditable ? (
@@ -1328,18 +1328,18 @@ export default function BracketPage() {
         <div className="space-y-3 pb-28">
           <SectionCardV2 tone="panel" className="p-3 md:p-4">
             <div className="space-y-2">
-              <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Rounds</div>
+              <div className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Rounds</div>
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {loadedRounds.map((round) => (
                   <button
                     key={`stage-step-${round.stage}`}
                     type="button"
-                    className={`shrink-0 rounded-lg border px-2 py-1 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    className={`shrink-0 rounded-lg border px-2 py-1 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       round.stage === activeRound.stage
-                        ? 'border-[rgba(var(--primary-rgb),0.5)] bg-background/60 text-foreground'
+                        ? 'border-[rgba(var(--primary-rgb),0.42)] bg-background/60 text-foreground'
                         : round.complete
-                          ? 'border-[rgba(var(--primary-rgb),0.38)] bg-background/35 text-foreground'
-                          : 'border-border/55 bg-background/25 text-muted-foreground'
+                          ? 'border-[rgba(var(--primary-rgb),0.3)] bg-background/35 text-foreground'
+                          : 'border-border/42 bg-background/25 text-muted-foreground'
                     }`}
                     disabled={!(round.unlocked || round.complete || round.stage === activeRound.stage)}
                     onClick={() => setActiveStage(round.stage)}
@@ -1370,7 +1370,7 @@ export default function BracketPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border/42 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
+              <div className="rounded-lg border border-border/34 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
                 {roundHelperCopy(activeRound, nextRound, bracketEditable)}
               </div>
 
@@ -1378,7 +1378,7 @@ export default function BracketPage() {
                 {activeRound.matches.map((match) => (
                   <div
                     key={`${activeRound.stage}-${match.match.id}`}
-                    className={`rounded-xl border border-border/45 p-2.5 ${resultSurfaceClass(match.result)}`}
+                    className={`rounded-xl border border-border/35 p-2.5 ${resultSurfaceClass(match.result)}`}
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
@@ -1424,7 +1424,7 @@ export default function BracketPage() {
                             label={resolveTeamDisplayLabel(match.homeTeam)}
                             className="max-w-full flex-1"
                           />
-                          <span className="ml-auto shrink-0 text-[10px] uppercase tracking-[0.12em] text-current/85">advances</span>
+                          <span className="ml-auto shrink-0 text-[11px] uppercase tracking-[0.08em] text-current/85">advances</span>
                         </button>
                         <button
                           type="button"
@@ -1446,7 +1446,7 @@ export default function BracketPage() {
                             label={resolveTeamDisplayLabel(match.awayTeam)}
                             className="max-w-full flex-1"
                           />
-                          <span className="ml-auto shrink-0 text-[10px] uppercase tracking-[0.12em] text-current/85">advances</span>
+                          <span className="ml-auto shrink-0 text-[11px] uppercase tracking-[0.08em] text-current/85">advances</span>
                         </button>
                       </div>
                     </div>
@@ -1460,7 +1460,7 @@ export default function BracketPage() {
 
       {!isDesktopRailViewport && activeRound ? (
         <div className="fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+0.35rem)] z-40 px-3 lg:hidden">
-          <div className="rounded-xl border border-border/45 bg-background/90 p-2.5 shadow-[var(--shadow1)] backdrop-blur-sm">
+          <div className="rounded-xl border border-border/34 bg-background/90 p-2.5 shadow-[var(--shadow1)] backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <Button
                 size="sm"

@@ -19,19 +19,19 @@ const SIZE_STYLES: Record<BrandLogoSize, { mark: string; title: string; subtitle
   sm: {
     mark: 'h-8 w-8',
     title: 'text-xs tracking-[0.16em]',
-    subtitle: 'text-[10px] tracking-[0.2em]',
+    subtitle: 'text-[11px] tracking-[0.14em]',
     gap: 'gap-2'
   },
   md: {
     mark: 'h-10 w-10',
-    title: 'text-sm tracking-[0.16em]',
-    subtitle: 'text-[11px] tracking-[0.2em]',
+    title: 'text-sm tracking-[0.14em]',
+    subtitle: 'text-xs tracking-[0.14em]',
     gap: 'gap-3'
   },
   lg: {
     mark: 'h-12 w-12',
-    title: 'text-base tracking-[0.14em]',
-    subtitle: 'text-xs tracking-[0.2em]',
+    title: 'text-base tracking-[0.12em]',
+    subtitle: 'text-[13px] tracking-[0.14em]',
     gap: 'gap-3'
   }
 }

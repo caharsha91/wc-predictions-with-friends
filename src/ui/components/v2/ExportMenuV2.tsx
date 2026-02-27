@@ -32,12 +32,12 @@ export default function ExportMenuV2({
         className="w-[280px] overflow-hidden rounded-xl border-border/35 bg-background/94 p-2 backdrop-blur-md"
       >
         <div className="space-y-1.5 rounded-lg bg-bg2/16 px-2.5 py-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Workbook export
           </div>
           <p className="text-[12px] leading-snug text-foreground">{contextLabel}</p>
           {snapshotLabel ? (
-            <p className="text-[11px] leading-snug text-muted-foreground">{snapshotLabel}</p>
+            <p className="text-[12px] leading-snug text-muted-foreground">{snapshotLabel}</p>
           ) : null}
         </div>
         <DropdownMenuItem
@@ -49,7 +49,7 @@ export default function ExportMenuV2({
         >
           <div className="flex flex-col items-start gap-0.5">
             <span className="text-sm font-semibold text-foreground">Download .xlsx now</span>
-            <span className="text-[11px] text-muted-foreground">Click to start the file download</span>
+            <span className="text-[12px] text-muted-foreground">Click to start the file download</span>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>

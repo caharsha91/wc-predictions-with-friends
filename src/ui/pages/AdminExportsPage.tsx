@@ -1662,7 +1662,7 @@ export default function AdminExportsPage() {
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
             <div className="space-y-3">
               <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preset picker</div>
+                <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Preset picker</div>
                 <h2 className="mt-1 text-[length:var(--v2-h3-size)] font-semibold tracking-[0.01em] text-foreground">
                   Choose workbook type
                 </h2>
@@ -1689,7 +1689,7 @@ export default function AdminExportsPage() {
                         'group rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                         isSelected
                           ? 'border-[color:color-mix(in_srgb,var(--v2-border-medium)_80%,transparent)] bg-background/66 shadow-[var(--shadow0)]'
-                          : 'border-border/45 bg-bg2/18 hover:border-border/60 hover:bg-bg2/30'
+                          : 'border-border/35 bg-bg2/18 hover:border-border/50 hover:bg-bg2/30'
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -1699,7 +1699,7 @@ export default function AdminExportsPage() {
                         </div>
                         <span
                           className={cn(
-                            'inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-2 text-[10px] font-semibold uppercase tracking-[0.1em]',
+                            'inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-2 text-[11px] font-semibold uppercase tracking-[0.08em]',
                             isSelected
                               ? 'border-transparent bg-[rgba(var(--primary-rgb),0.24)] text-foreground shadow-[var(--shadow0)]'
                               : 'border-transparent bg-background/45 text-muted-foreground'
@@ -1712,12 +1712,12 @@ export default function AdminExportsPage() {
                         {requirementLabels.map((label) => (
                           <span
                             key={`${preset.id}-${label}`}
-                            className="inline-flex items-center rounded-full bg-background/52 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground"
+                            className="inline-flex items-center rounded-full bg-background/52 px-2 py-0.5 text-[12px] uppercase tracking-[0.05em] text-muted-foreground"
                           >
                             {label}
                           </span>
                         ))}
-                        <span className="inline-flex items-center rounded-full bg-background/52 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
+                        <span className="inline-flex items-center rounded-full bg-background/52 px-2 py-0.5 text-[12px] uppercase tracking-[0.05em] text-muted-foreground">
                           {presetSheetCount} sheets
                         </span>
                       </div>
@@ -1727,11 +1727,11 @@ export default function AdminExportsPage() {
               </div>
             </div>
 
-            <SectionCardV2 tone="subtle" density="none" className="border-border/45 p-4">
+            <SectionCardV2 tone="subtle" density="none" className="border-border/35 p-4">
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Configuration</div>
+                    <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Configuration</div>
                     <div className="mt-1 text-base font-semibold text-foreground">{selectedPreset.label}</div>
                     <div className="mt-1 text-sm text-muted-foreground">{selectedPreset.description}</div>
                   </div>
@@ -1776,10 +1776,10 @@ export default function AdminExportsPage() {
 
                 <div className="rounded-xl bg-bg2/28 p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">What's included</div>
+                    <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">What's included</div>
                     <button
                       type="button"
-                      className="text-[11px] font-medium text-muted-foreground underline-offset-2 transition hover:text-foreground hover:underline"
+                      className="text-[12px] font-medium text-muted-foreground underline-offset-2 transition hover:text-foreground hover:underline"
                       onClick={() => setFieldPreviewOpen(true)}
                     >
                       View fields
@@ -1789,7 +1789,7 @@ export default function AdminExportsPage() {
                     {selectedPresetSheets.map((sheet) => (
                       <span
                         key={`${selectedPreset.id}-${sheet}`}
-                        className="inline-flex items-center rounded-full bg-background/52 px-2.5 py-1 text-[11px] text-muted-foreground"
+                        className="inline-flex items-center rounded-full bg-background/52 px-2.5 py-1 text-[12px] text-muted-foreground"
                       >
                         {sheet}
                       </span>
@@ -1824,7 +1824,7 @@ export default function AdminExportsPage() {
 
                     {showQuickUserResults || showQuickMatchdaySnapshot || showQuickMatchdayPicks ? (
                       <div className="space-y-2">
-                        <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                        <div className="text-[12px] uppercase tracking-[0.1em] text-muted-foreground">
                           Quick actions
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1892,7 +1892,7 @@ export default function AdminExportsPage() {
         <SectionCardV2 tone="panel" density="none" className="p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Recent exports</div>
+              <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Recent exports</div>
               <div className="text-sm text-muted-foreground">This session</div>
             </div>
             {exportHistory.length > 0 ? (

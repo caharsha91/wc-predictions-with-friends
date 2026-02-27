@@ -30,14 +30,14 @@ export default function PageHeaderV2({
 
   return (
     <V2Card tone={isHero ? 'hero' : 'panel'} className={cn('v2-page-header overflow-hidden', className)}>
-      <div className={cn('flex flex-col gap-4', isHero ? 'px-5 py-5 md:px-6 md:py-6' : 'px-4 py-4 md:px-5 md:py-5')}>
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className={cn('min-w-0', isHero ? 'space-y-2' : 'space-y-1.5')}>
+      <div className={cn('flex flex-col gap-5', isHero ? 'px-5 py-5 md:px-6 md:py-6' : 'px-4 py-4 md:px-5 md:py-5')}>
+        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className={cn('min-w-0', isHero ? 'space-y-2.5' : 'space-y-2')}>
             {kicker ? (
               <div
                 className={cn(
                   'uppercase text-[var(--page-header-kicker)]',
-                  isHero ? 'text-xs tracking-[0.24em]' : 'text-[11px] tracking-[0.2em]'
+                  isHero ? 'text-[13px] tracking-[0.14em]' : 'text-[12px] tracking-[0.12em]'
                 )}
               >
                 {kicker}
@@ -74,7 +74,7 @@ export default function PageHeaderV2({
         {metadata ? (
           <div
             className={cn(
-              'v2-page-header-meta flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-foreground',
+              'v2-page-header-meta flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] leading-[1.5] text-muted-foreground',
               metadataClassName
             )}
           >

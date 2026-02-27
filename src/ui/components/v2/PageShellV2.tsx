@@ -8,7 +8,7 @@ type PageShellV2Props = HTMLAttributes<HTMLDivElement> & {
 
 export default function PageShellV2({ children, className, ...props }: PageShellV2Props) {
   return (
-    <div {...props} className={cn('v2-page-shell w-full space-y-4 md:space-y-5', className)}>
+    <div {...props} className={cn('v2-page-shell w-full space-y-5 md:space-y-6', className)}>
       {children}
     </div>
   )

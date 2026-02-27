@@ -27,7 +27,7 @@ export function TabsTrigger({
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'egg-pop-target inline-flex h-8 items-center justify-center rounded-full border border-transparent px-4 text-xs font-semibold uppercase tracking-[0.16em] transition hover:border-border/70 hover:bg-background/45 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-bg2 data-[state=active]:border data-[state=active]:border-border/70 data-[state=active]:bg-background/70 data-[state=active]:text-foreground',
+        'egg-pop-target inline-flex h-8 items-center justify-center rounded-full border border-transparent px-4 text-[13px] font-semibold uppercase tracking-[0.12em] transition hover:border-border/70 hover:bg-background/45 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-bg2 data-[state=active]:border data-[state=active]:border-border/70 data-[state=active]:bg-background/70 data-[state=active]:text-foreground',
         className
       )}
       {...props}

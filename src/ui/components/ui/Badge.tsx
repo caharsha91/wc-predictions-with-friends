@@ -19,12 +19,12 @@ const badgeVariants = cva(
       },
       size: {
         xs: 'h-[var(--v2-chip-height-sm)] px-[var(--v2-chip-pad-x-sm)] text-[var(--v2-chip-text-sm)]',
-        sm: 'px-2.5 py-1 text-[11px]',
+        sm: 'px-2.5 py-1 text-[12px]',
         md: 'px-3 py-1.5 text-[12px]'
       },
       case: {
         normal: 'normal-case tracking-normal',
-        upper: 'uppercase tracking-[0.16em]'
+        upper: 'uppercase tracking-[0.12em]'
       }
     },
     defaultVariants: {

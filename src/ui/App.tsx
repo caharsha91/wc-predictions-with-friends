@@ -37,7 +37,7 @@ function GateCard({
         <div className={note ? 'grid gap-6 md:grid-cols-[1.2fr_0.8fr] md:items-start' : 'grid gap-4'}>
           <div className="space-y-2">
             {kicker ? (
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{kicker}</div>
+              <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">{kicker}</div>
             ) : null}
             <div className="text-lg font-semibold text-foreground">{title}</div>
             {subtitle ? <div className="text-sm text-muted-foreground">{subtitle}</div> : null}

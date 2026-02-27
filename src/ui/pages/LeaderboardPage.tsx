@@ -937,7 +937,7 @@ export default function LeaderboardPage() {
 
           <div className="overflow-x-auto">
             <div className="min-w-[980px] space-y-2">
-              <div className="hidden grid-cols-[72px_minmax(260px,1fr)_110px_72px_72px_72px_72px] gap-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground md:grid">
+              <div className="hidden grid-cols-[72px_minmax(260px,1fr)_110px_72px_72px_72px_72px] gap-2 px-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-muted-foreground md:grid">
                 <div>Rank</div>
                 <div>Player</div>
                 <div>Total</div>
@@ -1021,7 +1021,7 @@ export default function LeaderboardPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
-                          <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Total</div>
+                          <div className="text-[12px] uppercase tracking-[0.1em] text-muted-foreground">Total</div>
                         </div>
                       </div>
 
@@ -1102,7 +1102,7 @@ export default function LeaderboardPage() {
           <div className="rounded-xl border border-[color:var(--v2-glow-medium)] bg-background/95 p-3 shadow-[0_0_0_1px_color-mix(in_srgb,var(--v2-glow-medium)_65%,transparent),var(--shadow1)] backdrop-blur-md">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Your row</div>
+                <div className="text-[12px] uppercase tracking-[0.12em] text-muted-foreground">Your row</div>
                 <MemberIdentityRowV2
                   name={`#${userContext.current.rank} ${stickyUserRow.member.name}`}
                   favoriteTeamCode={stickyUserFavoriteTeamCode}
