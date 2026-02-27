@@ -1,196 +1,3 @@
-.adminForm {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  align-items: end;
-}
-
-.adminDrawerForm {
-  grid-template-columns: 1fr;
-}
-
-.adminCheckbox {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--text-sm);
-  color: var(--text);
-}
-
-.adminCheckbox input {
-  accent-color: var(--accent);
-}
-
-.adminList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.adminListHeaderRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.adminSummary {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.adminSummaryItem {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border-soft);
-  background: var(--surface-muted);
-  min-width: 96px;
-}
-
-.adminSummaryLabel {
-  font-size: var(--text-xs);
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-
-.adminSummaryValue {
-  font-family: var(--font-display);
-  font-size: var(--text-md);
-  color: var(--text);
-}
-
-.adminListItems {
-  display: grid;
-  gap: 10px;
-}
-
-@media (min-width: 768px) {
-  .adminListItemsMobile {
-    display: none;
-  }
-}
-
-.adminPagination {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-@media (max-width: 767px) {
-  .adminTableWrap {
-    display: none;
-  }
-}
-
-.adminListFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-
-.adminListMeta {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-}
-
-.adminTable th:last-child,
-.adminTable td:last-child {
-  text-align: right;
-}
-
-.adminTable td:nth-child(2) {
-  width: 120px;
-}
-
-.adminListItem {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border-soft);
-  background: var(--surface-muted);
-}
-
-.adminUserMeta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.adminUserActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.adminUserName {
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-semibold);
-}
-
-.adminUserEmail {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-}
-
-.adminFormNote {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-}
-
-.adminDrawerScrim {
-  position: fixed;
-  inset: 0;
-  background: var(--overlay-backdrop);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-  z-index: 28;
-}
-
-.adminDrawerScrim.isVisible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.adminDrawer {
-  position: fixed;
-  top: calc(var(--app-header-height, 0px) + 12px);
-  right: 24px;
-  bottom: 24px;
-  width: min(420px, 92vw);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border-strong);
-  background: var(--card);
-  box-shadow: var(--card-shadow);
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-  transform: translateX(120%);
-  transition: transform 0.3s ease;
-  z-index: 30;
-  pointer-events: none;
-}
-
 .dialogTopOffset {
   top: calc(var(--app-header-height, 96px) + 12px);
   bottom: 12px;
@@ -201,40 +8,6 @@
 .pickEditorSheetMobile {
   max-height: 90vh;
   max-height: 90dvh;
-}
-
-.adminDrawer[data-open='true'] {
-  transform: translateX(0);
-  pointer-events: auto;
-}
-
-.adminDrawerHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.adminDrawerTitle {
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-
-.adminDrawerSubtitle {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  letter-spacing: 0.2px;
-  margin-top: 4px;
-}
-
-.adminDrawerActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 [data-last-updated] {
@@ -1899,16 +1672,6 @@
     min-width: 0;
   }
 
-  .adminListItem {
-    grid-template-columns: 1fr;
-    align-items: flex-start;
-  }
-
-  .adminUserActions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
   .leaderboardRow {
     grid-template-columns: auto 1fr auto;
     grid-template-areas:
@@ -1984,19 +1747,6 @@
     align-items: flex-start;
   }
 
-  .adminDrawer {
-    top: auto;
-    left: 12px;
-    right: 12px;
-    bottom: calc(var(--bottom-nav-height) + 12px + env(safe-area-inset-bottom));
-    width: auto;
-    transform: translateY(120%);
-  }
-
-  .adminDrawer[data-open='true'] {
-    transform: translateY(0);
-  }
-
   .validationBanner {
     flex-direction: column;
     align-items: flex-start;
@@ -2044,19 +1794,6 @@
     display: none;
   }
 
-  .exportsGuideGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .exportHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .exportsGrid,
-  .exportsGridWide {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 520px) {

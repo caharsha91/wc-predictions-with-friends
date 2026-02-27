@@ -36,7 +36,7 @@ export function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        'flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none transition hover:bg-bg2 focus-visible:bg-bg2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--overlay-surface)]',
+        'flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none transition data-[highlighted]:bg-bg2 data-[highlighted]:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-45 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--overlay-surface)]',
         className
       )}
       {...props}
