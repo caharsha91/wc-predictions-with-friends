@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
 import { hasFirebase } from '../lib/firebase'
 import { Card } from './components/ui/Card'
@@ -146,19 +146,6 @@ function DemoAdminGate() {
   return <Navigate to="/" replace />
 }
 
-function LegacyRedirect({ to }: { to: string }) {
-  const location = useLocation()
-  return <Navigate to={`${to}${location.search}${location.hash}`} replace />
-}
-
-function LegacyGroupStageRedirect({ demo }: { demo: boolean }) {
-  const location = useLocation()
-  const { groupId } = useParams<{ groupId?: string }>()
-  const groupSuffix = groupId ? `/${groupId}` : ''
-  const base = demo ? '/demo/group-stage' : '/group-stage'
-  return <Navigate to={`${base}${groupSuffix}${location.search}${location.hash}`} replace />
-}
-
 export default function App() {
   return (
     <Routes>
@@ -194,20 +181,6 @@ export default function App() {
           <Route path="admin/exports" element={<AdminExportsPage />} />
           <Route path="admin/controls" element={<DemoControlsPage />} />
         </Route>
-
-        <Route path="play" element={<LegacyRedirect to="/" />} />
-        <Route path="play/picks" element={<LegacyRedirect to="/match-picks" />} />
-        <Route path="play/group-stage" element={<LegacyRedirect to="/group-stage" />} />
-        <Route path="play/group-stage/:groupId" element={<LegacyGroupStageRedirect demo={false} />} />
-        <Route path="play/bracket" element={<LegacyRedirect to="/knockout-bracket" />} />
-        <Route path="play/league" element={<LegacyRedirect to="/leaderboard" />} />
-
-        <Route path="demo/play" element={<LegacyRedirect to="/demo" />} />
-        <Route path="demo/play/picks" element={<LegacyRedirect to="/demo/match-picks" />} />
-        <Route path="demo/play/group-stage" element={<LegacyRedirect to="/demo/group-stage" />} />
-        <Route path="demo/play/group-stage/:groupId" element={<LegacyGroupStageRedirect demo />} />
-        <Route path="demo/play/bracket" element={<LegacyRedirect to="/demo/knockout-bracket" />} />
-        <Route path="demo/play/league" element={<LegacyRedirect to="/demo/leaderboard" />} />
 
         <Route path="*" element={<NotFoundPage />} />
       </Route>

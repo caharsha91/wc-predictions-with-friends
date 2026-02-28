@@ -44,7 +44,6 @@ const APP_ROUTE_PREFIXES = [
   '/knockout-bracket',
   '/leaderboard',
   '/admin',
-  '/settings',
   '/demo/group-stage',
   '/demo/match-picks',
   '/demo/knockout-bracket',
@@ -232,15 +231,6 @@ function toDemoPath(pathname: string): string {
   if (pathname === '/leaderboard') return '/demo/leaderboard'
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return `/demo${pathname}`
 
-  // Legacy /play* aliases are still mapped during transition.
-  if (pathname === '/play') return '/demo'
-  if (pathname === '/play/picks') return '/demo/match-picks'
-  if (pathname === '/play/group-stage' || pathname.startsWith('/play/group-stage/')) {
-    return pathname.replace('/play/group-stage', '/demo/group-stage')
-  }
-  if (pathname === '/play/bracket') return '/demo/knockout-bracket'
-  if (pathname === '/play/league') return '/demo/leaderboard'
-
   return '/demo'
 }
 
@@ -257,15 +247,6 @@ function toDefaultPath(pathname: string): string {
   if (pathname === '/demo/admin' || pathname.startsWith('/demo/admin/')) {
     return pathname.replace('/demo', '')
   }
-
-  // Legacy /demo/play* aliases are still mapped during transition.
-  if (pathname === '/demo/play') return '/'
-  if (pathname === '/demo/play/picks') return '/match-picks'
-  if (pathname === '/demo/play/group-stage' || pathname.startsWith('/demo/play/group-stage/')) {
-    return pathname.replace('/demo/play/group-stage', '/group-stage')
-  }
-  if (pathname === '/demo/play/bracket') return '/knockout-bracket'
-  if (pathname === '/demo/play/league') return '/leaderboard'
 
   return '/'
 }

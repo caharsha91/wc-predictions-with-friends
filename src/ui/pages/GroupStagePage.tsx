@@ -60,10 +60,7 @@ import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
 import { cn } from '../lib/utils'
 import { downloadWorkbook } from '../lib/exportWorkbook'
-import {
-  GROUP_STAGE_GROUP_CODES,
-  stripLegacyGroupStageParams
-} from '../lib/groupStageFilters'
+import { GROUP_STAGE_GROUP_CODES } from '../lib/groupStageFilters'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildProjectedImpactRows } from '../lib/projectedImpact'
 import {
@@ -227,18 +224,6 @@ export default function GroupStagePage() {
 
   const groupRouteBase = mode === 'demo' ? '/demo/group-stage' : '/group-stage'
   const routeGroupId = useMemo(() => normalizeRouteGroupId(routeGroupIdParam), [routeGroupIdParam])
-
-  useEffect(() => {
-    const cleaned = stripLegacyGroupStageParams(location.search)
-    if (cleaned === location.search) return
-    navigate(
-      {
-        pathname: location.pathname,
-        search: cleaned
-      },
-      { replace: true }
-    )
-  }, [location.pathname, location.search, navigate])
 
   const navigateToGroup = useCallback(
     (groupId: string, replace = false) => {
