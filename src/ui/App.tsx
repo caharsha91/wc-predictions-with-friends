@@ -43,9 +43,7 @@ function GateCard({
             {subtitle ? <div className="text-sm text-muted-foreground">{subtitle}</div> : null}
           </div>
           {note ? (
-            <div className="rounded-2xl border border-border/60 bg-[var(--surface-muted)] p-4 text-xs text-muted-foreground">
-              {note}
-            </div>
+            <div className="text-xs leading-relaxed text-muted-foreground md:justify-self-end md:text-right">{note}</div>
           ) : null}
         </div>
       </Card>

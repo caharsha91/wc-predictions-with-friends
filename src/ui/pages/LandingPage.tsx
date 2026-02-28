@@ -1323,60 +1323,60 @@ export default function LandingPage() {
         })}
       </div>
 
-      <SectionCardV2 tone="panel" density="none" className="landing-v2-snapshot p-4 md:p-5">
-        <div className="relative z-[1] space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="v2-heading-h2 text-foreground">Leaderboard</h2>
-            </div>
-            <div className="flex items-center gap-3">
-              <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
-              <div className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
-                <UsersIcon size={13} />
-                <span>{rivalUserIds.length}/3 selected</span>
-              </div>
+      <div className="v2-section-flat">
+        <div className="v2-section-flat-header">
+          <div>
+            <h2 className="v2-heading-h2 text-foreground">Leaderboard</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
+            <div className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
+              <UsersIcon size={13} />
+              <span>{rivalUserIds.length}/3 selected</span>
             </div>
           </div>
-
-          {publishedSnapshot.state.status === 'loading' ? (
-            <div className="grid gap-3 lg:grid-cols-[0.92fr_1.08fr]">
-              <div className="h-56 animate-pulse rounded-xl border border-border/70 bg-muted/35" />
-              <div className="space-y-2 rounded-xl border border-border/70 bg-background/20 p-3">
-                <div className="h-5 w-24 animate-pulse rounded-md bg-muted/35" />
-                <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
-                <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
-                <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
-                <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
-              </div>
-            </div>
-          ) : null}
-
-          {publishedSnapshot.state.status === 'error' ? (
-            <Alert tone="danger" title="Snapshot unavailable">
-              {publishedSnapshot.state.message}
-            </Alert>
-          ) : null}
-
-          {snapshotReady && snapshotReady.leaderboardRows.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border/70 bg-muted/35 px-3 py-3 text-[14px] text-muted-foreground">
-              No standings are available in this snapshot yet.
-            </div>
-          ) : null}
-
-          {snapshotReady && snapshotReady.leaderboardRows.length > 0 ? (
-            <div className="grid gap-3 lg:grid-cols-[0.92fr_1.08fr]">
-              <LeaderboardPodium
-                rows={podiumRows}
-                snapshotAvailable={Boolean(snapshotTimestamp)}
-                className={cn('h-full', isViewerOnPodium && 'landing-v2-podium-viewer')}
-              />
-              <div className="landing-v2-standings-panel space-y-2 rounded-xl border p-3 md:p-3.5">
-                {rivalsBoard}
-              </div>
-            </div>
-          ) : null}
         </div>
-      </SectionCardV2>
+
+        <div className="v2-section-flat-divider" />
+
+        {publishedSnapshot.state.status === 'loading' ? (
+          <div className="grid gap-3 lg:grid-cols-[0.92fr_1.08fr]">
+            <div className="h-56 animate-pulse rounded-xl border border-border/70 bg-muted/35" />
+            <div className="space-y-2 rounded-xl border border-border/70 bg-background/20 p-3">
+              <div className="h-5 w-24 animate-pulse rounded-md bg-muted/35" />
+              <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
+              <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
+              <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
+              <div className="h-11 animate-pulse rounded-lg border border-border/70 bg-muted/35" />
+            </div>
+          </div>
+        ) : null}
+
+        {publishedSnapshot.state.status === 'error' ? (
+          <Alert tone="danger" title="Snapshot unavailable">
+            {publishedSnapshot.state.message}
+          </Alert>
+        ) : null}
+
+        {snapshotReady && snapshotReady.leaderboardRows.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border/70 bg-muted/35 px-3 py-3 text-[14px] text-muted-foreground">
+            No standings are available in this snapshot yet.
+          </div>
+        ) : null}
+
+        {snapshotReady && snapshotReady.leaderboardRows.length > 0 ? (
+          <div className="grid gap-3 lg:grid-cols-[0.92fr_1.08fr]">
+            <LeaderboardPodium
+              rows={podiumRows}
+              snapshotAvailable={Boolean(snapshotTimestamp)}
+              className={cn('h-full', isViewerOnPodium && 'landing-v2-podium-viewer')}
+            />
+            <div className="landing-v2-standings-panel space-y-2 rounded-xl border p-3 md:p-3.5">
+              {rivalsBoard}
+            </div>
+          </div>
+        ) : null}
+      </div>
 
       <SectionCardV2 tone="subtle" className="landing-v2-rules">
         <div className="space-y-2 text-[15px] text-muted-foreground">

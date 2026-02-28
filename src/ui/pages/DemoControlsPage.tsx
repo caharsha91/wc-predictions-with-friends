@@ -303,7 +303,7 @@ export default function DemoControlsPage() {
         ) : null}
 
         {state.status === 'ready' ? (
-          <SectionCardV2 tone="panel" density="none" className="admin-v2-surface p-4 md:p-5">
+          <div className="v2-section-flat">
             <div className="space-y-4">
               <div className="space-y-3">
                 <div className="admin-v2-section-label">Scenario</div>
@@ -329,7 +329,7 @@ export default function DemoControlsPage() {
                     Apply scenario
                   </Button>
                 </div>
-                <div className="text-[13px] text-muted-foreground">
+                <div className="admin-v2-row-meta">
                   {toLabel(scenarioNow)} • {toRelativeLabel(scenarioNow)}
                 </div>
               </div>
@@ -351,19 +351,17 @@ export default function DemoControlsPage() {
                       </option>
                     ))}
                   </SelectField>
-                  <div className="space-y-1">
-                    <Button
-                      variant="secondary"
-                      onClick={applyViewer}
-                      disabled={!selectedViewerId}
-                      icon={<UsersIcon size={15} />}
-                      className="admin-v2-action"
-                    >
-                      Switch viewer
-                    </Button>
-                    <div className="text-[13px] text-muted-foreground">Affects leaderboard + user data.</div>
-                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={applyViewer}
+                    disabled={!selectedViewerId}
+                    icon={<UsersIcon size={15} />}
+                    className="admin-v2-action"
+                  >
+                    Switch viewer
+                  </Button>
                 </div>
+                <div className="admin-v2-row-meta">Affects leaderboard + user data.</div>
               </div>
 
               <div className="admin-v2-divider" />
@@ -404,7 +402,7 @@ export default function DemoControlsPage() {
                 ) : null}
               </div>
             </div>
-          </SectionCardV2>
+          </div>
         ) : null}
 
         <ConfirmationModal

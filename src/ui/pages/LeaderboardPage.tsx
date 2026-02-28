@@ -914,7 +914,7 @@ export default function LeaderboardPage() {
         }
       />
 
-      <SectionCardV2 tone="panel" density="none" className="landing-v2-snapshot p-4 md:p-5">
+      <div className="v2-section-flat">
         <div className="grid gap-3 xl:grid-cols-[1fr_1.2fr]">
           <LeaderboardPodium rows={podiumRows} snapshotAvailable={Boolean(snapshotTimestamp)} showCta={false} className="h-full" />
           <RivalFocusPanel
@@ -924,7 +924,7 @@ export default function LeaderboardPage() {
             onManageRivals={() => navigate(landingRoot)}
           />
         </div>
-      </SectionCardV2>
+      </div>
 
       <SectionCardV2 tone="panel" density="none" className="p-4 md:p-5">
         <div className="space-y-4">

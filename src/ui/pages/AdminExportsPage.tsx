@@ -32,7 +32,6 @@ import { SelectField } from '../components/ui/Field'
 import Progress from '../components/ui/Progress'
 import Skeleton from '../components/ui/Skeleton'
 import AdminWorkspaceShellV2 from '../components/v2/AdminWorkspaceShellV2'
-import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useMediaQuery } from '../hooks/useMediaQuery'
@@ -1487,99 +1486,97 @@ export default function AdminExportsPage() {
       subtitle="Generate tournament workbooks instantly."
       metadata={headerMetadata}
     >
-      <div className="space-y-3">
-        <SectionCardV2 tone="panel" density="none" className="admin-v2-surface p-4 md:p-5">
-          <div className="space-y-3.5">
-            <div className="admin-v2-section-label">Export</div>
+      <div className="v2-section-flat">
+        <div className="space-y-3.5">
+          <div className="admin-v2-section-label">Export</div>
 
-            <div className={`admin-v2-controls grid gap-3 ${exportControlsDesktopClass}`}>
+          <div className={`admin-v2-controls grid gap-3 ${exportControlsDesktopClass}`}>
+            <SelectField
+              label="Export preset"
+              value={selectedPresetId}
+              onChange={(event) => setSelectedPresetId(event.target.value as ExportPresetId)}
+              labelHidden
+            >
+              {EXPORT_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.label}
+                </option>
+              ))}
+            </SelectField>
+
+            {requiresUser ? (
               <SelectField
-                label="Export preset"
-                value={selectedPresetId}
-                onChange={(event) => setSelectedPresetId(event.target.value as ExportPresetId)}
+                label="User"
+                value={selectedUserId}
+                onChange={(event) => setSelectedUserId(event.target.value)}
                 labelHidden
               >
-                {EXPORT_PRESETS.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
-                    {preset.label}
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.email ?? user.id})
                   </option>
                 ))}
               </SelectField>
-
-              {requiresUser ? (
-                <SelectField
-                  label="User"
-                  value={selectedUserId}
-                  onChange={(event) => setSelectedUserId(event.target.value)}
-                  labelHidden
-                >
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} ({user.email ?? user.id})
-                    </option>
-                  ))}
-                </SelectField>
-              ) : null}
-
-              {requiresMatchday ? (
-                <SelectField
-                  label="Matchday"
-                  value={selectedMatchday}
-                  onChange={(event) => setSelectedMatchday(event.target.value)}
-                  labelHidden
-                >
-                  {matchdays.map((matchday) => (
-                    <option key={matchday} value={matchday}>
-                      {matchday}
-                    </option>
-                  ))}
-                </SelectField>
-              ) : null}
-
-              <div className="flex items-end">
-                <Button
-                  size="md"
-                  className="admin-v2-action h-11 rounded-lg px-7 text-[15px] lg:min-w-[180px]"
-                  loading={exportStatus === 'exporting'}
-                  disabled={exportStatus === 'exporting' || !canExport || Boolean(noDataHint)}
-                  onClick={() => void runExport(selectedPresetId)}
-                >
-                  {exportStatus === 'exporting' ? 'Preparing...' : 'Export'}
-                </Button>
-              </div>
-            </div>
-
-            {!canExport ? (
-              <Alert tone="warning" className="admin-v2-inline-alert py-2.5 text-[13px]">
-                {exportGateMessage}
-              </Alert>
-            ) : noDataHint ? (
-              <Alert tone="warning" className="admin-v2-inline-alert py-2.5 text-[13px]">
-                {noDataHint}
-              </Alert>
             ) : null}
 
-            <div className="admin-v2-divider" />
-
-            <div className="text-[15px] leading-snug text-foreground">
-              <span className="text-muted-foreground">Included:</span> {includedSheetsText}
-            </div>
-
-            {exportStatus === 'exporting' || exportProgress > 0 ? (
-              <div className="space-y-1">
-                <div className="text-[13px] text-muted-foreground">
-                  {exportStatus === 'exporting' ? 'Preparing workbook...' : 'Export complete'}
-                </div>
-                <Progress
-                  value={exportProgress}
-                  intent={exportStatus === 'exporting' ? 'momentum' : 'success'}
-                  size="sm"
-                  aria-label="Export batch progress"
-                />
-              </div>
+            {requiresMatchday ? (
+              <SelectField
+                label="Matchday"
+                value={selectedMatchday}
+                onChange={(event) => setSelectedMatchday(event.target.value)}
+                labelHidden
+              >
+                {matchdays.map((matchday) => (
+                  <option key={matchday} value={matchday}>
+                    {matchday}
+                  </option>
+                ))}
+              </SelectField>
             ) : null}
+
+            <div className="flex items-end">
+              <Button
+                size="md"
+                className="admin-v2-action h-11 rounded-lg px-7 text-[15px] lg:min-w-[180px]"
+                loading={exportStatus === 'exporting'}
+                disabled={exportStatus === 'exporting' || !canExport || Boolean(noDataHint)}
+                onClick={() => void runExport(selectedPresetId)}
+              >
+                {exportStatus === 'exporting' ? 'Preparing...' : 'Export'}
+              </Button>
+            </div>
           </div>
-        </SectionCardV2>
+
+          {!canExport ? (
+            <Alert tone="warning" className="admin-v2-inline-alert py-2.5 text-[13px]">
+              {exportGateMessage}
+            </Alert>
+          ) : noDataHint ? (
+            <Alert tone="warning" className="admin-v2-inline-alert py-2.5 text-[13px]">
+              {noDataHint}
+            </Alert>
+          ) : null}
+
+          <div className="admin-v2-divider" />
+
+          <div className="text-[15px] leading-snug text-foreground">
+            <span className="text-muted-foreground">Included:</span> {includedSheetsText}
+          </div>
+
+          {exportStatus === 'exporting' || exportProgress > 0 ? (
+            <div className="space-y-1">
+              <div className="text-[13px] text-muted-foreground">
+                {exportStatus === 'exporting' ? 'Preparing workbook...' : 'Export complete'}
+              </div>
+              <Progress
+                value={exportProgress}
+                intent={exportStatus === 'exporting' ? 'momentum' : 'success'}
+                size="sm"
+                aria-label="Export batch progress"
+              />
+            </div>
+          ) : null}
+        </div>
       </div>
     </AdminWorkspaceShellV2>
   )

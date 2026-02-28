@@ -290,7 +290,7 @@ export default function AdminUsersPage() {
           </Alert>
         ) : null}
 
-        <SectionCardV2 tone="panel" density="none" className="admin-v2-surface p-3.5 md:p-4">
+        <SectionCardV2 tone="panel" density="none" className="v2-surface-soft p-3.5 md:p-4">
           <div className="space-y-3">
             <div className="players-v2-search-wrap">
               <div className="admin-v2-section-label">Search players</div>
