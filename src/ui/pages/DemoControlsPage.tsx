@@ -145,6 +145,20 @@ export default function DemoControlsPage() {
     if (state.status !== 'ready') return null
     return resolveScenarioNow(state.matches, selectedScenario)
   }, [selectedScenario, state])
+  const selectedViewerLabel = useMemo(() => {
+    if (state.status !== 'ready') return 'Viewer unavailable'
+    const selectedViewer = state.members.find((member) => member.id === selectedViewerId)
+    return selectedViewer ? `${selectedViewer.name} (${selectedViewer.id})` : 'Viewer not selected'
+  }, [selectedViewerId, state])
+  const headerMetadata = (
+    <>
+      <span>{getScenarioLabel(selectedScenario)}</span>
+      <span className="h-3 w-px bg-border" aria-hidden="true" />
+      <span>{toLabel(scenarioNow)}</span>
+      <span className="h-3 w-px bg-border" aria-hidden="true" />
+      <span>{selectedViewerLabel}</span>
+    </>
+  )
 
   function emitControlsChanged() {
     if (typeof window === 'undefined') return
@@ -273,26 +287,27 @@ export default function DemoControlsPage() {
     <AdminWorkspaceShellV2
       title="Demo Controls"
       subtitle="Configure scenario, viewer, and demo session data."
+      metadata={headerMetadata}
     >
       <div className="space-y-4">
         {state.status === 'loading' ? (
-          <SectionCardV2 tone="panel" density="none" className="p-4 md:p-5">
+          <SectionCardV2 tone="panel" density="none" className="admin-v2-surface-muted p-4 md:p-5">
             Loading demo controls...
           </SectionCardV2>
         ) : null}
 
         {state.status === 'error' ? (
-          <Alert tone="danger" title="Unable to load demo controls">
+          <Alert tone="danger" title="Unable to load demo controls" className="admin-v2-inline-alert">
             {state.message}
           </Alert>
         ) : null}
 
         {state.status === 'ready' ? (
-          <SectionCardV2 tone="panel" density="none" className="demo-controls-v2-card p-4 md:p-5">
+          <SectionCardV2 tone="panel" density="none" className="admin-v2-surface p-4 md:p-5">
             <div className="space-y-4">
-              <div className="demo-controls-v2-row space-y-3">
-                <div className="text-[13px] uppercase tracking-[0.12em] text-muted-foreground">Scenario</div>
-                <div className="demo-controls-v2-controls">
+              <div className="space-y-3">
+                <div className="admin-v2-section-label">Scenario</div>
+                <div className="admin-v2-controls">
                   <SelectField
                     label="Scenario"
                     value={selectedScenario}
@@ -309,7 +324,7 @@ export default function DemoControlsPage() {
                     onClick={applyScenario}
                     disabled={!scenarioNow}
                     icon={<CalendarIcon size={15} />}
-                    className="demo-controls-v2-action"
+                    className="admin-v2-action"
                   >
                     Apply scenario
                   </Button>
@@ -319,11 +334,11 @@ export default function DemoControlsPage() {
                 </div>
               </div>
 
-              <div className="demo-controls-v2-divider" />
+              <div className="admin-v2-divider" />
 
-              <div className="demo-controls-v2-row space-y-3">
-                <div className="text-[13px] uppercase tracking-[0.12em] text-muted-foreground">Viewer (optional)</div>
-                <div className="demo-controls-v2-controls">
+              <div className="space-y-3">
+                <div className="admin-v2-section-label">Viewer (optional)</div>
+                <div className="admin-v2-controls">
                   <SelectField
                     label="Viewer"
                     value={selectedViewerId}
@@ -342,7 +357,7 @@ export default function DemoControlsPage() {
                       onClick={applyViewer}
                       disabled={!selectedViewerId}
                       icon={<UsersIcon size={15} />}
-                      className="demo-controls-v2-action"
+                      className="admin-v2-action"
                     >
                       Switch viewer
                     </Button>
@@ -351,16 +366,16 @@ export default function DemoControlsPage() {
                 </div>
               </div>
 
-              <div className="demo-controls-v2-divider" />
+              <div className="admin-v2-divider" />
 
-              <div className="demo-controls-v2-row space-y-3">
-                <div className="text-[13px] uppercase tracking-[0.12em] text-muted-foreground">Utilities</div>
+              <div className="space-y-3">
+                <div className="admin-v2-section-label">Utilities</div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Button
                     variant="secondary"
                     onClick={() => setPendingAction('reload-snapshots')}
                     icon={<SettingsIcon size={15} />}
-                    className="justify-start rounded-lg"
+                    className="admin-v2-action w-full justify-start rounded-lg"
                   >
                     Reload snapshots
                   </Button>
@@ -368,12 +383,14 @@ export default function DemoControlsPage() {
                     variant="secondary"
                     onClick={() => setPendingAction('clear-session')}
                     icon={<CloseIcon size={15} />}
-                    className="demo-controls-v2-danger justify-start rounded-lg"
+                    className="admin-v2-action admin-v2-danger w-full justify-start rounded-lg"
                   >
                     Clear session
                   </Button>
                 </div>
-                <div className="demo-controls-v2-warning text-[13px]">Reload overrides current demo data.</div>
+                <div className="admin-v2-inline-alert admin-v2-inline-alert-warning text-[13px]">
+                  Reload overrides current demo data.
+                </div>
                 {sessionProgress > 0 ? (
                   <div className="space-y-1">
                     <div className="text-[13px] text-muted-foreground">{sessionProgressLabel}</div>

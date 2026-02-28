@@ -749,7 +749,19 @@
   }
 }
 
-.demo-controls-v2-card {
+.admin-v2-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-v2-hero.admin-v2-hero::before {
+  background:
+    radial-gradient(132% 140% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 44%, transparent), transparent 62%),
+    radial-gradient(116% 118% at 100% 100%, rgba(var(--secondary-rgb), 0.18), transparent 68%);
+  opacity: 0.66;
+}
+
+.admin-v2-surface {
   border-color: color-mix(in srgb, var(--v2-border-medium) 74%, transparent);
   background:
     radial-gradient(130% 126% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 30%, transparent), transparent 68%),
@@ -761,44 +773,67 @@
     );
 }
 
-.demo-controls-v2-row {
-  min-width: 0;
+.admin-v2-surface-muted {
+  border-color: color-mix(in srgb, var(--v2-border-soft) 86%, transparent);
+  background:
+    radial-gradient(118% 116% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 24%, transparent), transparent 72%),
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--card) 93%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 46%, transparent) 100%
+    );
 }
 
-.demo-controls-v2-controls {
+.admin-v2-section-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted-foreground);
+}
+
+.admin-v2-divider {
+  height: 1px;
+  width: 100%;
+  background: color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+}
+
+.admin-v2-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
   align-items: end;
 }
 
-.demo-controls-v2-action {
+.admin-v2-action {
   width: 100%;
 }
 
-.demo-controls-v2-divider {
-  height: 1px;
-  width: 100%;
-  background: color-mix(in srgb, var(--v2-border-soft) 86%, transparent);
+.admin-v2-action-inline {
+  min-width: 10rem;
 }
 
-.demo-controls-v2-danger {
+.admin-v2-danger {
   border-color: color-mix(in srgb, var(--border-danger) 82%, var(--v2-border-soft) 18%);
   background: color-mix(in srgb, rgba(var(--danger-rgb), 0.2) 72%, transparent);
 }
 
-.demo-controls-v2-danger:hover {
+.admin-v2-danger:hover {
   background: color-mix(in srgb, rgba(var(--danger-rgb), 0.28) 74%, transparent);
 }
 
-.demo-controls-v2-warning {
+.admin-v2-inline-alert {
+  border-color: color-mix(in srgb, rgba(var(--warn-rgb), 0.42) 74%, transparent);
+  background: color-mix(in srgb, rgba(var(--warn-rgb), 0.18) 62%, transparent);
+}
+
+.admin-v2-inline-alert-warning {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   color: color-mix(in srgb, var(--warning) 82%, var(--foreground) 18%);
 }
 
-.demo-controls-v2-warning::before {
+.admin-v2-inline-alert-warning::before {
   content: '!';
   display: inline-flex;
   align-items: center;
@@ -813,60 +848,7 @@
   line-height: 1;
 }
 
-.exports-v2-card {
-  border-color: color-mix(in srgb, var(--v2-border-medium) 74%, transparent);
-  background:
-    radial-gradient(130% 126% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 26%, transparent), transparent 68%),
-    radial-gradient(125% 120% at 0% 100%, rgba(var(--secondary-rgb), 0.1), transparent 74%),
-    linear-gradient(
-      132deg,
-      color-mix(in srgb, var(--card) 96%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 50%, transparent) 100%
-    );
-}
-
-.exports-v2-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem 0.65rem;
-  align-items: center;
-}
-
-.exports-v2-controls {
-  align-items: end;
-}
-
-.exports-v2-cta {
-  align-items: end;
-}
-
-.exports-v2-divider {
-  height: 1px;
-  width: 100%;
-  background: color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
-}
-
-.exports-v2-included {
-  letter-spacing: 0.01em;
-}
-
-.exports-v2-inline-alert {
-  border-color: color-mix(in srgb, rgba(var(--warn-rgb), 0.42) 74%, transparent);
-  background: color-mix(in srgb, rgba(var(--warn-rgb), 0.18) 62%, transparent);
-}
-
-.players-v2-toolbar {
-  border-color: color-mix(in srgb, var(--v2-border-medium) 70%, transparent);
-  background:
-    radial-gradient(130% 120% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 22%, transparent), transparent 72%),
-    linear-gradient(
-      132deg,
-      color-mix(in srgb, var(--card) 95%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 50%, transparent) 100%
-    );
-}
-
-.players-v2-pill {
+.admin-v2-pill {
   border-color: color-mix(in srgb, var(--v2-border-medium) 76%, transparent);
   background: color-mix(in srgb, var(--background) 56%, transparent);
   font-size: 12px;
@@ -874,22 +856,96 @@
   text-transform: uppercase;
 }
 
-.players-v2-add-btn {
-  border-radius: 0.7rem;
-  padding-inline: 1rem;
-  min-height: 2.45rem;
-}
-
-.players-v2-card {
-  border-color: color-mix(in srgb, var(--v2-border-medium) 74%, transparent);
+.admin-v2-sheet-content {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 76%, var(--v2-glow-soft) 24%);
   background:
-    radial-gradient(128% 122% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 28%, transparent), transparent 68%),
-    radial-gradient(120% 110% at 0% 100%, rgba(var(--secondary-rgb), 0.1), transparent 74%),
+    radial-gradient(128% 132% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 32%, transparent), transparent 66%),
+    radial-gradient(120% 120% at 100% 100%, rgba(var(--secondary-rgb), 0.16), transparent 72%),
     linear-gradient(
       132deg,
       color-mix(in srgb, var(--card) 95%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 52%, transparent) 100%
+      color-mix(in srgb, var(--muted) 50%, transparent) 100%
     );
+}
+
+.admin-v2-sheet-header {
+  border-color: color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+}
+
+.admin-v2-sheet-form {
+  color: var(--foreground);
+}
+
+.admin-v2-sheet-footer {
+  border-color: color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+}
+
+.admin-v2-sheet-checkbox input {
+  accent-color: var(--primary);
+}
+
+.admin-v2-modal-overlay {
+  background: var(--overlay-backdrop);
+}
+
+.admin-v2-modal {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 76%, var(--v2-glow-soft) 24%);
+  background:
+    radial-gradient(126% 126% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 34%, transparent), transparent 66%),
+    radial-gradient(118% 118% at 100% 100%, rgba(var(--secondary-rgb), 0.18), transparent 72%),
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--card) 95%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 50%, transparent) 100%
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 40%, transparent),
+    var(--shadow2);
+}
+
+.admin-v2-modal-title {
+  color: var(--v2-text-strong);
+}
+
+.admin-v2-modal-description {
+  color: var(--v2-text-muted);
+}
+
+.admin-v2-modal-footer {
+  border-top: 1px solid color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+  background: color-mix(in srgb, var(--background) 52%, transparent);
+}
+
+.admin-v2-modal-cancel {
+  color: var(--v2-text-muted);
+}
+
+.admin-v2-modal-cancel:hover {
+  background: color-mix(in srgb, var(--accent-soft) 24%, transparent);
+  color: var(--v2-text-strong);
+}
+
+.admin-v2-modal-confirm {
+  color: var(--primary-foreground);
+  box-shadow: var(--primary-cta-shadow);
+}
+
+.admin-v2-modal-confirm-default {
+  border: 1px solid var(--primary-cta-border);
+  background: var(--primary-cta-bg);
+}
+
+.admin-v2-modal-confirm-default:hover {
+  background: var(--primary-cta-hover-bg);
+}
+
+.admin-v2-modal-confirm-danger {
+  border: 1px solid color-mix(in srgb, var(--danger) 72%, transparent);
+  background: color-mix(in srgb, var(--danger) 82%, black 18%);
+}
+
+.admin-v2-modal-confirm-danger:hover {
+  background: color-mix(in srgb, var(--danger) 92%, black 8%);
 }
 
 .players-v2-search-wrap {
@@ -919,12 +975,6 @@
   outline: none;
   border-color: color-mix(in srgb, var(--v2-border-strong) 84%, transparent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--v2-glow-soft) 34%, transparent);
-}
-
-.players-v2-divider {
-  height: 1px;
-  width: 100%;
-  background: color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
 }
 
 .players-v2-head {
@@ -977,9 +1027,6 @@
 }
 
 .players-v2-role-pill {
-  border-color: color-mix(in srgb, var(--v2-border-medium) 78%, transparent);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   font-size: 12px;
 }
 
@@ -994,11 +1041,11 @@
 }
 
 @media (min-width: 1024px) {
-  .demo-controls-v2-controls {
+  .admin-v2-controls {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .demo-controls-v2-action {
+  .admin-v2-action {
     width: auto;
     min-width: 11rem;
   }

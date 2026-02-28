@@ -1211,6 +1211,17 @@ export default function AdminExportsPage() {
     ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]'
     : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
   const availabilityText = canExport ? 'Exports available' : exportGateMessage ?? 'Exports unavailable.'
+  const headerMetadata = (
+    <>
+      {state.status === 'ready' ? (
+        <SnapshotStamp timestamp={state.bundle.offlineLastUpdated} prefix="Offline " />
+      ) : (
+        <span>{state.status === 'loading' ? 'Loading offline snapshot...' : 'Offline snapshot unavailable'}</span>
+      )}
+      <span className="h-3 w-px bg-border" aria-hidden="true" />
+      <span>{availabilityText}</span>
+    </>
+  )
   const includedSheetsText = useMemo(() => {
     const sheets = PRESET_SHEETS[selectedPresetId] ?? []
     if (sheets.length === 0) return 'No sheets'
@@ -1443,7 +1454,11 @@ export default function AdminExportsPage() {
 
   if (state.status === 'loading') {
     return (
-      <AdminWorkspaceShellV2 title="Exports" subtitle="Generate and download league workbooks.">
+      <AdminWorkspaceShellV2
+        title="Exports"
+        subtitle="Generate and download league workbooks."
+        metadata={headerMetadata}
+      >
         <div className="space-y-4">
           <Skeleton className="h-24 rounded-2xl" />
           <Skeleton className="h-80 rounded-2xl" />
@@ -1454,8 +1469,12 @@ export default function AdminExportsPage() {
 
   if (state.status === 'error') {
     return (
-      <AdminWorkspaceShellV2 title="Exports" subtitle="Generate and download league workbooks.">
-        <Alert tone="danger" title="Unable to load exports">
+      <AdminWorkspaceShellV2
+        title="Exports"
+        subtitle="Generate and download league workbooks."
+        metadata={headerMetadata}
+      >
+        <Alert tone="danger" title="Unable to load exports" className="admin-v2-inline-alert">
           {state.message}
         </Alert>
       </AdminWorkspaceShellV2>
@@ -1463,18 +1482,17 @@ export default function AdminExportsPage() {
   }
 
   return (
-    <AdminWorkspaceShellV2 title="Exports" subtitle="Generate tournament workbooks instantly.">
+    <AdminWorkspaceShellV2
+      title="Exports"
+      subtitle="Generate tournament workbooks instantly."
+      metadata={headerMetadata}
+    >
       <div className="space-y-3">
-        <SectionCardV2 tone="panel" density="none" className="exports-v2-card p-4 md:p-5">
+        <SectionCardV2 tone="panel" density="none" className="admin-v2-surface p-4 md:p-5">
           <div className="space-y-3.5">
-            <div className="exports-v2-meta text-[13px] text-muted-foreground">
-              <SnapshotStamp timestamp={state.bundle.offlineLastUpdated} prefix="Offline " />
-              <span>{availabilityText}</span>
-            </div>
+            <div className="admin-v2-section-label">Export</div>
 
-            <div className="text-[13px] uppercase tracking-[0.12em] text-muted-foreground">Export</div>
-
-            <div className={`exports-v2-controls grid gap-3 ${exportControlsDesktopClass}`}>
+            <div className={`admin-v2-controls grid gap-3 ${exportControlsDesktopClass}`}>
               <SelectField
                 label="Export preset"
                 value={selectedPresetId}
@@ -1518,10 +1536,10 @@ export default function AdminExportsPage() {
                 </SelectField>
               ) : null}
 
-              <div className="exports-v2-cta flex">
+              <div className="flex items-end">
                 <Button
                   size="md"
-                  className="h-11 w-full rounded-lg px-7 text-[15px] lg:min-w-[180px]"
+                  className="admin-v2-action h-11 rounded-lg px-7 text-[15px] lg:min-w-[180px]"
                   loading={exportStatus === 'exporting'}
                   disabled={exportStatus === 'exporting' || !canExport || Boolean(noDataHint)}
                   onClick={() => void runExport(selectedPresetId)}
@@ -1532,18 +1550,18 @@ export default function AdminExportsPage() {
             </div>
 
             {!canExport ? (
-              <Alert tone="warning" className="exports-v2-inline-alert py-2.5 text-[13px]">
+              <Alert tone="warning" className="admin-v2-inline-alert py-2.5 text-[13px]">
                 {exportGateMessage}
               </Alert>
             ) : noDataHint ? (
-              <Alert tone="warning" className="exports-v2-inline-alert py-2.5 text-[13px]">
+              <Alert tone="warning" className="admin-v2-inline-alert py-2.5 text-[13px]">
                 {noDataHint}
               </Alert>
             ) : null}
 
-            <div className="exports-v2-divider" />
+            <div className="admin-v2-divider" />
 
-            <div className="exports-v2-included text-[15px] leading-snug text-foreground">
+            <div className="text-[15px] leading-snug text-foreground">
               <span className="text-muted-foreground">Included:</span> {includedSheetsText}
             </div>
 

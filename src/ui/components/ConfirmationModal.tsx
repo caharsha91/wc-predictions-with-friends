@@ -26,22 +26,18 @@ export default function ConfirmationModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-card)] shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-            {title}
-          </h3>
-          <div className="mt-2 text-sm text-[var(--text-secondary)]">
-            {description}
-          </div>
+    <div className="admin-v2-modal-overlay fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="admin-v2-modal w-full max-w-md overflow-hidden rounded-2xl border animate-in zoom-in-95 duration-200">
+        <div className="admin-v2-modal-body p-6">
+          <h3 className="admin-v2-modal-title text-lg font-semibold">{title}</h3>
+          <div className="admin-v2-modal-description mt-2 text-sm">{description}</div>
         </div>
-        <div className="flex items-center justify-end gap-3 bg-[var(--surface-muted)]/50 px-6 py-4">
+        <div className="admin-v2-modal-footer flex items-center justify-end gap-3 px-6 py-4">
           <button
             type="button"
             disabled={isLoading}
             onClick={onCancel}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:opacity-50"
+            className="admin-v2-modal-cancel rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50"
           >
             {cancelLabel}
           </button>
@@ -49,10 +45,8 @@ export default function ConfirmationModal({
             type="button"
             disabled={isLoading}
             onClick={onConfirm}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition disabled:opacity-50 ${
-              isDestructive
-                ? 'bg-[rgb(var(--danger-rgb))] hover:bg-[rgba(var(--danger-rgb),0.9)]'
-                : 'bg-[rgb(var(--primary-rgb))] hover:bg-[rgba(var(--primary-rgb),0.9)]'
+            className={`admin-v2-modal-confirm rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${
+              isDestructive ? 'admin-v2-modal-confirm-danger' : 'admin-v2-modal-confirm-default'
             }`}
           >
             {isLoading ? 'Processing...' : confirmLabel}

@@ -247,53 +247,53 @@ export default function AdminUsersPage() {
     })
   }, [entries, normalizedSearchQuery, state.status])
 
+  const headerMetadata = (
+    <>
+      <span>{canManageMembers ? 'Updates enabled' : 'Read only'}</span>
+      <span className="h-3 w-px bg-border" aria-hidden="true" />
+      <span>{entries.length} players</span>
+      <span className="h-3 w-px bg-border" aria-hidden="true" />
+      <span>{adminCount} admin</span>
+      <span className="h-3 w-px bg-border" aria-hidden="true" />
+      <span>{memberCount} members</span>
+    </>
+  )
+
   return (
-    <AdminWorkspaceShellV2 title="Players" subtitle="Manage league roster access and admin permissions.">
+    <AdminWorkspaceShellV2
+      title="Players"
+      subtitle="Manage league roster access and admin permissions."
+      metadata={headerMetadata}
+      actions={(
+        <Button
+          type="button"
+          size="sm"
+          className="admin-v2-action-inline"
+          onClick={startCreate}
+          disabled={!canManageMembers}
+        >
+          + Add Player
+        </Button>
+      )}
+    >
       <div className="space-y-4">
         {!canManageMembers ? (
-          <Alert tone="warning" title="Read-only roster view">
+          <Alert tone="warning" title="Read-only roster view" className="admin-v2-inline-alert">
             {isDemoMode
               ? 'Demo mode uses snapshot data for roster display only.'
               : 'Live roster updates are unavailable in this environment.'}
           </Alert>
         ) : null}
         {state.status === 'error' ? (
-          <Alert tone="danger" title="Unable to load members">
+          <Alert tone="danger" title="Unable to load members" className="admin-v2-inline-alert">
             {state.message}
           </Alert>
         ) : null}
 
-        <SectionCardV2 tone="panel" density="none" className="players-v2-toolbar p-3.5 md:p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {canManageMembers ? (
-                <Badge tone="success" className="players-v2-pill">
-                  Updates enabled
-                </Badge>
-              ) : (
-                <Badge tone="warning" className="players-v2-pill">
-                  Read only
-                </Badge>
-              )}
-              <Badge tone="secondary" className="players-v2-pill">
-                {entries.length} players
-              </Badge>
-              <Badge tone="secondary" className="players-v2-pill">
-                {adminCount} admin
-              </Badge>
-              <Badge tone="secondary" className="players-v2-pill">
-                {memberCount} members
-              </Badge>
-            </div>
-            <Button type="button" size="sm" className="players-v2-add-btn" onClick={startCreate} disabled={!canManageMembers}>
-              + Add Player
-            </Button>
-          </div>
-        </SectionCardV2>
-
-        <SectionCardV2 tone="panel" density="none" className="players-v2-card p-3.5 md:p-4">
+        <SectionCardV2 tone="panel" density="none" className="admin-v2-surface p-3.5 md:p-4">
           <div className="space-y-3">
             <div className="players-v2-search-wrap">
+              <div className="admin-v2-section-label">Search players</div>
               <label className="sr-only" htmlFor="players-search">
                 Search players
               </label>
@@ -307,7 +307,7 @@ export default function AdminUsersPage() {
               />
             </div>
 
-            <div className="players-v2-divider" />
+            <div className="admin-v2-divider" />
 
             <div className="players-v2-head hidden md:grid">
               <span>Name</span>
@@ -316,58 +316,58 @@ export default function AdminUsersPage() {
             </div>
 
             <div className="players-v2-list">
-          {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading players...</div> : null}
-          {state.status === 'ready' && entries.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No players found in the roster.</div>
-          ) : null}
-            {state.status === 'ready' && entries.length > 0 && filteredEntries.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No players match this search.</div>
-            ) : null}
+              {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading players...</div> : null}
+              {state.status === 'ready' && entries.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No players found in the roster.</div>
+              ) : null}
+              {state.status === 'ready' && entries.length > 0 && filteredEntries.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No players match this search.</div>
+              ) : null}
 
-            {state.status === 'ready' && filteredEntries.length > 0 ? (
-              <div className="space-y-2 md:space-y-0">
-                {filteredEntries.map((entry) => (
-                  <div key={entry.docId} className="players-v2-row">
-                    <div className="players-v2-name-col">
-                      <div className="players-v2-name">{entry.name || 'Unnamed user'}</div>
-                      <div className="players-v2-email">{entry.email}</div>
-                    </div>
+              {state.status === 'ready' && filteredEntries.length > 0 ? (
+                <div className="space-y-2 md:space-y-0">
+                  {filteredEntries.map((entry) => (
+                    <div key={entry.docId} className="players-v2-row">
+                      <div className="players-v2-name-col">
+                        <div className="players-v2-name">{entry.name || 'Unnamed user'}</div>
+                        <div className="players-v2-email">{entry.email}</div>
+                      </div>
 
-                    <div className="players-v2-role-col">
-                      {entry.isAdmin ? (
-                        <Badge tone="info" className="players-v2-role-pill">
-                          Admin
-                        </Badge>
-                      ) : (
-                        <Badge tone="secondary" className="players-v2-role-pill">
-                          Member
-                        </Badge>
-                      )}
-                    </div>
+                      <div className="players-v2-role-col">
+                        {entry.isAdmin ? (
+                          <Badge tone="info" className="admin-v2-pill players-v2-role-pill">
+                            Admin
+                          </Badge>
+                        ) : (
+                          <Badge tone="secondary" className="admin-v2-pill players-v2-role-pill">
+                            Member
+                          </Badge>
+                        )}
+                      </div>
 
-                    <div className="players-v2-action-col">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        className="players-v2-edit-btn"
-                        onClick={() => startEdit(entry)}
-                        disabled={!canManageMembers}
-                      >
-                        Edit <span aria-hidden="true">-&gt;</span>
-                      </Button>
+                      <div className="players-v2-action-col">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="players-v2-edit-btn"
+                          onClick={() => startEdit(entry)}
+                          disabled={!canManageMembers}
+                        >
+                          Edit <span aria-hidden="true">-&gt;</span>
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         </SectionCardV2>
 
         <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
-          <SheetContent side="right" className="w-[96vw] max-w-lg">
-            <SheetHeader>
+          <SheetContent side="right" className="admin-v2-sheet-content w-[96vw] max-w-lg">
+            <SheetHeader className="admin-v2-sheet-header">
               <SheetTitle>{editing ? 'Edit Player' : 'Add Player'}</SheetTitle>
               <SheetDescription>
                 {editing
@@ -376,87 +376,87 @@ export default function AdminUsersPage() {
               </SheetDescription>
             </SheetHeader>
 
-          <form className="space-y-3 px-4 py-3" onSubmit={handleSubmit}>
-            <InputField
-              id="member-name"
-              label="Name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              disabled={!canManageMembers}
-              placeholder="Display name"
-            />
-            <InputField
-              id="member-email"
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              disabled={!canManageMembers || Boolean(editing)}
-              placeholder="member@example.com"
-              required
-            />
-            <InputField
-              id="member-id"
-              label="Member ID"
-              value={memberId}
-              onChange={(event) => setMemberId(event.target.value)}
-              disabled={!canManageMembers}
-              placeholder="Auto-generated member identity"
-              helperText="Core identity used across picks, bracket, leaderboard, and rivals."
-              required
-            />
-            <InputField
-              id="member-auth-uid"
-              label="Auth UID"
-              value={editing?.authUid ?? ''}
-              readOnly
-              disabled
-              placeholder="Not set"
-              helperText="Authentication reference (read-only). Member ID is used for league data."
-            />
-            <label className="flex items-center gap-2 text-[14px] text-foreground">
-              <input
-                type="checkbox"
-                checked={isAdmin}
-                onChange={(event) => setIsAdmin(event.target.checked)}
+            <form className="admin-v2-sheet-form space-y-3 px-4 py-3" onSubmit={handleSubmit}>
+              <InputField
+                id="member-name"
+                label="Name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
                 disabled={!canManageMembers}
+                placeholder="Display name"
               />
-              Grant admin access
-            </label>
+              <InputField
+                id="member-email"
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={!canManageMembers || Boolean(editing)}
+                placeholder="member@example.com"
+                required
+              />
+              <InputField
+                id="member-id"
+                label="Member ID"
+                value={memberId}
+                onChange={(event) => setMemberId(event.target.value)}
+                disabled={!canManageMembers}
+                placeholder="Auto-generated member identity"
+                helperText="Core identity used across picks, bracket, leaderboard, and rivals."
+                required
+              />
+              <InputField
+                id="member-auth-uid"
+                label="Auth UID"
+                value={editing?.authUid ?? ''}
+                readOnly
+                disabled
+                placeholder="Not set"
+                helperText="Authentication reference (read-only). Member ID is used for league data."
+              />
+              <label className="admin-v2-sheet-checkbox flex items-center gap-2 text-[14px] text-foreground">
+                <input
+                  type="checkbox"
+                  checked={isAdmin}
+                  onChange={(event) => setIsAdmin(event.target.checked)}
+                  disabled={!canManageMembers}
+                />
+                Grant admin access
+              </label>
 
-            <SheetFooter className="px-0 pb-0 pt-3">
-              <div className="w-full space-y-2">
-                {formStatus === 'saving' || memberMutationProgress > 0 ? (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[13px] text-muted-foreground">
-                      <span>{formStatus === 'saving' ? 'Updating player...' : 'Update complete'}</span>
-                      <span>{memberMutationProgress >= 100 ? 'Done' : 'In progress'}</span>
+              <SheetFooter className="admin-v2-sheet-footer px-0 pb-0 pt-3">
+                <div className="w-full space-y-2">
+                  {formStatus === 'saving' || memberMutationProgress > 0 ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[13px] text-muted-foreground">
+                        <span>{formStatus === 'saving' ? 'Updating player...' : 'Update complete'}</span>
+                        <span>{memberMutationProgress >= 100 ? 'Done' : 'In progress'}</span>
+                      </div>
+                      <Progress
+                        value={memberMutationProgress}
+                        intent={formStatus === 'saving' ? 'momentum' : 'success'}
+                        size="sm"
+                        aria-label="Player update progress"
+                      />
                     </div>
-                    <Progress
-                      value={memberMutationProgress}
-                      intent={formStatus === 'saving' ? 'momentum' : 'success'}
-                      size="sm"
-                      aria-label="Player update progress"
-                    />
-                  </div>
-                ) : null}
+                  ) : null}
 
-                <div className="flex w-full flex-wrap justify-end gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setEditorOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" size="sm" disabled={!canManageMembers || formStatus === 'saving'}>
-                    {editing ? 'Save player' : 'Add player'}
-                  </Button>
+                  <div className="flex w-full flex-wrap justify-end gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setEditorOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" size="sm" disabled={!canManageMembers || formStatus === 'saving'}>
+                      {editing ? 'Save player' : 'Add player'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </SheetFooter>
-          </form>
+              </SheetFooter>
+            </form>
           </SheetContent>
         </Sheet>
       </div>
