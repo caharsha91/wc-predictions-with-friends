@@ -181,9 +181,13 @@ function SidebarAccountMenu({
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top" className="min-w-[260px] overflow-visible">
-        <div className="rounded-md border border-border/80 bg-[var(--surface-muted)] p-2">
-          <div className="mb-2 px-0.5 text-[11px] uppercase tracking-[0.12em] text-[var(--sidebar-nav-muted)]">
+      <DropdownMenuContent
+        align="start"
+        side="top"
+        className="account-menu-content min-w-[260px] overflow-visible"
+      >
+        <div className="account-menu-favorite-section rounded-md p-2">
+          <div className="account-menu-favorite-label mb-2 px-0.5 text-[11px] uppercase tracking-[0.12em] text-[var(--sidebar-nav-muted)]">
             Favorite team
           </div>
           <FavoriteTeamSelectV2
@@ -195,24 +199,24 @@ function SidebarAccountMenu({
             menuPlacement="top"
           />
         </div>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => setMode('light')}>
+        <DropdownMenuSeparator className="account-menu-separator" />
+        <DropdownMenuItem className="account-menu-item" onSelect={() => setMode('light')}>
           Theme: Light {!isSystemMode && mode === 'light' ? '✓' : ''}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => setMode('dark')}>
+        <DropdownMenuItem className="account-menu-item" onSelect={() => setMode('dark')}>
           Theme: Dark {!isSystemMode && mode === 'dark' ? '✓' : ''}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => setSystemMode(true)}>
+        <DropdownMenuItem className="account-menu-item" onSelect={() => setSystemMode(true)}>
           Theme: System {isSystemMode ? '✓' : ''}
         </DropdownMenuItem>
         {canToggleDemoMode ? (
-          <DropdownMenuItem onSelect={() => void onToggleDemoMode()}>
+          <DropdownMenuItem className="account-menu-item" onSelect={() => void onToggleDemoMode()}>
             {isDemoMode ? 'Exit Demo Mode' : 'Enter Demo Mode'}
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="account-menu-separator" />
         <DropdownMenuItem
-          className="text-destructive hover:text-destructive focus-visible:text-destructive"
+          className="account-menu-item text-destructive hover:text-destructive focus-visible:text-destructive"
           onSelect={() => void onSignOut()}
         >
           Sign out

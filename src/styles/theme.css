@@ -488,6 +488,75 @@
   padding-top: 0.5rem;
 }
 
+.account-menu-content {
+  border-color: color-mix(in srgb, var(--overlay-border) 84%, transparent);
+  background: color-mix(in srgb, var(--overlay-surface) 97%, transparent);
+}
+
+.account-menu-favorite-section {
+  border: 0;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--surface-muted) 56%, transparent);
+}
+
+.account-menu-favorite-label {
+  color: color-mix(in srgb, var(--sidebar-nav-muted) 88%, transparent);
+}
+
+.account-menu-separator {
+  background: color-mix(in srgb, var(--divider) 88%, transparent);
+}
+
+.account-menu-item[data-highlighted] {
+  background: color-mix(in srgb, var(--accent-soft) 26%, transparent);
+}
+
+.account-menu-favorite-trigger {
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--background) 90%, transparent);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.account-menu-favorite-trigger:hover {
+  background: color-mix(in srgb, var(--accent-soft) 24%, transparent);
+  border-color: color-mix(in srgb, var(--v2-border-soft) 76%, transparent);
+}
+
+.account-menu-favorite-trigger-open {
+  background: color-mix(in srgb, var(--accent-soft) 30%, transparent);
+  border-color: color-mix(in srgb, var(--v2-border-medium) 84%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 44%, transparent);
+}
+
+.account-menu-favorite-trigger:focus-visible {
+  outline: 2px solid var(--focus-ring-strong);
+  outline-offset: 2px;
+}
+
+.account-menu-favorite-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.account-menu-favorite-popover {
+  border-color: color-mix(in srgb, var(--overlay-border) 74%, transparent);
+  background: color-mix(in srgb, var(--overlay-surface) 98%, transparent);
+}
+
+.account-menu-favorite-selected {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
 .landing-v2-canvas {
   position: relative;
   isolation: isolate;
@@ -677,6 +746,280 @@
     box-shadow:
       0 0 0 9px color-mix(in srgb, var(--v2-glow-medium) 0%, transparent),
       inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 0%, transparent);
+  }
+}
+
+.demo-controls-v2-card {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 74%, transparent);
+  background:
+    radial-gradient(130% 126% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 30%, transparent), transparent 68%),
+    radial-gradient(125% 120% at 0% 100%, rgba(var(--secondary-rgb), 0.12), transparent 72%),
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--card) 95%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 52%, transparent) 100%
+    );
+}
+
+.demo-controls-v2-row {
+  min-width: 0;
+}
+
+.demo-controls-v2-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.demo-controls-v2-action {
+  width: 100%;
+}
+
+.demo-controls-v2-divider {
+  height: 1px;
+  width: 100%;
+  background: color-mix(in srgb, var(--v2-border-soft) 86%, transparent);
+}
+
+.demo-controls-v2-danger {
+  border-color: color-mix(in srgb, var(--border-danger) 82%, var(--v2-border-soft) 18%);
+  background: color-mix(in srgb, rgba(var(--danger-rgb), 0.2) 72%, transparent);
+}
+
+.demo-controls-v2-danger:hover {
+  background: color-mix(in srgb, rgba(var(--danger-rgb), 0.28) 74%, transparent);
+}
+
+.demo-controls-v2-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: color-mix(in srgb, var(--warning) 82%, var(--foreground) 18%);
+}
+
+.demo-controls-v2-warning::before {
+  content: '!';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--warning) 70%, transparent);
+  color: color-mix(in srgb, var(--warning) 90%, var(--foreground) 10%);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.exports-v2-card {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 74%, transparent);
+  background:
+    radial-gradient(130% 126% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 26%, transparent), transparent 68%),
+    radial-gradient(125% 120% at 0% 100%, rgba(var(--secondary-rgb), 0.1), transparent 74%),
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--card) 96%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 50%, transparent) 100%
+    );
+}
+
+.exports-v2-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.65rem;
+  align-items: center;
+}
+
+.exports-v2-controls {
+  align-items: end;
+}
+
+.exports-v2-cta {
+  align-items: end;
+}
+
+.exports-v2-divider {
+  height: 1px;
+  width: 100%;
+  background: color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+}
+
+.exports-v2-included {
+  letter-spacing: 0.01em;
+}
+
+.exports-v2-inline-alert {
+  border-color: color-mix(in srgb, rgba(var(--warn-rgb), 0.42) 74%, transparent);
+  background: color-mix(in srgb, rgba(var(--warn-rgb), 0.18) 62%, transparent);
+}
+
+.players-v2-toolbar {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 70%, transparent);
+  background:
+    radial-gradient(130% 120% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 22%, transparent), transparent 72%),
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--card) 95%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 50%, transparent) 100%
+    );
+}
+
+.players-v2-pill {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 76%, transparent);
+  background: color-mix(in srgb, var(--background) 56%, transparent);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.players-v2-add-btn {
+  border-radius: 0.7rem;
+  padding-inline: 1rem;
+  min-height: 2.45rem;
+}
+
+.players-v2-card {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 74%, transparent);
+  background:
+    radial-gradient(128% 122% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 28%, transparent), transparent 68%),
+    radial-gradient(120% 110% at 0% 100%, rgba(var(--secondary-rgb), 0.1), transparent 74%),
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--card) 95%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 52%, transparent) 100%
+    );
+}
+
+.players-v2-search-wrap {
+  min-width: 0;
+}
+
+.players-v2-search {
+  width: 100%;
+  border-radius: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 82%, transparent);
+  background: color-mix(in srgb, var(--background) 54%, transparent);
+  color: var(--foreground);
+  font-size: 15px;
+  line-height: 1.4;
+  padding: 0.72rem 0.9rem;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.players-v2-search::placeholder {
+  color: var(--muted-foreground);
+}
+
+.players-v2-search:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--v2-border-strong) 84%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--v2-glow-soft) 34%, transparent);
+}
+
+.players-v2-divider {
+  height: 1px;
+  width: 100%;
+  background: color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+}
+
+.players-v2-head {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.players-v2-list {
+  min-width: 0;
+}
+
+.players-v2-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 78%, transparent);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--background) 46%, transparent);
+}
+
+.players-v2-name-col {
+  min-width: 0;
+}
+
+.players-v2-name {
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--foreground);
+}
+
+.players-v2-email {
+  margin-top: 0.2rem;
+  font-size: 14px;
+  color: var(--muted-foreground);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.players-v2-role-col {
+  display: flex;
+  align-items: center;
+}
+
+.players-v2-role-pill {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 78%, transparent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+}
+
+.players-v2-action-col {
+  display: flex;
+}
+
+.players-v2-edit-btn {
+  border-radius: 999px;
+  min-height: 2.25rem;
+  padding-inline: 0.95rem;
+}
+
+@media (min-width: 1024px) {
+  .demo-controls-v2-controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .demo-controls-v2-action {
+    width: auto;
+    min-width: 11rem;
+  }
+
+  .players-v2-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0;
+    border-width: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+    background: transparent;
+    padding: 0.72rem 0.5rem;
+  }
+
+  .players-v2-row:first-child {
+    border-top: 1px solid color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+  }
+
+  .players-v2-action-col {
+    justify-content: flex-end;
   }
 }
 
@@ -978,11 +1321,22 @@
 
 .landing-v2-rivals-row[data-kind='suggestion'] {
   background: color-mix(in srgb, var(--background) 92%, transparent);
-  min-height: 2.75rem;
+  min-height: 4rem;
+  height: 4rem;
 }
 
 .landing-v2-rivals-suggestions-scroll {
-  max-height: 9.3rem;
+  --visible-rival-suggestion-rows: 4;
+  --rival-suggestion-row-height: 4rem;
+  --rival-suggestion-row-gap: 0.5rem;
+  height: calc(
+    (var(--visible-rival-suggestion-rows) * var(--rival-suggestion-row-height)) +
+      ((var(--visible-rival-suggestion-rows) - 1) * var(--rival-suggestion-row-gap))
+  );
+  max-height: calc(
+    (var(--visible-rival-suggestion-rows) * var(--rival-suggestion-row-height)) +
+      ((var(--visible-rival-suggestion-rows) - 1) * var(--rival-suggestion-row-gap))
+  );
   overflow-y: auto;
   padding-right: 0.15rem;
   scrollbar-gutter: stable;

@@ -1120,11 +1120,6 @@ export default function LandingPage() {
                         <span>{row.points ?? '—'} pts</span>
                       </span>
                     }
-                    badges={
-                      <StatusTagV2 tone={row.kind === 'viewer' ? 'info' : row.kind === 'selected' ? 'warning' : 'secondary'}>
-                        {row.kind === 'viewer' ? 'You' : row.kind === 'selected' ? 'Rival' : 'Snapshot'}
-                      </StatusTagV2>
-                    }
                     trailing={
                       row.kind === 'selected' && row.selectedIndex !== null && selectedRivalId ? (
                         <div className="flex items-center gap-1">

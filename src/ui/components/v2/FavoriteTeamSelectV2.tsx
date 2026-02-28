@@ -162,11 +162,15 @@ export default function FavoriteTeamSelectV2({
     menuPlacement === 'top'
       ? 'bottom-[calc(100%+0.4rem)]'
       : 'top-[calc(100%+0.4rem)]'
+  const isSidebarVariant = variant === 'sidebar'
 
   const triggerClassName = cn(
-    'v2-row-shell v2-row-interactive flex w-full items-center justify-between gap-2 rounded-lg border text-left',
-    variant === 'sidebar' ? 'px-2.5 py-2' : 'px-2.5 py-2',
-    open ? 'v2-row-state-selected border-[color:var(--v2-row-active-border)]' : undefined,
+    'flex w-full items-center justify-between gap-2 rounded-lg text-left',
+    isSidebarVariant
+      ? 'account-menu-favorite-trigger px-2 py-1.5'
+      : 'v2-row-shell v2-row-interactive border px-2.5 py-2',
+    open && !isSidebarVariant ? 'v2-row-state-selected border-[color:var(--v2-row-active-border)]' : undefined,
+    open && isSidebarVariant ? 'account-menu-favorite-trigger-open' : undefined,
     disabled || loading ? 'cursor-not-allowed opacity-70' : undefined
   )
 
@@ -191,9 +195,6 @@ export default function FavoriteTeamSelectV2({
             imageClassName="h-full w-full object-cover"
           />
           <div className="min-w-0">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-              Favorite team
-            </div>
             <div className="truncate text-[13px] font-semibold text-foreground">
               {selectedMeta.textPrimary}
               {selectedMeta.kind === 'canonical' && selectedOption?.name ? (
@@ -203,13 +204,25 @@ export default function FavoriteTeamSelectV2({
           </div>
         </div>
 
-        <StatusTagV2 tone={loading ? 'warning' : 'secondary'}>
-          {loading ? 'Saving...' : open ? 'Close' : variant === 'sidebar' ? 'Edit' : 'Search'}
-        </StatusTagV2>
+        {isSidebarVariant ? (
+          <span className="account-menu-favorite-action">
+            {loading ? 'Saving...' : open ? 'Close' : 'Edit'}
+          </span>
+        ) : (
+          <StatusTagV2 tone={loading ? 'warning' : 'secondary'}>
+            {loading ? 'Saving...' : open ? 'Close' : 'Search'}
+          </StatusTagV2>
+        )}
       </button>
 
       {open ? (
-        <div className={cn('absolute left-0 right-0 z-30 rounded-xl border border-border/70 bg-popover p-2 shadow-[var(--shadow1)]', menuPositionClass)}>
+        <div
+          className={cn(
+            'absolute left-0 right-0 z-30 rounded-xl border border-border/70 bg-popover p-2 shadow-[var(--shadow1)]',
+            isSidebarVariant ? 'account-menu-favorite-popover' : undefined,
+            menuPositionClass
+          )}
+        >
           <Input
             ref={inputRef}
             value={query}
@@ -265,7 +278,13 @@ export default function FavoriteTeamSelectV2({
                             <div className="truncate text-[12px] text-muted-foreground">{option.name}</div>
                           </div>
                         </div>
-                        {isSelected ? <StatusTagV2 tone="info">Selected</StatusTagV2> : null}
+                        {isSelected ? (
+                          isSidebarVariant ? (
+                            <span className="account-menu-favorite-selected">Selected ✓</span>
+                          ) : (
+                            <StatusTagV2 tone="info">Selected</StatusTagV2>
+                          )
+                        ) : null}
                       </div>
                     </RowShellV2>
                   </button>

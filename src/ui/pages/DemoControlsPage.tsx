@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
 
 import { fetchMatches, fetchMembers } from '../../lib/data'
 import type { Match } from '../../types/matches'
 import type { Member } from '../../types/members'
 import ConfirmationModal from '../components/ConfirmationModal'
 import { Alert } from '../components/ui/Alert'
-import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { SelectField } from '../components/ui/Field'
 import Progress from '../components/ui/Progress'
+import { CalendarIcon, CloseIcon, SettingsIcon, UsersIcon } from '../components/Icons'
 import AdminWorkspaceShellV2 from '../components/v2/AdminWorkspaceShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import {
@@ -31,7 +30,7 @@ type LoadState =
   | { status: 'error'; message: string }
   | { status: 'ready'; matches: Match[]; members: Member[] }
 
-type ConfirmAction = 'reload-snapshots' | 'clear-session' | 'reset-to-live'
+type ConfirmAction = 'reload-snapshots' | 'clear-session'
 
 function toLabel(value: Date | null): string {
   if (!value) return 'Unavailable'
@@ -108,8 +107,6 @@ function getScenarioLabel(scenario: DemoScenarioId): string {
 
 export default function DemoControlsPage() {
   // QA-SMOKE: route=/admin/controls and /demo/admin/controls ; checklist-id=smoke-demo-controls
-  const navigate = useNavigate()
-  const location = useLocation()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [selectedScenario, setSelectedScenario] = useState<DemoScenarioId>(() => readDemoScenario())
   const [selectedViewerId, setSelectedViewerId] = useState<string>(() => readDemoViewerId() ?? '')
@@ -119,7 +116,6 @@ export default function DemoControlsPage() {
   const [sessionProgressLabel, setSessionProgressLabel] = useState<string>('Idle')
   const [sessionProgressIntent, setSessionProgressIntent] = useState<'default' | 'momentum' | 'warning' | 'success'>('default')
   const { showToast, updateToast } = useToast()
-  const isDemoRoute = location.pathname.startsWith('/demo/')
 
   useEffect(() => {
     let canceled = false
@@ -239,31 +235,14 @@ export default function DemoControlsPage() {
     showToast({ tone: 'success', title: 'Demo session cleared' })
   }
 
-  function resetToLive() {
-    clearDemoNowOverride()
-    clearDemoViewerId()
-    clearDemoLocalStorage()
-    emitControlsChanged()
-    setSessionProgress(100)
-    setSessionProgressLabel('Live mode restored')
-    setSessionProgressIntent('success')
-    window.setTimeout(() => setSessionProgress(0), 1_100)
-    showToast({ tone: 'success', title: 'Live mode restored' })
-    if (isDemoRoute) {
-      navigate('/admin/controls', { replace: true })
-    }
-  }
-
   async function runConfirmedAction() {
     if (!pendingAction || isActionRunning) return
     setIsActionRunning(true)
     try {
       if (pendingAction === 'reload-snapshots') {
         await reloadSnapshots()
-      } else if (pendingAction === 'clear-session') {
-        clearSession()
       } else {
-        resetToLive()
+        clearSession()
       }
       setPendingAction(null)
     } finally {
@@ -287,36 +266,17 @@ export default function DemoControlsPage() {
         confirmLabel: 'Clear session'
       }
     }
-    return {
-      title: isDemoRoute ? 'Exit demo mode?' : 'Clear demo mode data?',
-      description: isDemoRoute
-        ? 'This exits demo mode and clears demo overrides so you return to live league data.'
-        : 'This clears demo overrides currently stored in your browser.',
-      confirmLabel: 'Return to live'
-    }
-  }, [isDemoRoute, pendingAction])
-
-  const currentScenario = readDemoScenario()
-  const currentViewer = readDemoViewerId()
-  const currentViewerLabel =
-    state.status === 'ready'
-      ? state.members.find((member) => member.id === currentViewer)?.name ?? (currentViewer ?? 'none')
-      : currentViewer ?? 'none'
+    return null
+  }, [pendingAction])
 
   return (
     <AdminWorkspaceShellV2
       title="Demo Controls"
-      subtitle="Manage demo timeline scenarios, viewer context, and demo session data."
-      metadata={
-        <>
-          <Badge tone="info">Scenario: {getScenarioLabel(currentScenario)}</Badge>
-          <Badge tone="secondary">Viewer: {currentViewerLabel}</Badge>
-        </>
-      }
+      subtitle="Configure scenario, viewer, and demo session data."
     >
       <div className="space-y-4">
         {state.status === 'loading' ? (
-          <SectionCardV2 tone="panel" density="none" className="p-4">
+          <SectionCardV2 tone="panel" density="none" className="p-4 md:p-5">
             Loading demo controls...
           </SectionCardV2>
         ) : null}
@@ -328,14 +288,16 @@ export default function DemoControlsPage() {
         ) : null}
 
         {state.status === 'ready' ? (
-          <>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <SectionCardV2 tone="panel" density="none" className="p-4">
-                <div className="space-y-3">
+          <SectionCardV2 tone="panel" density="none" className="demo-controls-v2-card p-4 md:p-5">
+            <div className="space-y-4">
+              <div className="demo-controls-v2-row space-y-3">
+                <div className="text-[13px] uppercase tracking-[0.12em] text-muted-foreground">Scenario</div>
+                <div className="demo-controls-v2-controls">
                   <SelectField
                     label="Scenario"
                     value={selectedScenario}
                     onChange={(event) => setSelectedScenario(event.target.value as DemoScenarioId)}
+                    labelHidden
                   >
                     {DEMO_SCENARIO_OPTIONS.map((option) => (
                       <option key={option.id} value={option.id}>
@@ -343,25 +305,30 @@ export default function DemoControlsPage() {
                       </option>
                     ))}
                   </SelectField>
-                  <div className="text-xs text-muted-foreground">Local time: {toLabel(scenarioNow)}</div>
-                  <div className="text-xs text-muted-foreground">Relative: {toRelativeLabel(scenarioNow)}</div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button onClick={applyScenario} disabled={!scenarioNow}>
-                      Apply scenario
-                    </Button>
-                    <Button variant="secondary" onClick={() => navigate('/demo')}>
-                      Open demo play center
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={applyScenario}
+                    disabled={!scenarioNow}
+                    icon={<CalendarIcon size={15} />}
+                    className="demo-controls-v2-action"
+                  >
+                    Apply scenario
+                  </Button>
                 </div>
-              </SectionCardV2>
+                <div className="text-[13px] text-muted-foreground">
+                  {toLabel(scenarioNow)} • {toRelativeLabel(scenarioNow)}
+                </div>
+              </div>
 
-              <SectionCardV2 tone="panel" density="none" className="p-4">
-                <div className="space-y-3">
+              <div className="demo-controls-v2-divider" />
+
+              <div className="demo-controls-v2-row space-y-3">
+                <div className="text-[13px] uppercase tracking-[0.12em] text-muted-foreground">Viewer (optional)</div>
+                <div className="demo-controls-v2-controls">
                   <SelectField
                     label="Viewer"
                     value={selectedViewerId}
                     onChange={(event) => setSelectedViewerId(event.target.value)}
+                    labelHidden
                   >
                     {state.members.map((member) => (
                       <option key={member.id} value={member.id}>
@@ -369,42 +336,47 @@ export default function DemoControlsPage() {
                       </option>
                     ))}
                   </SelectField>
-                  <div className="flex flex-wrap gap-2">
-                    <Button onClick={applyViewer} disabled={!selectedViewerId}>
+                  <div className="space-y-1">
+                    <Button
+                      variant="secondary"
+                      onClick={applyViewer}
+                      disabled={!selectedViewerId}
+                      icon={<UsersIcon size={15} />}
+                      className="demo-controls-v2-action"
+                    >
                       Switch viewer
                     </Button>
-                    <Button variant="secondary" onClick={() => navigate('/demo/leaderboard')}>
-                      Open demo leaderboard
-                    </Button>
+                    <div className="text-[13px] text-muted-foreground">Affects leaderboard + user data.</div>
                   </div>
                 </div>
-              </SectionCardV2>
-            </div>
+              </div>
 
-            <SectionCardV2 tone="panel" density="none" className="p-4">
-              <div className="space-y-3">
-                <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Session + Data</div>
-                <div className="text-sm text-muted-foreground">
-                  Reload snapshots after updating demo source data.
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="secondary" onClick={() => setPendingAction('reload-snapshots')}>
-                    Reload demo snapshots
-                  </Button>
-                  <Button variant="secondary" onClick={() => setPendingAction('clear-session')}>
-                    Clear demo session
+              <div className="demo-controls-v2-divider" />
+
+              <div className="demo-controls-v2-row space-y-3">
+                <div className="text-[13px] uppercase tracking-[0.12em] text-muted-foreground">Utilities</div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setPendingAction('reload-snapshots')}
+                    icon={<SettingsIcon size={15} />}
+                    className="justify-start rounded-lg"
+                  >
+                    Reload snapshots
                   </Button>
                   <Button
                     variant="secondary"
-                    onClick={() => setPendingAction('reset-to-live')}
-                    className="border-[var(--border-danger)] bg-[rgba(var(--danger-rgb),0.15)] text-foreground hover:bg-[rgba(var(--danger-rgb),0.26)]"
+                    onClick={() => setPendingAction('clear-session')}
+                    icon={<CloseIcon size={15} />}
+                    className="demo-controls-v2-danger justify-start rounded-lg"
                   >
-                    Return to live mode
+                    Clear session
                   </Button>
                 </div>
+                <div className="demo-controls-v2-warning text-[13px]">Reload overrides current demo data.</div>
                 {sessionProgress > 0 ? (
                   <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">{sessionProgressLabel}</div>
+                    <div className="text-[13px] text-muted-foreground">{sessionProgressLabel}</div>
                     <Progress
                       value={sessionProgress}
                       intent={sessionProgressIntent}
@@ -414,8 +386,8 @@ export default function DemoControlsPage() {
                   </div>
                 ) : null}
               </div>
-            </SectionCardV2>
-          </>
+            </div>
+          </SectionCardV2>
         ) : null}
 
         <ConfirmationModal

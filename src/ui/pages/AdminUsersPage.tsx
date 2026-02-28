@@ -10,7 +10,6 @@ import { Button } from '../components/ui/Button'
 import { InputField } from '../components/ui/Field'
 import Progress from '../components/ui/Progress'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '../components/ui/Sheet'
-import Table from '../components/ui/Table'
 import AdminWorkspaceShellV2 from '../components/v2/AdminWorkspaceShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
@@ -78,6 +77,7 @@ export default function AdminUsersPage() {
   const [email, setEmail] = useState('')
   const [memberId, setMemberId] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const { showToast } = useToast()
   const leagueId = useMemo(() => getLeagueId(), [])
   const mode = useRouteDataMode()
@@ -229,20 +229,26 @@ export default function AdminUsersPage() {
   const entries = state.status === 'ready' ? state.entries : []
   const adminCount = entries.filter((entry) => entry.isAdmin).length
   const memberCount = entries.length - adminCount
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const filteredEntries = useMemo(() => {
+    if (state.status !== 'ready') return []
+    if (!normalizedSearchQuery) return entries
+    return entries.filter((entry) => {
+      const nameValue = (entry.name ?? '').toLowerCase()
+      const emailValue = entry.email.toLowerCase()
+      const memberIdValue = entry.memberId.toLowerCase()
+      const authUidValue = (entry.authUid ?? '').toLowerCase()
+      return (
+        nameValue.includes(normalizedSearchQuery) ||
+        emailValue.includes(normalizedSearchQuery) ||
+        memberIdValue.includes(normalizedSearchQuery) ||
+        authUidValue.includes(normalizedSearchQuery)
+      )
+    })
+  }, [entries, normalizedSearchQuery, state.status])
 
   return (
-    <AdminWorkspaceShellV2
-      title="Players"
-      subtitle="Manage roster access and admin permissions."
-      metadata={
-        <>
-          {canManageMembers ? <Badge tone="success">Updates enabled</Badge> : <Badge tone="warning">Read-only mode</Badge>}
-          <Badge tone="secondary">Total {entries.length}</Badge>
-          <Badge tone="secondary">Admins {adminCount}</Badge>
-          <Badge tone="secondary">Members {memberCount}</Badge>
-        </>
-      }
-    >
+    <AdminWorkspaceShellV2 title="Players" subtitle="Manage league roster access and admin permissions.">
       <div className="space-y-4">
         {!canManageMembers ? (
           <Alert tone="warning" title="Read-only roster view">
@@ -257,53 +263,106 @@ export default function AdminUsersPage() {
           </Alert>
         ) : null}
 
-        <SectionCardV2 tone="panel" density="none" className="p-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Roster</div>
-              <div className="text-lg font-semibold text-foreground">League players</div>
-            </div>
+        <SectionCardV2 tone="panel" density="none" className="players-v2-toolbar p-3.5 md:p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge tone="secondary">Total {entries.length}</Badge>
-              <Badge tone="secondary">Admins {adminCount}</Badge>
-              <Badge tone="secondary">Members {memberCount}</Badge>
-              <Button type="button" size="sm" onClick={startCreate} disabled={!canManageMembers}>
-                Add player
-              </Button>
+              {canManageMembers ? (
+                <Badge tone="success" className="players-v2-pill">
+                  Updates enabled
+                </Badge>
+              ) : (
+                <Badge tone="warning" className="players-v2-pill">
+                  Read only
+                </Badge>
+              )}
+              <Badge tone="secondary" className="players-v2-pill">
+                {entries.length} players
+              </Badge>
+              <Badge tone="secondary" className="players-v2-pill">
+                {adminCount} admin
+              </Badge>
+              <Badge tone="secondary" className="players-v2-pill">
+                {memberCount} members
+              </Badge>
             </div>
+            <Button type="button" size="sm" className="players-v2-add-btn" onClick={startCreate} disabled={!canManageMembers}>
+              + Add Player
+            </Button>
           </div>
+        </SectionCardV2>
 
+        <SectionCardV2 tone="panel" density="none" className="players-v2-card p-3.5 md:p-4">
+          <div className="space-y-3">
+            <div className="players-v2-search-wrap">
+              <label className="sr-only" htmlFor="players-search">
+                Search players
+              </label>
+              <input
+                id="players-search"
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search players..."
+                className="players-v2-search"
+              />
+            </div>
+
+            <div className="players-v2-divider" />
+
+            <div className="players-v2-head hidden md:grid">
+              <span>Name</span>
+              <span>Role</span>
+              <span className="sr-only">Actions</span>
+            </div>
+
+            <div className="players-v2-list">
           {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading players...</div> : null}
           {state.status === 'ready' && entries.length === 0 ? (
             <div className="text-sm text-muted-foreground">No players found in the roster.</div>
           ) : null}
+            {state.status === 'ready' && entries.length > 0 && filteredEntries.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No players match this search.</div>
+            ) : null}
 
-          {state.status === 'ready' && entries.length > 0 ? (
-            <Table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <tr key={entry.docId}>
-                    <td className="font-semibold text-foreground">{entry.name || 'Unnamed user'}</td>
-                    <td>{entry.email}</td>
-                    <td>{entry.isAdmin ? <Badge tone="info">Admin</Badge> : <Badge>Member</Badge>}</td>
-                    <td>
-                      <Button type="button" size="sm" variant="secondary" onClick={() => startEdit(entry)}>
-                        Edit
+            {state.status === 'ready' && filteredEntries.length > 0 ? (
+              <div className="space-y-2 md:space-y-0">
+                {filteredEntries.map((entry) => (
+                  <div key={entry.docId} className="players-v2-row">
+                    <div className="players-v2-name-col">
+                      <div className="players-v2-name">{entry.name || 'Unnamed user'}</div>
+                      <div className="players-v2-email">{entry.email}</div>
+                    </div>
+
+                    <div className="players-v2-role-col">
+                      {entry.isAdmin ? (
+                        <Badge tone="info" className="players-v2-role-pill">
+                          Admin
+                        </Badge>
+                      ) : (
+                        <Badge tone="secondary" className="players-v2-role-pill">
+                          Member
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="players-v2-action-col">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        className="players-v2-edit-btn"
+                        onClick={() => startEdit(entry)}
+                        disabled={!canManageMembers}
+                      >
+                        Edit <span aria-hidden="true">-&gt;</span>
                       </Button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </Table>
-          ) : null}
+              </div>
+            ) : null}
+            </div>
+          </div>
         </SectionCardV2>
 
         <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
@@ -355,7 +414,7 @@ export default function AdminUsersPage() {
               placeholder="Not set"
               helperText="Authentication reference (read-only). Member ID is used for league data."
             />
-            <label className="flex items-center gap-2 text-sm text-foreground">
+            <label className="flex items-center gap-2 text-[14px] text-foreground">
               <input
                 type="checkbox"
                 checked={isAdmin}
@@ -369,7 +428,7 @@ export default function AdminUsersPage() {
               <div className="w-full space-y-2">
                 {formStatus === 'saving' || memberMutationProgress > 0 ? (
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between text-[13px] text-muted-foreground">
                       <span>{formStatus === 'saving' ? 'Updating player...' : 'Update complete'}</span>
                       <span>{memberMutationProgress >= 100 ? 'Done' : 'In progress'}</span>
                     </div>
