@@ -96,6 +96,38 @@ service cloud.firestore {
       return request.time < groupStageLockDeadlineUtc();
     }
 
+    function firstKoKickoffUtc() {
+      // First knockout kickoff from tournament fixtures.
+      return timestamp.date(2026, 6, 28) + duration.value(19, 'h');
+    }
+
+    function isBeforeFirstKoKickoff() {
+      return request.time < firstKoKickoffUtc();
+    }
+
+    function isValidPicksDoc(userId) {
+      return request.resource.data.keys().hasOnly(['userId', 'picks', 'updatedAt'])
+        && request.resource.data.userId == userId
+        && request.resource.data.picks is list
+        && request.resource.data.picks.size() <= 256
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is string);
+    }
+
+    function isValidBracketGroupDoc(userId) {
+      return request.resource.data.keys().hasOnly(['userId', 'groups', 'bestThirds', 'updatedAt'])
+        && request.resource.data.userId == userId
+        && request.resource.data.groups is map
+        && (!('bestThirds' in request.resource.data) || request.resource.data.bestThirds is list)
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is string);
+    }
+
+    function isValidBracketKnockoutDoc(userId) {
+      return request.resource.data.keys().hasOnly(['userId', 'knockout', 'updatedAt'])
+        && request.resource.data.userId == userId
+        && (!('knockout' in request.resource.data) || request.resource.data.knockout is map)
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is string);
+    }
+
     match /leagues/{leagueId} {
       allow read, write: if false;
 
@@ -111,7 +143,7 @@ service cloud.firestore {
         allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
           && isSelfMember(leagueId, userId)
-          && request.resource.data.userId == userId;
+          && isValidPicksDoc(userId);
       }
 
       match /bracket-group/{userId} {
@@ -119,7 +151,7 @@ service cloud.firestore {
         allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
           && isSelfMember(leagueId, userId)
-          && request.resource.data.userId == userId
+          && isValidBracketGroupDoc(userId)
           && isBeforeGroupStageLock();
       }
 
@@ -128,7 +160,8 @@ service cloud.firestore {
         allow list: if isAdmin(leagueId);
         allow create, update: if isAllowlisted(leagueId)
           && isSelfMember(leagueId, userId)
-          && request.resource.data.userId == userId;
+          && isValidBracketKnockoutDoc(userId)
+          && isBeforeFirstKoKickoff();
       }
     }
 

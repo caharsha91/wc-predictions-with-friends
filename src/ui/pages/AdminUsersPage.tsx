@@ -176,6 +176,19 @@ export default function AdminUsersPage() {
       showToast({ title: 'Validation error', message: 'Member ID cannot be an email.', tone: 'warning' })
       return
     }
+    const duplicateMemberId = entries.find(
+      (entry) =>
+        entry.docId !== normalizedEmail &&
+        entry.memberId.trim().toLowerCase() === resolvedMemberId.toLowerCase()
+    )
+    if (duplicateMemberId) {
+      showToast({
+        title: 'Validation error',
+        message: `Member ID is already assigned to ${duplicateMemberId.email}.`,
+        tone: 'warning'
+      })
+      return
+    }
 
     setFormStatus('saving')
     setMemberMutationProgress(20)
@@ -400,9 +413,13 @@ export default function AdminUsersPage() {
                 label="Member ID"
                 value={memberId}
                 onChange={(event) => setMemberId(event.target.value)}
-                disabled={!canManageMembers}
+                disabled={!canManageMembers || Boolean(editing)}
                 placeholder="Auto-generated member identity"
-                helperText="Core identity used across picks, bracket, leaderboard, and rivals."
+                helperText={
+                  editing
+                    ? 'Core identity is locked after creation to avoid orphaned picks/bracket docs.'
+                    : 'Core identity used across picks, bracket, leaderboard, and rivals.'
+                }
                 required
               />
               <InputField

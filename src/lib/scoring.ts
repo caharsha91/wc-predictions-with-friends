@@ -158,15 +158,6 @@ export function buildLeaderboard(
     entry.picksCount += 1
     if (exactResult.exact) entry.exactCount += 1
 
-    const submissionTime = new Date(pick.createdAt).getTime()
-    if (Number.isFinite(submissionTime)) {
-      const existingTime = entry.earliestSubmission
-        ? new Date(entry.earliestSubmission).getTime()
-        : Number.POSITIVE_INFINITY
-      if (submissionTime < existingTime) {
-        entry.earliestSubmission = pick.createdAt
-      }
-    }
   }
 
   for (const entry of entries.values()) {
@@ -187,9 +178,6 @@ export function buildLeaderboard(
     if (b.exactPoints !== a.exactPoints) return b.exactPoints - a.exactPoints
     if (b.resultPoints !== a.resultPoints) return b.resultPoints - a.resultPoints
     if (b.knockoutPoints !== a.knockoutPoints) return b.knockoutPoints - a.knockoutPoints
-    const aTime = a.earliestSubmission ? new Date(a.earliestSubmission).getTime() : Number.POSITIVE_INFINITY
-    const bTime = b.earliestSubmission ? new Date(b.earliestSubmission).getTime() : Number.POSITIVE_INFINITY
-    if (aTime !== bTime) return aTime - bTime
     return a.member.name.localeCompare(b.member.name)
   })
 }

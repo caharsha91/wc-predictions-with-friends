@@ -12,9 +12,6 @@ function sortLeaderboardRows(entries: LeaderboardEntry[]): LeaderboardEntry[] {
     if (b.exactPoints !== a.exactPoints) return b.exactPoints - a.exactPoints
     if (b.resultPoints !== a.resultPoints) return b.resultPoints - a.resultPoints
     if (b.knockoutPoints !== a.knockoutPoints) return b.knockoutPoints - a.knockoutPoints
-    const aTime = a.earliestSubmission ? new Date(a.earliestSubmission).getTime() : Number.POSITIVE_INFINITY
-    const bTime = b.earliestSubmission ? new Date(b.earliestSubmission).getTime() : Number.POSITIVE_INFINITY
-    if (aTime !== bTime) return aTime - bTime
     return a.member.name.localeCompare(b.member.name)
   })
 }

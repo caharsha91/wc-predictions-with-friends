@@ -31,19 +31,42 @@ function getUserDocRef(collectionName: string, userId: string) {
   return doc(firebaseDb, 'leagues', getLeagueId(), collectionName, userId)
 }
 
-function sanitizePick(pick: Pick, fallbackTimestamp: string): Pick {
+function deriveOutcomeFromScores(homeScore?: number, awayScore?: number): 'WIN' | 'DRAW' | 'LOSS' | undefined {
+  if (typeof homeScore !== 'number' || typeof awayScore !== 'number') return undefined
+  if (homeScore > awayScore) return 'WIN'
+  if (homeScore < awayScore) return 'LOSS'
+  return 'DRAW'
+}
+
+function deriveWinner(pick: Pick, derivedOutcome?: 'WIN' | 'DRAW' | 'LOSS'): 'HOME' | 'AWAY' | undefined {
+  if (pick.advances === 'HOME' || pick.advances === 'AWAY') return pick.advances
+  if (derivedOutcome === 'WIN') return 'HOME'
+  if (derivedOutcome === 'LOSS') return 'AWAY'
+  if (pick.winner === 'HOME' || pick.winner === 'AWAY') return pick.winner
+  return undefined
+}
+
+function sanitizePick(pick: Pick, fallbackTimestamp: string, userId: string): Pick | null {
+  const matchId = typeof pick.matchId === 'string' ? pick.matchId.trim() : ''
+  if (!matchId) return null
+  const createdAt = pick.createdAt || fallbackTimestamp
+  const updatedAt = pick.updatedAt || fallbackTimestamp
+
   const cleaned: Pick = {
-    id: pick.id,
-    matchId: pick.matchId,
-    userId: pick.userId,
-    createdAt: pick.createdAt || fallbackTimestamp,
-    updatedAt: pick.updatedAt || fallbackTimestamp
+    id: pick.id || `pick-${userId}-${matchId}`,
+    matchId,
+    userId,
+    createdAt,
+    updatedAt
   }
+
   if (typeof pick.homeScore === 'number') cleaned.homeScore = pick.homeScore
   if (typeof pick.awayScore === 'number') cleaned.awayScore = pick.awayScore
   if (pick.advances === 'HOME' || pick.advances === 'AWAY') cleaned.advances = pick.advances
-  if (pick.outcome) cleaned.outcome = pick.outcome
-  if (pick.winner) cleaned.winner = pick.winner
+  const derivedOutcome = deriveOutcomeFromScores(cleaned.homeScore, cleaned.awayScore)
+  if (derivedOutcome) cleaned.outcome = derivedOutcome
+  const winner = deriveWinner(pick, derivedOutcome)
+  if (winner) cleaned.winner = winner
   if (pick.decidedBy) cleaned.decidedBy = pick.decidedBy
   return cleaned
 }
@@ -61,7 +84,23 @@ export async function saveUserPicksDoc(userId: string, picks: Pick[]): Promise<v
   const ref = getUserDocRef('picks', userId)
   if (!ref) return
   const now = new Date().toISOString()
-  const sanitizedPicks = picks.map((pick) => sanitizePick(pick, now))
+  const byMatch = new Map<string, Pick>()
+  for (const pick of picks) {
+    const sanitized = sanitizePick(pick, now, userId)
+    if (!sanitized) continue
+    const existing = byMatch.get(sanitized.matchId)
+    if (!existing) {
+      byMatch.set(sanitized.matchId, sanitized)
+      continue
+    }
+
+    const existingUpdatedAt = new Date(existing.updatedAt).getTime()
+    const nextUpdatedAt = new Date(sanitized.updatedAt).getTime()
+    if (!Number.isFinite(existingUpdatedAt) || nextUpdatedAt >= existingUpdatedAt) {
+      byMatch.set(sanitized.matchId, sanitized)
+    }
+  }
+  const sanitizedPicks = [...byMatch.values()]
   await setDoc(
     ref,
     { userId, picks: sanitizedPicks, updatedAt: now } satisfies PicksDoc,

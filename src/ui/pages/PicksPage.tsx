@@ -1001,6 +1001,12 @@ export default function PicksPage() {
         </Alert>
       ) : null}
 
+      {snapshotReady?.projectedGroupPredictionsLimited ? (
+        <Alert tone="warning" title="Projected comparison limited">
+          Group-stage projection comparisons are partially unavailable for your role.
+        </Alert>
+      ) : null}
+
       {scoringState.status === 'error' ? (
         <Alert tone="warning" title="Points unavailable">
           {scoringState.message}

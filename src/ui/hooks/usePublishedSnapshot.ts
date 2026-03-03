@@ -23,6 +23,7 @@ type PublishedSnapshotState =
       status: 'ready'
       snapshotTimestamp: string
       groupStageComplete: boolean
+      projectedGroupPredictionsLimited: boolean
       projectedGroupStagePointsByUser: Record<string, number>
       leaderboardRows: LeaderboardEntry[]
       matches: Match[]
@@ -50,9 +51,6 @@ function sortLeaderboardRows(entries: LeaderboardEntry[]): LeaderboardEntry[] {
     if (b.exactPoints !== a.exactPoints) return b.exactPoints - a.exactPoints
     if (b.resultPoints !== a.resultPoints) return b.resultPoints - a.resultPoints
     if (b.knockoutPoints !== a.knockoutPoints) return b.knockoutPoints - a.knockoutPoints
-    const aTime = a.earliestSubmission ? new Date(a.earliestSubmission).getTime() : Number.POSITIVE_INFINITY
-    const bTime = b.earliestSubmission ? new Date(b.earliestSubmission).getTime() : Number.POSITIVE_INFINITY
-    if (aTime !== bTime) return aTime - bTime
     return a.member.name.localeCompare(b.member.name)
   })
 }
@@ -63,47 +61,63 @@ type ProjectedGroupPrediction = {
   bestThirds?: string[]
 }
 
-async function fetchProjectedGroupPredictions(mode: 'default' | 'demo'): Promise<ProjectedGroupPrediction[]> {
+type ProjectedGroupPredictionsResult = {
+  predictions: ProjectedGroupPrediction[]
+  limitedByPermissions: boolean
+}
+
+async function fetchProjectedGroupPredictions(
+  mode: 'default' | 'demo'
+): Promise<ProjectedGroupPredictionsResult> {
   if (mode === 'demo') {
     const bracketFile = await fetchBracketPredictions({ mode })
-    return combineBracketPredictions(bracketFile).map((prediction) => ({
-      userId: prediction.userId,
-      groups: prediction.groups ?? {},
-      bestThirds: prediction.bestThirds ?? []
-    }))
+    return {
+      predictions: combineBracketPredictions(bracketFile).map((prediction) => ({
+        userId: prediction.userId,
+        groups: prediction.groups ?? {},
+        bestThirds: prediction.bestThirds ?? []
+      })),
+      limitedByPermissions: false
+    }
   }
 
   if (!hasFirebase || !firebaseDb) {
     const bracketFile = await fetchBracketPredictions({ mode })
-    return combineBracketPredictions(bracketFile).map((prediction) => ({
-      userId: prediction.userId,
-      groups: prediction.groups ?? {},
-      bestThirds: prediction.bestThirds ?? []
-    }))
+    return {
+      predictions: combineBracketPredictions(bracketFile).map((prediction) => ({
+        userId: prediction.userId,
+        groups: prediction.groups ?? {},
+        bestThirds: prediction.bestThirds ?? []
+      })),
+      limitedByPermissions: false
+    }
   }
 
   try {
     const snapshot = await getDocs(collection(firebaseDb, 'leagues', getLeagueId(), 'bracket-group'))
-    return snapshot.docs.map((docSnap) => {
-      const data = docSnap.data() as {
-        userId?: unknown
-        groups?: unknown
-        bestThirds?: unknown
-      }
-      return {
-        userId:
-          typeof data.userId === 'string' && data.userId.trim()
-            ? data.userId.trim()
-            : docSnap.id,
-        groups:
-          typeof data.groups === 'object' && data.groups !== null
-            ? (data.groups as Record<string, GroupPrediction>)
-            : {},
-        bestThirds: Array.isArray(data.bestThirds)
-          ? data.bestThirds.filter((value): value is string => typeof value === 'string')
-          : []
-      }
-    })
+    return {
+      predictions: snapshot.docs.map((docSnap) => {
+        const data = docSnap.data() as {
+          userId?: unknown
+          groups?: unknown
+          bestThirds?: unknown
+        }
+        return {
+          userId:
+            typeof data.userId === 'string' && data.userId.trim()
+              ? data.userId.trim()
+              : docSnap.id,
+          groups:
+            typeof data.groups === 'object' && data.groups !== null
+              ? (data.groups as Record<string, GroupPrediction>)
+              : {},
+          bestThirds: Array.isArray(data.bestThirds)
+            ? data.bestThirds.filter((value): value is string => typeof value === 'string')
+            : []
+        }
+      }),
+      limitedByPermissions: false
+    }
   } catch (error) {
     // Non-admin users may not have list access to all bracket-group docs.
     if (
@@ -113,7 +127,10 @@ async function fetchProjectedGroupPredictions(mode: 'default' | 'demo'): Promise
       typeof (error as { code?: unknown }).code === 'string' &&
       String((error as { code: string }).code).includes('permission-denied')
     ) {
-      return []
+      return {
+        predictions: [],
+        limitedByPermissions: true
+      }
     }
     throw error
   }
@@ -183,7 +200,7 @@ export function usePublishedSnapshot() {
     async function load() {
       setState({ status: 'loading' })
       try {
-        const [leaderboardFile, matchesFile, bestThirdFile, scoring, bracketPredictions] = await Promise.all([
+        const [leaderboardFile, matchesFile, bestThirdFile, scoring, bracketPredictionsResult] = await Promise.all([
           fetchLeaderboard({ mode }),
           fetchMatches({ mode }),
           fetchBestThirdQualifiers({ mode }),
@@ -204,7 +221,7 @@ export function usePublishedSnapshot() {
           matches: matchesFile.matches,
           qualifiers: bestThirdFile.qualifiers ?? [],
           leaderboardRows,
-          bracketPredictions,
+          bracketPredictions: bracketPredictionsResult.predictions,
           groupQualifierPoints: scoring.bracket.groupQualifiers ?? 0,
           thirdQualifierPoints: scoring.bracket.thirdPlaceQualifiers ?? scoring.bracket.groupQualifiers ?? 0
         })
@@ -216,6 +233,7 @@ export function usePublishedSnapshot() {
           status: 'ready',
           snapshotTimestamp,
           groupStageComplete,
+          projectedGroupPredictionsLimited: bracketPredictionsResult.limitedByPermissions,
           projectedGroupStagePointsByUser,
           leaderboardRows,
           matches: matchesFile.matches,

@@ -155,6 +155,12 @@ export function computeTournamentPhase(inputs: ComputeTournamentPhaseInputs): To
 }
 
 function resolveOpeningKoRound(matches: Match[]): Match[] {
+  const openingByStage = matches.filter((match) => {
+    const stage = typeof match.stage === 'string' ? match.stage : null
+    return stage === 'R32'
+  })
+  if (openingByStage.length > 0) return openingByStage
+
   const openingByStageRound = matches.filter((match) => {
     const fixture = match as unknown as Record<string, unknown>
     const stage = typeof fixture.stage === 'string' ? fixture.stage : null
@@ -172,10 +178,22 @@ function resolveOpeningKoRound(matches: Match[]): Match[] {
   return []
 }
 
+function hasResolvedTeam(team: { code?: string; name?: string } | null | undefined): boolean {
+  if (!team) return false
+  const code = String(team.code ?? '').trim().toUpperCase()
+  const name = String(team.name ?? '').trim().toUpperCase()
+  if (!code || !name) return false
+  if (code === 'TBD' || name === 'TBD') return false
+  if (name === 'TO BE DECIDED') return false
+  return true
+}
+
 function hasNonEmptyTeamId(match: Match, side: 'home' | 'away'): boolean {
   const fixture = match as unknown as Record<string, unknown>
   const key = side === 'home' ? 'homeTeamId' : 'awayTeamId'
-  return typeof fixture[key] === 'string' && fixture[key].trim().length > 0
+  if (typeof fixture[key] === 'string' && fixture[key].trim().length > 0) return true
+  if (side === 'home') return hasResolvedTeam(match.homeTeam)
+  return hasResolvedTeam(match.awayTeam)
 }
 
 export function computeKoDrawConfirmedSignal(matches: Match[]): boolean {

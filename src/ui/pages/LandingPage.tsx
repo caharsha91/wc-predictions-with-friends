@@ -1358,6 +1358,12 @@ export default function LandingPage() {
           </Alert>
         ) : null}
 
+        {snapshotReady?.projectedGroupPredictionsLimited ? (
+          <Alert tone="warning" title="Projected comparison limited">
+            Group-stage projection comparisons are partially unavailable for your role.
+          </Alert>
+        ) : null}
+
         {snapshotReady && snapshotReady.leaderboardRows.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/70 bg-muted/35 px-3 py-3 text-[14px] text-muted-foreground">
             No standings are available in this snapshot yet.
@@ -1383,7 +1389,7 @@ export default function LandingPage() {
           <h2 className="v2-heading-h2 text-foreground">Rules at a glance</h2>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Picks stay editable until each match lock.</span>
+            <span>Picks stay editable inside the rolling 48-hour match window.</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />

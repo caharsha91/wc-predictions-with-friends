@@ -4,6 +4,14 @@ import process from 'node:process'
 
 const API_URL = 'https://api.football-data.org/v4/competitions/WC/matches'
 const OUTPUT_PATH = path.join(process.cwd(), 'public', 'data', 'matches.json')
+const KNOCKOUT_ROUND_INDEX = {
+  R32: 0,
+  R16: 1,
+  QF: 2,
+  SF: 3,
+  Third: 4,
+  Final: 5
+}
 
 function mapStage(stage) {
   const value = String(stage ?? '').toUpperCase()
@@ -78,18 +86,27 @@ function normalizeScore(score) {
 function normalizeMatch(match) {
   const stage = mapStage(match.stage)
   const status = mapStatus(match.status)
+  const homeTeam = normalizeTeam(match.homeTeam)
+  const awayTeam = normalizeTeam(match.awayTeam)
   const normalized = {
     id: String(match.id),
     stage,
     kickoffUtc: match.utcDate,
     status,
-    homeTeam: normalizeTeam(match.homeTeam),
-    awayTeam: normalizeTeam(match.awayTeam)
+    homeTeam,
+    awayTeam
   }
 
   if (stage === 'Group') {
     const group = mapGroup(match.group)
     if (group) normalized.group = group
+  } else {
+    normalized.round = stage
+    if (Number.isInteger(KNOCKOUT_ROUND_INDEX[stage])) {
+      normalized.knockoutRoundIndex = KNOCKOUT_ROUND_INDEX[stage]
+    }
+    if (homeTeam.code !== 'TBD') normalized.homeTeamId = String(match.homeTeam?.id ?? homeTeam.code)
+    if (awayTeam.code !== 'TBD') normalized.awayTeamId = String(match.awayTeam?.id ?? awayTeam.code)
   }
 
   if (status === 'FINISHED') {

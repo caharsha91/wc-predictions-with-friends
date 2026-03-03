@@ -41,6 +41,28 @@ function parseOptionalScore(value: unknown): number | undefined {
   return undefined
 }
 
+function deriveOutcomeFromScores(
+  homeScore?: number,
+  awayScore?: number
+): 'WIN' | 'DRAW' | 'LOSS' | undefined {
+  if (typeof homeScore !== 'number' || typeof awayScore !== 'number') return undefined
+  if (homeScore > awayScore) return 'WIN'
+  if (homeScore < awayScore) return 'LOSS'
+  return 'DRAW'
+}
+
+function deriveWinner(
+  advances: unknown,
+  winner: unknown,
+  outcome: 'WIN' | 'DRAW' | 'LOSS' | undefined
+): 'HOME' | 'AWAY' | undefined {
+  if (advances === 'HOME' || advances === 'AWAY') return advances
+  if (outcome === 'WIN') return 'HOME'
+  if (outcome === 'LOSS') return 'AWAY'
+  if (winner === 'HOME' || winner === 'AWAY') return winner
+  return undefined
+}
+
 function normalizeFirestorePicks(userId: string, rawPicks: unknown, fallbackTimestamp: string) {
   const parsed: PicksFile['picks'][number]['picks'] = []
 
@@ -55,10 +77,7 @@ function normalizeFirestorePicks(userId: string, rawPicks: unknown, fallbackTime
           : ''
     if (!matchId) return
 
-    const pickUserId =
-      typeof record.userId === 'string' && record.userId.trim()
-        ? record.userId
-        : userId
+    const pickUserId = userId
     const createdAt = toIsoFromUnknown(record.createdAt ?? fallbackTimestamp)
     const updatedAt = toIsoFromUnknown(record.updatedAt ?? fallbackTimestamp)
     const id =
@@ -79,10 +98,10 @@ function normalizeFirestorePicks(userId: string, rawPicks: unknown, fallbackTime
     if (homeScore !== undefined) pick.homeScore = homeScore
     if (awayScore !== undefined) pick.awayScore = awayScore
     if (record.advances === 'HOME' || record.advances === 'AWAY') pick.advances = record.advances
-    if (record.outcome === 'WIN' || record.outcome === 'DRAW' || record.outcome === 'LOSS') {
-      pick.outcome = record.outcome
-    }
-    if (record.winner === 'HOME' || record.winner === 'AWAY') pick.winner = record.winner
+    const derivedOutcome = deriveOutcomeFromScores(homeScore, awayScore)
+    if (derivedOutcome) pick.outcome = derivedOutcome
+    const derivedWinner = deriveWinner(record.advances, record.winner, derivedOutcome)
+    if (derivedWinner) pick.winner = derivedWinner
     if (record.decidedBy === 'REG' || record.decidedBy === 'ET' || record.decidedBy === 'PENS') {
       pick.decidedBy = record.decidedBy
     }
@@ -338,7 +357,7 @@ async function main() {
   )
 
   const output: LeaderboardFile = {
-    lastUpdated: matchesFile.lastUpdated ?? new Date().toISOString(),
+    lastUpdated: new Date().toISOString(),
     entries
   }
 

@@ -150,6 +150,10 @@ function sortByLatestFirst(left: MatchTimelineItem, right: MatchTimelineItem): n
   return right.sortMs - left.sortMs
 }
 
+function sortByEarliestFirst(left: MatchTimelineItem, right: MatchTimelineItem): number {
+  return left.sortMs - right.sortMs
+}
+
 export function computeMatchTimelineModel(
   matches: Match[],
   nowUtc: string,
@@ -218,7 +222,7 @@ export function computeMatchTimelineModel(
     generatedAtUtc: nowUtc,
     hasFixtures,
     window,
-    upcoming: upcoming.sort(sortByLatestFirst),
+    upcoming: upcoming.sort(sortByEarliestFirst),
     recentResults: recentResults.sort(sortByLatestFirst),
     olderResults: olderResults.sort(sortByLatestFirst)
   }

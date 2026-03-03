@@ -914,6 +914,12 @@ export default function GroupStagePage() {
       </Alert>
     ) : null
 
+  const projectedComparisonAlert = snapshotReady?.projectedGroupPredictionsLimited ? (
+    <Alert tone="warning" title="Projected comparison limited">
+      Group-stage projection comparisons are partially unavailable for your role.
+    </Alert>
+  ) : null
+
   const groupPicksTable = (
     <GroupPicksDenseTable
       rows={rowsForActiveGroup}
@@ -1104,6 +1110,7 @@ export default function GroupStagePage() {
       {isDesktopRailViewport ? (
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)]">
           <div className="min-w-0 space-y-2.5">
+            {projectedComparisonAlert}
             {groupPicksAlert}
             {groupPicksTable}
           </div>
@@ -1114,6 +1121,7 @@ export default function GroupStagePage() {
       ) : (
         <div className="flex flex-col gap-3">
           <div className="space-y-2.5">
+            {projectedComparisonAlert}
             {groupPicksAlert}
             {groupPicksTable}
           </div>

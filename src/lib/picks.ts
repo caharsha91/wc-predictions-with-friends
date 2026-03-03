@@ -86,18 +86,20 @@ export function getOutcomeFromScores(
 
 export function getPickOutcome(pick?: Pick): PickOutcome | undefined {
   if (!pick) return undefined
-  if (pick.outcome === 'WIN' || pick.outcome === 'DRAW' || pick.outcome === 'LOSS') {
-    return pick.outcome
-  }
-  return getOutcomeFromScores(pick.homeScore, pick.awayScore)
+  const derived = getOutcomeFromScores(pick.homeScore, pick.awayScore)
+  if (derived) return derived
+  if (pick.outcome === 'WIN' || pick.outcome === 'DRAW' || pick.outcome === 'LOSS') return pick.outcome
+  return undefined
 }
 
 export function getPredictedWinner(pick: Pick): PickWinner | undefined {
   if (pick.advances === 'HOME' || pick.advances === 'AWAY') return pick.advances
-  if (pick.winner === 'HOME' || pick.winner === 'AWAY') return pick.winner
-  const derivedOutcome = getPickOutcome(pick)
+  const derivedOutcome = getOutcomeFromScores(pick.homeScore, pick.awayScore)
   if (derivedOutcome === 'WIN') return 'HOME'
   if (derivedOutcome === 'LOSS') return 'AWAY'
+  if (pick.winner === 'HOME' || pick.winner === 'AWAY') return pick.winner
+  if (pick.outcome === 'WIN') return 'HOME'
+  if (pick.outcome === 'LOSS') return 'AWAY'
   return undefined
 }
 
@@ -123,6 +125,14 @@ export function upsertPick(picks: Pick[], input: PickInput): Pick[] {
   )
 
   const derivedOutcome = getOutcomeFromScores(input.homeScore, input.awayScore)
+  const resolvedWinner: PickWinner | undefined =
+    input.advances === 'HOME' || input.advances === 'AWAY'
+      ? input.advances
+      : derivedOutcome === 'WIN'
+        ? 'HOME'
+        : derivedOutcome === 'LOSS'
+          ? 'AWAY'
+          : input.winner
 
   if (index === -1) {
     const next: Pick = {
@@ -132,8 +142,8 @@ export function upsertPick(picks: Pick[], input: PickInput): Pick[] {
       homeScore: input.homeScore,
       awayScore: input.awayScore,
       advances: input.advances,
-      outcome: input.outcome ?? derivedOutcome,
-      winner: input.winner,
+      outcome: derivedOutcome,
+      winner: resolvedWinner,
       decidedBy: input.decidedBy,
       createdAt: now,
       updatedAt: now
@@ -146,7 +156,8 @@ export function upsertPick(picks: Pick[], input: PickInput): Pick[] {
     ...existing,
     ...input,
     // Keep legacy fields derived for backward compatibility, but treat scores/advances as source of truth.
-    outcome: input.outcome ?? derivedOutcome,
+    outcome: derivedOutcome,
+    winner: resolvedWinner,
     createdAt: existing.createdAt || now,
     updatedAt: now
   }

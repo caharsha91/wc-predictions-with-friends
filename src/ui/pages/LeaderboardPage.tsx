@@ -44,6 +44,7 @@ type LoadState =
   | {
       status: 'ready'
       picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[]
+      socialDataLimited: boolean
     }
 
 type RankSnapshot = {
@@ -441,6 +442,7 @@ export default function LeaderboardPage() {
       setState({ status: 'loading' })
       try {
         let picksDocs: { userId: string; picks: Pick[]; updatedAt: string }[] = []
+        let socialDataLimited = false
 
         if (mode === 'default' && hasFirebase && firebaseDb) {
           try {
@@ -456,16 +458,26 @@ export default function LeaderboardPage() {
                   typeof data.updatedAt === 'string' && data.updatedAt.trim()
                     ? data.updatedAt
                     : new Date(0).toISOString()
-              }
-            })
-          } catch {
+                }
+              })
+          } catch (error) {
             picksDocs = []
+            if (
+              typeof error === 'object' &&
+              error !== null &&
+              'code' in error &&
+              typeof (error as { code?: unknown }).code === 'string' &&
+              String((error as { code: string }).code).includes('permission-denied')
+            ) {
+              socialDataLimited = true
+            }
           }
         }
 
         setState({
           status: 'ready',
-          picksDocs
+          picksDocs,
+          socialDataLimited
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
@@ -913,6 +925,18 @@ export default function LeaderboardPage() {
           </>
         }
       />
+
+      {snapshotReady?.projectedGroupPredictionsLimited ? (
+        <Alert tone="warning" title="Projected comparison limited">
+          Group-stage projection comparisons are partially unavailable for your role.
+        </Alert>
+      ) : null}
+
+      {state.status === 'ready' && state.socialDataLimited ? (
+        <Alert tone="warning" title="Social badges limited">
+          League-wide picks access is restricted for your role, so social badges are limited.
+        </Alert>
+      ) : null}
 
       <div className="v2-section-flat">
         <div className="grid gap-3 xl:grid-cols-[1fr_1.2fr]">
