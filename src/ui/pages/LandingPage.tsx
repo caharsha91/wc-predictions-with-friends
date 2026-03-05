@@ -118,6 +118,7 @@ const ENTRY_TILES: EntryTile[] = [
     icon: BracketIcon
   }
 ]
+const MATCH_PICK_WINDOW_MS = 72 * 60 * 60 * 1000
 
 function normalizeRivalUserIds(nextRivals: string[]): string[] {
   const ordered = new Set<string>()
@@ -393,6 +394,26 @@ function resolveNextMatchdayWindow(queueMatches: QueueMatch[], now: Date): Match
     picked,
     pending: Math.max(0, total - picked)
   }
+}
+
+function resolveMatchPickWindow(queueMatches: QueueMatch[], now: Date): QueueMatch[] {
+  const nowMs = now.getTime()
+  const openMatches = queueMatches
+    .filter((entry) => !entry.locked && entry.lockTime.getTime() >= nowMs)
+    .sort((a, b) => a.lockTime.getTime() - b.lockTime.getTime())
+
+  if (openMatches.length === 0) return []
+
+  const rollingEndMs = nowMs + MATCH_PICK_WINDOW_MS
+  const rollingWindowEntries = openMatches.filter((entry) => entry.lockTime.getTime() <= rollingEndMs)
+  if (rollingWindowEntries.length > 0) return rollingWindowEntries
+
+  const fallbackAnchorMs = openMatches[0]!.lockTime.getTime()
+  const fallbackEndMs = fallbackAnchorMs + MATCH_PICK_WINDOW_MS
+  return openMatches.filter((entry) => {
+    const lockMs = entry.lockTime.getTime()
+    return lockMs >= fallbackAnchorMs && lockMs <= fallbackEndMs
+  })
 }
 
 function formatLocalDateTime(input: Date | string): string {
@@ -776,13 +797,8 @@ export default function LandingPage() {
       .sort((a, b) => a.lockTime.getTime() - b.lockTime.getTime())
   }, [matches, now, picksState.picks, viewerId])
 
-  const matchWindow48h = useMemo(() => {
-    const nowMs = now.getTime()
-    const windowEndMs = nowMs + 48 * 60 * 60 * 1000
-    const entries = queueMatches.filter((entry) => {
-      const lockMs = entry.lockTime.getTime()
-      return !entry.locked && lockMs >= nowMs && lockMs <= windowEndMs
-    })
+  const matchWindow72h = useMemo(() => {
+    const entries = resolveMatchPickWindow(queueMatches, now)
     const total = entries.length
     const picked = entries.filter((entry) => entry.complete).length
     return {
@@ -823,10 +839,10 @@ export default function LandingPage() {
 
     const matchStatus: TileStatusLine = picksLoading
       ? { label: 'Updating match pick progress.', tone: 'neutral' }
-      : matchWindow48h.total > 0
+      : matchWindow72h.total > 0
         ? {
-            label: `${matchWindow48h.picked}/${matchWindow48h.total} picks set in the next 48 hours.`,
-            tone: matchWindow48h.pending === 0 ? 'success' : 'info'
+            label: `${matchWindow72h.picked}/${matchWindow72h.total} picks set in the next 72 hours.`,
+            tone: matchWindow72h.pending === 0 ? 'success' : 'info'
           }
         : nextMatchdayWindow
           ? {
@@ -865,9 +881,9 @@ export default function LandingPage() {
     knockoutData.totalMatches,
     knockoutPendingActions,
     nextMatchdayWindow,
-    matchWindow48h.pending,
-    matchWindow48h.picked,
-    matchWindow48h.total,
+    matchWindow72h.pending,
+    matchWindow72h.picked,
+    matchWindow72h.total,
     picksState.state.status
   ])
 
@@ -1389,7 +1405,7 @@ export default function LandingPage() {
           <h2 className="v2-heading-h2 text-foreground">Rules at a glance</h2>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Picks stay editable inside the rolling 48-hour match window.</span>
+            <span>Picks stay editable inside the active 72-hour match window.</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />

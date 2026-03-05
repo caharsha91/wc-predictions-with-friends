@@ -2,7 +2,7 @@ import type { Match } from '../../types/matches'
 import { getMatchNormalizedStatus, type NormalizedMatchStatus } from '../../lib/matchStatus'
 import type { LockFlags } from './tournamentPhase'
 
-const EDITABLE_WINDOW_MS = 48 * 60 * 60 * 1000
+const EDITABLE_WINDOW_MS = 72 * 60 * 60 * 1000
 
 export type MatchTimelineSection = 'UPCOMING' | 'RECENT_RESULTS' | 'OLDER_RESULTS'
 
@@ -17,7 +17,7 @@ export type MatchReadOnlyReason =
 export type MatchTimelineWindow = {
   anchorUtc: string | null
   endUtc: string | null
-  source: 'next-upcoming' | 'most-recent' | 'none'
+  source: 'rolling-now' | 'next-upcoming' | 'most-recent' | 'none'
 }
 
 export type MatchTimelineItem = {
@@ -83,10 +83,32 @@ function computeEditableWindow(matches: Match[], nowMs: number): MatchTimelineWi
     }
   }
 
-  const futureKickoffs = kickoffTimes.filter((kickoffMs) => kickoffMs >= nowMs).sort((a, b) => a - b)
-  const anchorMs =
-    futureKickoffs.length > 0 ? futureKickoffs[0] : kickoffTimes.reduce((current, kickoffMs) => Math.max(current, kickoffMs), kickoffTimes[0]!)
-  const source: MatchTimelineWindow['source'] = futureKickoffs.length > 0 ? 'next-upcoming' : 'most-recent'
+  const futureScheduledKickoffs = matches
+    .filter((match) => getMatchNormalizedStatus(match) === 'scheduled')
+    .map((match) => parseUtcMs(match.kickoffUtc))
+    .filter((value): value is number => value !== null && value >= nowMs)
+    .sort((a, b) => a - b)
+
+  if (futureScheduledKickoffs.length === 0) {
+    const anchorMs = kickoffTimes.reduce(
+      (current, kickoffMs) => Math.max(current, kickoffMs),
+      kickoffTimes[0]!
+    )
+    return {
+      anchorUtc: toUtcIso(anchorMs),
+      endUtc: toUtcIso(anchorMs + EDITABLE_WINDOW_MS),
+      source: 'most-recent'
+    }
+  }
+
+  const rollingWindowEndMs = nowMs + EDITABLE_WINDOW_MS
+  const hasKickoffInRollingWindow = futureScheduledKickoffs.some(
+    (kickoffMs) => kickoffMs <= rollingWindowEndMs
+  )
+  const anchorMs = hasKickoffInRollingWindow ? nowMs : futureScheduledKickoffs[0]!
+  const source: MatchTimelineWindow['source'] = hasKickoffInRollingWindow
+    ? 'rolling-now'
+    : 'next-upcoming'
 
   return {
     anchorUtc: toUtcIso(anchorMs),

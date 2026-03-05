@@ -103,8 +103,7 @@ type ResultsTableProps = {
 }
 
 const EMPTY_MATCHES: Match[] = []
-const UPCOMING_DISPLAY_WINDOW_MS = 48 * 60 * 60 * 1000
-const MAX_RECENT_RESULTS = 5
+const RECENT_RESULTS_FALLBACK_COUNT = 5
 
 function normalizeKey(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase()
@@ -147,7 +146,6 @@ function formatKoWinMethodLabel(value: string | undefined): string {
 
 function readOnlyReasonLabel(reason: MatchReadOnlyReason): string {
   if (reason === 'global-lock') return 'Locked by tournament phase.'
-  if (reason === 'outside-window') return 'Outside editable 48-hour window.'
   if (reason === 'in-progress') return 'Live matches are read-only.'
   if (reason === 'missing-kickoff') return 'Kickoff unavailable.'
   return 'Read-only.'
@@ -342,6 +340,8 @@ function MatchRow({
   const awayFlagPath = resolveTeamFlagMeta({ code: match.awayTeam.code, name: match.awayTeam.name }).assetPath
   const scoreA = parsedHome ?? 0
   const scoreB = parsedAway ?? 0
+  const readOnlyLabel =
+    item.readOnlyReason === 'outside-window' ? null : readOnlyReasonLabel(item.readOnlyReason)
 
   function handleMatchPickChange(next: MatchPickChange) {
     if (!item.editable || isSaving) return
@@ -403,9 +403,9 @@ function MatchRow({
         onChange={handleMatchPickChange}
       />
 
-      {!item.editable ? (
+      {!item.editable && readOnlyLabel ? (
         <div className="truncate text-[11px] text-muted-foreground">
-          {readOnlyReasonLabel(item.readOnlyReason)}
+          {readOnlyLabel}
         </div>
       ) : null}
 
@@ -491,6 +491,7 @@ export default function PicksPage() {
   const { showToast } = useToast()
 
   const [leaguePeekOpen, setLeaguePeekOpen] = useState(false)
+  const [laterExpanded, setLaterExpanded] = useState(false)
   const [archiveExpanded, setArchiveExpanded] = useState(false)
   const [savingMatchId, setSavingMatchId] = useState<string | null>(null)
   const [savedMatchId, setSavedMatchId] = useState<string | null>(null)
@@ -601,33 +602,19 @@ export default function PicksPage() {
     [matches, now, phaseState.lockFlags.matchPicksEditable]
   )
 
-  const upcomingDisplayMatches = useMemo(() => {
-    const editableUpcoming = timelineModel.upcoming.filter((item) => item.editable && item.kickoffMs !== null)
-    if (editableUpcoming.length === 0) return []
-
-    const nowMs = now.getTime()
-    const nowWindowEndMs = nowMs + UPCOMING_DISPLAY_WINDOW_MS
-    const next48Hours = editableUpcoming.filter((item) => {
-      const kickoffMs = item.kickoffMs
-      return kickoffMs !== null && kickoffMs >= nowMs && kickoffMs <= nowWindowEndMs
-    })
-
-    if (next48Hours.length > 0) return next48Hours
-
-    const fallbackAnchorMs = editableUpcoming.reduce((current, item) => {
-      const kickoffMs = item.kickoffMs
-      if (kickoffMs === null) return current
-      return kickoffMs < current ? kickoffMs : current
-    }, Number.POSITIVE_INFINITY)
-
-    if (!Number.isFinite(fallbackAnchorMs)) return []
-
-    const fallbackWindowEndMs = fallbackAnchorMs + UPCOMING_DISPLAY_WINDOW_MS
-    return editableUpcoming.filter((item) => {
-      const kickoffMs = item.kickoffMs
-      return kickoffMs !== null && kickoffMs >= fallbackAnchorMs && kickoffMs <= fallbackWindowEndMs
-    })
-  }, [timelineModel.upcoming, now])
+  const upcomingMatches = useMemo(
+    () => timelineModel.upcoming.filter((item) => item.readOnlyReason !== 'outside-window'),
+    [timelineModel.upcoming]
+  )
+  const laterMatches = useMemo(
+    () => timelineModel.upcoming.filter((item) => item.readOnlyReason === 'outside-window'),
+    [timelineModel.upcoming]
+  )
+  const upcomingVisibleCount = upcomingMatches.length
+  const upcomingEditableCount = useMemo(
+    () => upcomingMatches.filter((item) => item.editable).length,
+    [upcomingMatches]
+  )
 
   const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
   const isMatchPicksFinal = useMemo(() => areMatchesCompleted(matches), [matches])
@@ -735,21 +722,26 @@ export default function PicksPage() {
   const homePath = mode === 'demo' ? '/demo' : '/'
   const leaderboardCardTitle = isMatchPicksFinal ? 'Final Leaderboard' : 'Projected Leaderboard'
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
-  const upcomingDisplayCount = upcomingDisplayMatches.length
   const scoring = scoringState.status === 'ready' ? scoringState.scoring : null
-  const recentResultsOrdered = useMemo(
+  const recentWindowResults = useMemo(
     () => [...timelineModel.recentResults].sort(sortByKickoffLatestFirst),
     [timelineModel.recentResults]
   )
-  const recentResultsDisplay = useMemo(
-    () => recentResultsOrdered.slice(0, MAX_RECENT_RESULTS),
-    [recentResultsOrdered]
+  const archiveBaseResults = useMemo(
+    () => [...timelineModel.olderResults].sort(sortByKickoffLatestFirst),
+    [timelineModel.olderResults]
   )
-  const olderResultsDisplay = useMemo(() => {
-    const recentOverflow = recentResultsOrdered.slice(MAX_RECENT_RESULTS)
-    if (recentOverflow.length === 0) return timelineModel.olderResults
-    return [...recentOverflow, ...timelineModel.olderResults].sort(sortByKickoffLatestFirst)
-  }, [recentResultsOrdered, timelineModel.olderResults])
+  const recentResultsDisplay = useMemo(() => {
+    if (recentWindowResults.length > 0) return recentWindowResults
+    return archiveBaseResults.slice(0, RECENT_RESULTS_FALLBACK_COUNT)
+  }, [archiveBaseResults, recentWindowResults])
+  const archiveResultsDisplay = useMemo(() => {
+    if (recentWindowResults.length > 0) return archiveBaseResults
+    const fallbackMatchIds = new Set(
+      archiveBaseResults.slice(0, RECENT_RESULTS_FALLBACK_COUNT).map((item) => item.match.id)
+    )
+    return archiveBaseResults.filter((item) => !fallbackMatchIds.has(item.match.id))
+  }, [archiveBaseResults, recentWindowResults])
 
   useEffect(() => {
     if (!isDesktopViewport) return
@@ -967,7 +959,7 @@ export default function PicksPage() {
         className="landing-v2-hero"
         kicker="Predictions"
         title="Match Picks"
-        subtitle="Use the shared timeline model to edit only the current 48-hour window."
+        subtitle="Use the shared timeline model to edit only the active 72-hour window."
         actions={(
           <div className="flex items-center gap-2">
             <ButtonLink to={homePath} size="sm" variant="secondary">
@@ -986,9 +978,9 @@ export default function PicksPage() {
           <>
             <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Snapshot " />
             <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span>{`Upcoming ${upcomingDisplayCount}`}</span>
+            <span>{`Up next ${upcomingVisibleCount}`}</span>
             <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span>{`Editable ${upcomingDisplayCount}`}</span>
+            <span>{`Editable ${upcomingEditableCount}`}</span>
             <span className="h-3 w-px bg-border" aria-hidden="true" />
             <span>KO extras only for predicted draws.</span>
           </>
@@ -1028,17 +1020,17 @@ export default function PicksPage() {
           <div className="space-y-3">
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="v2-heading-h2 text-foreground">UPCOMING</h2>
-                <StatusTagV2 tone="info">{String(upcomingDisplayCount)}</StatusTagV2>
+                <h2 className="v2-heading-h2 text-foreground">UP NEXT</h2>
+                <StatusTagV2 tone="info">{String(upcomingVisibleCount)}</StatusTagV2>
               </div>
 
-              {upcomingDisplayMatches.length === 0 ? (
+              {upcomingMatches.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
-                  No editable upcoming matches right now.
+                  No active upcoming matches right now.
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {upcomingDisplayMatches.map((item) => {
+                  {upcomingMatches.map((item) => {
                     const match = item.match
                     const pick = pickByMatchId.get(match.id)
                     const baselineDraft = toDraft(pick)
@@ -1073,15 +1065,63 @@ export default function PicksPage() {
                 items={recentResultsDisplay}
                 picksByMatchId={pickByMatchId}
                 scoring={scoring}
-                emptyMessage="No recent results in the last 48 hours."
+                emptyMessage="No recent results in the last 72 hours."
               />
             </SectionCardV2>
 
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="v2-heading-h2 text-foreground">OLDER RESULTS</h2>
+                <h2 className="v2-heading-h2 text-foreground">FIXTURES</h2>
                 <div className="flex items-center gap-2">
-                  <StatusTagV2 tone="secondary">{String(olderResultsDisplay.length)}</StatusTagV2>
+                  <StatusTagV2 tone="secondary">{String(laterMatches.length)}</StatusTagV2>
+                  <Button size="sm" variant="secondary" onClick={() => setLaterExpanded((current) => !current)}>
+                    {laterExpanded ? 'Hide fixtures' : 'Show fixtures'}
+                  </Button>
+                </div>
+              </div>
+              {laterExpanded ? (
+                laterMatches.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+                    No fixtures to show.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {laterMatches.map((item) => {
+                      const match = item.match
+                      const pick = pickByMatchId.get(match.id)
+                      const baselineDraft = toDraft(pick)
+                      const draft = draftByMatchId[match.id] ?? baselineDraft
+                      const rowDirty = isDraftDirty(draft, baselineDraft)
+
+                      return (
+                        <MatchRow
+                          key={match.id}
+                          item={item}
+                          draft={draft}
+                          rowDirty={rowDirty}
+                          rowError={rowErrorByMatchId[match.id]}
+                          isSaving={savingMatchId === match.id}
+                          onDraftChange={(nextDraft) => {
+                            updateDraft(match.id, () => nextDraft)
+                          }}
+                          onSave={() => void handleSaveMatch(item)}
+                        />
+                      )
+                    })}
+                  </div>
+                )
+              ) : (
+                <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+                  Fixtures are collapsed by default.
+                </div>
+              )}
+            </SectionCardV2>
+
+            <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="v2-heading-h2 text-foreground">ARCHIVE</h2>
+                <div className="flex items-center gap-2">
+                  <StatusTagV2 tone="secondary">{String(archiveResultsDisplay.length)}</StatusTagV2>
                   <Button size="sm" variant="secondary" onClick={() => setArchiveExpanded((current) => !current)}>
                     {archiveExpanded ? 'Hide archive' : 'Show archive'}
                   </Button>
@@ -1089,10 +1129,10 @@ export default function PicksPage() {
               </div>
               {archiveExpanded ? (
                 <ResultsTable
-                  items={olderResultsDisplay}
+                  items={archiveResultsDisplay}
                   picksByMatchId={pickByMatchId}
                   scoring={scoring}
-                  emptyMessage="No older results to show."
+                  emptyMessage="No archive results to show."
                 />
               ) : (
                 <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
