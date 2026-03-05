@@ -46,6 +46,26 @@ type DateParts = {
   second: number
 }
 
+type QualifierGroupId = 'A' | 'B' | 'D' | 'F' | 'I' | 'K'
+
+type TeamSeed = {
+  code: string
+  name: string
+}
+
+type DemoCompletionProfile = {
+  picksGlobalMultiplier: number
+  picksHighActivityRatio: number
+  picksLowActivityMultiplier: number
+  groupCompleteRatio: number
+  groupPartialMin: number
+  groupPartialMax: number
+  bestThirdPartialMin: number
+  bestThirdPartialMax: number
+  knockoutUserRatio: number
+  knockoutPickChance: number
+}
+
 const ROOT = process.cwd()
 const DATA_DIR = path.join(ROOT, 'public', 'data')
 const DEMO_DIR = path.join(DATA_DIR, 'demo')
@@ -119,6 +139,140 @@ const SCENARIOS: Record<ScenarioId, ScenarioConfig> = {
   }
 }
 
+const QUALIFIER_PLACEHOLDER_BY_GROUP: Record<QualifierGroupId, string> = {
+  A: 'A1',
+  B: 'B1',
+  D: 'D1',
+  F: 'F1',
+  I: 'I1',
+  K: 'K1'
+}
+
+const QUALIFIER_CANDIDATES_BY_GROUP: Record<QualifierGroupId, TeamSeed[]> = {
+  A: [
+    { code: 'DEN', name: 'Denmark' },
+    { code: 'MKD', name: 'North Macedonia' },
+    { code: 'CZE', name: 'Czechia' },
+    { code: 'IRL', name: 'Republic of Ireland' }
+  ],
+  B: [
+    { code: 'ITA', name: 'Italy' },
+    { code: 'NIR', name: 'Northern Ireland' },
+    { code: 'WAL', name: 'Wales' },
+    { code: 'BIH', name: 'Bosnia and Herzegovina' }
+  ],
+  D: [
+    { code: 'TUR', name: 'Turkey' },
+    { code: 'ROU', name: 'Romania' },
+    { code: 'SVK', name: 'Slovakia' },
+    { code: 'KOS', name: 'Kosovo' }
+  ],
+  F: [
+    { code: 'UKR', name: 'Ukraine' },
+    { code: 'SWE', name: 'Sweden' },
+    { code: 'POL', name: 'Poland' },
+    { code: 'ALB', name: 'Albania' }
+  ],
+  I: [
+    { code: 'IRQ', name: 'Iraq' },
+    { code: 'BOL', name: 'Bolivia' },
+    { code: 'SUR', name: 'Suriname' }
+  ],
+  K: [
+    { code: 'COD', name: 'DR Congo' },
+    { code: 'JAM', name: 'Jamaica' },
+    { code: 'NCL', name: 'New Caledonia' }
+  ]
+}
+
+const FAVORITE_TEAM_POOL = [
+  'ARG',
+  'BRA',
+  'ENG',
+  'FRA',
+  'GER',
+  'ESP',
+  'USA',
+  'MEX',
+  'JPN',
+  'KOR',
+  'DEN',
+  'ITA',
+  'TUR',
+  'UKR',
+  'SWE',
+  'POL',
+  'IRQ',
+  'COD',
+  'JAM',
+  'NIR',
+  'WAL',
+  'IRL'
+] as const
+
+const SCENARIO_COMPLETION_PROFILE: Record<ScenarioId, DemoCompletionProfile> = {
+  'pre-group': {
+    picksGlobalMultiplier: 0.45,
+    picksHighActivityRatio: 0.2,
+    picksLowActivityMultiplier: 0.35,
+    groupCompleteRatio: 0.18,
+    groupPartialMin: 1,
+    groupPartialMax: 4,
+    bestThirdPartialMin: 2,
+    bestThirdPartialMax: 4,
+    knockoutUserRatio: 0,
+    knockoutPickChance: 0
+  },
+  'mid-group': {
+    picksGlobalMultiplier: 0.78,
+    picksHighActivityRatio: 0.55,
+    picksLowActivityMultiplier: 0.7,
+    groupCompleteRatio: 0.55,
+    groupPartialMin: 5,
+    groupPartialMax: 9,
+    bestThirdPartialMin: 6,
+    bestThirdPartialMax: 8,
+    knockoutUserRatio: 0,
+    knockoutPickChance: 0
+  },
+  'end-group-draw-confirmed': {
+    picksGlobalMultiplier: 0.94,
+    picksHighActivityRatio: 0.86,
+    picksLowActivityMultiplier: 0.82,
+    groupCompleteRatio: 0.86,
+    groupPartialMin: 9,
+    groupPartialMax: 11,
+    bestThirdPartialMin: 8,
+    bestThirdPartialMax: 8,
+    knockoutUserRatio: 0.82,
+    knockoutPickChance: 0.82
+  },
+  'mid-knockout': {
+    picksGlobalMultiplier: 0.97,
+    picksHighActivityRatio: 0.93,
+    picksLowActivityMultiplier: 0.9,
+    groupCompleteRatio: 0.93,
+    groupPartialMin: 10,
+    groupPartialMax: 12,
+    bestThirdPartialMin: 8,
+    bestThirdPartialMax: 8,
+    knockoutUserRatio: 0.92,
+    knockoutPickChance: 0.92
+  },
+  'world-cup-final-pending': {
+    picksGlobalMultiplier: 0.995,
+    picksHighActivityRatio: 0.98,
+    picksLowActivityMultiplier: 0.95,
+    groupCompleteRatio: 0.98,
+    groupPartialMin: 11,
+    groupPartialMax: 12,
+    bestThirdPartialMin: 8,
+    bestThirdPartialMax: 8,
+    knockoutUserRatio: 0.98,
+    knockoutPickChance: 0.97
+  }
+}
+
 function parseArgs() {
   const defaults = {
     scenario: GROUP_STAGE.id as ScenarioId,
@@ -174,6 +328,110 @@ function shuffle<T>(random: () => number, values: T[]): T[] {
     next[j] = tmp
   }
   return next
+}
+
+function hashUnit(key: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < key.length; index += 1) {
+    hash ^= key.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (hash >>> 0) / 4294967296
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function deterministicCountFromRange(
+  min: number,
+  max: number,
+  key: string
+): number {
+  if (max <= min) return min
+  const unit = hashUnit(key)
+  return min + Math.floor(unit * (max - min + 1))
+}
+
+function userCompletionBucket(userId: string, scenarioId: ScenarioId): number {
+  return hashUnit(`completion:${scenarioId}:${userId}`)
+}
+
+function parseUserOrdinal(userId: string): number {
+  const match = userId.match(/^user-(\d+)$/i)
+  if (!match) return 1
+  const parsed = Number(match[1])
+  if (!Number.isFinite(parsed) || parsed < 1) return 1
+  return Math.floor(parsed)
+}
+
+function resolveFavoriteTeamCode(userId: string): string {
+  const userOrdinal = parseUserOrdinal(userId)
+  return FAVORITE_TEAM_POOL[(userOrdinal - 1) % FAVORITE_TEAM_POOL.length]!
+}
+
+function normalizeCode(value: string | null | undefined): string {
+  return String(value ?? '').trim().toUpperCase()
+}
+
+function isPlaceholderTeamCode(code: string | null | undefined): boolean {
+  const normalized = normalizeCode(code)
+  if (!normalized) return true
+  if (normalized === 'TBD' || normalized === 'TBC' || normalized === '?') return true
+  if (/^[A-L][1-4]$/.test(normalized)) return true
+  if (/^BT\d+$/.test(normalized)) return true
+  if (/^Q\d+$/.test(normalized)) return true
+  return false
+}
+
+function isMatchTeamsResolved(match: Match): boolean {
+  return !isPlaceholderTeamCode(match.homeTeam.code) && !isPlaceholderTeamCode(match.awayTeam.code)
+}
+
+function pickQualifierWinners(random: () => number): Record<QualifierGroupId, TeamSeed> {
+  const selected = {} as Record<QualifierGroupId, TeamSeed>
+  for (const groupId of Object.keys(QUALIFIER_CANDIDATES_BY_GROUP) as QualifierGroupId[]) {
+    const candidates = QUALIFIER_CANDIDATES_BY_GROUP[groupId]
+    selected[groupId] = choice(random, candidates)
+  }
+  return selected
+}
+
+function isQualifierPlaceholderTeam(
+  team: { code: string; name: string },
+  expectedPlaceholderCode: string
+): boolean {
+  const normalizedCode = normalizeCode(team.code)
+  if (normalizedCode === expectedPlaceholderCode) return true
+  if (isPlaceholderTeamCode(normalizedCode)) return true
+
+  const normalizedName = String(team.name ?? '').trim().toLowerCase()
+  if (!normalizedName) return false
+  if (normalizedName === 'to be decided') return true
+  if (/^(winner|loser)\s+of\b/i.test(normalizedName)) return true
+  if (normalizedName.includes('playoff') || normalizedName.includes('path')) return true
+  return false
+}
+
+function applyQualifierWinners(
+  matches: Match[],
+  selectedQualifiersByGroup: Record<QualifierGroupId, TeamSeed>
+): Match[] {
+  for (const match of matches) {
+    if (match.stage !== 'Group' || !match.group) continue
+    const groupId = (match.group ?? '').trim().toUpperCase() as QualifierGroupId
+    const selected = selectedQualifiersByGroup[groupId]
+    if (!selected) continue
+    const placeholderCode = QUALIFIER_PLACEHOLDER_BY_GROUP[groupId]
+
+    if (isQualifierPlaceholderTeam(match.homeTeam, placeholderCode)) {
+      match.homeTeam = { code: selected.code, name: selected.name }
+    }
+    if (isQualifierPlaceholderTeam(match.awayTeam, placeholderCode)) {
+      match.awayTeam = { code: selected.code, name: selected.name }
+    }
+  }
+  return matches
 }
 
 async function readJson<T>(dir: string, file: string): Promise<T> {
@@ -433,7 +691,8 @@ function createMembers(totalUsers: number): MembersFile {
       name: `Demo Player ${String(index).padStart(2, '0')}`,
       email: `${id}@demo.local`,
       isAdmin: index === 1,
-      isMember: true
+      isMember: true,
+      favoriteTeamCode: resolveFavoriteTeamCode(id)
     })
   }
   return { members }
@@ -444,8 +703,10 @@ function buildGroupTeamMap(matches: Match[]): Map<string, string[]> {
   for (const match of matches) {
     if (match.stage !== 'Group' || !match.group) continue
     const teams = groupTeams.get(match.group) ?? new Set<string>()
-    teams.add(match.homeTeam.code)
-    teams.add(match.awayTeam.code)
+    const homeCode = normalizeCode(match.homeTeam.code)
+    const awayCode = normalizeCode(match.awayTeam.code)
+    if (!isPlaceholderTeamCode(homeCode)) teams.add(homeCode)
+    if (!isPlaceholderTeamCode(awayCode)) teams.add(awayCode)
     groupTeams.set(match.group, teams)
   }
   const result = new Map<string, string[]>()
@@ -520,13 +781,24 @@ function computeGroupStandings(matches: Match[]): Map<string, GroupStandingRow[]
 function buildTeamNameMap(matches: Match[]): Map<string, string> {
   const names = new Map<string, string>()
   for (const match of matches) {
-    if (match.homeTeam.code !== 'TBD') names.set(match.homeTeam.code, match.homeTeam.name)
-    if (match.awayTeam.code !== 'TBD') names.set(match.awayTeam.code, match.awayTeam.name)
+    const homeCode = normalizeCode(match.homeTeam.code)
+    const awayCode = normalizeCode(match.awayTeam.code)
+    if (!isPlaceholderTeamCode(homeCode)) names.set(homeCode, match.homeTeam.name)
+    if (!isPlaceholderTeamCode(awayCode)) names.set(awayCode, match.awayTeam.name)
   }
   return names
 }
 
 function normalizeGroupStageTeams(random: () => number, matches: Match[]): Match[] {
+  const globalFallbackCodes = [
+    ...new Set(
+      matches
+        .flatMap((match) => [match.homeTeam.code, match.awayTeam.code])
+        .map((code) => normalizeCode(code))
+        .filter((code) => !isPlaceholderTeamCode(code))
+    )
+  ]
+
   const byGroup = new Map<string, Match[]>()
   for (const match of matches) {
     if (match.stage !== 'Group' || !match.group) continue
@@ -540,22 +812,35 @@ function normalizeGroupStageTeams(random: () => number, matches: Match[]): Match
     const knownCodes = new Set<string>()
     const knownNames = new Map<string, string>()
     for (const match of groupMatches) {
-      if (match.homeTeam.code !== 'TBD') {
-        knownCodes.add(match.homeTeam.code)
-        knownNames.set(match.homeTeam.code, match.homeTeam.name)
+      const homeCode = normalizeCode(match.homeTeam.code)
+      const awayCode = normalizeCode(match.awayTeam.code)
+      if (!isPlaceholderTeamCode(homeCode)) {
+        knownCodes.add(homeCode)
+        knownNames.set(homeCode, match.homeTeam.name)
       }
-      if (match.awayTeam.code !== 'TBD') {
-        knownCodes.add(match.awayTeam.code)
-        knownNames.set(match.awayTeam.code, match.awayTeam.name)
+      if (!isPlaceholderTeamCode(awayCode)) {
+        knownCodes.add(awayCode)
+        knownNames.set(awayCode, match.awayTeam.name)
       }
     }
 
     const pool = [...knownCodes]
-    let syntheticIndex = 1
+    const qualifierCandidates = shuffle(
+      random,
+      QUALIFIER_CANDIDATES_BY_GROUP[groupId as QualifierGroupId] ?? []
+    )
+    for (const candidate of qualifierCandidates) {
+      if (pool.length >= 4) break
+      if (pool.includes(candidate.code)) continue
+      pool.push(candidate.code)
+      knownNames.set(candidate.code, candidate.name)
+    }
+
+    const fallbackPool = shuffle(random, globalFallbackCodes)
     while (pool.length < 4) {
-      const synthetic = `${groupId}${syntheticIndex}`
-      if (!pool.includes(synthetic)) pool.push(synthetic)
-      syntheticIndex += 1
+      const candidate = fallbackPool.find((code) => !pool.includes(code))
+      if (!candidate) break
+      pool.push(candidate)
     }
     const teams = shuffle(random, pool).slice(0, 4)
     const pairs: Array<[number, number]> = [
@@ -603,7 +888,8 @@ function resolveQualifiedTeams(
   const fallbackPool = [...new Set(matches
     .filter((match) => match.stage === 'Group')
     .flatMap((match) => [match.homeTeam.code, match.awayTeam.code])
-    .filter((code) => code !== 'TBD'))]
+    .map((code) => normalizeCode(code))
+    .filter((code) => !isPlaceholderTeamCode(code)))]
 
   for (const code of shuffle(random, fallbackPool)) {
     if (qualified.length >= 32) break
@@ -621,30 +907,34 @@ function resolveQualifiedTeams(
 }
 
 function setTeam(match: Match, side: 'home' | 'away', code: string, names: Map<string, string>) {
-  const name = code === 'TBD' ? 'To be decided' : names.get(code) ?? code
+  const normalizedCode = normalizeCode(code)
+  const resolvedCode = isPlaceholderTeamCode(normalizedCode) ? 'TBD' : normalizedCode
+  const name = resolvedCode === 'TBD' ? 'To be decided' : names.get(resolvedCode) ?? resolvedCode
   if (side === 'home') {
-    match.homeTeam = { code, name }
+    match.homeTeam = { code: resolvedCode, name }
   } else {
-    match.awayTeam = { code, name }
+    match.awayTeam = { code: resolvedCode, name }
   }
 }
 
 function winnerCode(match: Match): string | null {
   if (match.status !== 'FINISHED') return null
   if (!match.winner) return null
-  if (match.winner === 'HOME') return match.homeTeam.code !== 'TBD' ? match.homeTeam.code : null
-  return match.awayTeam.code !== 'TBD' ? match.awayTeam.code : null
+  const winnerTeamCode = match.winner === 'HOME' ? match.homeTeam.code : match.awayTeam.code
+  const normalizedWinnerCode = normalizeCode(winnerTeamCode)
+  return isPlaceholderTeamCode(normalizedWinnerCode) ? null : normalizedWinnerCode
 }
 
 function loserCode(match: Match): string | null {
   if (match.status !== 'FINISHED') return null
   if (!match.winner) return null
-  if (match.winner === 'HOME') return match.awayTeam.code !== 'TBD' ? match.awayTeam.code : null
-  return match.homeTeam.code !== 'TBD' ? match.homeTeam.code : null
+  const loserTeamCode = match.winner === 'HOME' ? match.awayTeam.code : match.homeTeam.code
+  const normalizedLoserCode = normalizeCode(loserTeamCode)
+  return isPlaceholderTeamCode(normalizedLoserCode) ? null : normalizedLoserCode
 }
 
 function hasResolvedKnockoutTeams(match: Match): boolean {
-  return match.homeTeam.code !== 'TBD' && match.awayTeam.code !== 'TBD'
+  return isMatchTeamsResolved(match)
 }
 
 function clearKnockoutResult(match: Match): void {
@@ -738,30 +1028,66 @@ function generateGroupDoc(
   random: () => number,
   userId: string,
   groupTeamMap: Map<string, string[]>,
-  updatedAt: string
+  updatedAt: string,
+  scenario: ScenarioConfig,
+  completionProfile: DemoCompletionProfile,
+  standingsByGroup: Map<string, GroupStandingRow[]>
 ): BracketGroupDoc {
   const groups: Record<string, { first?: string; second?: string }> = {}
-  const bestThirdCandidates: Array<{ groupId: string; team: string }> = []
+  const bestThirdCandidates: Array<string> = []
 
-  for (const [groupId, teams] of groupTeamMap.entries()) {
-    const pool = [...teams]
-    let syntheticIndex = 1
-    while (pool.length < 4) {
-      const syntheticCode = `${groupId}${syntheticIndex}`
-      if (!pool.includes(syntheticCode)) pool.push(syntheticCode)
-      syntheticIndex += 1
+  const groupIds = [...groupTeamMap.keys()].sort((a, b) => a.localeCompare(b))
+  const completionBucket = userCompletionBucket(userId, scenario.id)
+  const completeGroups = completionBucket <= completionProfile.groupCompleteRatio
+  const partialGroupsTarget = deterministicCountFromRange(
+    completionProfile.groupPartialMin,
+    completionProfile.groupPartialMax,
+    `group:${scenario.id}:${userId}`
+  )
+  const selectedGroupCount = clamp(
+    completeGroups ? groupIds.length : partialGroupsTarget,
+    0,
+    groupIds.length
+  )
+  const selectedGroupIds = new Set(shuffle(random, groupIds).slice(0, selectedGroupCount))
+
+  for (const groupId of groupIds) {
+    const teams = (groupTeamMap.get(groupId) ?? []).filter((code) => !isPlaceholderTeamCode(code))
+    if (teams.length < 2) continue
+    const shuffled = shuffle(random, teams)
+    const first = shuffled[0]
+    const second = shuffled.find((code) => code !== first)
+
+    if (selectedGroupIds.has(groupId)) {
+      groups[groupId] = {
+        first,
+        second
+      }
     }
-    const shuffled = shuffle(random, pool)
-    groups[groupId] = {
-      first: shuffled[0],
-      second: shuffled[1]
-    }
-    bestThirdCandidates.push({ groupId, team: shuffled[2] })
+
+    const selectedTopTwo = groups[groupId]
+    const excludedTopTwo = new Set(
+      [selectedTopTwo?.first, selectedTopTwo?.second].filter((value): value is string => Boolean(value))
+    )
+    const standingsCodes = (standingsByGroup.get(groupId) ?? []).map((row) => row.code)
+    const candidateFromStandings = standingsCodes.find((code) => !excludedTopTwo.has(code))
+    const candidateFromPool = shuffled.find((code) => !excludedTopTwo.has(code))
+    const bestThirdCandidate = candidateFromStandings ?? candidateFromPool
+    if (bestThirdCandidate) bestThirdCandidates.push(bestThirdCandidate)
   }
 
-  const bestThirds = shuffle(random, bestThirdCandidates)
-    .slice(0, 8)
-    .map((entry) => entry.team)
+  const completeBestThirds = completionBucket <= completionProfile.groupCompleteRatio
+  const partialBestThirdTarget = deterministicCountFromRange(
+    completionProfile.bestThirdPartialMin,
+    completionProfile.bestThirdPartialMax,
+    `best-third:${scenario.id}:${userId}`
+  )
+  const selectedBestThirdCount = clamp(
+    completeBestThirds ? 8 : partialBestThirdTarget,
+    0,
+    Math.min(8, bestThirdCandidates.length)
+  )
+  const bestThirds = shuffle(random, bestThirdCandidates).slice(0, selectedBestThirdCount)
 
   return {
     userId,
@@ -776,24 +1102,28 @@ function generateKnockoutDoc(
   userId: string,
   matches: Match[],
   updatedAt: string,
-  scenario: ScenarioConfig
+  scenario: ScenarioConfig,
+  completionProfile: DemoCompletionProfile
 ): BracketKnockoutDoc {
   const byStage: Partial<Record<Exclude<MatchStage, 'Group'>, Record<string, 'HOME' | 'AWAY'>>> = {}
-  const pickChance =
-    scenario.id === 'world-cup-final-pending'
-      ? 0.99
-      : scenario.id === 'mid-knockout'
-        ? 0.96
-        : scenario.id === 'end-group-draw-confirmed'
-          ? 0.85
-          : 0
 
   if (!scenario.allowKnockoutPredictions) {
     return { userId, knockout: {}, updatedAt }
   }
 
+  const completionBucket = userCompletionBucket(userId, scenario.id)
+  if (completionBucket > completionProfile.knockoutUserRatio) {
+    return { userId, knockout: {}, updatedAt }
+  }
+
   for (const match of matches) {
     if (match.stage === 'Group') continue
+    if (!isMatchTeamsResolved(match)) continue
+    const pickChance = clamp(
+      completionProfile.knockoutPickChance * (match.status === 'SCHEDULED' ? 0.95 : 1),
+      0,
+      0.995
+    )
     if (random() > pickChance) continue
     const stage = match.stage
     const stagePicks = byStage[stage] ?? {}
@@ -836,44 +1166,44 @@ function makeMatchPick(random: () => number, match: Match): Pick {
   }
 }
 
+function baseMatchPickChance(match: Match, scenarioNowUtc: string): number {
+  const now = new Date(scenarioNowUtc).getTime()
+  const lockTime = new Date(match.kickoffUtc).getTime() - 30 * 60 * 1000
+  const isLocked = now >= lockTime
+
+  if (match.stage === 'Group') {
+    if (match.status === 'FINISHED') return 0.99
+    if (match.status === 'IN_PLAY') return 0.97
+    return isLocked ? 0.35 : 0.72
+  }
+
+  if (match.status === 'FINISHED') return 0.98
+  if (match.status === 'IN_PLAY') return 0.94
+  return isLocked ? 0.4 : 0.78
+}
+
 function generatePicksForUser(
   random: () => number,
   userId: string,
   matches: Match[],
   scenario: ScenarioConfig,
-  scenarioNowUtc: string
+  scenarioNowUtc: string,
+  completionProfile: DemoCompletionProfile
 ): PicksFile['picks'][number] {
   const picks: Pick[] = []
-  const now = new Date(scenarioNowUtc).getTime()
+  const completionBucket = userCompletionBucket(userId, scenario.id)
+  const isHighActivity = completionBucket <= completionProfile.picksHighActivityRatio
+  const userPickMultiplier =
+    completionProfile.picksGlobalMultiplier *
+    (isHighActivity ? 1 : completionProfile.picksLowActivityMultiplier)
 
   for (const match of matches) {
-    const lockTime = new Date(match.kickoffUtc).getTime() - 30 * 60 * 1000
-    const isLocked = now >= lockTime
-    let pickChance = 0.9
-
-    if (scenario.id === 'pre-group') {
-      pickChance = match.stage === 'Group' ? (isLocked ? 0.2 : 0.06) : 0.01
-    } else if (scenario.id === 'mid-group') {
-      if (match.stage === 'Group') {
-        if (match.status === 'FINISHED') pickChance = 0.98
-        else if (match.status === 'IN_PLAY') pickChance = 0.96
-        else pickChance = isLocked ? 0.92 : 0.55
-      } else {
-        pickChance = 0.1
-      }
-    } else if (scenario.id === 'end-group-draw-confirmed') {
-      pickChance = match.stage === 'Group' ? 0.99 : 0.88
-    } else if (scenario.id === 'mid-knockout') {
-      if (match.stage === 'Group') {
-        pickChance = 0.99
-      } else if (match.status === 'FINISHED' || match.status === 'IN_PLAY') {
-        pickChance = 0.97
-      } else {
-        pickChance = 0.92
-      }
-    } else if (scenario.id === 'world-cup-final-pending') {
-      pickChance = match.status === 'SCHEDULED' ? 0.96 : 0.99
-    }
+    if (!isMatchTeamsResolved(match)) continue
+    const pickChance = clamp(
+      baseMatchPickChance(match, scenarioNowUtc) * userPickMultiplier,
+      0,
+      0.995
+    )
 
     if (random() > pickChance) continue
     const pick = makeMatchPick(random, match)
@@ -907,7 +1237,8 @@ function buildBestThirdQualifiers(
   const fallbackPool = [...new Set(matches
     .filter((match) => match.stage === 'Group')
     .flatMap((match) => [match.homeTeam.code, match.awayTeam.code])
-    .filter((code) => code !== 'TBD' && !topTwoPool.has(code)))]
+    .map((code) => normalizeCode(code))
+    .filter((code) => !isPlaceholderTeamCode(code) && !topTwoPool.has(code)))]
 
   const pool = shuffle(random, [...thirdPlacePool, ...fallbackPool])
   const qualifiers = [...new Set(pool)].slice(0, 8)
@@ -930,6 +1261,7 @@ function buildBestThirdQualifiers(
 async function run() {
   const args = parseArgs()
   const scenario = SCENARIOS[args.scenario]
+  const completionProfile = SCENARIO_COMPLETION_PROFILE[scenario.id]
   const random = mulberry32(args.seed)
 
   const [baseMatches, scoring] = await Promise.all([
@@ -938,6 +1270,11 @@ async function run() {
   ])
 
   const { matchesFile: seededMatchesFile, scenarioNowUtc } = assignScenarioMatches(random, baseMatches, scenario)
+  const selectedQualifiersByGroup = pickQualifierWinners(random)
+  seededMatchesFile.matches = applyQualifierWinners(
+    seededMatchesFile.matches,
+    selectedQualifiersByGroup
+  )
   seededMatchesFile.matches = normalizeGroupStageTeams(random, seededMatchesFile.matches)
   const bestThirdFile = buildBestThirdQualifiers(random, seededMatchesFile.matches, scenario)
   const matchesFile: MatchesFile = {
@@ -953,16 +1290,39 @@ async function run() {
 
   const picksFile: PicksFile = {
     picks: membersFile.members.map((member) =>
-      generatePicksForUser(random, member.id, matchesFile.matches, scenario, scenarioNowUtc)
+      generatePicksForUser(
+        random,
+        member.id,
+        matchesFile.matches,
+        scenario,
+        scenarioNowUtc,
+        completionProfile
+      )
     )
   }
 
   const groupTeamMap = buildGroupTeamMap(matchesFile.matches)
+  const standingsByGroup = computeGroupStandings(matchesFile.matches)
   const groupDocs: BracketGroupDoc[] = membersFile.members.map((member) =>
-    generateGroupDoc(random, member.id, groupTeamMap, scenarioNowUtc)
+    generateGroupDoc(
+      random,
+      member.id,
+      groupTeamMap,
+      scenarioNowUtc,
+      scenario,
+      completionProfile,
+      standingsByGroup
+    )
   )
   const knockoutDocs: BracketKnockoutDoc[] = membersFile.members.map((member) =>
-    generateKnockoutDoc(random, member.id, matchesFile.matches, scenarioNowUtc, scenario)
+    generateKnockoutDoc(
+      random,
+      member.id,
+      matchesFile.matches,
+      scenarioNowUtc,
+      scenario,
+      completionProfile
+    )
   )
   const bracketFile: BracketPredictionsFile = {
     group: groupDocs,
@@ -998,6 +1358,8 @@ async function run() {
       scenarioLabel: scenario.label,
       seed: args.seed,
       users: args.users,
+      completionProfile,
+      selectedQualifiersByGroup,
       generatedAt: new Date().toISOString(),
       timezone: PACIFIC_TIME_ZONE
     }]

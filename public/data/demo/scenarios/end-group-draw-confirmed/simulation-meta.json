@@ -3,6 +3,44 @@
   "scenarioLabel": "End group stage and knockout draw confirmed",
   "seed": 303,
   "users": 50,
-  "generatedAt": "2026-02-08T22:03:33.074Z",
+  "completionProfile": {
+    "picksGlobalMultiplier": 0.94,
+    "picksHighActivityRatio": 0.86,
+    "picksLowActivityMultiplier": 0.82,
+    "groupCompleteRatio": 0.86,
+    "groupPartialMin": 9,
+    "groupPartialMax": 11,
+    "bestThirdPartialMin": 8,
+    "bestThirdPartialMax": 8,
+    "knockoutUserRatio": 0.82,
+    "knockoutPickChance": 0.82
+  },
+  "selectedQualifiersByGroup": {
+    "A": {
+      "code": "IRL",
+      "name": "Republic of Ireland"
+    },
+    "B": {
+      "code": "ITA",
+      "name": "Italy"
+    },
+    "D": {
+      "code": "KOS",
+      "name": "Kosovo"
+    },
+    "F": {
+      "code": "POL",
+      "name": "Poland"
+    },
+    "I": {
+      "code": "SUR",
+      "name": "Suriname"
+    },
+    "K": {
+      "code": "NCL",
+      "name": "New Caledonia"
+    }
+  },
+  "generatedAt": "2026-03-05T03:33:02.167Z",
   "timezone": "America/Los_Angeles"
 }

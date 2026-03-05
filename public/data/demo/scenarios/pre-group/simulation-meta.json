@@ -3,6 +3,44 @@
   "scenarioLabel": "Pre group stage",
   "seed": 101,
   "users": 50,
-  "generatedAt": "2026-02-08T22:03:32.425Z",
+  "completionProfile": {
+    "picksGlobalMultiplier": 0.45,
+    "picksHighActivityRatio": 0.2,
+    "picksLowActivityMultiplier": 0.35,
+    "groupCompleteRatio": 0.18,
+    "groupPartialMin": 1,
+    "groupPartialMax": 4,
+    "bestThirdPartialMin": 2,
+    "bestThirdPartialMax": 4,
+    "knockoutUserRatio": 0,
+    "knockoutPickChance": 0
+  },
+  "selectedQualifiersByGroup": {
+    "A": {
+      "code": "DEN",
+      "name": "Denmark"
+    },
+    "B": {
+      "code": "BIH",
+      "name": "Bosnia and Herzegovina"
+    },
+    "D": {
+      "code": "SVK",
+      "name": "Slovakia"
+    },
+    "F": {
+      "code": "POL",
+      "name": "Poland"
+    },
+    "I": {
+      "code": "BOL",
+      "name": "Bolivia"
+    },
+    "K": {
+      "code": "NCL",
+      "name": "New Caledonia"
+    }
+  },
+  "generatedAt": "2026-03-05T03:33:01.516Z",
   "timezone": "America/Los_Angeles"
 }

@@ -3,6 +3,44 @@
   "scenarioLabel": "Mid knockout phase",
   "seed": 404,
   "users": 50,
-  "generatedAt": "2026-02-08T22:03:33.407Z",
+  "completionProfile": {
+    "picksGlobalMultiplier": 0.97,
+    "picksHighActivityRatio": 0.93,
+    "picksLowActivityMultiplier": 0.9,
+    "groupCompleteRatio": 0.93,
+    "groupPartialMin": 10,
+    "groupPartialMax": 12,
+    "bestThirdPartialMin": 8,
+    "bestThirdPartialMax": 8,
+    "knockoutUserRatio": 0.92,
+    "knockoutPickChance": 0.92
+  },
+  "selectedQualifiersByGroup": {
+    "A": {
+      "code": "CZE",
+      "name": "Czechia"
+    },
+    "B": {
+      "code": "WAL",
+      "name": "Wales"
+    },
+    "D": {
+      "code": "TUR",
+      "name": "Turkey"
+    },
+    "F": {
+      "code": "ALB",
+      "name": "Albania"
+    },
+    "I": {
+      "code": "BOL",
+      "name": "Bolivia"
+    },
+    "K": {
+      "code": "JAM",
+      "name": "Jamaica"
+    }
+  },
+  "generatedAt": "2026-03-05T03:33:02.498Z",
   "timezone": "America/Los_Angeles"
 }

@@ -1,18 +1,18 @@
 {
-  "lastUpdated": "2026-02-08T22:48:33.028Z",
+  "lastUpdated": "2026-03-05T04:18:02.118Z",
   "matches": [
     {
       "id": "537327",
       "stage": "Group",
-      "kickoffUtc": "2026-02-02T17:30:00.000Z",
+      "kickoffUtc": "2026-02-26T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "KOR",
-        "name": "South Korea"
-      },
-      "awayTeam": {
         "code": "RSA",
         "name": "South Africa"
+      },
+      "awayTeam": {
+        "code": "MEX",
+        "name": "Mexico"
       },
       "group": "A",
       "score": {
@@ -23,15 +23,15 @@
     {
       "id": "537328",
       "stage": "Group",
-      "kickoffUtc": "2026-02-02T20:00:00.000Z",
+      "kickoffUtc": "2026-02-26T20:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "MEX",
-        "name": "Mexico"
+        "code": "KOR",
+        "name": "South Korea"
       },
       "awayTeam": {
-        "code": "A1",
-        "name": "Group A Team A1"
+        "code": "IRL",
+        "name": "Republic of Ireland"
       },
       "group": "A",
       "score": {
@@ -42,15 +42,15 @@
     {
       "id": "537333",
       "stage": "Group",
-      "kickoffUtc": "2026-02-02T23:30:00.000Z",
+      "kickoffUtc": "2026-02-26T23:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "CAN",
         "name": "Canada"
       },
       "awayTeam": {
-        "code": "QAT",
-        "name": "Qatar"
+        "code": "SUI",
+        "name": "Switzerland"
       },
       "group": "B",
       "score": {
@@ -61,15 +61,15 @@
     {
       "id": "537345",
       "stage": "Group",
-      "kickoffUtc": "2026-02-03T03:00:00.000Z",
+      "kickoffUtc": "2026-02-27T03:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "D1",
-        "name": "Group D Team D1"
-      },
-      "awayTeam": {
         "code": "PAR",
         "name": "Paraguay"
+      },
+      "awayTeam": {
+        "code": "KOS",
+        "name": "Kosovo"
       },
       "group": "D",
       "score": {
@@ -80,7 +80,7 @@
     {
       "id": "537346",
       "stage": "Group",
-      "kickoffUtc": "2026-02-03T17:30:00.000Z",
+      "kickoffUtc": "2026-02-27T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "AUS",
@@ -99,15 +99,15 @@
     {
       "id": "537334",
       "stage": "Group",
-      "kickoffUtc": "2026-02-03T20:00:00.000Z",
+      "kickoffUtc": "2026-02-27T20:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "B1",
-        "name": "Group B Team B1"
+        "code": "QAT",
+        "name": "Qatar"
       },
       "awayTeam": {
-        "code": "SUI",
-        "name": "Switzerland"
+        "code": "ITA",
+        "name": "Italy"
       },
       "group": "B",
       "score": {
@@ -118,7 +118,26 @@
     {
       "id": "537339",
       "stage": "Group",
-      "kickoffUtc": "2026-02-03T23:30:00.000Z",
+      "kickoffUtc": "2026-02-27T23:30:00.000Z",
+      "status": "FINISHED",
+      "homeTeam": {
+        "code": "MAR",
+        "name": "Morocco"
+      },
+      "awayTeam": {
+        "code": "HAI",
+        "name": "Haiti"
+      },
+      "group": "C",
+      "score": {
+        "home": 3,
+        "away": 2
+      }
+    },
+    {
+      "id": "537340",
+      "stage": "Group",
+      "kickoffUtc": "2026-02-28T03:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "BRA",
@@ -130,25 +149,6 @@
       },
       "group": "C",
       "score": {
-        "home": 3,
-        "away": 2
-      }
-    },
-    {
-      "id": "537340",
-      "stage": "Group",
-      "kickoffUtc": "2026-02-04T03:00:00.000Z",
-      "status": "FINISHED",
-      "homeTeam": {
-        "code": "HAI",
-        "name": "Haiti"
-      },
-      "awayTeam": {
-        "code": "MAR",
-        "name": "Morocco"
-      },
-      "group": "C",
-      "score": {
         "home": 1,
         "away": 4
       }
@@ -156,7 +156,7 @@
     {
       "id": "537351",
       "stage": "Group",
-      "kickoffUtc": "2026-02-04T17:30:00.000Z",
+      "kickoffUtc": "2026-02-28T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "ECU",
@@ -175,15 +175,15 @@
     {
       "id": "537357",
       "stage": "Group",
-      "kickoffUtc": "2026-02-04T20:00:00.000Z",
+      "kickoffUtc": "2026-02-28T20:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "NED",
-        "name": "Netherlands"
+        "code": "POL",
+        "name": "Poland"
       },
       "awayTeam": {
-        "code": "F1",
-        "name": "Group F Team F1"
+        "code": "JPN",
+        "name": "Japan"
       },
       "group": "F",
       "score": {
@@ -194,15 +194,15 @@
     {
       "id": "537352",
       "stage": "Group",
-      "kickoffUtc": "2026-02-04T23:30:00.000Z",
+      "kickoffUtc": "2026-02-28T23:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "CUR",
-        "name": "Curaçao"
+        "code": "CIV",
+        "name": "Ivory Coast"
       },
       "awayTeam": {
-        "code": "CIV",
-        "name": "Côte d'Ivoire"
+        "code": "CUR",
+        "name": "Curaçao"
       },
       "group": "E",
       "score": {
@@ -213,15 +213,15 @@
     {
       "id": "537358",
       "stage": "Group",
-      "kickoffUtc": "2026-02-05T03:00:00.000Z",
+      "kickoffUtc": "2026-03-01T03:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "TUN",
-        "name": "Tunisia"
+        "code": "NED",
+        "name": "Netherlands"
       },
       "awayTeam": {
-        "code": "JPN",
-        "name": "Japan"
+        "code": "TUN",
+        "name": "Tunisia"
       },
       "group": "F",
       "score": {
@@ -232,15 +232,15 @@
     {
       "id": "537369",
       "stage": "Group",
-      "kickoffUtc": "2026-02-05T17:30:00.000Z",
+      "kickoffUtc": "2026-03-01T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "ESP",
-        "name": "Spain"
-      },
-      "awayTeam": {
         "code": "CPV",
         "name": "Cape Verde Islands"
+      },
+      "awayTeam": {
+        "code": "ESP",
+        "name": "Spain"
       },
       "group": "H",
       "score": {
@@ -251,15 +251,15 @@
     {
       "id": "537363",
       "stage": "Group",
-      "kickoffUtc": "2026-02-05T20:00:00.000Z",
+      "kickoffUtc": "2026-03-01T20:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "BEL",
-        "name": "Belgium"
-      },
-      "awayTeam": {
         "code": "IRN",
         "name": "Iran"
+      },
+      "awayTeam": {
+        "code": "EGY",
+        "name": "Egypt"
       },
       "group": "G",
       "score": {
@@ -270,15 +270,15 @@
     {
       "id": "537370",
       "stage": "Group",
-      "kickoffUtc": "2026-02-05T23:30:00.000Z",
+      "kickoffUtc": "2026-03-01T23:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "KSA",
-        "name": "Saudi Arabia"
-      },
-      "awayTeam": {
         "code": "URU",
         "name": "Uruguay"
+      },
+      "awayTeam": {
+        "code": "KSA",
+        "name": "Saudi Arabia"
       },
       "group": "H",
       "score": {
@@ -289,11 +289,11 @@
     {
       "id": "537364",
       "stage": "Group",
-      "kickoffUtc": "2026-02-06T03:00:00.000Z",
+      "kickoffUtc": "2026-03-02T03:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "EGY",
-        "name": "Egypt"
+        "code": "BEL",
+        "name": "Belgium"
       },
       "awayTeam": {
         "code": "NZL",
@@ -308,15 +308,15 @@
     {
       "id": "537391",
       "stage": "Group",
-      "kickoffUtc": "2026-02-06T17:30:00.000Z",
+      "kickoffUtc": "2026-03-02T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "FRA",
-        "name": "France"
+        "code": "SUR",
+        "name": "Suriname"
       },
       "awayTeam": {
-        "code": "NOR",
-        "name": "Norway"
+        "code": "FRA",
+        "name": "France"
       },
       "group": "I",
       "score": {
@@ -327,11 +327,11 @@
     {
       "id": "537392",
       "stage": "Group",
-      "kickoffUtc": "2026-02-06T20:00:00.000Z",
+      "kickoffUtc": "2026-03-02T20:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "I1",
-        "name": "Group I Team I1"
+        "code": "NOR",
+        "name": "Norway"
       },
       "awayTeam": {
         "code": "SEN",
@@ -346,15 +346,15 @@
     {
       "id": "537397",
       "stage": "Group",
-      "kickoffUtc": "2026-02-06T23:30:00.000Z",
+      "kickoffUtc": "2026-03-02T23:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "ALG",
-        "name": "Algeria"
-      },
-      "awayTeam": {
         "code": "ARG",
         "name": "Argentina"
+      },
+      "awayTeam": {
+        "code": "ALG",
+        "name": "Algeria"
       },
       "group": "J",
       "score": {
@@ -365,15 +365,15 @@
     {
       "id": "537398",
       "stage": "Group",
-      "kickoffUtc": "2026-02-07T03:00:00.000Z",
+      "kickoffUtc": "2026-03-03T03:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "AUT",
-        "name": "Austria"
-      },
-      "awayTeam": {
         "code": "JOR",
         "name": "Jordan"
+      },
+      "awayTeam": {
+        "code": "AUT",
+        "name": "Austria"
       },
       "group": "J",
       "score": {
@@ -384,15 +384,15 @@
     {
       "id": "537403",
       "stage": "Group",
-      "kickoffUtc": "2026-02-07T17:30:00.000Z",
+      "kickoffUtc": "2026-03-03T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "UZB",
-        "name": "Uzbekistan"
+        "code": "NCL",
+        "name": "New Caledonia"
       },
       "awayTeam": {
-        "code": "POR",
-        "name": "Portugal"
+        "code": "COL",
+        "name": "Colombia"
       },
       "group": "K",
       "score": {
@@ -403,15 +403,15 @@
     {
       "id": "537409",
       "stage": "Group",
-      "kickoffUtc": "2026-02-07T20:00:00.000Z",
+      "kickoffUtc": "2026-03-03T20:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "ENG",
-        "name": "England"
-      },
-      "awayTeam": {
         "code": "PAN",
         "name": "Panama"
+      },
+      "awayTeam": {
+        "code": "CRO",
+        "name": "Croatia"
       },
       "group": "L",
       "score": {
@@ -422,11 +422,11 @@
     {
       "id": "537410",
       "stage": "Group",
-      "kickoffUtc": "2026-02-07T23:30:00.000Z",
+      "kickoffUtc": "2026-03-03T23:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "CRO",
-        "name": "Croatia"
+        "code": "ENG",
+        "name": "England"
       },
       "awayTeam": {
         "code": "GHA",
@@ -441,15 +441,15 @@
     {
       "id": "537404",
       "stage": "Group",
-      "kickoffUtc": "2026-02-08T03:00:00.000Z",
+      "kickoffUtc": "2026-03-04T03:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "COL",
-        "name": "Colombia"
+        "code": "POR",
+        "name": "Portugal"
       },
       "awayTeam": {
-        "code": "K1",
-        "name": "Group K Team K1"
+        "code": "UZB",
+        "name": "Uzbekistan"
       },
       "group": "K",
       "score": {
@@ -460,15 +460,15 @@
     {
       "id": "537329",
       "stage": "Group",
-      "kickoffUtc": "2026-02-08T17:30:00.000Z",
+      "kickoffUtc": "2026-03-04T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "KOR",
-        "name": "South Korea"
+        "code": "RSA",
+        "name": "South Africa"
       },
       "awayTeam": {
-        "code": "MEX",
-        "name": "Mexico"
+        "code": "KOR",
+        "name": "South Korea"
       },
       "group": "A",
       "score": {
@@ -479,15 +479,15 @@
     {
       "id": "537335",
       "stage": "Group",
-      "kickoffUtc": "2026-02-08T20:00:00.000Z",
+      "kickoffUtc": "2026-03-04T20:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "CAN",
         "name": "Canada"
       },
       "awayTeam": {
-        "code": "B1",
-        "name": "Group B Team B1"
+        "code": "QAT",
+        "name": "Qatar"
       },
       "group": "B",
       "score": {
@@ -498,15 +498,15 @@
     {
       "id": "537336",
       "stage": "Group",
-      "kickoffUtc": "2026-02-08T23:30:00.000Z",
+      "kickoffUtc": "2026-03-04T23:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "QAT",
-        "name": "Qatar"
-      },
-      "awayTeam": {
         "code": "SUI",
         "name": "Switzerland"
+      },
+      "awayTeam": {
+        "code": "ITA",
+        "name": "Italy"
       },
       "group": "B",
       "score": {
@@ -517,15 +517,15 @@
     {
       "id": "537330",
       "stage": "Group",
-      "kickoffUtc": "2026-02-09T03:00:00.000Z",
+      "kickoffUtc": "2026-03-05T03:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "RSA",
-        "name": "South Africa"
+        "code": "MEX",
+        "name": "Mexico"
       },
       "awayTeam": {
-        "code": "A1",
-        "name": "Group A Team A1"
+        "code": "IRL",
+        "name": "Republic of Ireland"
       },
       "group": "A",
       "score": {
@@ -536,11 +536,11 @@
     {
       "id": "537347",
       "stage": "Group",
-      "kickoffUtc": "2026-02-09T17:30:00.000Z",
+      "kickoffUtc": "2026-03-05T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "D1",
-        "name": "Group D Team D1"
+        "code": "PAR",
+        "name": "Paraguay"
       },
       "awayTeam": {
         "code": "AUS",
@@ -555,11 +555,11 @@
     {
       "id": "537348",
       "stage": "Group",
-      "kickoffUtc": "2026-02-09T20:00:00.000Z",
+      "kickoffUtc": "2026-03-05T20:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "PAR",
-        "name": "Paraguay"
+        "code": "KOS",
+        "name": "Kosovo"
       },
       "awayTeam": {
         "code": "USA",
@@ -574,15 +574,15 @@
     {
       "id": "537342",
       "stage": "Group",
-      "kickoffUtc": "2026-02-09T23:30:00.000Z",
+      "kickoffUtc": "2026-03-05T23:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "BRA",
-        "name": "Brazil"
+        "code": "MAR",
+        "name": "Morocco"
       },
       "awayTeam": {
-        "code": "HAI",
-        "name": "Haiti"
+        "code": "BRA",
+        "name": "Brazil"
       },
       "group": "C",
       "score": {
@@ -593,15 +593,15 @@
     {
       "id": "537341",
       "stage": "Group",
-      "kickoffUtc": "2026-02-10T03:00:00.000Z",
+      "kickoffUtc": "2026-03-06T03:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "SCO",
-        "name": "Scotland"
+        "code": "HAI",
+        "name": "Haiti"
       },
       "awayTeam": {
-        "code": "MAR",
-        "name": "Morocco"
+        "code": "SCO",
+        "name": "Scotland"
       },
       "group": "C",
       "score": {
@@ -612,11 +612,30 @@
     {
       "id": "537360",
       "stage": "Group",
-      "kickoffUtc": "2026-02-10T17:30:00.000Z",
+      "kickoffUtc": "2026-03-06T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
+        "code": "POL",
+        "name": "Poland"
+      },
+      "awayTeam": {
         "code": "NED",
         "name": "Netherlands"
+      },
+      "group": "F",
+      "score": {
+        "home": 1,
+        "away": 3
+      }
+    },
+    {
+      "id": "537359",
+      "stage": "Group",
+      "kickoffUtc": "2026-03-06T20:00:00.000Z",
+      "status": "FINISHED",
+      "homeTeam": {
+        "code": "JPN",
+        "name": "Japan"
       },
       "awayTeam": {
         "code": "TUN",
@@ -629,36 +648,17 @@
       }
     },
     {
-      "id": "537359",
-      "stage": "Group",
-      "kickoffUtc": "2026-02-10T20:00:00.000Z",
-      "status": "FINISHED",
-      "homeTeam": {
-        "code": "F1",
-        "name": "Group F Team F1"
-      },
-      "awayTeam": {
-        "code": "JPN",
-        "name": "Japan"
-      },
-      "group": "F",
-      "score": {
-        "home": 1,
-        "away": 3
-      }
-    },
-    {
       "id": "537353",
       "stage": "Group",
-      "kickoffUtc": "2026-02-10T23:30:00.000Z",
+      "kickoffUtc": "2026-03-06T23:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "ECU",
         "name": "Ecuador"
       },
       "awayTeam": {
-        "code": "CUR",
-        "name": "Curaçao"
+        "code": "CIV",
+        "name": "Ivory Coast"
       },
       "group": "E",
       "score": {
@@ -669,15 +669,15 @@
     {
       "id": "537354",
       "stage": "Group",
-      "kickoffUtc": "2026-02-11T03:00:00.000Z",
+      "kickoffUtc": "2026-03-07T03:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "GER",
         "name": "Germany"
       },
       "awayTeam": {
-        "code": "CIV",
-        "name": "Côte d'Ivoire"
+        "code": "CUR",
+        "name": "Curaçao"
       },
       "group": "E",
       "score": {
@@ -688,45 +688,7 @@
     {
       "id": "537371",
       "stage": "Group",
-      "kickoffUtc": "2026-02-11T17:30:00.000Z",
-      "status": "FINISHED",
-      "homeTeam": {
-        "code": "ESP",
-        "name": "Spain"
-      },
-      "awayTeam": {
-        "code": "KSA",
-        "name": "Saudi Arabia"
-      },
-      "group": "H",
-      "score": {
-        "home": 2,
-        "away": 0
-      }
-    },
-    {
-      "id": "537365",
-      "stage": "Group",
-      "kickoffUtc": "2026-02-11T20:00:00.000Z",
-      "status": "FINISHED",
-      "homeTeam": {
-        "code": "BEL",
-        "name": "Belgium"
-      },
-      "awayTeam": {
-        "code": "EGY",
-        "name": "Egypt"
-      },
-      "group": "G",
-      "score": {
-        "home": 1,
-        "away": 0
-      }
-    },
-    {
-      "id": "537372",
-      "stage": "Group",
-      "kickoffUtc": "2026-02-11T23:30:00.000Z",
+      "kickoffUtc": "2026-03-07T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "CPV",
@@ -743,13 +705,51 @@
       }
     },
     {
-      "id": "537366",
+      "id": "537365",
       "stage": "Group",
-      "kickoffUtc": "2026-02-12T03:00:00.000Z",
+      "kickoffUtc": "2026-03-07T20:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "IRN",
         "name": "Iran"
+      },
+      "awayTeam": {
+        "code": "BEL",
+        "name": "Belgium"
+      },
+      "group": "G",
+      "score": {
+        "home": 1,
+        "away": 0
+      }
+    },
+    {
+      "id": "537372",
+      "stage": "Group",
+      "kickoffUtc": "2026-03-07T23:30:00.000Z",
+      "status": "FINISHED",
+      "homeTeam": {
+        "code": "ESP",
+        "name": "Spain"
+      },
+      "awayTeam": {
+        "code": "KSA",
+        "name": "Saudi Arabia"
+      },
+      "group": "H",
+      "score": {
+        "home": 2,
+        "away": 0
+      }
+    },
+    {
+      "id": "537366",
+      "stage": "Group",
+      "kickoffUtc": "2026-03-08T03:00:00.000Z",
+      "status": "FINISHED",
+      "homeTeam": {
+        "code": "EGY",
+        "name": "Egypt"
       },
       "awayTeam": {
         "code": "NZL",
@@ -764,15 +764,15 @@
     {
       "id": "537399",
       "stage": "Group",
-      "kickoffUtc": "2026-02-12T17:30:00.000Z",
+      "kickoffUtc": "2026-03-08T17:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "ALG",
-        "name": "Algeria"
+        "code": "ARG",
+        "name": "Argentina"
       },
       "awayTeam": {
-        "code": "AUT",
-        "name": "Austria"
+        "code": "JOR",
+        "name": "Jordan"
       },
       "group": "J",
       "score": {
@@ -783,15 +783,15 @@
     {
       "id": "537393",
       "stage": "Group",
-      "kickoffUtc": "2026-02-12T20:00:00.000Z",
+      "kickoffUtc": "2026-03-08T19:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "FRA",
-        "name": "France"
+        "code": "SUR",
+        "name": "Suriname"
       },
       "awayTeam": {
-        "code": "I1",
-        "name": "Group I Team I1"
+        "code": "NOR",
+        "name": "Norway"
       },
       "group": "I",
       "score": {
@@ -802,11 +802,11 @@
     {
       "id": "537394",
       "stage": "Group",
-      "kickoffUtc": "2026-02-12T23:30:00.000Z",
+      "kickoffUtc": "2026-03-08T22:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "NOR",
-        "name": "Norway"
+        "code": "FRA",
+        "name": "France"
       },
       "awayTeam": {
         "code": "SEN",
@@ -821,15 +821,15 @@
     {
       "id": "537400",
       "stage": "Group",
-      "kickoffUtc": "2026-02-13T03:00:00.000Z",
+      "kickoffUtc": "2026-03-09T02:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "ARG",
-        "name": "Argentina"
+        "code": "ALG",
+        "name": "Algeria"
       },
       "awayTeam": {
-        "code": "JOR",
-        "name": "Jordan"
+        "code": "AUT",
+        "name": "Austria"
       },
       "group": "J",
       "score": {
@@ -840,15 +840,15 @@
     {
       "id": "537405",
       "stage": "Group",
-      "kickoffUtc": "2026-02-13T17:30:00.000Z",
+      "kickoffUtc": "2026-03-09T16:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "UZB",
-        "name": "Uzbekistan"
+        "code": "NCL",
+        "name": "New Caledonia"
       },
       "awayTeam": {
-        "code": "COL",
-        "name": "Colombia"
+        "code": "POR",
+        "name": "Portugal"
       },
       "group": "K",
       "score": {
@@ -859,15 +859,15 @@
     {
       "id": "537411",
       "stage": "Group",
-      "kickoffUtc": "2026-02-13T20:00:00.000Z",
+      "kickoffUtc": "2026-03-09T19:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "ENG",
-        "name": "England"
+        "code": "PAN",
+        "name": "Panama"
       },
       "awayTeam": {
-        "code": "CRO",
-        "name": "Croatia"
+        "code": "ENG",
+        "name": "England"
       },
       "group": "L",
       "score": {
@@ -878,11 +878,11 @@
     {
       "id": "537412",
       "stage": "Group",
-      "kickoffUtc": "2026-02-13T23:30:00.000Z",
+      "kickoffUtc": "2026-03-09T22:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "PAN",
-        "name": "Panama"
+        "code": "CRO",
+        "name": "Croatia"
       },
       "awayTeam": {
         "code": "GHA",
@@ -897,15 +897,15 @@
     {
       "id": "537406",
       "stage": "Group",
-      "kickoffUtc": "2026-02-14T03:00:00.000Z",
+      "kickoffUtc": "2026-03-10T02:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "POR",
-        "name": "Portugal"
+        "code": "COL",
+        "name": "Colombia"
       },
       "awayTeam": {
-        "code": "K1",
-        "name": "Group K Team K1"
+        "code": "UZB",
+        "name": "Uzbekistan"
       },
       "group": "K",
       "score": {
@@ -916,15 +916,15 @@
     {
       "id": "537337",
       "stage": "Group",
-      "kickoffUtc": "2026-02-14T17:30:00.000Z",
+      "kickoffUtc": "2026-03-10T16:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "CAN",
         "name": "Canada"
       },
       "awayTeam": {
-        "code": "SUI",
-        "name": "Switzerland"
+        "code": "ITA",
+        "name": "Italy"
       },
       "group": "B",
       "score": {
@@ -935,15 +935,15 @@
     {
       "id": "537338",
       "stage": "Group",
-      "kickoffUtc": "2026-02-14T20:00:00.000Z",
+      "kickoffUtc": "2026-03-10T19:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "QAT",
-        "name": "Qatar"
+        "code": "SUI",
+        "name": "Switzerland"
       },
       "awayTeam": {
-        "code": "B1",
-        "name": "Group B Team B1"
+        "code": "QAT",
+        "name": "Qatar"
       },
       "group": "B",
       "score": {
@@ -954,15 +954,15 @@
     {
       "id": "537343",
       "stage": "Group",
-      "kickoffUtc": "2026-02-14T23:30:00.000Z",
+      "kickoffUtc": "2026-03-10T22:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "BRA",
-        "name": "Brazil"
-      },
-      "awayTeam": {
         "code": "MAR",
         "name": "Morocco"
+      },
+      "awayTeam": {
+        "code": "SCO",
+        "name": "Scotland"
       },
       "group": "C",
       "score": {
@@ -973,15 +973,15 @@
     {
       "id": "537344",
       "stage": "Group",
-      "kickoffUtc": "2026-02-15T03:00:00.000Z",
+      "kickoffUtc": "2026-03-11T02:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "SCO",
-        "name": "Scotland"
-      },
-      "awayTeam": {
         "code": "HAI",
         "name": "Haiti"
+      },
+      "awayTeam": {
+        "code": "BRA",
+        "name": "Brazil"
       },
       "group": "C",
       "score": {
@@ -992,15 +992,15 @@
     {
       "id": "537331",
       "stage": "Group",
-      "kickoffUtc": "2026-02-15T17:30:00.000Z",
+      "kickoffUtc": "2026-03-11T16:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "KOR",
-        "name": "South Korea"
+        "code": "RSA",
+        "name": "South Africa"
       },
       "awayTeam": {
-        "code": "A1",
-        "name": "Group A Team A1"
+        "code": "IRL",
+        "name": "Republic of Ireland"
       },
       "group": "A",
       "score": {
@@ -1011,15 +1011,15 @@
     {
       "id": "537332",
       "stage": "Group",
-      "kickoffUtc": "2026-02-15T20:00:00.000Z",
+      "kickoffUtc": "2026-03-11T19:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "RSA",
-        "name": "South Africa"
-      },
-      "awayTeam": {
         "code": "MEX",
         "name": "Mexico"
+      },
+      "awayTeam": {
+        "code": "KOR",
+        "name": "South Korea"
       },
       "group": "A",
       "score": {
@@ -1030,15 +1030,15 @@
     {
       "id": "537355",
       "stage": "Group",
-      "kickoffUtc": "2026-02-15T23:30:00.000Z",
+      "kickoffUtc": "2026-03-11T22:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "ECU",
         "name": "Ecuador"
       },
       "awayTeam": {
-        "code": "CIV",
-        "name": "Côte d'Ivoire"
+        "code": "CUR",
+        "name": "Curaçao"
       },
       "group": "E",
       "score": {
@@ -1049,15 +1049,15 @@
     {
       "id": "537356",
       "stage": "Group",
-      "kickoffUtc": "2026-02-16T03:00:00.000Z",
+      "kickoffUtc": "2026-03-12T02:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "GER",
         "name": "Germany"
       },
       "awayTeam": {
-        "code": "CUR",
-        "name": "Curaçao"
+        "code": "CIV",
+        "name": "Ivory Coast"
       },
       "group": "E",
       "score": {
@@ -1068,15 +1068,15 @@
     {
       "id": "537361",
       "stage": "Group",
-      "kickoffUtc": "2026-02-16T17:30:00.000Z",
+      "kickoffUtc": "2026-03-12T16:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "NED",
-        "name": "Netherlands"
+        "code": "POL",
+        "name": "Poland"
       },
       "awayTeam": {
-        "code": "JPN",
-        "name": "Japan"
+        "code": "TUN",
+        "name": "Tunisia"
       },
       "group": "F",
       "score": {
@@ -1087,15 +1087,15 @@
     {
       "id": "537362",
       "stage": "Group",
-      "kickoffUtc": "2026-02-16T20:00:00.000Z",
+      "kickoffUtc": "2026-03-12T19:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "F1",
-        "name": "Group F Team F1"
+        "code": "JPN",
+        "name": "Japan"
       },
       "awayTeam": {
-        "code": "TUN",
-        "name": "Tunisia"
+        "code": "NED",
+        "name": "Netherlands"
       },
       "group": "F",
       "score": {
@@ -1106,11 +1106,11 @@
     {
       "id": "537349",
       "stage": "Group",
-      "kickoffUtc": "2026-02-16T23:30:00.000Z",
+      "kickoffUtc": "2026-03-12T22:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "D1",
-        "name": "Group D Team D1"
+        "code": "PAR",
+        "name": "Paraguay"
       },
       "awayTeam": {
         "code": "USA",
@@ -1125,11 +1125,11 @@
     {
       "id": "537350",
       "stage": "Group",
-      "kickoffUtc": "2026-02-17T03:00:00.000Z",
+      "kickoffUtc": "2026-03-13T02:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "PAR",
-        "name": "Paraguay"
+        "code": "KOS",
+        "name": "Kosovo"
       },
       "awayTeam": {
         "code": "AUS",
@@ -1144,11 +1144,11 @@
     {
       "id": "537395",
       "stage": "Group",
-      "kickoffUtc": "2026-02-17T17:30:00.000Z",
+      "kickoffUtc": "2026-03-13T16:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "FRA",
-        "name": "France"
+        "code": "SUR",
+        "name": "Suriname"
       },
       "awayTeam": {
         "code": "SEN",
@@ -1163,15 +1163,15 @@
     {
       "id": "537396",
       "stage": "Group",
-      "kickoffUtc": "2026-02-17T20:00:00.000Z",
+      "kickoffUtc": "2026-03-13T19:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "NOR",
-        "name": "Norway"
+        "code": "FRA",
+        "name": "France"
       },
       "awayTeam": {
-        "code": "I1",
-        "name": "Group I Team I1"
+        "code": "NOR",
+        "name": "Norway"
       },
       "group": "I",
       "score": {
@@ -1182,26 +1182,7 @@
     {
       "id": "537373",
       "stage": "Group",
-      "kickoffUtc": "2026-02-17T23:30:00.000Z",
-      "status": "FINISHED",
-      "homeTeam": {
-        "code": "ESP",
-        "name": "Spain"
-      },
-      "awayTeam": {
-        "code": "URU",
-        "name": "Uruguay"
-      },
-      "group": "H",
-      "score": {
-        "home": 3,
-        "away": 2
-      }
-    },
-    {
-      "id": "537374",
-      "stage": "Group",
-      "kickoffUtc": "2026-02-18T03:00:00.000Z",
+      "kickoffUtc": "2026-03-13T22:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "CPV",
@@ -1213,6 +1194,25 @@
       },
       "group": "H",
       "score": {
+        "home": 3,
+        "away": 2
+      }
+    },
+    {
+      "id": "537374",
+      "stage": "Group",
+      "kickoffUtc": "2026-03-14T02:00:00.000Z",
+      "status": "FINISHED",
+      "homeTeam": {
+        "code": "ESP",
+        "name": "Spain"
+      },
+      "awayTeam": {
+        "code": "URU",
+        "name": "Uruguay"
+      },
+      "group": "H",
+      "score": {
         "home": 2,
         "away": 1
       }
@@ -1220,11 +1220,11 @@
     {
       "id": "537367",
       "stage": "Group",
-      "kickoffUtc": "2026-02-18T17:30:00.000Z",
+      "kickoffUtc": "2026-03-14T16:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "BEL",
-        "name": "Belgium"
+        "code": "IRN",
+        "name": "Iran"
       },
       "awayTeam": {
         "code": "NZL",
@@ -1239,15 +1239,15 @@
     {
       "id": "537368",
       "stage": "Group",
-      "kickoffUtc": "2026-02-18T20:00:00.000Z",
+      "kickoffUtc": "2026-03-14T19:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "IRN",
-        "name": "Iran"
-      },
-      "awayTeam": {
         "code": "EGY",
         "name": "Egypt"
+      },
+      "awayTeam": {
+        "code": "BEL",
+        "name": "Belgium"
       },
       "group": "G",
       "score": {
@@ -1258,11 +1258,11 @@
     {
       "id": "537413",
       "stage": "Group",
-      "kickoffUtc": "2026-02-18T23:30:00.000Z",
+      "kickoffUtc": "2026-03-14T22:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "ENG",
-        "name": "England"
+        "code": "PAN",
+        "name": "Panama"
       },
       "awayTeam": {
         "code": "GHA",
@@ -1277,15 +1277,15 @@
     {
       "id": "537414",
       "stage": "Group",
-      "kickoffUtc": "2026-02-19T03:00:00.000Z",
+      "kickoffUtc": "2026-03-15T02:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "PAN",
-        "name": "Panama"
-      },
-      "awayTeam": {
         "code": "CRO",
         "name": "Croatia"
+      },
+      "awayTeam": {
+        "code": "ENG",
+        "name": "England"
       },
       "group": "L",
       "score": {
@@ -1296,15 +1296,15 @@
     {
       "id": "537407",
       "stage": "Group",
-      "kickoffUtc": "2026-02-19T17:30:00.000Z",
+      "kickoffUtc": "2026-03-15T16:30:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "UZB",
-        "name": "Uzbekistan"
+        "code": "NCL",
+        "name": "New Caledonia"
       },
       "awayTeam": {
-        "code": "K1",
-        "name": "Group K Team K1"
+        "code": "UZB",
+        "name": "Uzbekistan"
       },
       "group": "K",
       "score": {
@@ -1315,15 +1315,15 @@
     {
       "id": "537408",
       "stage": "Group",
-      "kickoffUtc": "2026-02-19T20:00:00.000Z",
+      "kickoffUtc": "2026-03-15T19:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
-        "code": "POR",
-        "name": "Portugal"
-      },
-      "awayTeam": {
         "code": "COL",
         "name": "Colombia"
+      },
+      "awayTeam": {
+        "code": "POR",
+        "name": "Portugal"
       },
       "group": "K",
       "score": {
@@ -1334,7 +1334,26 @@
     {
       "id": "537401",
       "stage": "Group",
-      "kickoffUtc": "2026-02-19T23:30:00.000Z",
+      "kickoffUtc": "2026-03-15T22:30:00.000Z",
+      "status": "FINISHED",
+      "homeTeam": {
+        "code": "ARG",
+        "name": "Argentina"
+      },
+      "awayTeam": {
+        "code": "AUT",
+        "name": "Austria"
+      },
+      "group": "J",
+      "score": {
+        "home": 0,
+        "away": 2
+      }
+    },
+    {
+      "id": "537402",
+      "stage": "Group",
+      "kickoffUtc": "2026-03-16T02:00:00.000Z",
       "status": "FINISHED",
       "homeTeam": {
         "code": "ALG",
@@ -1347,320 +1366,237 @@
       "group": "J",
       "score": {
         "home": 0,
-        "away": 2
-      }
-    },
-    {
-      "id": "537402",
-      "stage": "Group",
-      "kickoffUtc": "2026-02-20T03:00:00.000Z",
-      "status": "FINISHED",
-      "homeTeam": {
-        "code": "ARG",
-        "name": "Argentina"
-      },
-      "awayTeam": {
-        "code": "AUT",
-        "name": "Austria"
-      },
-      "group": "J",
-      "score": {
-        "home": 0,
         "away": 3
       }
     },
     {
       "id": "537417",
       "stage": "R32",
-      "kickoffUtc": "2026-02-13T17:30:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "HAI",
-        "name": "Haiti"
-      },
-      "awayTeam": {
-        "code": "ESP",
-        "name": "Spain"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-hai",
-      "awayTeamId": "team-esp"
-    },
-    {
-      "id": "537423",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-13T20:00:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "TUN",
-        "name": "Tunisia"
-      },
-      "awayTeam": {
-        "code": "K1",
-        "name": "Group K Team K1"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-tun",
-      "awayTeamId": "team-k1"
-    },
-    {
-      "id": "537415",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-13T23:30:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "A1",
-        "name": "Group A Team A1"
-      },
-      "awayTeam": {
-        "code": "COL",
-        "name": "Colombia"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-a1",
-      "awayTeamId": "team-col"
-    },
-    {
-      "id": "537418",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-14T03:00:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "CIV",
-        "name": "Côte d'Ivoire"
-      },
-      "awayTeam": {
-        "code": "MAR",
-        "name": "Morocco"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-civ",
-      "awayTeamId": "team-mar"
-    },
-    {
-      "id": "537424",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-14T17:30:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "JPN",
-        "name": "Japan"
-      },
-      "awayTeam": {
-        "code": "NOR",
-        "name": "Norway"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-jpn",
-      "awayTeamId": "team-nor"
-    },
-    {
-      "id": "537416",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-14T20:00:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "CRO",
-        "name": "Croatia"
-      },
-      "awayTeam": {
-        "code": "JOR",
-        "name": "Jordan"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-cro",
-      "awayTeamId": "team-jor"
-    },
-    {
-      "id": "537425",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-14T23:30:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "QAT",
-        "name": "Qatar"
-      },
-      "awayTeam": {
-        "code": "GHA",
-        "name": "Ghana"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-qat",
-      "awayTeamId": "team-gha"
-    },
-    {
-      "id": "537426",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-15T03:00:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "KOR",
-        "name": "South Korea"
-      },
-      "awayTeam": {
-        "code": "UZB",
-        "name": "Uzbekistan"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-kor",
-      "awayTeamId": "team-uzb"
-    },
-    {
-      "id": "537422",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-15T17:30:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "SEN",
-        "name": "Senegal"
-      },
-      "awayTeam": {
-        "code": "NED",
-        "name": "Netherlands"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-sen",
-      "awayTeamId": "team-ned"
-    },
-    {
-      "id": "537421",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-15T20:00:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "SCO",
-        "name": "Scotland"
-      },
-      "awayTeam": {
-        "code": "CUR",
-        "name": "Curaçao"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-sco",
-      "awayTeamId": "team-cur"
-    },
-    {
-      "id": "537420",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-15T23:30:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "BEL",
-        "name": "Belgium"
-      },
-      "awayTeam": {
-        "code": "URU",
-        "name": "Uruguay"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-bel",
-      "awayTeamId": "team-uru"
-    },
-    {
-      "id": "537419",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-16T03:00:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "NZL",
-        "name": "New Zealand"
-      },
-      "awayTeam": {
-        "code": "PAN",
-        "name": "Panama"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-nzl",
-      "awayTeamId": "team-pan"
-    },
-    {
-      "id": "537429",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-16T17:30:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "GER",
-        "name": "Germany"
-      },
-      "awayTeam": {
-        "code": "CAN",
-        "name": "Canada"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-ger",
-      "awayTeamId": "team-can"
-    },
-    {
-      "id": "537428",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-16T20:00:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "USA",
-        "name": "United States"
-      },
-      "awayTeam": {
-        "code": "FRA",
-        "name": "France"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-usa",
-      "awayTeamId": "team-fra"
-    },
-    {
-      "id": "537427",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-16T23:30:00.000Z",
-      "status": "SCHEDULED",
-      "homeTeam": {
-        "code": "AUT",
-        "name": "Austria"
-      },
-      "awayTeam": {
-        "code": "ARG",
-        "name": "Argentina"
-      },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-aut",
-      "awayTeamId": "team-arg"
-    },
-    {
-      "id": "537430",
-      "stage": "R32",
-      "kickoffUtc": "2026-02-17T03:00:00.000Z",
+      "kickoffUtc": "2026-03-09T16:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "CPV",
         "name": "Cape Verde Islands"
       },
       "awayTeam": {
-        "code": "D1",
-        "name": "Group D Team D1"
+        "code": "ITA",
+        "name": "Italy"
+      }
+    },
+    {
+      "id": "537423",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-09T19:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "HAI",
+        "name": "Haiti"
       },
-      "round": "R32",
-      "knockoutRoundIndex": 0,
-      "homeTeamId": "team-cpv",
-      "awayTeamId": "team-d1"
+      "awayTeam": {
+        "code": "CUR",
+        "name": "Curaçao"
+      }
+    },
+    {
+      "id": "537415",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-09T22:30:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "JOR",
+        "name": "Jordan"
+      },
+      "awayTeam": {
+        "code": "POR",
+        "name": "Portugal"
+      }
+    },
+    {
+      "id": "537418",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-10T02:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "CRO",
+        "name": "Croatia"
+      },
+      "awayTeam": {
+        "code": "SUI",
+        "name": "Switzerland"
+      }
+    },
+    {
+      "id": "537424",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-10T16:30:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "ALG",
+        "name": "Algeria"
+      },
+      "awayTeam": {
+        "code": "UZB",
+        "name": "Uzbekistan"
+      }
+    },
+    {
+      "id": "537416",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-10T19:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "USA",
+        "name": "United States"
+      },
+      "awayTeam": {
+        "code": "NED",
+        "name": "Netherlands"
+      }
+    },
+    {
+      "id": "537425",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-10T22:30:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "SUR",
+        "name": "Suriname"
+      },
+      "awayTeam": {
+        "code": "SCO",
+        "name": "Scotland"
+      }
+    },
+    {
+      "id": "537426",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-11T02:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "PAR",
+        "name": "Paraguay"
+      },
+      "awayTeam": {
+        "code": "NZL",
+        "name": "New Zealand"
+      }
+    },
+    {
+      "id": "537422",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-11T16:30:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "ECU",
+        "name": "Ecuador"
+      },
+      "awayTeam": {
+        "code": "SEN",
+        "name": "Senegal"
+      }
+    },
+    {
+      "id": "537421",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-11T19:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "FRA",
+        "name": "France"
+      },
+      "awayTeam": {
+        "code": "AUT",
+        "name": "Austria"
+      }
+    },
+    {
+      "id": "537420",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-11T22:30:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "ESP",
+        "name": "Spain"
+      },
+      "awayTeam": {
+        "code": "KOR",
+        "name": "South Korea"
+      }
+    },
+    {
+      "id": "537419",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-12T02:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "IRN",
+        "name": "Iran"
+      },
+      "awayTeam": {
+        "code": "BRA",
+        "name": "Brazil"
+      }
+    },
+    {
+      "id": "537429",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-12T16:30:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "IRL",
+        "name": "Republic of Ireland"
+      },
+      "awayTeam": {
+        "code": "CAN",
+        "name": "Canada"
+      }
+    },
+    {
+      "id": "537428",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-12T19:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "KSA",
+        "name": "Saudi Arabia"
+      },
+      "awayTeam": {
+        "code": "RSA",
+        "name": "South Africa"
+      }
+    },
+    {
+      "id": "537427",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-12T22:30:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "CIV",
+        "name": "Ivory Coast"
+      },
+      "awayTeam": {
+        "code": "NCL",
+        "name": "New Caledonia"
+      }
+    },
+    {
+      "id": "537430",
+      "stage": "R32",
+      "kickoffUtc": "2026-03-13T02:00:00.000Z",
+      "status": "SCHEDULED",
+      "homeTeam": {
+        "code": "ENG",
+        "name": "England"
+      },
+      "awayTeam": {
+        "code": "TUN",
+        "name": "Tunisia"
+      }
     },
     {
       "id": "537376",
       "stage": "R16",
-      "kickoffUtc": "2026-02-16T17:30:00.000Z",
+      "kickoffUtc": "2026-03-12T16:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1669,14 +1605,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "R16",
-      "knockoutRoundIndex": 1
+      }
     },
     {
       "id": "537375",
       "stage": "R16",
-      "kickoffUtc": "2026-02-16T20:00:00.000Z",
+      "kickoffUtc": "2026-03-12T19:00:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1685,14 +1619,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "R16",
-      "knockoutRoundIndex": 1
+      }
     },
     {
       "id": "537377",
       "stage": "R16",
-      "kickoffUtc": "2026-02-16T23:30:00.000Z",
+      "kickoffUtc": "2026-03-12T22:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1701,14 +1633,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "R16",
-      "knockoutRoundIndex": 1
+      }
     },
     {
       "id": "537378",
       "stage": "R16",
-      "kickoffUtc": "2026-02-17T03:00:00.000Z",
+      "kickoffUtc": "2026-03-13T02:00:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1717,14 +1647,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "R16",
-      "knockoutRoundIndex": 1
+      }
     },
     {
       "id": "537379",
       "stage": "R16",
-      "kickoffUtc": "2026-02-17T17:30:00.000Z",
+      "kickoffUtc": "2026-03-13T16:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1733,14 +1661,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "R16",
-      "knockoutRoundIndex": 1
+      }
     },
     {
       "id": "537380",
       "stage": "R16",
-      "kickoffUtc": "2026-02-17T20:00:00.000Z",
+      "kickoffUtc": "2026-03-13T19:00:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1749,14 +1675,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "R16",
-      "knockoutRoundIndex": 1
+      }
     },
     {
       "id": "537381",
       "stage": "R16",
-      "kickoffUtc": "2026-02-17T23:30:00.000Z",
+      "kickoffUtc": "2026-03-13T22:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1765,14 +1689,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "R16",
-      "knockoutRoundIndex": 1
+      }
     },
     {
       "id": "537382",
       "stage": "R16",
-      "kickoffUtc": "2026-02-18T03:00:00.000Z",
+      "kickoffUtc": "2026-03-14T02:00:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1781,14 +1703,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "R16",
-      "knockoutRoundIndex": 1
+      }
     },
     {
       "id": "537383",
       "stage": "QF",
-      "kickoffUtc": "2026-02-19T17:30:00.000Z",
+      "kickoffUtc": "2026-03-15T16:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1797,14 +1717,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "QF",
-      "knockoutRoundIndex": 2
+      }
     },
     {
       "id": "537384",
       "stage": "QF",
-      "kickoffUtc": "2026-02-19T20:00:00.000Z",
+      "kickoffUtc": "2026-03-15T19:00:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1813,14 +1731,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "QF",
-      "knockoutRoundIndex": 2
+      }
     },
     {
       "id": "537385",
       "stage": "QF",
-      "kickoffUtc": "2026-02-19T23:30:00.000Z",
+      "kickoffUtc": "2026-03-15T22:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1829,14 +1745,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "QF",
-      "knockoutRoundIndex": 2
+      }
     },
     {
       "id": "537386",
       "stage": "QF",
-      "kickoffUtc": "2026-02-20T03:00:00.000Z",
+      "kickoffUtc": "2026-03-16T02:00:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1845,14 +1759,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "QF",
-      "knockoutRoundIndex": 2
+      }
     },
     {
       "id": "537387",
       "stage": "SF",
-      "kickoffUtc": "2026-02-22T17:30:00.000Z",
+      "kickoffUtc": "2026-03-18T16:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1861,14 +1773,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "SF",
-      "knockoutRoundIndex": 3
+      }
     },
     {
       "id": "537388",
       "stage": "SF",
-      "kickoffUtc": "2026-02-22T20:00:00.000Z",
+      "kickoffUtc": "2026-03-18T19:00:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1877,14 +1787,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "SF",
-      "knockoutRoundIndex": 3
+      }
     },
     {
       "id": "537389",
       "stage": "Third",
-      "kickoffUtc": "2026-02-25T17:30:00.000Z",
+      "kickoffUtc": "2026-03-21T16:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1893,14 +1801,12 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "Third",
-      "knockoutRoundIndex": 4
+      }
     },
     {
       "id": "537390",
       "stage": "Final",
-      "kickoffUtc": "2026-02-28T17:30:00.000Z",
+      "kickoffUtc": "2026-03-24T16:30:00.000Z",
       "status": "SCHEDULED",
       "homeTeam": {
         "code": "TBD",
@@ -1909,9 +1815,7 @@
       "awayTeam": {
         "code": "TBD",
         "name": "To be decided"
-      },
-      "round": "Final",
-      "knockoutRoundIndex": 5
+      }
     }
   ]
 }

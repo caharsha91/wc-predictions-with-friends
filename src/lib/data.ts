@@ -64,6 +64,12 @@ function buildCacheKey(path: string, mode: DataMode): string {
   return `${mode}:${readDemoScenarioId()}:${path}`
 }
 
+function resolveCacheTtlMs(path: string, mode: DataMode): number {
+  // Demo snapshots are regenerated often during local development, so always revalidate.
+  if (mode === 'demo') return 0
+  return CACHE_TTL_MS[path] ?? DEFAULT_TTL_MS
+}
+
 function readCachedEntry<T>(cacheKey: string): CacheEntry<T> | null {
   const memory = memoryCache.get(cacheKey) as CacheEntry<T> | undefined
   if (memory) return memory
@@ -99,7 +105,7 @@ async function fetchJson<T>(path: string, options?: FetchOptions): Promise<T> {
   const primaryPath = buildDatasetPath(path, mode)
   const cacheKey = buildCacheKey(path, mode)
   const url = `${import.meta.env.BASE_URL}${primaryPath}`
-  const ttl = CACHE_TTL_MS[path] ?? DEFAULT_TTL_MS
+  const ttl = resolveCacheTtlMs(path, mode)
   const cached = readCachedEntry<T>(cacheKey)
 
   if (isFresh(cached, ttl)) {

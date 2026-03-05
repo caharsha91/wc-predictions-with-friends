@@ -1,23 +1,23 @@
 {
-  "updatedAt": "2026-02-08T22:03:33.719Z",
+  "updatedAt": "2026-03-05T03:33:02.822Z",
   "qualifiers": [
-    "USA",
-    "IRN",
-    "RSA",
     "UZB",
-    "CRO",
-    "CIV",
-    "I1",
-    "CAN"
+    "IRN",
+    "WAL",
+    "HAI",
+    "MAR",
+    "CUR",
+    "AUT",
+    "MEX"
   ],
   "qualifiers_hint": [
-    "USA",
-    "IRN",
-    "RSA",
     "UZB",
-    "CRO",
-    "CIV",
-    "I1",
-    "CAN"
+    "IRN",
+    "WAL",
+    "HAI",
+    "MAR",
+    "CUR",
+    "AUT",
+    "MEX"
   ]
 }

@@ -1,243 +1,22 @@
 {
-  "lastUpdated": "2026-02-08T22:48:33.028Z",
+  "lastUpdated": "2026-03-05T04:18:02.118Z",
   "entries": [
     {
       "member": {
-        "id": "user-8",
-        "name": "Demo Player 08",
-        "email": "user-8@demo.local",
+        "id": "user-37",
+        "name": "Demo Player 37",
+        "email": "user-37@demo.local",
         "isAdmin": false,
-        "isMember": true
+        "isMember": true,
+        "favoriteTeamCode": "SWE"
       },
-      "totalPoints": 155,
-      "exactPoints": 46,
-      "resultPoints": 58,
-      "knockoutPoints": 0,
-      "bracketPoints": 51,
-      "exactCount": 5,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.059Z"
-    },
-    {
-      "member": {
-        "id": "user-6",
-        "name": "Demo Player 06",
-        "email": "user-6@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 153,
-      "exactPoints": 41,
-      "resultPoints": 72,
-      "knockoutPoints": 0,
-      "bracketPoints": 40,
-      "exactCount": 5,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.058Z"
-    },
-    {
-      "member": {
-        "id": "user-50",
-        "name": "Demo Player 50",
-        "email": "user-50@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 146,
-      "exactPoints": 42,
-      "resultPoints": 68,
-      "knockoutPoints": 0,
-      "bracketPoints": 36,
-      "exactCount": 6,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.064Z"
-    },
-    {
-      "member": {
-        "id": "user-10",
-        "name": "Demo Player 10",
-        "email": "user-10@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 144,
-      "exactPoints": 44,
-      "resultPoints": 54,
-      "knockoutPoints": 0,
-      "bracketPoints": 46,
-      "exactCount": 7,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.059Z"
-    },
-    {
-      "member": {
-        "id": "user-49",
-        "name": "Demo Player 49",
-        "email": "user-49@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 143,
-      "exactPoints": 36,
-      "resultPoints": 70,
-      "knockoutPoints": 0,
-      "bracketPoints": 37,
-      "exactCount": 5,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-35",
-        "name": "Demo Player 35",
-        "email": "user-35@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 143,
-      "exactPoints": 33,
-      "resultPoints": 62,
-      "knockoutPoints": 0,
-      "bracketPoints": 48,
-      "exactCount": 5,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
-    },
-    {
-      "member": {
-        "id": "user-13",
-        "name": "Demo Player 13",
-        "email": "user-13@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 141,
+      "totalPoints": 126,
       "exactPoints": 36,
       "resultPoints": 62,
       "knockoutPoints": 0,
-      "bracketPoints": 43,
-      "exactCount": 3,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.060Z"
-    },
-    {
-      "member": {
-        "id": "user-39",
-        "name": "Demo Player 39",
-        "email": "user-39@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 141,
-      "exactPoints": 32,
-      "resultPoints": 62,
-      "knockoutPoints": 0,
-      "bracketPoints": 47,
-      "exactCount": 3,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-44",
-        "name": "Demo Player 44",
-        "email": "user-44@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 138,
-      "exactPoints": 41,
-      "resultPoints": 54,
-      "knockoutPoints": 0,
-      "bracketPoints": 43,
+      "bracketPoints": 28,
       "exactCount": 4,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-32",
-        "name": "Demo Player 32",
-        "email": "user-32@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 137,
-      "exactPoints": 36,
-      "resultPoints": 48,
-      "knockoutPoints": 0,
-      "bracketPoints": 53,
-      "exactCount": 2,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
-    },
-    {
-      "member": {
-        "id": "user-45",
-        "name": "Demo Player 45",
-        "email": "user-45@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 134,
-      "exactPoints": 40,
-      "resultPoints": 56,
-      "knockoutPoints": 0,
-      "bracketPoints": 38,
-      "exactCount": 6,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-5",
-        "name": "Demo Player 05",
-        "email": "user-5@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 132,
-      "exactPoints": 39,
-      "resultPoints": 56,
-      "knockoutPoints": 0,
-      "bracketPoints": 37,
-      "exactCount": 3,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.058Z"
-    },
-    {
-      "member": {
-        "id": "user-1",
-        "name": "Demo Player 01",
-        "email": "user-1@demo.local",
-        "isAdmin": true,
-        "isMember": true
-      },
-      "totalPoints": 132,
-      "exactPoints": 35,
-      "resultPoints": 56,
-      "knockoutPoints": 0,
-      "bracketPoints": 41,
-      "exactCount": 3,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.058Z"
-    },
-    {
-      "member": {
-        "id": "user-22",
-        "name": "Demo Player 22",
-        "email": "user-22@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 130,
-      "exactPoints": 39,
-      "resultPoints": 56,
-      "knockoutPoints": 0,
-      "bracketPoints": 35,
-      "exactCount": 5,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
+      "picksCount": 67
     },
     {
       "member": {
@@ -245,237 +24,16 @@
         "name": "Demo Player 31",
         "email": "user-31@demo.local",
         "isAdmin": false,
-        "isMember": true
+        "isMember": true,
+        "favoriteTeamCode": "JPN"
       },
-      "totalPoints": 127,
-      "exactPoints": 35,
-      "resultPoints": 58,
-      "knockoutPoints": 0,
-      "bracketPoints": 34,
-      "exactCount": 3,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
-    },
-    {
-      "member": {
-        "id": "user-9",
-        "name": "Demo Player 09",
-        "email": "user-9@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 127,
-      "exactPoints": 33,
-      "resultPoints": 54,
-      "knockoutPoints": 0,
-      "bracketPoints": 40,
-      "exactCount": 4,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.059Z"
-    },
-    {
-      "member": {
-        "id": "user-34",
-        "name": "Demo Player 34",
-        "email": "user-34@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 127,
-      "exactPoints": 33,
-      "resultPoints": 52,
-      "knockoutPoints": 0,
-      "bracketPoints": 42,
-      "exactCount": 3,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
-    },
-    {
-      "member": {
-        "id": "user-27",
-        "name": "Demo Player 27",
-        "email": "user-27@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 126,
-      "exactPoints": 32,
-      "resultPoints": 56,
-      "knockoutPoints": 0,
-      "bracketPoints": 38,
-      "exactCount": 2,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
-    },
-    {
-      "member": {
-        "id": "user-36",
-        "name": "Demo Player 36",
-        "email": "user-36@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 125,
-      "exactPoints": 36,
-      "resultPoints": 42,
-      "knockoutPoints": 0,
-      "bracketPoints": 47,
-      "exactCount": 3,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
-    },
-    {
-      "member": {
-        "id": "user-38",
-        "name": "Demo Player 38",
-        "email": "user-38@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 124,
-      "exactPoints": 38,
-      "resultPoints": 46,
-      "knockoutPoints": 0,
-      "bracketPoints": 40,
-      "exactCount": 3,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
-    },
-    {
-      "member": {
-        "id": "user-26",
-        "name": "Demo Player 26",
-        "email": "user-26@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 124,
-      "exactPoints": 29,
-      "resultPoints": 58,
-      "knockoutPoints": 0,
-      "bracketPoints": 37,
-      "exactCount": 2,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
-    },
-    {
-      "member": {
-        "id": "user-46",
-        "name": "Demo Player 46",
-        "email": "user-46@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 123,
-      "exactPoints": 24,
-      "resultPoints": 60,
-      "knockoutPoints": 0,
-      "bracketPoints": 39,
-      "exactCount": 1,
-      "picksCount": 70,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-24",
-        "name": "Demo Player 24",
-        "email": "user-24@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 122,
-      "exactPoints": 41,
-      "resultPoints": 48,
-      "knockoutPoints": 0,
-      "bracketPoints": 33,
-      "exactCount": 5,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
-    },
-    {
-      "member": {
-        "id": "user-18",
-        "name": "Demo Player 18",
-        "email": "user-18@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 121,
-      "exactPoints": 39,
-      "resultPoints": 54,
-      "knockoutPoints": 0,
-      "bracketPoints": 28,
-      "exactCount": 3,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
-    },
-    {
-      "member": {
-        "id": "user-3",
-        "name": "Demo Player 03",
-        "email": "user-3@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 121,
+      "totalPoints": 117,
       "exactPoints": 34,
-      "resultPoints": 50,
+      "resultPoints": 64,
       "knockoutPoints": 0,
-      "bracketPoints": 37,
-      "exactCount": 2,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.058Z"
-    },
-    {
-      "member": {
-        "id": "user-30",
-        "name": "Demo Player 30",
-        "email": "user-30@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 121,
-      "exactPoints": 31,
-      "resultPoints": 46,
-      "knockoutPoints": 0,
-      "bracketPoints": 44,
-      "exactCount": 2,
-      "picksCount": 70,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
-    },
-    {
-      "member": {
-        "id": "user-48",
-        "name": "Demo Player 48",
-        "email": "user-48@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 117,
-      "exactPoints": 27,
-      "resultPoints": 56,
-      "knockoutPoints": 0,
-      "bracketPoints": 34,
-      "exactCount": 2,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-17",
-        "name": "Demo Player 17",
-        "email": "user-17@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 117,
-      "exactPoints": 26,
-      "resultPoints": 50,
-      "knockoutPoints": 0,
-      "bracketPoints": 41,
-      "exactCount": 1,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.060Z"
+      "bracketPoints": 19,
+      "exactCount": 4,
+      "picksCount": 66
     },
     {
       "member": {
@@ -483,271 +41,16 @@
         "name": "Demo Player 47",
         "email": "user-47@demo.local",
         "isAdmin": false,
-        "isMember": true
+        "isMember": true,
+        "favoriteTeamCode": "ENG"
       },
-      "totalPoints": 116,
-      "exactPoints": 32,
-      "resultPoints": 46,
+      "totalPoints": 111,
+      "exactPoints": 35,
+      "resultPoints": 52,
       "knockoutPoints": 0,
-      "bracketPoints": 38,
+      "bracketPoints": 24,
       "exactCount": 4,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-11",
-        "name": "Demo Player 11",
-        "email": "user-11@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 116,
-      "exactPoints": 28,
-      "resultPoints": 42,
-      "knockoutPoints": 0,
-      "bracketPoints": 46,
-      "exactCount": 1,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.059Z"
-    },
-    {
-      "member": {
-        "id": "user-4",
-        "name": "Demo Player 04",
-        "email": "user-4@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 116,
-      "exactPoints": 27,
-      "resultPoints": 48,
-      "knockoutPoints": 0,
-      "bracketPoints": 41,
-      "exactCount": 2,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.058Z"
-    },
-    {
-      "member": {
-        "id": "user-42",
-        "name": "Demo Player 42",
-        "email": "user-42@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 113,
-      "exactPoints": 25,
-      "resultPoints": 46,
-      "knockoutPoints": 0,
-      "bracketPoints": 42,
-      "exactCount": 4,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-41",
-        "name": "Demo Player 41",
-        "email": "user-41@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 112,
-      "exactPoints": 24,
-      "resultPoints": 48,
-      "knockoutPoints": 0,
-      "bracketPoints": 40,
-      "exactCount": 2,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-12",
-        "name": "Demo Player 12",
-        "email": "user-12@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 112,
-      "exactPoints": 18,
-      "resultPoints": 56,
-      "knockoutPoints": 0,
-      "bracketPoints": 38,
-      "exactCount": 2,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.059Z"
-    },
-    {
-      "member": {
-        "id": "user-15",
-        "name": "Demo Player 15",
-        "email": "user-15@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 111,
-      "exactPoints": 38,
-      "resultPoints": 42,
-      "knockoutPoints": 0,
-      "bracketPoints": 31,
-      "exactCount": 3,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.060Z"
-    },
-    {
-      "member": {
-        "id": "user-40",
-        "name": "Demo Player 40",
-        "email": "user-40@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 111,
-      "exactPoints": 28,
-      "resultPoints": 50,
-      "knockoutPoints": 0,
-      "bracketPoints": 33,
-      "exactCount": 1,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
-    },
-    {
-      "member": {
-        "id": "user-14",
-        "name": "Demo Player 14",
-        "email": "user-14@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 111,
-      "exactPoints": 28,
-      "resultPoints": 44,
-      "knockoutPoints": 0,
-      "bracketPoints": 39,
-      "exactCount": 4,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.060Z"
-    },
-    {
-      "member": {
-        "id": "user-28",
-        "name": "Demo Player 28",
-        "email": "user-28@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 111,
-      "exactPoints": 22,
-      "resultPoints": 40,
-      "knockoutPoints": 0,
-      "bracketPoints": 49,
-      "exactCount": 0,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
-    },
-    {
-      "member": {
-        "id": "user-21",
-        "name": "Demo Player 21",
-        "email": "user-21@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 110,
-      "exactPoints": 29,
-      "resultPoints": 56,
-      "knockoutPoints": 0,
-      "bracketPoints": 25,
-      "exactCount": 3,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
-    },
-    {
-      "member": {
-        "id": "user-7",
-        "name": "Demo Player 07",
-        "email": "user-7@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 109,
-      "exactPoints": 28,
-      "resultPoints": 38,
-      "knockoutPoints": 0,
-      "bracketPoints": 43,
-      "exactCount": 2,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.059Z"
-    },
-    {
-      "member": {
-        "id": "user-2",
-        "name": "Demo Player 02",
-        "email": "user-2@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 109,
-      "exactPoints": 25,
-      "resultPoints": 42,
-      "knockoutPoints": 0,
-      "bracketPoints": 42,
-      "exactCount": 3,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.058Z"
-    },
-    {
-      "member": {
-        "id": "user-37",
-        "name": "Demo Player 37",
-        "email": "user-37@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 108,
-      "exactPoints": 31,
-      "resultPoints": 44,
-      "knockoutPoints": 0,
-      "bracketPoints": 33,
-      "exactCount": 1,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
-    },
-    {
-      "member": {
-        "id": "user-25",
-        "name": "Demo Player 25",
-        "email": "user-25@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 108,
-      "exactPoints": 15,
-      "resultPoints": 62,
-      "knockoutPoints": 0,
-      "bracketPoints": 31,
-      "exactCount": 0,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
-    },
-    {
-      "member": {
-        "id": "user-19",
-        "name": "Demo Player 19",
-        "email": "user-19@demo.local",
-        "isAdmin": false,
-        "isMember": true
-      },
-      "totalPoints": 106,
-      "exactPoints": 30,
-      "resultPoints": 38,
-      "knockoutPoints": 0,
-      "bracketPoints": 38,
-      "exactCount": 2,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
+      "picksCount": 67
     },
     {
       "member": {
@@ -755,50 +58,101 @@
         "name": "Demo Player 16",
         "email": "user-16@demo.local",
         "isAdmin": false,
-        "isMember": true
+        "isMember": true,
+        "favoriteTeamCode": "POL"
       },
-      "totalPoints": 105,
-      "exactPoints": 34,
-      "resultPoints": 38,
+      "totalPoints": 111,
+      "exactPoints": 35,
+      "resultPoints": 50,
       "knockoutPoints": 0,
-      "bracketPoints": 33,
-      "exactCount": 4,
-      "picksCount": 70,
-      "earliestSubmission": "2026-02-08T22:03:33.060Z"
+      "bracketPoints": 26,
+      "exactCount": 6,
+      "picksCount": 64
     },
     {
       "member": {
-        "id": "user-33",
-        "name": "Demo Player 33",
-        "email": "user-33@demo.local",
+        "id": "user-41",
+        "name": "Demo Player 41",
+        "email": "user-41@demo.local",
         "isAdmin": false,
-        "isMember": true
+        "isMember": true,
+        "favoriteTeamCode": "JAM"
       },
-      "totalPoints": 105,
-      "exactPoints": 28,
+      "totalPoints": 110,
+      "exactPoints": 30,
+      "resultPoints": 50,
+      "knockoutPoints": 0,
+      "bracketPoints": 30,
+      "exactCount": 3,
+      "picksCount": 67
+    },
+    {
+      "member": {
+        "id": "user-9",
+        "name": "Demo Player 09",
+        "email": "user-9@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "JPN"
+      },
+      "totalPoints": 108,
+      "exactPoints": 31,
+      "resultPoints": 56,
+      "knockoutPoints": 0,
+      "bracketPoints": 21,
+      "exactCount": 4,
+      "picksCount": 67
+    },
+    {
+      "member": {
+        "id": "user-35",
+        "name": "Demo Player 35",
+        "email": "user-35@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "TUR"
+      },
+      "totalPoints": 107,
+      "exactPoints": 43,
       "resultPoints": 46,
       "knockoutPoints": 0,
-      "bracketPoints": 31,
-      "exactCount": 3,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
+      "bracketPoints": 18,
+      "exactCount": 6,
+      "picksCount": 69
     },
     {
       "member": {
-        "id": "user-23",
-        "name": "Demo Player 23",
-        "email": "user-23@demo.local",
+        "id": "user-8",
+        "name": "Demo Player 08",
+        "email": "user-8@demo.local",
         "isAdmin": false,
-        "isMember": true
+        "isMember": true,
+        "favoriteTeamCode": "MEX"
       },
-      "totalPoints": 103,
-      "exactPoints": 26,
-      "resultPoints": 38,
+      "totalPoints": 104,
+      "exactPoints": 30,
+      "resultPoints": 50,
       "knockoutPoints": 0,
-      "bracketPoints": 39,
-      "exactCount": 1,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
+      "bracketPoints": 24,
+      "exactCount": 5,
+      "picksCount": 66
+    },
+    {
+      "member": {
+        "id": "user-39",
+        "name": "Demo Player 39",
+        "email": "user-39@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "IRQ"
+      },
+      "totalPoints": 102,
+      "exactPoints": 36,
+      "resultPoints": 50,
+      "knockoutPoints": 0,
+      "bracketPoints": 16,
+      "exactCount": 5,
+      "picksCount": 67
     },
     {
       "member": {
@@ -806,33 +160,407 @@
         "name": "Demo Player 43",
         "email": "user-43@demo.local",
         "isAdmin": false,
-        "isMember": true
+        "isMember": true,
+        "favoriteTeamCode": "WAL"
       },
-      "totalPoints": 101,
-      "exactPoints": 29,
-      "resultPoints": 32,
+      "totalPoints": 102,
+      "exactPoints": 31,
+      "resultPoints": 56,
       "knockoutPoints": 0,
-      "bracketPoints": 40,
-      "exactCount": 1,
-      "picksCount": 70,
-      "earliestSubmission": "2026-02-08T22:03:33.063Z"
+      "bracketPoints": 15,
+      "exactCount": 3,
+      "picksCount": 70
     },
     {
       "member": {
-        "id": "user-29",
-        "name": "Demo Player 29",
-        "email": "user-29@demo.local",
+        "id": "user-40",
+        "name": "Demo Player 40",
+        "email": "user-40@demo.local",
         "isAdmin": false,
-        "isMember": true
+        "isMember": true,
+        "favoriteTeamCode": "COD"
       },
-      "totalPoints": 101,
+      "totalPoints": 102,
+      "exactPoints": 31,
+      "resultPoints": 50,
+      "knockoutPoints": 0,
+      "bracketPoints": 21,
+      "exactCount": 4,
+      "picksCount": 70
+    },
+    {
+      "member": {
+        "id": "user-28",
+        "name": "Demo Player 28",
+        "email": "user-28@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "ESP"
+      },
+      "totalPoints": 102,
+      "exactPoints": 27,
+      "resultPoints": 60,
+      "knockoutPoints": 0,
+      "bracketPoints": 15,
+      "exactCount": 2,
+      "picksCount": 55
+    },
+    {
+      "member": {
+        "id": "user-12",
+        "name": "Demo Player 12",
+        "email": "user-12@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "ITA"
+      },
+      "totalPoints": 100,
       "exactPoints": 25,
+      "resultPoints": 60,
+      "knockoutPoints": 0,
+      "bracketPoints": 15,
+      "exactCount": 1,
+      "picksCount": 68
+    },
+    {
+      "member": {
+        "id": "user-44",
+        "name": "Demo Player 44",
+        "email": "user-44@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "IRL"
+      },
+      "totalPoints": 99,
+      "exactPoints": 26,
+      "resultPoints": 52,
+      "knockoutPoints": 0,
+      "bracketPoints": 21,
+      "exactCount": 3,
+      "picksCount": 69
+    },
+    {
+      "member": {
+        "id": "user-22",
+        "name": "Demo Player 22",
+        "email": "user-22@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "IRL"
+      },
+      "totalPoints": 98,
+      "exactPoints": 32,
+      "resultPoints": 38,
+      "knockoutPoints": 0,
+      "bracketPoints": 28,
+      "exactCount": 5,
+      "picksCount": 53
+    },
+    {
+      "member": {
+        "id": "user-7",
+        "name": "Demo Player 07",
+        "email": "user-7@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "USA"
+      },
+      "totalPoints": 98,
+      "exactPoints": 31,
+      "resultPoints": 40,
+      "knockoutPoints": 0,
+      "bracketPoints": 27,
+      "exactCount": 3,
+      "picksCount": 67
+    },
+    {
+      "member": {
+        "id": "user-30",
+        "name": "Demo Player 30",
+        "email": "user-30@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "MEX"
+      },
+      "totalPoints": 97,
+      "exactPoints": 22,
+      "resultPoints": 50,
+      "knockoutPoints": 0,
+      "bracketPoints": 25,
+      "exactCount": 1,
+      "picksCount": 63
+    },
+    {
+      "member": {
+        "id": "user-10",
+        "name": "Demo Player 10",
+        "email": "user-10@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "KOR"
+      },
+      "totalPoints": 96,
+      "exactPoints": 29,
+      "resultPoints": 46,
+      "knockoutPoints": 0,
+      "bracketPoints": 21,
+      "exactCount": 3,
+      "picksCount": 70
+    },
+    {
+      "member": {
+        "id": "user-33",
+        "name": "Demo Player 33",
+        "email": "user-33@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "DEN"
+      },
+      "totalPoints": 96,
+      "exactPoints": 27,
       "resultPoints": 44,
       "knockoutPoints": 0,
-      "bracketPoints": 32,
+      "bracketPoints": 25,
       "exactCount": 2,
-      "picksCount": 72,
-      "earliestSubmission": "2026-02-08T22:03:33.062Z"
+      "picksCount": 68
+    },
+    {
+      "member": {
+        "id": "user-2",
+        "name": "Demo Player 02",
+        "email": "user-2@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "BRA"
+      },
+      "totalPoints": 95,
+      "exactPoints": 24,
+      "resultPoints": 50,
+      "knockoutPoints": 0,
+      "bracketPoints": 21,
+      "exactCount": 1,
+      "picksCount": 69
+    },
+    {
+      "member": {
+        "id": "user-18",
+        "name": "Demo Player 18",
+        "email": "user-18@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "COD"
+      },
+      "totalPoints": 95,
+      "exactPoints": 18,
+      "resultPoints": 48,
+      "knockoutPoints": 0,
+      "bracketPoints": 29,
+      "exactCount": 1,
+      "picksCount": 57
+    },
+    {
+      "member": {
+        "id": "user-11",
+        "name": "Demo Player 11",
+        "email": "user-11@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "DEN"
+      },
+      "totalPoints": 93,
+      "exactPoints": 31,
+      "resultPoints": 48,
+      "knockoutPoints": 0,
+      "bracketPoints": 14,
+      "exactCount": 4,
+      "picksCount": 66
+    },
+    {
+      "member": {
+        "id": "user-48",
+        "name": "Demo Player 48",
+        "email": "user-48@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "FRA"
+      },
+      "totalPoints": 92,
+      "exactPoints": 31,
+      "resultPoints": 46,
+      "knockoutPoints": 0,
+      "bracketPoints": 15,
+      "exactCount": 3,
+      "picksCount": 66
+    },
+    {
+      "member": {
+        "id": "user-13",
+        "name": "Demo Player 13",
+        "email": "user-13@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "TUR"
+      },
+      "totalPoints": 92,
+      "exactPoints": 29,
+      "resultPoints": 42,
+      "knockoutPoints": 0,
+      "bracketPoints": 21,
+      "exactCount": 3,
+      "picksCount": 70
+    },
+    {
+      "member": {
+        "id": "user-19",
+        "name": "Demo Player 19",
+        "email": "user-19@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "JAM"
+      },
+      "totalPoints": 91,
+      "exactPoints": 24,
+      "resultPoints": 34,
+      "knockoutPoints": 0,
+      "bracketPoints": 33,
+      "exactCount": 3,
+      "picksCount": 50
+    },
+    {
+      "member": {
+        "id": "user-5",
+        "name": "Demo Player 05",
+        "email": "user-5@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "GER"
+      },
+      "totalPoints": 90,
+      "exactPoints": 31,
+      "resultPoints": 50,
+      "knockoutPoints": 0,
+      "bracketPoints": 9,
+      "exactCount": 2,
+      "picksCount": 68
+    },
+    {
+      "member": {
+        "id": "user-50",
+        "name": "Demo Player 50",
+        "email": "user-50@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "ESP"
+      },
+      "totalPoints": 90,
+      "exactPoints": 27,
+      "resultPoints": 48,
+      "knockoutPoints": 0,
+      "bracketPoints": 15,
+      "exactCount": 1,
+      "picksCount": 68
+    },
+    {
+      "member": {
+        "id": "user-34",
+        "name": "Demo Player 34",
+        "email": "user-34@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "ITA"
+      },
+      "totalPoints": 89,
+      "exactPoints": 27,
+      "resultPoints": 46,
+      "knockoutPoints": 0,
+      "bracketPoints": 16,
+      "exactCount": 3,
+      "picksCount": 70
+    },
+    {
+      "member": {
+        "id": "user-38",
+        "name": "Demo Player 38",
+        "email": "user-38@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "POL"
+      },
+      "totalPoints": 89,
+      "exactPoints": 25,
+      "resultPoints": 42,
+      "knockoutPoints": 0,
+      "bracketPoints": 22,
+      "exactCount": 2,
+      "picksCount": 63
+    },
+    {
+      "member": {
+        "id": "user-6",
+        "name": "Demo Player 06",
+        "email": "user-6@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "ESP"
+      },
+      "totalPoints": 89,
+      "exactPoints": 15,
+      "resultPoints": 56,
+      "knockoutPoints": 0,
+      "bracketPoints": 18,
+      "exactCount": 0,
+      "picksCount": 62
+    },
+    {
+      "member": {
+        "id": "user-4",
+        "name": "Demo Player 04",
+        "email": "user-4@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "FRA"
+      },
+      "totalPoints": 88,
+      "exactPoints": 27,
+      "resultPoints": 40,
+      "knockoutPoints": 0,
+      "bracketPoints": 21,
+      "exactCount": 1,
+      "picksCount": 68
+    },
+    {
+      "member": {
+        "id": "user-45",
+        "name": "Demo Player 45",
+        "email": "user-45@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "ARG"
+      },
+      "totalPoints": 86,
+      "exactPoints": 32,
+      "resultPoints": 42,
+      "knockoutPoints": 0,
+      "bracketPoints": 12,
+      "exactCount": 3,
+      "picksCount": 64
+    },
+    {
+      "member": {
+        "id": "user-25",
+        "name": "Demo Player 25",
+        "email": "user-25@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "ENG"
+      },
+      "totalPoints": 86,
+      "exactPoints": 30,
+      "resultPoints": 34,
+      "knockoutPoints": 0,
+      "bracketPoints": 22,
+      "exactCount": 5,
+      "picksCount": 53
     },
     {
       "member": {
@@ -840,16 +568,288 @@
         "name": "Demo Player 20",
         "email": "user-20@demo.local",
         "isAdmin": false,
-        "isMember": true
+        "isMember": true,
+        "favoriteTeamCode": "NIR"
       },
-      "totalPoints": 100,
-      "exactPoints": 31,
+      "totalPoints": 85,
+      "exactPoints": 28,
+      "resultPoints": 48,
+      "knockoutPoints": 0,
+      "bracketPoints": 9,
+      "exactCount": 5,
+      "picksCount": 54
+    },
+    {
+      "member": {
+        "id": "user-32",
+        "name": "Demo Player 32",
+        "email": "user-32@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "KOR"
+      },
+      "totalPoints": 85,
+      "exactPoints": 26,
       "resultPoints": 44,
       "knockoutPoints": 0,
-      "bracketPoints": 25,
+      "bracketPoints": 15,
+      "exactCount": 1,
+      "picksCount": 67
+    },
+    {
+      "member": {
+        "id": "user-3",
+        "name": "Demo Player 03",
+        "email": "user-3@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "ENG"
+      },
+      "totalPoints": 84,
+      "exactPoints": 30,
+      "resultPoints": 38,
+      "knockoutPoints": 0,
+      "bracketPoints": 16,
       "exactCount": 2,
-      "picksCount": 71,
-      "earliestSubmission": "2026-02-08T22:03:33.061Z"
+      "picksCount": 68
+    },
+    {
+      "member": {
+        "id": "user-46",
+        "name": "Demo Player 46",
+        "email": "user-46@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "BRA"
+      },
+      "totalPoints": 84,
+      "exactPoints": 29,
+      "resultPoints": 42,
+      "knockoutPoints": 0,
+      "bracketPoints": 13,
+      "exactCount": 2,
+      "picksCount": 68
+    },
+    {
+      "member": {
+        "id": "user-49",
+        "name": "Demo Player 49",
+        "email": "user-49@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "GER"
+      },
+      "totalPoints": 84,
+      "exactPoints": 26,
+      "resultPoints": 46,
+      "knockoutPoints": 0,
+      "bracketPoints": 12,
+      "exactCount": 2,
+      "picksCount": 66
+    },
+    {
+      "member": {
+        "id": "user-1",
+        "name": "Demo Player 01",
+        "email": "user-1@demo.local",
+        "isAdmin": true,
+        "isMember": true,
+        "favoriteTeamCode": "ARG"
+      },
+      "totalPoints": 79,
+      "exactPoints": 25,
+      "resultPoints": 42,
+      "knockoutPoints": 0,
+      "bracketPoints": 12,
+      "exactCount": 1,
+      "picksCount": 66
+    },
+    {
+      "member": {
+        "id": "user-42",
+        "name": "Demo Player 42",
+        "email": "user-42@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "NIR"
+      },
+      "totalPoints": 78,
+      "exactPoints": 26,
+      "resultPoints": 44,
+      "knockoutPoints": 0,
+      "bracketPoints": 8,
+      "exactCount": 3,
+      "picksCount": 67
+    },
+    {
+      "member": {
+        "id": "user-23",
+        "name": "Demo Player 23",
+        "email": "user-23@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "ARG"
+      },
+      "totalPoints": 77,
+      "exactPoints": 27,
+      "resultPoints": 34,
+      "knockoutPoints": 0,
+      "bracketPoints": 16,
+      "exactCount": 4,
+      "picksCount": 58
+    },
+    {
+      "member": {
+        "id": "user-36",
+        "name": "Demo Player 36",
+        "email": "user-36@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "UKR"
+      },
+      "totalPoints": 73,
+      "exactPoints": 28,
+      "resultPoints": 30,
+      "knockoutPoints": 0,
+      "bracketPoints": 15,
+      "exactCount": 2,
+      "picksCount": 68
+    },
+    {
+      "member": {
+        "id": "user-27",
+        "name": "Demo Player 27",
+        "email": "user-27@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "GER"
+      },
+      "totalPoints": 73,
+      "exactPoints": 25,
+      "resultPoints": 36,
+      "knockoutPoints": 0,
+      "bracketPoints": 12,
+      "exactCount": 1,
+      "picksCount": 54
+    },
+    {
+      "member": {
+        "id": "user-15",
+        "name": "Demo Player 15",
+        "email": "user-15@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "SWE"
+      },
+      "totalPoints": 73,
+      "exactPoints": 20,
+      "resultPoints": 38,
+      "knockoutPoints": 0,
+      "bracketPoints": 15,
+      "exactCount": 2,
+      "picksCount": 52
+    },
+    {
+      "member": {
+        "id": "user-26",
+        "name": "Demo Player 26",
+        "email": "user-26@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "FRA"
+      },
+      "totalPoints": 72,
+      "exactPoints": 19,
+      "resultPoints": 36,
+      "knockoutPoints": 0,
+      "bracketPoints": 17,
+      "exactCount": 3,
+      "picksCount": 60
+    },
+    {
+      "member": {
+        "id": "user-24",
+        "name": "Demo Player 24",
+        "email": "user-24@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "BRA"
+      },
+      "totalPoints": 71,
+      "exactPoints": 22,
+      "resultPoints": 34,
+      "knockoutPoints": 0,
+      "bracketPoints": 15,
+      "exactCount": 3,
+      "picksCount": 49
+    },
+    {
+      "member": {
+        "id": "user-17",
+        "name": "Demo Player 17",
+        "email": "user-17@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "IRQ"
+      },
+      "totalPoints": 70,
+      "exactPoints": 23,
+      "resultPoints": 38,
+      "knockoutPoints": 0,
+      "bracketPoints": 9,
+      "exactCount": 0,
+      "picksCount": 59
+    },
+    {
+      "member": {
+        "id": "user-14",
+        "name": "Demo Player 14",
+        "email": "user-14@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "UKR"
+      },
+      "totalPoints": 67,
+      "exactPoints": 21,
+      "resultPoints": 34,
+      "knockoutPoints": 0,
+      "bracketPoints": 12,
+      "exactCount": 1,
+      "picksCount": 55
+    },
+    {
+      "member": {
+        "id": "user-29",
+        "name": "Demo Player 29",
+        "email": "user-29@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "USA"
+      },
+      "totalPoints": 59,
+      "exactPoints": 18,
+      "resultPoints": 26,
+      "knockoutPoints": 0,
+      "bracketPoints": 15,
+      "exactCount": 2,
+      "picksCount": 53
+    },
+    {
+      "member": {
+        "id": "user-21",
+        "name": "Demo Player 21",
+        "email": "user-21@demo.local",
+        "isAdmin": false,
+        "isMember": true,
+        "favoriteTeamCode": "WAL"
+      },
+      "totalPoints": 52,
+      "exactPoints": 13,
+      "resultPoints": 26,
+      "knockoutPoints": 0,
+      "bracketPoints": 13,
+      "exactCount": 0,
+      "picksCount": 49
     }
   ]
 }

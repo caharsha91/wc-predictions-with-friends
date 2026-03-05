@@ -1,23 +1,23 @@
 {
-  "updatedAt": "2026-02-08T22:03:33.389Z",
+  "updatedAt": "2026-03-05T03:33:02.478Z",
   "qualifiers": [
-    "A1",
-    "RSA",
-    "USA",
-    "KSA",
-    "JPN",
-    "CAN",
-    "D1",
-    "I1"
+    "PAN",
+    "JAM",
+    "POR",
+    "IRN",
+    "ALG",
+    "CUR",
+    "ARG",
+    "SCO"
   ],
   "qualifiers_hint": [
-    "A1",
-    "RSA",
-    "USA",
-    "KSA",
-    "JPN",
-    "CAN",
-    "D1",
-    "I1"
+    "PAN",
+    "JAM",
+    "POR",
+    "IRN",
+    "ALG",
+    "CUR",
+    "ARG",
+    "SCO"
   ]
 }

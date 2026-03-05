@@ -3,6 +3,44 @@
   "scenarioLabel": "Mid group stage",
   "seed": 202,
   "users": 50,
-  "generatedAt": "2026-02-08T22:03:32.742Z",
+  "completionProfile": {
+    "picksGlobalMultiplier": 0.78,
+    "picksHighActivityRatio": 0.55,
+    "picksLowActivityMultiplier": 0.7,
+    "groupCompleteRatio": 0.55,
+    "groupPartialMin": 5,
+    "groupPartialMax": 9,
+    "bestThirdPartialMin": 6,
+    "bestThirdPartialMax": 8,
+    "knockoutUserRatio": 0,
+    "knockoutPickChance": 0
+  },
+  "selectedQualifiersByGroup": {
+    "A": {
+      "code": "IRL",
+      "name": "Republic of Ireland"
+    },
+    "B": {
+      "code": "NIR",
+      "name": "Northern Ireland"
+    },
+    "D": {
+      "code": "KOS",
+      "name": "Kosovo"
+    },
+    "F": {
+      "code": "SWE",
+      "name": "Sweden"
+    },
+    "I": {
+      "code": "SUR",
+      "name": "Suriname"
+    },
+    "K": {
+      "code": "NCL",
+      "name": "New Caledonia"
+    }
+  },
+  "generatedAt": "2026-03-05T03:33:01.840Z",
   "timezone": "America/Los_Angeles"
 }
