@@ -740,17 +740,6 @@
   pointer-events: none;
 }
 
-.group-stage-v2-meta {
-  border-color: var(--v2-border-medium);
-  background:
-    radial-gradient(110% 120% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 36%, transparent), transparent 72%),
-    linear-gradient(
-      132deg,
-      color-mix(in srgb, var(--card) 95%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 48%, transparent) 100%
-    );
-}
-
 .group-stage-v2-group-nav {
   border-color: color-mix(in srgb, var(--v2-border-soft) 72%, transparent);
   background:
@@ -763,9 +752,6 @@
 }
 
 .group-stage-v2-status,
-.group-stage-v2-table,
-.group-stage-v2-best-third,
-.group-stage-v2-standings,
 .group-stage-v2-leaderboard {
   border-color: color-mix(in srgb, var(--v2-border-soft) 70%, transparent);
   background:
@@ -777,26 +763,18 @@
     );
 }
 
-.group-stage-v2-best-third-grid {
-  align-items: stretch;
-}
-
 .group-stage-v2-best-third-row {
-  min-height: 3.5rem;
+  min-height: 3.1rem;
   border-color: color-mix(in srgb, var(--v2-border-soft) 62%, transparent);
   background: color-mix(in srgb, var(--background) 92%, transparent);
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard);
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .group-stage-v2-best-third-row:hover {
   background: color-mix(in srgb, var(--accent-soft) 32%, transparent);
   border-color: color-mix(in srgb, var(--v2-glow-medium) 42%, var(--v2-border-soft) 58%);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 34%, transparent);
-  transform: translateY(-1px);
 }
 
 .group-stage-v2-best-third-row[data-selected='true'] {
@@ -807,66 +785,40 @@
 
 .group-stage-v2-best-third-row[data-disabled='true'] {
   opacity: 0.72;
-  transform: none;
-  box-shadow: none;
 }
 
 .group-stage-v2-best-third-row[data-animate='true'] {
   animation: group-stage-best-third-pulse 0.9s var(--motion-ease-emphasis) 1;
 }
 
-.group-stage-v2-cap-wrap {
-  position: relative;
+.group-stage-v2-tip-indicator {
   display: inline-flex;
+  height: 1rem;
+  width: 1rem;
   align-items: center;
   justify-content: center;
-}
-
-.group-stage-v2-cap-indicator {
-  height: 1.05rem;
-  width: 1.05rem;
   border-radius: 999px;
-  border: 1px solid var(--tone-warning-border);
-  background: var(--tone-warning-bg-soft);
-  color: var(--foreground);
-  font-size: 0.68rem;
+  border: 1px solid color-mix(in srgb, var(--v2-border-medium) 80%, transparent);
+  background: color-mix(in srgb, var(--background) 90%, transparent);
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
   font-weight: 700;
   line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.group-stage-v2-cap-tooltip {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 0.4rem);
-  width: 11.5rem;
+.group-stage-v2-block-tooltip {
+  min-width: 11rem;
+  max-width: 12rem;
   border-radius: 0.45rem;
-  border: 1px solid color-mix(in srgb, var(--overlay-border-soft) 82%, transparent);
-  background: var(--overlay-surface-elevated);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 24%, transparent),
-    var(--overlay-shadow);
+  border: 1px solid color-mix(in srgb, var(--v2-border-medium) 82%, var(--v2-glow-soft) 18%);
+  background: color-mix(in srgb, var(--popover) 96%, transparent);
+  box-shadow: var(--shadow1);
   padding: 0.35rem 0.5rem;
-  color: var(--popover-foreground);
   font-size: 0.65rem;
   font-weight: 500;
-  line-height: 1.3;
-  opacity: 0;
-  transform: translateY(2px);
-  transition:
-    opacity var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard);
-  pointer-events: none;
-  z-index: 6;
-}
-
-.group-stage-v2-best-third-row:hover .group-stage-v2-cap-tooltip,
-.group-stage-v2-best-third-row:focus-visible .group-stage-v2-cap-tooltip,
-.group-stage-v2-best-third-row:focus-within .group-stage-v2-cap-tooltip {
-  opacity: 1;
-  transform: translateY(0);
+  line-height: 1.25;
+  color: var(--popover-foreground);
+  white-space: normal;
 }
 
 @keyframes group-stage-best-third-pulse {

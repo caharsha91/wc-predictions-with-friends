@@ -30,6 +30,7 @@ import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import { LeaderboardCardCurated, type LeaderboardCardRow } from '../components/v2/LeaderboardSideListV2'
+import SideListPanelV2 from '../components/v2/SideListPanelV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
 import TeamIdentityInlineV2 from '../components/v2/TeamIdentityInlineV2'
 import {
@@ -198,9 +199,7 @@ export default function GroupStagePage() {
   const [savedRowGroupId, setSavedRowGroupId] = useState<string | null>(null)
   const savedRowTimerRef = useRef<number | null>(null)
   const [lastPersistedBestThirds, setLastPersistedBestThirds] = useState<string[]>([])
-  const [bestThirdHelperText, setBestThirdHelperText] = useState<string | null>(null)
   const [bestThirdAnimatedGroupId, setBestThirdAnimatedGroupId] = useState<string | null>(null)
-  const bestThirdHelperTimerRef = useRef<number | null>(null)
   const bestThirdAnimationTimerRef = useRef<number | null>(null)
   const selectedThirdCodeByGroupRef = useRef<Record<string, string>>({})
   const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
@@ -604,22 +603,13 @@ export default function GroupStagePage() {
     selectedThirdCodeByGroupRef.current = selectedThirdCodeByGroup
     if (!changedGroupId) return
 
-    setBestThirdHelperText(`Selection stays with Group ${changedGroupId}`)
     setBestThirdAnimatedGroupId(changedGroupId)
 
     if (typeof window === 'undefined') return
-    if (bestThirdHelperTimerRef.current !== null) {
-      window.clearTimeout(bestThirdHelperTimerRef.current)
-    }
     if (bestThirdAnimationTimerRef.current !== null) {
       window.clearTimeout(bestThirdAnimationTimerRef.current)
     }
 
-    bestThirdHelperTimerRef.current = window.setTimeout(() => {
-      setBestThirdHelperText((current) =>
-        current === `Selection stays with Group ${changedGroupId}` ? null : current
-      )
-    }, 2600)
     bestThirdAnimationTimerRef.current = window.setTimeout(() => {
       setBestThirdAnimatedGroupId((current) => (current === changedGroupId ? null : current))
     }, 1100)
@@ -629,9 +619,6 @@ export default function GroupStagePage() {
     return () => {
       if (savedRowTimerRef.current !== null && typeof window !== 'undefined') {
         window.clearTimeout(savedRowTimerRef.current)
-      }
-      if (bestThirdHelperTimerRef.current !== null && typeof window !== 'undefined') {
-        window.clearTimeout(bestThirdHelperTimerRef.current)
       }
       if (bestThirdAnimationTimerRef.current !== null && typeof window !== 'undefined') {
         window.clearTimeout(bestThirdAnimationTimerRef.current)
@@ -912,7 +899,7 @@ export default function GroupStagePage() {
   const groupPicksAlert =
     groupStage.saveStatus === 'locked' ? (
       <Alert tone="warning" title="Lock enforced">
-        Group-stage edits are blocked after lock.
+        Group-stage edits are blocked after lock ({groupLockLabel}).
       </Alert>
     ) : null
 
@@ -943,7 +930,6 @@ export default function GroupStagePage() {
       totalCount={BEST_THIRD_SLOTS}
       meterLabel={bestThirdMeterLabel}
       hintLabel={bestThirdHintLabel}
-      helperText={bestThirdHelperText}
       statusLabel={bestThirdsFinal ? 'Final' : groupClosedByTime ? 'Locked' : null}
       defaultCollapsed={false}
       isReadOnly={isReadOnly}
@@ -977,67 +963,67 @@ export default function GroupStagePage() {
   )
 
   const standingsPanel = (
-    <SectionCardV2 tone="panel" density="none" className="group-stage-v2-standings min-h-0 rounded-xl overflow-hidden">
-      <div className="flex h-11 items-center justify-between gap-2 border-b border-border/35 px-3">
-        <div className="text-[13px] font-semibold tracking-[0.02em] text-foreground">Standings</div>
+    <SideListPanelV2
+      title="Published standings"
+      subtitle="Use this panel to compare your picks by group."
+      className="group-stage-v2-leaderboard min-h-0"
+      actions={(
         <Badge tone="secondary" className="h-7 rounded-full px-2 text-[12px] normal-case tracking-normal">
           Group {selectedStandingsGroup}
         </Badge>
-      </div>
-
-      <div className="p-3">
-        <Table
-          unframed
-          className="[&_th]:h-9 [&_th]:border-b-[color:color-mix(in_srgb,var(--border)_42%,transparent)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)] [&_td]:px-2 [&_td]:py-0 [&_td]:text-[14px]"
-        >
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th>Pts</th>
-              <th>GD</th>
-              <th>GF</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(standings.standingsByGroup.get(selectedStandingsGroup) ?? []).map((entry) => {
-              const pickedFirst = selectedGroupTopTwo.first === entry.code
-              const pickedSecond = selectedGroupTopTwo.second === entry.code
-              return (
-                <tr
-                  key={`group-standing-${selectedStandingsGroup}-${entry.code}`}
-                  className="hover:bg-background/45 transition-colors"
-                >
-                  <td>
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <TeamIdentityInlineV2 code={entry.code} label={entry.code} />
-                      {pickedFirst ? <Badge tone="info" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Your 1st</Badge> : null}
-                      {pickedSecond ? <Badge tone="secondary" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Your 2nd</Badge> : null}
-                    </div>
-                  </td>
-                  <td>{entry.points}</td>
-                  <td>{entry.gd}</td>
-                  <td>{entry.gf}</td>
-                </tr>
-              )
-            })}
-            {(standings.standingsByGroup.get(selectedStandingsGroup) ?? []).length === 0 ? (
-              <tr>
-                <td colSpan={4} className="text-center text-[13px] text-muted-foreground">
-                  No standings data yet.
+      )}
+    >
+      <Table
+        unframed
+        className="[&_th]:h-9 [&_th]:border-b-[color:color-mix(in_srgb,var(--border)_42%,transparent)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)] [&_td]:px-2 [&_td]:py-0 [&_td]:text-[14px]"
+      >
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th>Pts</th>
+            <th>GD</th>
+            <th>GF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(standings.standingsByGroup.get(selectedStandingsGroup) ?? []).map((entry) => {
+            const pickedFirst = selectedGroupTopTwo.first === entry.code
+            const pickedSecond = selectedGroupTopTwo.second === entry.code
+            return (
+              <tr
+                key={`group-standing-${selectedStandingsGroup}-${entry.code}`}
+                className="hover:bg-background/45 transition-colors"
+              >
+                <td>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <TeamIdentityInlineV2 code={entry.code} label={entry.code} />
+                    {pickedFirst ? <Badge tone="info" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Predicted 1st</Badge> : null}
+                    {pickedSecond ? <Badge tone="secondary" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Predicted 2nd</Badge> : null}
+                  </div>
                 </td>
+                <td>{entry.points}</td>
+                <td>{entry.gd}</td>
+                <td>{entry.gf}</td>
               </tr>
-            ) : null}
-          </tbody>
-        </Table>
-      </div>
-    </SectionCardV2>
+            )
+          })}
+          {(standings.standingsByGroup.get(selectedStandingsGroup) ?? []).length === 0 ? (
+            <tr>
+              <td colSpan={4} className="text-center text-[13px] text-muted-foreground">
+                No standings data yet.
+              </td>
+            </tr>
+          ) : null}
+        </tbody>
+      </Table>
+    </SideListPanelV2>
   )
 
   const groupStageStateCopy =
     groupsFinal || isFinalResultsMode
-      ? `Locked: Final. Lock deadline: ${groupLockLabel}.`
+      ? 'State: Final'
       : isReadOnly
-        ? `Locked: Edits closed. Lock deadline: ${groupLockLabel}.`
+        ? 'State: Locked'
         : `Editable until: ${groupLockLabel}.`
 
   const groupStagePublishedCopy = groupsFinal || isFinalResultsMode ? 'Published: Final' : 'Published: Latest snapshot'

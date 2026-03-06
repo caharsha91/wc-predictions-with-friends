@@ -7,7 +7,7 @@ import { cn } from '../../lib/utils'
 import { Button, ButtonLink } from '../ui/Button'
 import InlineStateHintV2 from '../v2/InlineStateHintV2'
 import RowShellV2 from '../v2/RowShellV2'
-import SectionCardV2 from '../v2/SectionCardV2'
+import SideListPanelV2 from '../v2/SideListPanelV2'
 import StatusTagV2 from '../v2/StatusTagV2'
 import TeamIdentityInlineV2 from '../v2/TeamIdentityInlineV2'
 import V2Card from '../v2/V2Card'
@@ -117,13 +117,6 @@ export function StatusBar({
   )
 }
 
-function rowSurfaceClass(result: GroupPlacementStatus): string {
-  if (result === 'correct') return 'bg-success/10'
-  if (result === 'incorrect') return 'bg-destructive/10'
-  if (result === 'locked') return 'bg-warn/10'
-  return 'bg-background/40'
-}
-
 function resolveRowDelta({
   row,
   first,
@@ -146,6 +139,20 @@ function resolveRowDelta({
   if (first) potential += groupQualifierPoints
   if (second) potential += groupQualifierPoints
   return potential
+}
+
+function resolveDeltaTag(row: GroupStageDenseRow, delta: number): { tone: 'success' | 'secondary'; label: string } {
+  if (row.complete) {
+    return {
+      tone: delta > 0 ? 'success' : 'secondary',
+      label: `Scored +${delta}`
+    }
+  }
+
+  return {
+    tone: 'secondary',
+    label: `Max +${delta}`
+  }
 }
 
 type GroupPicksDenseTableProps = {
@@ -230,139 +237,116 @@ export function GroupPicksDenseTable({
   }
 
   return (
-    <SectionCardV2 tone="panel" density="none" className="group-stage-v2-table rounded-xl overflow-hidden">
-      <div className="flex flex-col">
-        <div className="flex min-h-11 flex-wrap items-center gap-2 border-b border-border/35 px-3">
-          <div className="text-[13px] font-semibold tracking-[0.02em] text-foreground">Group picks</div>
-          <div className="text-[13px] text-muted-foreground">{groupsDone}/{groupsTotal} groups complete</div>
-        </div>
-        {isReadOnly ? (
-          <div className="px-3 pt-2 text-[11px] text-muted-foreground">
-            Group picks are locked for this snapshot.
-          </div>
-        ) : null}
+    <SideListPanelV2
+      title="Your group predictions"
+      subtitle="Drag each group to rank teams 1-4."
+      actions={<div className="text-[13px] text-muted-foreground">{groupsDone}/{groupsTotal} groups complete</div>}
+      className="group-stage-v2-leaderboard"
+      contentClassName="v2-list-divider space-y-0 p-0"
+    >
+      <div className="min-h-0">
+        {rows.map((row) => {
+          const firstPick = row.ranking[0] ?? ''
+          const secondPick = row.ranking[1] ?? ''
+          const rowDelta = resolveRowDelta({
+            row,
+            first: firstPick,
+            second: secondPick,
+            groupQualifierPoints
+          })
+          const deltaTag = resolveDeltaTag(row, rowDelta)
+          const teamByCode = new Map(row.teams.map((team) => [team.code, team]))
+          const rowIsSaving = saveStatus === 'saving' && savingRowGroupId === row.groupId
+          const rowIsSaved = saveStatus !== 'saving' && savedRowGroupId === row.groupId
+          const rowIsEditing = (dragging?.groupId === row.groupId || dragOver?.groupId === row.groupId) && !isReadOnly
+          const interactionTag = isReadOnly
+            ? { tone: 'locked' as const, label: 'Locked' }
+            : rowIsSaving
+              ? { tone: 'warning' as const, label: 'Saving order...' }
+              : rowIsSaved
+                ? { tone: 'success' as const, label: 'Order saved' }
+                : null
+          const interactionHintLabel = rowIsEditing ? 'Unsaved order' : null
 
-        <div className="min-h-0 flex-1 overflow-auto">
-          <div className="space-y-3 p-3">
-            {rows.map((row) => {
-              const firstPick = row.ranking[0] ?? ''
-              const secondPick = row.ranking[1] ?? ''
-              const rowDelta = resolveRowDelta({
-                row,
-                first: firstPick,
-                second: secondPick,
-                groupQualifierPoints
-              })
-              const teamByCode = new Map(row.teams.map((team) => [team.code, team]))
-              const rowIsSaving = saveStatus === 'saving' && savingRowGroupId === row.groupId
-              const rowIsSaved = saveStatus !== 'saving' && savedRowGroupId === row.groupId
-              const rowIsEditing =
-                (dragging?.groupId === row.groupId || dragOver?.groupId === row.groupId) && !isReadOnly
-              const interactionTag = isReadOnly
-                ? { tone: 'locked' as const, label: 'Locked' }
-                : rowIsSaving
-                  ? { tone: 'warning' as const, label: 'Saving order...' }
-                  : rowIsSaved
-                    ? { tone: 'success' as const, label: 'Order saved' }
-                    : null
-              const interactionHintLabel = rowIsEditing ? 'Unsaved order' : null
-
-              return (
-                <div
-                  key={`group-row-${row.groupId}`}
-                  className={cn(
-                    'rounded-xl p-3 shadow-[var(--shadow0)]',
-                    rowSurfaceClass(row.rowResult),
-                    saveStatus === 'error' ? 'ring-1 ring-destructive/40' : undefined
-                  )}
-                >
-                  <div className="mb-3 flex flex-wrap items-center gap-2 text-[13px]">
-                    <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg bg-background/55 text-[12px] font-medium text-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_26%,transparent)]">
-                      {row.groupId}
-                    </span>
-                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-                      <StatusTagV2 tone={row.rankingComplete ? 'success' : 'warning'}>
-                        {row.rankingComplete ? 'All set' : 'Incomplete'}
-                      </StatusTagV2>
-                      <StatusTagV2 tone="secondary">
-                        Potential +{rowDelta}
-                      </StatusTagV2>
-                      {interactionTag ? (
-                        <StatusTagV2 tone={interactionTag.tone}>{interactionTag.label}</StatusTagV2>
-                      ) : interactionHintLabel ? (
-                        <InlineStateHintV2>{interactionHintLabel}</InlineStateHintV2>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {row.ranking.map((teamCode, index) => {
-                      const team = teamByCode.get(teamCode)
-                      const isDragging = dragging?.groupId === row.groupId && dragging.code === teamCode
-                      const isDragOver = dragOver?.groupId === row.groupId && dragOver.code === teamCode
-
-                      return (
-                        <RowShellV2
-                          key={`${row.groupId}-${teamCode}`}
-                          state={isReadOnly ? 'disabled' : isDragOver || rowIsEditing ? 'selected' : 'default'}
-                          draggable={!isDragDisabled}
-                          className={cn(
-                            'flex min-h-12 items-center justify-between gap-2 px-2.5 py-2.5',
-                            !isDragDisabled ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
-                            isDragging ? 'opacity-70 ring-1 ring-ring/40' : undefined,
-                            isDragOver ? 'border-ring/70' : undefined
-                          )}
-                          onDragStart={(event) => handleDragStart(event, row, teamCode)}
-                          onDragOver={(event) => handleDragOver(event, row, teamCode)}
-                          onDrop={(event) => handleDrop(event, row, teamCode)}
-                          onDragEnd={clearDragState}
-                          interactive={!isDragDisabled}
-                        >
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-background/55 text-[11px] font-semibold text-muted-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_24%,transparent)]">
-                              {index + 1}
-                            </span>
-                            <TeamIdentityInlineV2
-                              code={team?.code ?? teamCode}
-                              name={team?.name ?? teamCode}
-                              showName
-                              className="min-w-0 text-[14px] leading-tight text-foreground"
-                              primaryClassName="font-semibold tracking-wide"
-                            />
-                            <span className="truncate text-[12px] text-muted-foreground">
-                              {slotContextLabel(index)}
-                            </span>
-                          </div>
-
-                          <div className="flex shrink-0 items-center gap-2">
-                            {isReadOnly || rowIsSaving || rowIsSaved || rowIsEditing ? (
-                              <span className="text-[12px] text-muted-foreground">
-                                {isReadOnly
-                                  ? 'Locked'
-                                  : rowIsSaving
-                                    ? 'Saving order...'
-                                    : rowIsSaved
-                                      ? 'Order saved'
-                                      : 'Unsaved order'}
-                              </span>
-                            ) : null}
-                            <span className="font-mono text-[13px] leading-none text-muted-foreground" aria-hidden="true">
-                              ::
-                            </span>
-                          </div>
-                        </RowShellV2>
-                      )
-                    })}
-                  </div>
+          return (
+            <div
+              key={`group-row-${row.groupId}`}
+              className={cn('px-3 py-2.5', saveStatus === 'error' ? 'ring-1 ring-destructive/40 ring-inset' : undefined)}
+            >
+              <div className="mb-2.5 flex flex-wrap items-start gap-2 text-[13px]">
+                <div className="min-w-0 text-[12px] text-muted-foreground">
+                  {`Published matches complete: ${row.finishedCount}/${row.totalCount}`}
                 </div>
-              )
-            })}
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                  <StatusTagV2 tone={row.rankingComplete ? 'success' : 'warning'}>
+                    {row.rankingComplete ? 'All set' : 'Incomplete'}
+                  </StatusTagV2>
+                  <StatusTagV2 tone={deltaTag.tone}>
+                    {deltaTag.label}
+                  </StatusTagV2>
+                  {interactionTag ? (
+                    <StatusTagV2 tone={interactionTag.tone}>{interactionTag.label}</StatusTagV2>
+                  ) : interactionHintLabel ? (
+                    <InlineStateHintV2>{interactionHintLabel}</InlineStateHintV2>
+                  ) : null}
+                </div>
+              </div>
+              <div className="space-y-2">
+                {row.ranking.map((teamCode, index) => {
+                  const team = teamByCode.get(teamCode)
+                  const isDragging = dragging?.groupId === row.groupId && dragging.code === teamCode
+                  const isDragOver = dragOver?.groupId === row.groupId && dragOver.code === teamCode
 
-            {rows.length === 0 ? <div className="h-10 px-1 text-[13px] text-muted-foreground">No groups available.</div> : null}
-          </div>
-        </div>
+                  return (
+                    <RowShellV2
+                      key={`${row.groupId}-${teamCode}`}
+                      state={isReadOnly ? 'disabled' : isDragOver || rowIsEditing ? 'selected' : 'default'}
+                      tone="inset"
+                      draggable={!isDragDisabled}
+                      className={cn(
+                        'flex min-h-12 items-center justify-between gap-2 px-2.5 py-2.5',
+                        !isDragDisabled ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
+                        isDragging ? 'opacity-70 ring-1 ring-ring/40' : undefined,
+                        isDragOver ? 'border-ring/70' : undefined
+                      )}
+                      onDragStart={(event) => handleDragStart(event, row, teamCode)}
+                      onDragOver={(event) => handleDragOver(event, row, teamCode)}
+                      onDrop={(event) => handleDrop(event, row, teamCode)}
+                      onDragEnd={clearDragState}
+                      interactive={!isDragDisabled}
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-background/55 text-[11px] font-semibold text-muted-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_24%,transparent)]">
+                          {index + 1}
+                        </span>
+                        <TeamIdentityInlineV2
+                          code={team?.code ?? teamCode}
+                          name={team?.name ?? teamCode}
+                          showName
+                          className="min-w-0 text-[14px] leading-tight text-foreground"
+                          primaryClassName="font-semibold tracking-wide"
+                        />
+                        <span className="truncate text-[12px] text-muted-foreground">
+                          {slotContextLabel(index)}
+                        </span>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="font-mono text-[13px] leading-none text-muted-foreground" aria-hidden="true">
+                          ::
+                        </span>
+                      </div>
+                    </RowShellV2>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+
+        {rows.length === 0 ? <div className="px-3 py-3 text-[13px] text-muted-foreground">No groups available.</div> : null}
       </div>
-    </SectionCardV2>
+    </SideListPanelV2>
   )
 }
 
@@ -372,7 +356,6 @@ type BestThirdPicksCompactProps = {
   totalCount: number
   meterLabel: string
   hintLabel: string
-  helperText?: string | null
   statusLabel?: string | null
   defaultCollapsed: boolean
   isReadOnly: boolean
@@ -397,13 +380,19 @@ function bestThirdStatusText(status: BestThirdStatus): string | null {
   return null
 }
 
+function bestThirdStatusTone(status: BestThirdStatus): 'success' | 'danger' | 'locked' | null {
+  if (status === 'qualified') return 'success'
+  if (status === 'missed') return 'danger'
+  if (status === 'locked') return 'locked'
+  return null
+}
+
 export function BestThirdPicksCompact({
   tiles,
   selectedCount,
   totalCount,
   meterLabel,
   hintLabel,
-  helperText,
   statusLabel,
   defaultCollapsed,
   isReadOnly,
@@ -420,12 +409,12 @@ export function BestThirdPicksCompact({
   }, [defaultCollapsed])
 
   return (
-    <SectionCardV2 tone="panel" density="none" className="group-stage-v2-best-third rounded-xl overflow-hidden">
-      <div className="flex h-10 items-center gap-2 border-b border-border/35 px-3">
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold tracking-[0.02em] text-foreground">{meterLabel}</div>
-        </div>
-
+    <SideListPanelV2
+      title={meterLabel}
+      subtitle="Select 8 third-place groups."
+      className="group-stage-v2-leaderboard"
+      contentClassName="space-y-2 p-3"
+      actions={(
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <StatusTagV2 tone={selectedCount < totalCount ? 'warning' : 'success'}>
             {hintLabel}
@@ -438,27 +427,40 @@ export function BestThirdPicksCompact({
           ) : null}
 
           {!isReadOnly && isDirty ? (
-            <Button size="sm" className="h-9 rounded-lg px-3 text-[13px]" loading={saveStatus === 'saving'} onClick={onSave}>
+            <Button size="sm" className="h-8 rounded-md px-2.5 text-[12px]" loading={saveStatus === 'saving'} onClick={onSave}>
               Save
             </Button>
           ) : null}
 
-          <Button size="sm" variant="ghost" className="h-8 w-8 rounded-lg px-0 text-[13px]" onClick={() => setCollapsed((current) => !current)} aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 rounded-md px-0 text-[13px]"
+            onClick={() => setCollapsed((current) => !current)}
+            aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}
+          >
             {collapsed ? 'v' : '^'}
           </Button>
         </div>
-      </div>
-
+      )}
+    >
       {!collapsed ? (
-        <div className="p-3">
-          {warning ? <div className="mb-2 text-[13px]">{warning}</div> : null}
-          <div className="group-stage-v2-best-third-list space-y-2">
+        <>
+          {warning ? <div className="text-[13px]">{warning}</div> : null}
+          <div className="group-stage-v2-best-third-list space-y-0">
             {tiles.map((tile) => {
               const tileDisabled = isReadOnly || tile.disabled
               const showNotReady = tile.blockedReason === 'not-ready'
               const showCapReached = tile.blockedReason === 'cap'
               const statusText = bestThirdStatusText(tile.status)
-              const helperLabel = showNotReady ? null : statusText
+              const statusTone = bestThirdStatusTone(tile.status)
+              const tooltipText = !isReadOnly
+                ? showNotReady
+                  ? 'Finish group ranking first.'
+                  : showCapReached
+                    ? 'Selection limit reached. Deselect another group first.'
+                    : null
+                : null
               const rowDisabled = isReadOnly || showNotReady
               return (
                 <button
@@ -467,7 +469,7 @@ export function BestThirdPicksCompact({
                   disabled={rowDisabled}
                   aria-disabled={tileDisabled}
                   className={cn(
-                    'group-stage-v2-best-third-row flex w-full items-center justify-between gap-2.5 rounded-lg border px-2.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                    'group-stage-v2-best-third-row flex w-full items-center justify-between gap-2.5 border-x-0 border-y border-border/20 px-0 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     bestThirdSurfaceClass(tile.status)
                   )}
                   data-selected={tile.selected ? 'true' : 'false'}
@@ -478,13 +480,13 @@ export function BestThirdPicksCompact({
                     onToggleGroup(tile.groupId)
                   }}
                 >
-                  <div className="min-w-0 flex items-center gap-2.5">
+                  <div className="min-w-0 flex items-center gap-2.5 px-3">
                     <span className="inline-flex h-7 shrink-0 items-center rounded-md border border-border/45 bg-background/55 px-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                       Group {tile.groupId}
                     </span>
                     <div className="min-w-0">
                       {showNotReady ? (
-                        <span className="text-[13px] text-muted-foreground">Complete ranking 1-4 first.</span>
+                        <span className="text-[13px] text-muted-foreground">Third-place team pending.</span>
                       ) : (
                         <TeamIdentityInlineV2
                           code={tile.teamCode}
@@ -495,24 +497,35 @@ export function BestThirdPicksCompact({
                           primaryClassName="font-semibold"
                         />
                       )}
-                      {helperLabel ? <div className="mt-0.5 text-[11px] text-muted-foreground">{helperLabel}</div> : null}
                     </div>
                   </div>
-                  {showCapReached ? (
-                    <span className="group-stage-v2-cap-wrap shrink-0" aria-hidden="true">
-                      <span className="group-stage-v2-cap-indicator">!</span>
-                      <span role="tooltip" className="group-stage-v2-cap-tooltip">
-                        Limit reached. Deselect another group first.
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 px-3">
+                    {tooltipText ? (
+                      <span className="group/third-place-tip relative inline-flex">
+                        <span
+                          aria-hidden="true"
+                          className="group-stage-v2-tip-indicator"
+                        >
+                          !
+                        </span>
+                        <span
+                          role="tooltip"
+                          className="group-stage-v2-block-tooltip pointer-events-none absolute bottom-[calc(100%+0.35rem)] right-0 z-20 opacity-0 transition-all group-hover/third-place-tip:opacity-100"
+                        >
+                          {tooltipText}
+                        </span>
                       </span>
-                    </span>
-                  ) : null}
+                    ) : null}
+                    {statusText && statusTone ? (
+                      <StatusTagV2 tone={statusTone}>{statusText}</StatusTagV2>
+                    ) : null}
+                  </div>
                 </button>
               )
             })}
           </div>
-          {helperText ? <div className="mt-2 text-[13px] text-[color:var(--v2-text-muted)]">{helperText}</div> : null}
-        </div>
+        </>
       ) : null}
-    </SectionCardV2>
+    </SideListPanelV2>
   )
 }
