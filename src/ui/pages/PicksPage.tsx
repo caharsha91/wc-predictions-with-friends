@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
 
 import { fetchScoring } from '../../lib/data'
 import { areMatchesCompleted, isMatchCompleted } from '../../lib/matchStatus'
@@ -7,7 +6,6 @@ import { getPickOutcome, getPredictedWinner, isPickComplete, upsertPick } from '
 import type { Match } from '../../types/matches'
 import type { Pick, PickAdvances } from '../../types/picks'
 import type { KnockoutStage, ScoringConfig, StageScoring } from '../../types/scoring'
-import type { LeaderboardCardRow } from '../components/v2/LeaderboardSideListV2'
 import MatchPick, { type MatchPickChange, type MatchPickDecidedIn } from '../components/MatchPick'
 import { Alert } from '../components/ui/Alert'
 import { Button, ButtonLink } from '../components/ui/Button'
@@ -22,18 +20,16 @@ import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import InlineStateHintV2 from '../components/v2/InlineStateHintV2'
-import { LeaderboardCardCurated, RightRailSticky } from '../components/v2/LeaderboardSideListV2'
+import { RightRailSticky } from '../components/v2/LeaderboardSideListV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
+import SideListPanelV2 from '../components/v2/SideListPanelV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
 import StatusTagV2 from '../components/v2/StatusTagV2'
 import TeamIdentityInlineV2 from '../components/v2/TeamIdentityInlineV2'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
-import { useFavoriteTeamPreference } from '../context/FavoriteTeamPreferenceContext'
-import { useAuthState } from '../hooks/useAuthState'
-import { useCurrentUser } from '../hooks/useCurrentUser'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { useNow } from '../hooks/useNow'
 import { usePicksData } from '../hooks/usePicksData'
@@ -41,21 +37,13 @@ import { usePublishedSnapshot } from '../hooks/usePublishedSnapshot'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
-import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
-import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
-import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
 import {
   computeMatchTimelineModel,
   type MatchReadOnlyReason,
   type MatchTimelineItem
 } from '../lib/matchTimeline'
-import {
-  fetchRivalDirectory,
-  readUserProfile,
-  type RivalDirectoryEntry
-} from '../lib/profilePersistence'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
-import { normalizeFavoriteTeamCode, resolveTeamFlagMeta } from '../lib/teamFlag'
+import { resolveTeamFlagMeta } from '../lib/teamFlag'
 import { downloadWorkbook } from '../lib/exportWorkbook'
 
 type KoWinMethod = 'ET' | 'PENS'
@@ -107,28 +95,6 @@ type ResultsTableProps = {
 
 const EMPTY_MATCHES: Match[] = []
 const RECENT_RESULTS_FALLBACK_COUNT = 5
-
-function normalizeKey(value: string | null | undefined): string {
-  return (value ?? '').trim().toLowerCase()
-}
-
-function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] {
-  const viewerKey = normalizeKey(viewerId)
-  const seen = new Set<string>()
-  const next: string[] = []
-
-  for (const rivalId of nextRivals) {
-    const trimmed = rivalId.trim()
-    if (!trimmed) continue
-    const key = normalizeKey(trimmed)
-    if (!key || key === viewerKey || seen.has(key)) continue
-    seen.add(key)
-    next.push(trimmed)
-    if (next.length >= 3) break
-  }
-
-  return next
-}
 
 function formatKickoff(utcIso: string): string {
   const timestamp = new Date(utcIso).getTime()
@@ -508,13 +474,130 @@ function ResultsTable({ items, picksByMatchId, scoring, emptyMessage }: ResultsT
   )
 }
 
+function resolveKnockoutWinnerLegend(scoring: ScoringConfig | null): string {
+  if (!scoring) return 'Knockout draw winner bonus unavailable.'
+  const winnerBonuses = Object.values(scoring.knockout)
+    .map((stage) => stage.knockoutWinner)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+
+  if (winnerBonuses.length === 0) return 'Knockout draw winner bonus unavailable.'
+
+  const uniqueBonuses = [...new Set(winnerBonuses)].sort((left, right) => left - right)
+  if (uniqueBonuses.length === 1) return `Knockout draw winner: +${uniqueBonuses[0]} pts`
+  return `Knockout draw winner: +${uniqueBonuses[0]} to +${uniqueBonuses[uniqueBonuses.length - 1]} pts by round`
+}
+
+type PicksSupportRailProps = {
+  setCount: number
+  totalCount: number
+  remainingCount: number
+  nextLockMatch: MatchTimelineItem | null
+  nextLockLabel: string
+  scoring: ScoringConfig | null
+  missingScoresCount: number
+  drawExtrasMissingCount: number
+  unsavedCount: number
+}
+
+function PicksSupportRail({
+  setCount,
+  totalCount,
+  remainingCount,
+  nextLockMatch,
+  nextLockLabel,
+  scoring,
+  missingScoresCount,
+  drawExtrasMissingCount,
+  unsavedCount
+}: PicksSupportRailProps) {
+  const completionTone =
+    totalCount === 0 ? 'secondary' : remainingCount === 0 ? 'success' : 'warning'
+  const needsAttentionCount = missingScoresCount + drawExtrasMissingCount + unsavedCount
+  const needsAttentionTone = needsAttentionCount > 0 ? 'warning' : 'success'
+  const stageLabel = nextLockMatch?.match.group
+    ? `Group ${nextLockMatch.match.group}`
+    : nextLockMatch?.match.stage
+
+  return (
+    <SideListPanelV2
+      title="Pick Window"
+      subtitle="Finish remaining picks before the next lock."
+      contentClassName="v2-list-divider space-y-0 p-3"
+    >
+      <section className="flex items-start gap-2">
+        <div className="min-w-0">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Remaining picks</div>
+          <div className="mt-1.5 text-[34px] font-semibold leading-none tabular-nums text-foreground">
+            {remainingCount}
+            <span className="ml-1 text-[15px] font-medium text-muted-foreground">/ {totalCount}</span>
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">{setCount} / {totalCount} set</div>
+        </div>
+        <StatusTagV2 tone={completionTone} className="ml-auto mt-1 shrink-0">
+          {remainingCount === 0 && totalCount > 0 ? 'All set' : 'In progress'}
+        </StatusTagV2>
+      </section>
+
+      <section>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Next lock</div>
+        {nextLockMatch ? (
+          <>
+            <div className="mt-1.5 text-[12px] font-medium text-foreground">{formatKickoff(nextLockMatch.match.kickoffUtc)}</div>
+            <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[12px] text-foreground">
+              <TeamIdentityInlineV2 code={nextLockMatch.match.homeTeam.code} name={nextLockMatch.match.homeTeam.name} size="xs" />
+              <span className="text-muted-foreground">vs</span>
+              <TeamIdentityInlineV2 code={nextLockMatch.match.awayTeam.code} name={nextLockMatch.match.awayTeam.name} size="xs" />
+            </div>
+            <div className="mt-1 text-[11px] text-muted-foreground">{stageLabel}</div>
+          </>
+        ) : (
+          <div className="mt-1.5 text-[12px] text-muted-foreground">{nextLockLabel}</div>
+        )}
+      </section>
+
+      <section>
+        <div className="mb-1 flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Needs attention</span>
+          <StatusTagV2 tone={needsAttentionTone} className="ml-auto">
+            {needsAttentionCount === 0 ? 'All clear' : `${needsAttentionCount} open`}
+          </StatusTagV2>
+        </div>
+        <div className="space-y-1.5 text-[12px] text-muted-foreground">
+          <div className="flex items-center justify-between gap-2">
+            <span>Missing scores</span>
+            <span className="font-medium tabular-nums text-foreground">{missingScoresCount}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span>Draw picks missing winner/AET/PEN</span>
+            <span className="font-medium tabular-nums text-foreground">{drawExtrasMissingCount}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span>Unsaved edits</span>
+            <span className="font-medium tabular-nums text-foreground">{unsavedCount}</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Scoring legend</div>
+        <div className="mt-1.5 text-[12px] text-muted-foreground">
+          Exact both <span className="font-medium text-foreground">+{scoring?.group.exactScoreBoth ?? '—'}</span> · one{' '}
+          <span className="font-medium text-foreground">+{scoring?.group.exactScoreOne ?? '—'}</span> · result{' '}
+          <span className="font-medium text-foreground">+{scoring?.group.result ?? '—'}</span>
+        </div>
+        <div className="mt-1 text-[12px] text-muted-foreground">{resolveKnockoutWinnerLegend(scoring)}</div>
+      </section>
+
+      <p className="text-[12px] leading-[1.4] text-muted-foreground">
+        If you predict a knockout draw, set the eventual winner and AET/PEN. Non-draw picks ignore AET/PEN.
+      </p>
+    </SideListPanelV2>
+  )
+}
+
 export default function PicksPage() {
-  const location = useLocation()
   const mode = useRouteDataMode()
   const viewerId = useViewerId()
-  const currentUser = useCurrentUser()
-  const favoriteTeamPreference = useFavoriteTeamPreference()
-  const authState = useAuthState()
   const now = useNow({ tickMs: 300_000 })
   const isDesktopViewport = useMediaQuery('(min-width: 1024px)')
   const picksState = usePicksData()
@@ -522,7 +605,7 @@ export default function PicksPage() {
   const phaseState = useTournamentPhaseState()
   const { showToast } = useToast()
 
-  const [leaguePeekOpen, setLeaguePeekOpen] = useState(false)
+  const [pickGuideOpen, setPickGuideOpen] = useState(false)
   const [laterExpanded, setLaterExpanded] = useState(false)
   const [archiveExpanded, setArchiveExpanded] = useState(false)
   const [savingMatchId, setSavingMatchId] = useState<string | null>(null)
@@ -530,26 +613,6 @@ export default function PicksPage() {
   const [draftByMatchId, setDraftByMatchId] = useState<Record<string, MatchDraft>>({})
   const [rowErrorByMatchId, setRowErrorByMatchId] = useState<Record<string, string>>({})
   const [scoringState, setScoringState] = useState<ScoringState>({ status: 'loading' })
-  const [rivalUserIds, setRivalUserIds] = useState<string[]>([])
-  const [profileFavoriteTeamCode, setProfileFavoriteTeamCode] = useState<string | null>(null)
-  const [rivalDirectoryEntries, setRivalDirectoryEntries] = useState<RivalDirectoryEntry[]>([])
-  const viewerKeys = useMemo(
-    () =>
-      buildViewerKeySet([
-        viewerId,
-        currentUser?.id ?? null,
-        currentUser?.email ?? null,
-        currentUser?.name ?? null
-      ]),
-    [currentUser?.email, currentUser?.id, currentUser?.name, viewerId]
-  )
-  const viewerFavoriteTeamCode = useMemo(
-    () =>
-      normalizeFavoriteTeamCode(
-        favoriteTeamPreference.favoriteTeamCode ?? profileFavoriteTeamCode ?? currentUser?.favoriteTeamCode
-      ),
-    [currentUser?.favoriteTeamCode, favoriteTeamPreference.favoriteTeamCode, profileFavoriteTeamCode]
-  )
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
 
@@ -572,48 +635,6 @@ export default function PicksPage() {
       canceled = true
     }
   }, [mode])
-
-  useEffect(() => {
-    let canceled = false
-
-    async function loadProfile() {
-      try {
-        const profile = await readUserProfile(mode, viewerId, authState.user?.email ?? null)
-        if (canceled) return
-        setRivalUserIds(sanitizeRivalUserIds(profile.rivalUserIds, viewerId))
-        setProfileFavoriteTeamCode(normalizeFavoriteTeamCode(profile.favoriteTeamCode))
-      } catch {
-        if (canceled) return
-        setRivalUserIds([])
-        setProfileFavoriteTeamCode(null)
-      }
-    }
-
-    void loadProfile()
-    return () => {
-      canceled = true
-    }
-  }, [authState.user?.email, mode, viewerId])
-
-  useEffect(() => {
-    let canceled = false
-
-    async function loadRivalDirectory() {
-      try {
-        const entries = await fetchRivalDirectory(mode, viewerId, authState.user?.email ?? null)
-        if (canceled) return
-        setRivalDirectoryEntries(entries)
-      } catch {
-        if (canceled) return
-        setRivalDirectoryEntries([])
-      }
-    }
-
-    void loadRivalDirectory()
-    return () => {
-      canceled = true
-    }
-  }, [authState.user?.email, mode, viewerId])
 
   useEffect(() => {
     if (!savedMatchId) return
@@ -665,108 +686,7 @@ export default function PicksPage() {
   }, [editableWindowLabel, isMatchPicksFinal, phaseState.lockFlags.matchPicksEditable, upcomingEditableCount])
   const picksPublishedCopy = isMatchPicksFinal ? 'Published: Final' : 'Published: Latest snapshot'
 
-  const rivalDirectoryByIdentity = useMemo(() => {
-    const map = new Map<string, RivalDirectoryEntry>()
-    for (const entry of rivalDirectoryEntries) {
-      const idKey = normalizeKey(entry.id)
-      const nameKey = normalizeKey(entry.displayName)
-      const emailKey = normalizeKey(entry.email)
-      if (idKey) {
-        map.set(entry.id, entry)
-        map.set(idKey, entry)
-        map.set(`id:${idKey}`, entry)
-      }
-      if (nameKey) {
-        map.set(entry.displayName, entry)
-        map.set(nameKey, entry)
-        map.set(`name:${nameKey}`, entry)
-      }
-      if (emailKey) {
-        if (entry.email) map.set(entry.email, entry)
-        map.set(emailKey, entry)
-        map.set(`email:${emailKey}`, entry)
-      }
-    }
-    return map
-  }, [rivalDirectoryEntries])
-
-  const resolveCardRowFavoriteTeamCode = useCallback(
-    ({
-      rowId,
-      rowName,
-      isYou
-    }: {
-      rowId: string
-      rowName: string
-      isYou: boolean
-    }): string | null => {
-      if (isYou) return viewerFavoriteTeamCode
-
-      const idKey = normalizeKey(rowId)
-      const nameKey = normalizeKey(rowName)
-      const candidates = [
-        idKey,
-        idKey ? `id:${idKey}` : '',
-        nameKey,
-        nameKey ? `name:${nameKey}` : ''
-      ].filter(Boolean)
-
-      for (const candidate of candidates) {
-        const match = rivalDirectoryByIdentity.get(candidate)
-        if (!match) continue
-        return normalizeFavoriteTeamCode(match.favoriteTeamCode)
-      }
-
-      return null
-    },
-    [rivalDirectoryByIdentity, viewerFavoriteTeamCode]
-  )
-
-  const leaderboardRowsForCard = useMemo<LeaderboardCardRow[]>(() => {
-    if (!snapshotReady) return []
-    const sectionRows = buildLeaderboardPresentation({
-      snapshotTimestamp: snapshotReady.snapshotTimestamp,
-      groupStageComplete: snapshotReady.groupStageComplete,
-      projectedGroupStagePointsByUser: snapshotReady.projectedGroupStagePointsByUser,
-      leaderboardRows: snapshotReady.leaderboardRows
-    }).rows.map((entry) => {
-      const sectionPoints = entry.exactPoints + entry.resultPoints + entry.knockoutPoints
-      const isYou = resolveLeaderboardIdentityKeys(entry).some((key) => viewerKeys.has(key))
-      return {
-        id: entry.member.id || entry.member.name,
-        name: entry.member.name,
-        points: sectionPoints,
-        isYou,
-        favoriteTeamCode: resolveCardRowFavoriteTeamCode({
-          rowId: entry.member.id || entry.member.name,
-          rowName: entry.member.name,
-          isYou
-        })
-      }
-    })
-
-    const ranked = rankRowsWithTiePriority({
-      rows: sectionRows,
-      getPoints: (row) => row.points,
-      getIdentityKeys: (row) => [row.id, `id:${row.id}`, row.name, `name:${row.name}`],
-      getName: (row) => row.name,
-      viewerIdentity: viewerId,
-      rivalIdentities: rivalUserIds
-    })
-
-    return ranked.rankedRows.map(({ row, rank }) => ({
-      id: row.id,
-      name: row.name,
-      rank,
-      points: row.points,
-      isYou: row.isYou,
-      favoriteTeamCode: row.favoriteTeamCode ?? null
-    }))
-  }, [resolveCardRowFavoriteTeamCode, rivalUserIds, snapshotReady, viewerId, viewerKeys])
-
-  const leaderboardPath = location.pathname.startsWith('/demo/') ? '/demo/leaderboard' : '/leaderboard'
   const homePath = mode === 'demo' ? '/demo' : '/'
-  const leaderboardCardTitle = isMatchPicksFinal ? 'Final Leaderboard' : 'Projected Leaderboard'
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
   const scoring = scoringState.status === 'ready' ? scoringState.scoring : null
   const recentWindowResults = useMemo(
@@ -791,7 +711,7 @@ export default function PicksPage() {
 
   useEffect(() => {
     if (!isDesktopViewport) return
-    setLeaguePeekOpen(false)
+    setPickGuideOpen(false)
   }, [isDesktopViewport])
 
   const pickByMatchId = useMemo(() => {
@@ -801,6 +721,60 @@ export default function PicksPage() {
         .map((pick) => [pick.matchId, pick] as const)
     )
   }, [picksState.picks, viewerId])
+
+  const pickWindowMatches = useMemo(
+    () => upcomingMatches.filter((item) => item.normalizedStatus === 'scheduled'),
+    [upcomingMatches]
+  )
+
+  const pickWindowRailData = useMemo(() => {
+    let setCount = 0
+    let missingScoresCount = 0
+    let drawExtrasMissingCount = 0
+    let unsavedCount = 0
+
+    for (const item of pickWindowMatches) {
+      const match = item.match
+      const baseline = toDraft(pickByMatchId.get(match.id))
+      const draft = draftByMatchId[match.id] ?? baseline
+      const rowDirty = isDraftDirty(draft, baseline)
+      const parsedHome = parseScore(draft.homeScore)
+      const parsedAway = parseScore(draft.awayScore)
+      const hasScores = parsedHome !== undefined && parsedAway !== undefined
+      const isKnockout = match.stage !== 'Group'
+      const predictedDraw = hasScores && parsedHome === parsedAway
+
+      if (rowDirty) unsavedCount += 1
+      if (!hasScores) missingScoresCount += 1
+
+      const hasKnockoutExtras = draft.eventualWinnerTeamId === 'HOME' || draft.eventualWinnerTeamId === 'AWAY'
+      const hasKoMethod = draft.koWinMethod === 'ET' || draft.koWinMethod === 'PENS'
+      const drawExtrasMissing = isKnockout && predictedDraw && (!hasKnockoutExtras || !hasKoMethod)
+      if (drawExtrasMissing) drawExtrasMissingCount += 1
+      const isSet = hasScores && !drawExtrasMissing
+
+      if (isSet) setCount += 1
+    }
+
+    const totalCount = pickWindowMatches.length
+    return {
+      setCount,
+      totalCount,
+      remainingCount: Math.max(totalCount - setCount, 0),
+      missingScoresCount,
+      drawExtrasMissingCount,
+      unsavedCount
+    }
+  }, [draftByMatchId, pickByMatchId, pickWindowMatches])
+
+  const nextLockMatch = useMemo(() => pickWindowMatches[0] ?? null, [pickWindowMatches])
+
+  const nextLockLabel = useMemo(() => {
+    if (isMatchPicksFinal) return 'Final snapshot. No remaining locks.'
+    if (nextLockMatch) return formatWindowDeadline(nextLockMatch.match.kickoffUtc)
+    if (timelineModel.window.endUtc) return formatWindowDeadline(timelineModel.window.endUtc)
+    return 'No upcoming lock in this window.'
+  }, [isMatchPicksFinal, nextLockMatch, timelineModel.window.endUtc])
 
   const clearRowError = useCallback((matchId: string) => {
     setRowErrorByMatchId((current) => {
@@ -1031,12 +1005,6 @@ export default function PicksPage() {
         </Alert>
       ) : null}
 
-      {snapshotReady?.projectedGroupPredictionsLimited ? (
-        <Alert tone="warning" title="Projected comparison limited">
-          Group-stage projection comparisons are partially unavailable for your role.
-        </Alert>
-      ) : null}
-
       {scoringState.status === 'error' ? (
         <Alert tone="warning" title="Points unavailable">
           {scoringState.message}
@@ -1188,13 +1156,16 @@ export default function PicksPage() {
 
           {isDesktopViewport ? (
             <RightRailSticky>
-              <LeaderboardCardCurated
-                rows={leaderboardRowsForCard}
-                snapshotLabel={formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}
-                topCount={3}
-                title={leaderboardCardTitle}
-                leaderboardPath={leaderboardPath}
-                priorityUserIds={rivalUserIds}
+              <PicksSupportRail
+                setCount={pickWindowRailData.setCount}
+                totalCount={pickWindowRailData.totalCount}
+                remainingCount={pickWindowRailData.remainingCount}
+                nextLockMatch={nextLockMatch}
+                nextLockLabel={nextLockLabel}
+                scoring={scoring}
+                missingScoresCount={pickWindowRailData.missingScoresCount}
+                drawExtrasMissingCount={pickWindowRailData.drawExtrasMissingCount}
+                unsavedCount={pickWindowRailData.unsavedCount}
               />
             </RightRailSticky>
           ) : null}
@@ -1207,24 +1178,27 @@ export default function PicksPage() {
             size="sm"
             variant="secondary"
             className="league-peek-fab fixed bottom-[calc(var(--bottom-nav-height)+0.75rem)] right-4 z-40 h-10 rounded-full px-4 text-[12px] lg:hidden"
-            onClick={() => setLeaguePeekOpen(true)}
+            onClick={() => setPickGuideOpen(true)}
           >
-            League Peek
+            Pick guide
           </Button>
-          <Sheet open={leaguePeekOpen} onOpenChange={setLeaguePeekOpen}>
+          <Sheet open={pickGuideOpen} onOpenChange={setPickGuideOpen}>
             <SheetContent side="bottom" className="league-peek-sheet-content max-h-[80dvh] rounded-t-2xl p-0">
               <SheetHeader>
-                <SheetTitle>League Peek</SheetTitle>
-                <SheetDescription>Snapshot leaderboard summary.</SheetDescription>
+                <SheetTitle>Pick guide</SheetTitle>
+                <SheetDescription>Remaining picks, next lock, and blockers to clear.</SheetDescription>
               </SheetHeader>
               <div className="p-3">
-                <LeaderboardCardCurated
-                  rows={leaderboardRowsForCard}
-                  snapshotLabel={formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}
-                  topCount={3}
-                  title={leaderboardCardTitle}
-                  leaderboardPath={leaderboardPath}
-                  priorityUserIds={rivalUserIds}
+                <PicksSupportRail
+                  setCount={pickWindowRailData.setCount}
+                  totalCount={pickWindowRailData.totalCount}
+                  remainingCount={pickWindowRailData.remainingCount}
+                  nextLockMatch={nextLockMatch}
+                  nextLockLabel={nextLockLabel}
+                  scoring={scoring}
+                  missingScoresCount={pickWindowRailData.missingScoresCount}
+                  drawExtrasMissingCount={pickWindowRailData.drawExtrasMissingCount}
+                  unsavedCount={pickWindowRailData.unsavedCount}
                 />
               </div>
             </SheetContent>

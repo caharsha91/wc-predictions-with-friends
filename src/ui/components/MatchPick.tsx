@@ -246,6 +246,7 @@ export default function MatchPick({
     winnerId === teamA.id ? (draw ? 'manual' : 'score') : null
   const teamBActiveTone: 'score' | 'manual' | null =
     winnerId === teamB.id ? (draw ? 'manual' : 'score') : null
+  const hasKnockoutMethod = decidedIn === 'AET' || decidedIn === 'PEN'
 
   return (
     <RowShellV2
@@ -254,7 +255,14 @@ export default function MatchPick({
       style={{ borderColor: 'var(--border-subtle)' }}
       aria-label={`${teamA.name} versus ${teamB.name} match pick`}
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] md:gap-2.5">
+      <div
+        className={cn(
+          'grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 md:gap-2.5',
+          isKnockout
+            ? 'md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto]'
+            : 'md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]'
+        )}
+      >
         <TeamButton
           team={teamA}
           activeTone={teamAActiveTone}
@@ -299,34 +307,40 @@ export default function MatchPick({
           onSelect={() => emit({ selectedWinnerId: teamB.id })}
         />
 
-        <div className="col-span-full flex min-h-9 items-center justify-end md:col-auto md:min-w-[126px]">
-          <div className="inline-flex w-full items-center rounded-lg bg-[var(--surface-3)] p-0.5 md:w-auto">
-            <button
-              type="button"
-              className={segmentClass(decidedIn === 'AET', !knockoutDraw || disabled)}
-              onClick={() => knockoutDraw && !disabled && emit({ decidedIn: 'AET' })}
-              disabled={!knockoutDraw || disabled}
-              aria-label="Set decided in AET"
-              aria-pressed={decidedIn === 'AET'}
-            >
-              AET
-            </button>
-            <button
-              type="button"
-              className={segmentClass(decidedIn === 'PEN', !knockoutDraw || disabled)}
-              onClick={() => knockoutDraw && !disabled && emit({ decidedIn: 'PEN' })}
-              disabled={!knockoutDraw || disabled}
-              aria-label="Set decided in penalties"
-              aria-pressed={decidedIn === 'PEN'}
-            >
-              PEN
-            </button>
+        {isKnockout ? (
+          <div className="col-span-full flex min-h-9 items-center justify-end md:col-auto md:min-w-[126px]">
+            {knockoutDraw ? (
+              <div className="inline-flex w-full items-center rounded-lg bg-[var(--surface-3)] p-0.5 md:w-auto">
+                <button
+                  type="button"
+                  className={segmentClass(decidedIn === 'AET', disabled)}
+                  onClick={() => !disabled && emit({ decidedIn: 'AET' })}
+                  disabled={disabled}
+                  aria-label="Set decided in AET"
+                  aria-pressed={decidedIn === 'AET'}
+                >
+                  AET
+                </button>
+                <button
+                  type="button"
+                  className={segmentClass(decidedIn === 'PEN', disabled)}
+                  onClick={() => !disabled && emit({ decidedIn: 'PEN' })}
+                  disabled={disabled}
+                  aria-label="Set decided in penalties"
+                  aria-pressed={decidedIn === 'PEN'}
+                >
+                  PEN
+                </button>
+              </div>
+            ) : (
+              <span className="text-[11px] text-muted-foreground">AET/PEN not needed</span>
+            )}
           </div>
-        </div>
+        ) : null}
       </div>
 
-      {knockoutDraw && !winnerId ? (
-        <p className="mt-1 text-[11px] text-muted-foreground">Draw - select eventual winner</p>
+      {isKnockout && knockoutDraw && (!winnerId || !hasKnockoutMethod) ? (
+        <p className="mt-1 text-[11px] text-muted-foreground">Draw predicted - choose eventual winner and AET/PEN.</p>
       ) : null}
     </RowShellV2>
   )
