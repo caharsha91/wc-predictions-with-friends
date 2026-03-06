@@ -248,6 +248,28 @@ export function GroupPicksDenseTable({
                 groupQualifierPoints
               })
               const teamByCode = new Map(row.teams.map((team) => [team.code, team]))
+              const rowIsSaving = saveStatus === 'saving' && savingRowGroupId === row.groupId
+              const rowIsSaved = saveStatus !== 'saving' && savedRowGroupId === row.groupId
+              const rowIsEditing =
+                (dragging?.groupId === row.groupId || dragOver?.groupId === row.groupId) && !isReadOnly
+              const interactionTone = isReadOnly
+                ? 'locked'
+                : rowIsSaving
+                  ? 'warning'
+                  : rowIsSaved
+                    ? 'success'
+                    : rowIsEditing
+                      ? 'info'
+                      : 'secondary'
+              const interactionLabel = isReadOnly
+                ? 'Locked'
+                : rowIsSaving
+                  ? 'Saving...'
+                  : rowIsSaved
+                    ? 'Saved'
+                    : rowIsEditing
+                      ? 'Editing'
+                      : 'Editable'
 
               return (
                 <div
@@ -268,16 +290,7 @@ export function GroupPicksDenseTable({
                     <StatusTagV2 tone="secondary">
                       Potential +{rowDelta}
                     </StatusTagV2>
-                    {saveStatus === 'saving' && savingRowGroupId === row.groupId ? (
-                      <StatusTagV2 tone="warning">
-                        Saving...
-                      </StatusTagV2>
-                    ) : null}
-                    {saveStatus !== 'saving' && savedRowGroupId === row.groupId ? (
-                      <StatusTagV2 tone="success">
-                        Saved
-                      </StatusTagV2>
-                    ) : null}
+                    <StatusTagV2 tone={interactionTone}>{interactionLabel}</StatusTagV2>
                   </div>
 
                   <div className="space-y-2">
@@ -289,7 +302,7 @@ export function GroupPicksDenseTable({
                       return (
                         <RowShellV2
                           key={`${row.groupId}-${teamCode}`}
-                          state={isDragOver ? 'selected' : 'default'}
+                          state={isReadOnly ? 'disabled' : isDragOver || rowIsEditing ? 'selected' : 'default'}
                           draggable={!isDragDisabled}
                           className={cn(
                             'flex min-h-12 items-center justify-between gap-2 px-2.5 py-2.5',
@@ -320,7 +333,9 @@ export function GroupPicksDenseTable({
                           </div>
 
                           <div className="flex shrink-0 items-center gap-2">
-                            <span className="text-[12px] text-muted-foreground">{isDragDisabled ? 'Locked' : 'Drag to reorder'}</span>
+                            <span className="text-[12px] text-muted-foreground">
+                              {isReadOnly ? 'Locked' : rowIsSaving ? 'Saving...' : 'Drag to reorder'}
+                            </span>
                             <span className="font-mono text-[13px] leading-none text-muted-foreground" aria-hidden="true">
                               ::
                             </span>

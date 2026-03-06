@@ -20,6 +20,7 @@ import LeaderboardPodium, { type LeaderboardPodiumRow } from '../components/v2/L
 import FavoriteTeamSelectV2 from '../components/v2/FavoriteTeamSelectV2'
 import MemberIdentityRowV2 from '../components/v2/MemberIdentityRowV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import PanelHeaderV2 from '../components/v2/PanelHeaderV2'
 import RowShellV2 from '../components/v2/RowShellV2'
@@ -1283,11 +1284,15 @@ export default function LandingPage() {
           </div>
         )}
         metadata={(
-          <>
-            <span className="truncate whitespace-nowrap">Saved {picksLastSavedLabel}</span>
-            <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
-          </>
+          <PageHeaderMetadataV2
+            items={[
+              <span key="saved">{`Saved: ${picksLastSavedLabel}`}</span>,
+              <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} prefix="Latest snapshot: " />,
+              <span key="published">
+                {phaseState.tournamentPhase === 'FINAL' ? 'Published: Final' : 'Published: Latest snapshot'}
+              </span>
+            ]}
+          />
         )}
       />
 
@@ -1351,7 +1356,7 @@ export default function LandingPage() {
             <h2 className="v2-heading-h2 text-foreground">Leaderboard</h2>
           </div>
           <div className="flex items-center gap-3">
-            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
+            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Latest snapshot: " />
             <div className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
               <UsersIcon size={13} />
               <span>{rivalUserIds.length}/3 selected</span>

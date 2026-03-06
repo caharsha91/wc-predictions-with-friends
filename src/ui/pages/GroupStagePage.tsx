@@ -26,9 +26,11 @@ import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import { LeaderboardCardCurated, type LeaderboardCardRow } from '../components/v2/LeaderboardSideListV2'
+import SnapshotStamp from '../components/v2/SnapshotStamp'
 import TeamIdentityInlineV2 from '../components/v2/TeamIdentityInlineV2'
 import {
   BestThirdPicksCompact,
@@ -1031,12 +1033,14 @@ export default function GroupStagePage() {
     </SectionCardV2>
   )
 
-  const statusLineCopy =
+  const groupStageStateCopy =
     groupsFinal || isFinalResultsMode
-      ? `Group stage is final and read-only. Lock deadline: ${groupLockLabel}.`
+      ? `Locked: Final. Lock deadline: ${groupLockLabel}.`
       : isReadOnly
-        ? `Group stage is locked. Edits are no longer allowed. Lock deadline: ${groupLockLabel}.`
-        : `Group stage is editable until ${groupLockLabel}.`
+        ? `Locked: Edits closed. Lock deadline: ${groupLockLabel}.`
+        : `Editable until: ${groupLockLabel}.`
+
+  const groupStagePublishedCopy = groupsFinal || isFinalResultsMode ? 'Published: Final' : 'Published: Latest snapshot'
 
   const projectedLeaderboardCard = (
     <LeaderboardCardCurated
@@ -1066,14 +1070,22 @@ export default function GroupStagePage() {
             {showExportMenu ? (
               <ExportMenuV2
                 contextLabel="Download your group rankings and best-third selections workbook."
-                snapshotLabel={`Snapshot ${formatSnapshotTimestamp(scoringSnapshotTimestamp)}`}
+                snapshotLabel={`Latest snapshot ${formatSnapshotTimestamp(scoringSnapshotTimestamp)}`}
                 onDownloadXlsx={handleDownloadGroupStageXlsx}
               />
             ) : null}
           </>
         )}
         metadataClassName="w-full"
-        metadata={<span className="block w-full">{statusLineCopy}</span>}
+        metadata={(
+          <PageHeaderMetadataV2
+            items={[
+              <SnapshotStamp key="snapshot" timestamp={scoringSnapshotTimestamp} prefix="Latest snapshot: " />,
+              <span key="state">{groupStageStateCopy}</span>,
+              <span key="published">{groupStagePublishedCopy}</span>
+            ]}
+          />
+        )}
       />
 
       <SectionCardV2 tone="panel" density="none" className="group-stage-v2-group-nav sticky top-0 z-20 rounded-xl px-2 py-2 backdrop-blur-sm">

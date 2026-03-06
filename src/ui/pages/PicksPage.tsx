@@ -23,6 +23,7 @@ import Table from '../components/ui/Table'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import { LeaderboardCardCurated, RightRailSticky } from '../components/v2/LeaderboardSideListV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
@@ -85,6 +86,7 @@ type MatchRowProps = {
   rowDirty: boolean
   rowError?: string
   isSaving: boolean
+  isSaved: boolean
   onDraftChange: (next: MatchDraft) => void
   onSave: () => void
 }
@@ -146,9 +148,23 @@ function formatKoWinMethodLabel(value: string | undefined): string {
 
 function readOnlyReasonLabel(reason: MatchReadOnlyReason): string {
   if (reason === 'global-lock') return 'Locked by tournament phase.'
-  if (reason === 'in-progress') return 'Live matches are read-only.'
+  if (reason === 'in-progress') return 'Matches already in progress are read-only.'
+  if (reason === 'outside-window') return 'Locked until this match enters the active 72-hour window.'
   if (reason === 'missing-kickoff') return 'Kickoff unavailable.'
   return 'Read-only.'
+}
+
+function formatWindowDeadline(utcIso: string | null): string {
+  if (!utcIso) return 'Unavailable'
+  const timestamp = new Date(utcIso).getTime()
+  if (!Number.isFinite(timestamp)) return 'Unavailable'
+  return new Date(timestamp).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short'
+  })
 }
 
 function parseScore(value: string): number | undefined {
@@ -319,6 +335,7 @@ function MatchRow({
   rowDirty,
   rowError,
   isSaving,
+  isSaved,
   onDraftChange,
   onSave
 }: MatchRowProps) {
@@ -340,8 +357,25 @@ function MatchRow({
   const awayFlagPath = resolveTeamFlagMeta({ code: match.awayTeam.code, name: match.awayTeam.name }).assetPath
   const scoreA = parsedHome ?? 0
   const scoreB = parsedAway ?? 0
-  const readOnlyLabel =
-    item.readOnlyReason === 'outside-window' ? null : readOnlyReasonLabel(item.readOnlyReason)
+  const readOnlyLabel = readOnlyReasonLabel(item.readOnlyReason)
+  const interactionTone = !item.editable
+    ? 'locked'
+    : isSaving
+      ? 'warning'
+      : isSaved
+        ? 'success'
+        : rowDirty
+          ? 'info'
+          : 'secondary'
+  const interactionLabel = !item.editable
+    ? 'Locked'
+    : isSaving
+      ? 'Saving...'
+      : isSaved
+        ? 'Saved'
+        : rowDirty
+          ? 'Editing'
+          : 'Editable'
 
   function handleMatchPickChange(next: MatchPickChange) {
     if (!item.editable || isSaving) return
@@ -361,17 +395,20 @@ function MatchRow({
             {stageLabel} · {kickoffLabel}
           </div>
         </div>
-        {item.editable && rowDirty ? (
-          <Button
-            size="sm"
-            className="v2-action-compact"
-            onClick={onSave}
-            disabled={!canSave}
-            loading={isSaving}
-          >
-            Save
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-1.5">
+          <StatusTagV2 tone={interactionTone}>{interactionLabel}</StatusTagV2>
+          {item.editable && rowDirty ? (
+            <Button
+              size="sm"
+              className="v2-action-compact"
+              onClick={onSave}
+              disabled={!canSave}
+              loading={isSaving}
+            >
+              Save
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <MatchPick
@@ -618,6 +655,20 @@ export default function PicksPage() {
 
   const snapshotReady = publishedSnapshot.state.status === 'ready' ? publishedSnapshot.state : null
   const isMatchPicksFinal = useMemo(() => areMatchesCompleted(matches), [matches])
+  const editableWindowLabel = useMemo(
+    () => formatWindowDeadline(timelineModel.window.endUtc),
+    [timelineModel.window.endUtc]
+  )
+  const picksStateCopy = useMemo(() => {
+    if (isMatchPicksFinal || !phaseState.lockFlags.matchPicksEditable) {
+      return 'Locked: Final.'
+    }
+    if (upcomingEditableCount > 0) {
+      return `Editable until: ${editableWindowLabel}.`
+    }
+    return 'Locked: No picks are editable right now.'
+  }, [editableWindowLabel, isMatchPicksFinal, phaseState.lockFlags.matchPicksEditable, upcomingEditableCount])
+  const picksPublishedCopy = isMatchPicksFinal ? 'Published: Final' : 'Published: Latest snapshot'
 
   const rivalDirectoryByIdentity = useMemo(() => {
     const map = new Map<string, RivalDirectoryEntry>()
@@ -916,12 +967,6 @@ export default function PicksPage() {
       })
       clearRowError(match.id)
       setSavedMatchId(match.id)
-
-      showToast({
-        tone: 'success',
-        title: 'Pick saved',
-        message: `${match.homeTeam.code} vs ${match.awayTeam.code} saved.`
-      })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to save pick.'
       setRowError(match.id, message)
@@ -959,7 +1004,7 @@ export default function PicksPage() {
         className="landing-v2-hero"
         kicker="Predictions"
         title="Match Picks"
-        subtitle="Use the shared timeline model to edit only the active 72-hour window."
+        subtitle="Make picks in the current 72-hour window before matches lock."
         actions={(
           <>
             <ButtonLink to={homePath} size="sm" variant="secondary">
@@ -968,23 +1013,21 @@ export default function PicksPage() {
             {showExportMenu ? (
               <ExportMenuV2
                 contextLabel="Download your match picks workbook from the latest snapshot."
-                snapshotLabel={`Snapshot ${formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}`}
+                snapshotLabel={`Latest snapshot ${formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}`}
                 onDownloadXlsx={handleDownloadMatchPicksXlsx}
               />
             ) : null}
           </>
         )}
-        metadata={
-          <>
-            <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Snapshot " />
-            <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span>{`Up next ${upcomingVisibleCount}`}</span>
-            <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span>{`Editable ${upcomingEditableCount}`}</span>
-            <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span>KO extras only for predicted draws.</span>
-          </>
-        }
+        metadata={(
+          <PageHeaderMetadataV2
+            items={[
+              <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />,
+              <span key="state">{picksStateCopy}</span>,
+              <span key="published">{picksPublishedCopy}</span>
+            ]}
+          />
+        )}
       />
 
       {publishedSnapshot.state.status === 'error' ? (
@@ -1012,7 +1055,7 @@ export default function PicksPage() {
             <div className="text-sm text-muted-foreground">
               No upcoming or historical kickoff timestamps were found in this dataset.
             </div>
-            <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Snapshot " />
+            <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />
           </div>
         </SectionCardV2>
       ) : (
@@ -1045,6 +1088,7 @@ export default function PicksPage() {
                         rowDirty={rowDirty}
                         rowError={rowErrorByMatchId[match.id]}
                         isSaving={savingMatchId === match.id}
+                        isSaved={savedMatchId === match.id}
                         onDraftChange={(nextDraft) => {
                           updateDraft(match.id, () => nextDraft)
                         }}
@@ -1101,6 +1145,7 @@ export default function PicksPage() {
                           rowDirty={rowDirty}
                           rowError={rowErrorByMatchId[match.id]}
                           isSaving={savingMatchId === match.id}
+                          isSaved={savedMatchId === match.id}
                           onDraftChange={(nextDraft) => {
                             updateDraft(match.id, () => nextDraft)
                           }}

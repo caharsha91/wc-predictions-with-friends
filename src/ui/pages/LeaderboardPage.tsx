@@ -12,6 +12,7 @@ import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import LeaderboardPodium from '../components/v2/LeaderboardPodium'
 import MemberIdentityRowV2 from '../components/v2/MemberIdentityRowV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
+import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import RowShellV2 from '../components/v2/RowShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
@@ -267,7 +268,7 @@ function RivalFocusPanel({
   return (
     <SideListPanelV2
       title="Rival focus"
-      subtitle={<SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />}
+      subtitle={<SnapshotStamp timestamp={snapshotTimestamp} prefix="Latest snapshot: " />}
       meta={`${selectedCount}/3 selected`}
       className="landing-v2-standings-panel"
       contentClassName="space-y-2"
@@ -845,6 +846,10 @@ export default function LeaderboardPage() {
   }))
 
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
+  const leaderboardPublishedCopy =
+    phaseState.tournamentPhase === 'FINAL'
+      ? 'Published: Final standings'
+      : 'Published: Latest snapshot standings'
 
   function handleDownloadLeaderboardXlsx() {
     const exportedAt = new Date().toISOString()
@@ -914,23 +919,24 @@ export default function LeaderboardPage() {
         className="landing-v2-hero"
         kicker="Standings"
         title="Leaderboard"
-        subtitle="Compare standings with rivals in one streamlined view."
+        subtitle="Compare published standings with rivals from the latest snapshot."
         actions={
           showExportMenu ? (
             <ExportMenuV2
               contextLabel="Download the latest leaderboard workbook for all members."
-              snapshotLabel={`Snapshot ${formatSnapshotTimestamp(snapshotTimestamp)}`}
+              snapshotLabel={`Latest snapshot ${formatSnapshotTimestamp(snapshotTimestamp)}`}
               onDownloadXlsx={handleDownloadLeaderboardXlsx}
             />
           ) : undefined
         }
-        metadata={
-          <>
-            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot " />
-            <span className="h-3 w-px bg-border" aria-hidden="true" />
-            <span>Final standings.</span>
-          </>
-        }
+        metadata={(
+          <PageHeaderMetadataV2
+            items={[
+              <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} prefix="Latest snapshot: " />,
+              <span key="published">{leaderboardPublishedCopy}</span>
+            ]}
+          />
+        )}
       />
 
       {snapshotReady?.projectedGroupPredictionsLimited ? (
