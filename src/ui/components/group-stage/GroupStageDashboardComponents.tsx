@@ -147,20 +147,6 @@ function resolveRowDelta({
   return potential
 }
 
-function markerMeta(result: GroupPlacementStatus): { icon: string; code: string; tooltip: string } {
-  if (result === 'correct') return { icon: '✓', code: 'Correct', tooltip: 'Correct' }
-  if (result === 'incorrect') return { icon: '×', code: 'Incorrect', tooltip: 'Incorrect' }
-  if (result === 'locked') return { icon: '🔒', code: 'Locked', tooltip: 'Locked' }
-  return { icon: '⏳', code: 'Pending', tooltip: 'Pending' }
-}
-
-function placementTone(result: GroupPlacementStatus): string {
-  if (result === 'correct') return 'text-foreground'
-  if (result === 'incorrect') return 'text-foreground'
-  if (result === 'locked') return 'text-muted-foreground'
-  return 'text-muted-foreground'
-}
-
 type GroupPicksDenseTableProps = {
   rows: GroupStageDenseRow[]
   groupsDone: number
@@ -276,9 +262,9 @@ export function GroupPicksDenseTable({
                     <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg bg-background/55 text-[12px] font-medium text-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_26%,transparent)]">
                       {row.groupId}
                     </span>
-                    <span className={cn('font-medium', row.rankingComplete ? 'text-foreground' : 'text-muted-foreground')}>
-                      {row.rankingComplete ? 'Complete' : 'Incomplete'}
-                    </span>
+                    <StatusTagV2 tone={row.rankingComplete ? 'success' : 'warning'}>
+                      {row.rankingComplete ? 'All set' : 'Incomplete'}
+                    </StatusTagV2>
                     <StatusTagV2 tone="secondary">
                       Potential +{rowDelta}
                     </StatusTagV2>
@@ -297,12 +283,6 @@ export function GroupPicksDenseTable({
                   <div className="space-y-2">
                     {row.ranking.map((teamCode, index) => {
                       const team = teamByCode.get(teamCode)
-                      const marker =
-                        index === 0
-                          ? markerMeta(row.firstResult)
-                          : index === 1
-                            ? markerMeta(row.secondResult)
-                            : null
                       const isDragging = dragging?.groupId === row.groupId && dragging.code === teamCode
                       const isDragOver = dragOver?.groupId === row.groupId && dragOver.code === teamCode
 
@@ -340,18 +320,6 @@ export function GroupPicksDenseTable({
                           </div>
 
                           <div className="flex shrink-0 items-center gap-2">
-                            {marker ? (
-                              <span
-                                title={marker.tooltip}
-                                className={cn(
-                                  'inline-flex items-center gap-1 whitespace-nowrap text-[12px] leading-none',
-                                  placementTone(index === 0 ? row.firstResult : row.secondResult)
-                                )}
-                              >
-                                <span aria-hidden="true">{marker.icon}</span>
-                                <span>{marker.code}</span>
-                              </span>
-                            ) : null}
                             <span className="text-[12px] text-muted-foreground">{isDragDisabled ? 'Locked' : 'Drag to reorder'}</span>
                             <span className="font-mono text-[13px] leading-none text-muted-foreground" aria-hidden="true">
                               ::
@@ -457,49 +425,60 @@ export function BestThirdPicksCompact({
       {!collapsed ? (
         <div className="p-3">
           {warning ? <div className="mb-2 text-[13px]">{warning}</div> : null}
-          <div className="group-stage-v2-best-third-grid grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+          <div className="group-stage-v2-best-third-list space-y-2">
             {tiles.map((tile) => {
               const tileDisabled = isReadOnly || tile.disabled
               const showNotReady = tile.blockedReason === 'not-ready'
               const showCapReached = tile.blockedReason === 'cap'
               const statusText = bestThirdStatusText(tile.status)
+              const helperLabel = showNotReady ? null : statusText
+              const rowDisabled = isReadOnly || showNotReady
               return (
                 <button
                   key={`best-third-group-${tile.groupId}`}
                   type="button"
-                  disabled={tileDisabled}
+                  disabled={rowDisabled}
+                  aria-disabled={tileDisabled}
                   className={cn(
-                    'group-stage-v2-best-third-tile rounded-lg border px-2.5 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                    'group-stage-v2-best-third-row flex w-full items-center justify-between gap-2.5 rounded-lg border px-2.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     bestThirdSurfaceClass(tile.status)
                   )}
                   data-selected={tile.selected ? 'true' : 'false'}
                   data-disabled={tileDisabled ? 'true' : 'false'}
                   data-animate={tile.animateSelection ? 'true' : 'false'}
-                  onClick={() => onToggleGroup(tile.groupId)}
+                  onClick={() => {
+                    if (tileDisabled) return
+                    onToggleGroup(tile.groupId)
+                  }}
                 >
-                  <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="text-[12px] uppercase tracking-wide text-muted-foreground">Group {tile.groupId}</span>
-                    <span className="text-[12px] text-muted-foreground">
-                      {showNotReady ? 'Not ready' : showCapReached ? 'Limit reached' : tile.selected ? 'Selected' : ''}
+                  <div className="min-w-0 flex items-center gap-2.5">
+                    <span className="inline-flex h-7 shrink-0 items-center rounded-md border border-border/45 bg-background/55 px-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      Group {tile.groupId}
                     </span>
+                    <div className="min-w-0">
+                      {showNotReady ? (
+                        <span className="text-[13px] text-muted-foreground">Complete ranking 1-4 first.</span>
+                      ) : (
+                        <TeamIdentityInlineV2
+                          code={tile.teamCode}
+                          name={tile.teamName}
+                          label={tile.teamCode}
+                          showName
+                          className="max-w-full text-[13px]"
+                          primaryClassName="font-semibold"
+                        />
+                      )}
+                      {helperLabel ? <div className="mt-0.5 text-[11px] text-muted-foreground">{helperLabel}</div> : null}
+                    </div>
                   </div>
-
-                  <div className="min-h-11 rounded-lg bg-background/55 px-2 py-2 text-[13px] text-foreground">
-                    {showNotReady ? (
-                      <span className="text-muted-foreground">Complete ranking 1-4 first.</span>
-                    ) : (
-                      <TeamIdentityInlineV2
-                        code={tile.teamCode}
-                        name={tile.teamName}
-                        label={tile.teamCode}
-                        showName
-                        className="max-w-full text-[13px]"
-                        primaryClassName="font-semibold"
-                      />
-                    )}
-                  </div>
-
-                  {statusText ? <div className="mt-1.5 text-[12px] text-muted-foreground">{statusText}</div> : null}
+                  {showCapReached ? (
+                    <span className="group-stage-v2-cap-wrap shrink-0" aria-hidden="true">
+                      <span className="group-stage-v2-cap-indicator">!</span>
+                      <span role="tooltip" className="group-stage-v2-cap-tooltip">
+                        Limit reached. Deselect another group first.
+                      </span>
+                    </span>
+                  ) : null}
                 </button>
               )
             })}

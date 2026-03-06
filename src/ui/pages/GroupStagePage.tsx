@@ -1003,11 +1003,7 @@ export default function GroupStagePage() {
               return (
                 <tr
                   key={`group-standing-${selectedStandingsGroup}-${entry.code}`}
-                  className={cn(
-                    pickedFirst || pickedSecond
-                      ? 'v2-selected-pick-info'
-                      : 'hover:bg-background/45 transition-colors'
-                  )}
+                  className="hover:bg-background/45 transition-colors"
                 >
                   <td>
                     <div className="flex min-w-0 items-center gap-1.5">
