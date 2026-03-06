@@ -57,6 +57,7 @@ import { cn } from '../lib/utils'
 
 type EntryTileKey = 'group-stage' | 'match-picks' | 'knockout-bracket'
 type TileStatusTone = 'neutral' | 'success' | 'warning' | 'info' | 'locked'
+type TileAvailabilityTone = 'info' | 'warning' | 'locked' | 'secondary'
 
 type EntryTile = {
   key: EntryTileKey
@@ -66,8 +67,12 @@ type EntryTile = {
 }
 
 type TileStatusLine = {
-  label: string
-  tone: TileStatusTone
+  progressLabel: string
+  progressTone: TileStatusTone
+  availabilityLabel: string
+  availabilityTone: TileAvailabilityTone
+  timingLabel: string
+  actionLabel: string
 }
 
 type SnapshotRow = {
@@ -81,7 +86,6 @@ type SnapshotRow = {
 
 type RivalListRow = SnapshotRow & {
   kind: 'viewer' | 'selected' | 'fallback'
-  slotNumber: number | null
   selectedIndex: number | null
 }
 
@@ -342,21 +346,39 @@ function resolveNextPathLabel(route: string | null, mode: 'default' | 'demo'): s
   const fallback = 'Group Stage - A'
   if (!route) return fallback
 
-  let pathname = ''
+  let normalizedPath = ''
   try {
     const parsed = new URL(route, 'https://wc.local')
-    pathname = parsed.pathname.replace(/\/+$/, '') || '/'
+    const pathname = parsed.pathname.replace(/\/+$/, '') || '/'
+    normalizedPath = mode === 'demo' && pathname.startsWith('/demo') ? pathname.slice('/demo'.length) || '/' : pathname
   } catch {
     return fallback
   }
 
-  const normalizedPath = mode === 'demo' && pathname.startsWith('/demo') ? pathname.slice('/demo'.length) || '/' : pathname
   const groupMatch = normalizedPath.match(/^\/group-stage\/([A-L])$/i)
   if (groupMatch) return `Group Stage - ${groupMatch[1].toUpperCase()}`
   if (normalizedPath === '/match-picks') return 'Match Picks'
   if (normalizedPath === '/leaderboard') return 'Leaderboard'
   if (normalizedPath === '/knockout-bracket') return 'Knockout Bracket'
   return fallback
+}
+
+function resolveTileFromRoute(route: string | null, mode: 'default' | 'demo'): EntryTileKey | null {
+  if (!route) return null
+
+  let pathname = ''
+  try {
+    const parsed = new URL(route, 'https://wc.local')
+    pathname = parsed.pathname.replace(/\/+$/, '') || '/'
+  } catch {
+    return null
+  }
+
+  const normalizedPath = mode === 'demo' && pathname.startsWith('/demo') ? pathname.slice('/demo'.length) || '/' : pathname
+  if (/^\/group-stage(\/[A-L])?$/i.test(normalizedPath)) return 'group-stage'
+  if (normalizedPath === '/match-picks') return 'match-picks'
+  if (normalizedPath === '/knockout-bracket') return 'knockout-bracket'
+  return null
 }
 
 function resolveNextMatchdayWindow(queueMatches: QueueMatch[], now: Date): MatchdayWindow | null {
@@ -731,7 +753,6 @@ export default function LandingPage() {
       return {
         ...baseRow,
         kind: isViewer ? 'viewer' : selectedIndex !== null ? 'selected' : 'fallback',
-        slotNumber: isViewer ? null : index,
         selectedIndex
       }
     })
@@ -816,10 +837,41 @@ export default function LandingPage() {
     [knockoutData.completeMatches, knockoutData.totalMatches]
   )
 
+  const nextOpenQueueMatch = useMemo(() => queueMatches.find((entry) => !entry.locked) ?? null, [queueMatches])
+  const nextMatchLockLabel = useMemo(
+    () => (nextOpenQueueMatch ? formatLocalDateTime(nextOpenQueueMatch.lockTime) : 'No upcoming open locks'),
+    [nextOpenQueueMatch]
+  )
+
+  const groupLockLabel = useMemo(
+    () => (groupLockTime ? formatLocalDateTime(groupLockTime) : 'Group lock unavailable'),
+    [groupLockTime]
+  )
+
   const knockoutAvailable =
     phaseState.tournamentPhase === 'KO_OPEN' ||
     phaseState.tournamentPhase === 'KO_LOCKED' ||
     phaseState.tournamentPhase === 'FINAL'
+
+  const groupEditable = !groupClosed && !groupStage.isLocked && phaseState.lockFlags.groupEditable
+  const matchPicksEditable = phaseState.lockFlags.matchPicksEditable
+  const knockoutEditable = knockoutAvailable && phaseState.lockFlags.bracketEditable
+
+  const firstKnockoutKickoff = useMemo(() => {
+    const knockoutKickoffTimes = snapshotMatches
+      .filter((match) => match.stage !== 'Group')
+      .map((match) => new Date(match.kickoffUtc).getTime())
+      .filter((timestamp) => Number.isFinite(timestamp))
+      .sort((a, b) => a - b)
+
+    if (knockoutKickoffTimes.length === 0) return null
+    return new Date(knockoutKickoffTimes[0] ?? '')
+  }, [snapshotMatches])
+
+  const firstKnockoutKickoffLabel = useMemo(
+    () => (firstKnockoutKickoff ? formatLocalDateTime(firstKnockoutKickoff) : 'First knockout kickoff pending'),
+    [firstKnockoutKickoff]
+  )
 
   const tileStatusByKey = useMemo<Record<EntryTileKey, TileStatusLine>>(() => {
     const groupLoading = groupStage.loadState.status === 'loading'
@@ -827,42 +879,115 @@ export default function LandingPage() {
     const picksLoading = picksState.state.status === 'loading'
 
     const groupStatus: TileStatusLine = groupLoading
-      ? { label: 'Updating group progress.', tone: 'neutral' }
-      : groupClosed
+      ? {
+          progressLabel: 'Updating group progress.',
+          progressTone: 'neutral',
+          availabilityLabel: 'Updating',
+          availabilityTone: 'secondary',
+          timingLabel: `Lock condition: ${groupLockLabel}`,
+          actionLabel: 'Open Group Stage'
+        }
+      : !groupEditable
         ? {
-            label: `${groupCompletion.groupsDone}/${groupCompletion.groupsTotal} groups set • ${groupCompletion.bestThirdDone}/8 best-thirds selected.`,
-            tone: 'locked'
+            progressLabel: `${groupCompletion.groupsDone}/${groupCompletion.groupsTotal} groups set • ${groupCompletion.bestThirdDone}/8 best-thirds selected`,
+            progressTone: 'locked',
+            availabilityLabel: 'Locked',
+            availabilityTone: 'locked',
+            timingLabel: `Locked at ${groupLockLabel}`,
+            actionLabel: 'Review Group Stage'
           }
         : {
-            label: `${groupCompletion.pending} groups left before lock • ${groupCompletion.bestThirdDone}/8 best-thirds selected.`,
-            tone: groupCompletion.pending === 0 ? 'success' : 'warning'
+            progressLabel: `${groupCompletion.groupsDone}/${groupCompletion.groupsTotal} groups set • ${groupCompletion.bestThirdDone}/8 best-thirds selected`,
+            progressTone: groupCompletion.pending === 0 ? 'success' : 'warning',
+            availabilityLabel: 'Open for edits',
+            availabilityTone: 'info',
+            timingLabel: `Editable until ${groupLockLabel}`,
+            actionLabel: groupCompletion.pending > 0 ? 'Finish Group Stage picks' : 'Review Group Stage'
           }
 
     const matchStatus: TileStatusLine = picksLoading
-      ? { label: 'Updating match pick progress.', tone: 'neutral' }
-      : matchWindow72h.total > 0
+      ? {
+          progressLabel: 'Updating match pick progress.',
+          progressTone: 'neutral',
+          availabilityLabel: 'Updating',
+          availabilityTone: 'secondary',
+          timingLabel: 'Lock condition: Opens 72 hours before kickoff.',
+          actionLabel: 'Open Match Picks'
+        }
+      : !matchPicksEditable
         ? {
-            label: `${matchWindow72h.picked}/${matchWindow72h.total} picks set in the next 72 hours.`,
-            tone: matchWindow72h.pending === 0 ? 'success' : 'info'
+            progressLabel: `${matchWindow72h.picked}/${matchWindow72h.total} picks set in the active 72-hour window`,
+            progressTone: 'locked',
+            availabilityLabel: 'Locked',
+            availabilityTone: 'locked',
+            timingLabel: 'Final snapshot. Match picks are closed.',
+            actionLabel: 'Review Match Picks'
+          }
+        : matchWindow72h.total > 0
+        ? {
+            progressLabel: `${matchWindow72h.picked}/${matchWindow72h.total} picks set in the active 72-hour window`,
+            progressTone: matchWindow72h.pending === 0 ? 'success' : 'info',
+            availabilityLabel: 'Open for edits',
+            availabilityTone: 'info',
+            timingLabel: `Next lock: ${nextMatchLockLabel}`,
+            actionLabel: matchWindow72h.pending > 0 ? 'Make Match Picks' : 'Review Match Picks'
           }
         : nextMatchdayWindow
           ? {
-              label: `${nextMatchdayWindow.picked}/${nextMatchdayWindow.total} picks set for ${nextMatchdayWindow.dateLabel}.`,
-              tone: nextMatchdayWindow.pending === 0 ? 'success' : 'info'
+              progressLabel: `${nextMatchdayWindow.picked}/${nextMatchdayWindow.total} picks set for ${nextMatchdayWindow.dateLabel}`,
+              progressTone: nextMatchdayWindow.pending === 0 ? 'success' : 'warning',
+              availabilityLabel: 'Not open yet',
+              availabilityTone: 'warning',
+              timingLabel: 'Opens 72 hours before kickoff.',
+              actionLabel: 'Review Match Picks'
             }
-        : { label: 'No open match picks right now.', tone: 'locked' }
+        : {
+            progressLabel: 'No open match picks right now',
+            progressTone: 'locked',
+            availabilityLabel: 'Locked',
+            availabilityTone: 'locked',
+            timingLabel: 'Kickoff passed for current fixtures.',
+            actionLabel: 'Review Match Picks'
+          }
 
     const knockoutStatus: TileStatusLine = knockoutLoading
-      ? { label: 'Updating knockout availability.', tone: 'neutral' }
-      : knockoutAvailable
+      ? {
+          progressLabel: 'Updating knockout progress.',
+          progressTone: 'neutral',
+          availabilityLabel: 'Updating',
+          availabilityTone: 'secondary',
+          timingLabel: `Lock condition: ${firstKnockoutKickoffLabel}`,
+          actionLabel: 'Open Knockout Bracket'
+        }
+      : !knockoutAvailable
         ? {
-            label: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set.`,
-            tone: knockoutPendingActions === 0 ? 'success' : 'info'
+            progressLabel: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set`,
+            progressTone: 'warning',
+            availabilityLabel: 'Not open yet',
+            availabilityTone: 'warning',
+            timingLabel: 'Opens after group outcomes lock and draw confirmation.',
+            actionLabel: 'View Knockout Bracket'
           }
-        : {
-            label: 'Opens after group outcomes lock and matchups are confirmed.',
-            tone: 'locked'
-          }
+        : knockoutEditable
+          ? {
+              progressLabel: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set`,
+              progressTone: knockoutPendingActions === 0 ? 'success' : 'info',
+              availabilityLabel: 'Open for edits',
+              availabilityTone: 'info',
+              timingLabel: `Editable until ${firstKnockoutKickoffLabel}`,
+              actionLabel: knockoutPendingActions > 0 ? 'Set Knockout winners' : 'Review Knockout picks'
+            }
+          : {
+              progressLabel: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set`,
+              progressTone: 'locked',
+              availabilityLabel: 'Locked',
+              availabilityTone: 'locked',
+              timingLabel:
+                phaseState.tournamentPhase === 'FINAL'
+                  ? 'Final snapshot. Knockout picks are closed.'
+                  : `Edits closed at first knockout kickoff (${firstKnockoutKickoffLabel}).`,
+              actionLabel: 'Review Knockout Bracket'
+            }
 
     return {
       'group-stage': groupStatus,
@@ -875,16 +1000,23 @@ export default function LandingPage() {
     groupCompletion.groupsDone,
     groupCompletion.groupsTotal,
     groupCompletion.pending,
+    groupEditable,
     groupStage.loadState.status,
+    groupLockLabel,
+    knockoutEditable,
     knockoutAvailable,
     knockoutData.completeMatches,
     knockoutData.loadState.status,
     knockoutData.totalMatches,
     knockoutPendingActions,
+    firstKnockoutKickoffLabel,
+    matchPicksEditable,
     nextMatchdayWindow,
     matchWindow72h.pending,
     matchWindow72h.picked,
     matchWindow72h.total,
+    nextMatchLockLabel,
+    phaseState.tournamentPhase,
     picksState.state.status
   ])
 
@@ -908,20 +1040,114 @@ export default function LandingPage() {
     [now]
   )
 
-  const nextOpenQueueMatch = useMemo(() => queueMatches.find((entry) => !entry.locked) ?? null, [queueMatches])
-  const nextMatchLockLabel = useMemo(
-    () => (nextOpenQueueMatch ? formatLocalDateTime(nextOpenQueueMatch.lockTime) : 'No upcoming open locks'),
-    [nextOpenQueueMatch]
-  )
+  const recommendedTileKey = useMemo<EntryTileKey>(() => {
+    if (groupEditable && groupCompletion.pending > 0) return 'group-stage'
+    if (matchPicksEditable && matchWindow72h.pending > 0) return 'match-picks'
+    if (knockoutEditable && knockoutPendingActions > 0) return 'knockout-bracket'
+    if (groupEditable) return 'group-stage'
+    if (matchPicksEditable && (matchWindow72h.total > 0 || nextMatchdayWindow)) return 'match-picks'
+    if (knockoutAvailable) return 'knockout-bracket'
+    return resolveTileFromRoute(continuePreviewRoute, mode) ?? 'group-stage'
+  }, [
+    continuePreviewRoute,
+    groupCompletion.pending,
+    groupEditable,
+    knockoutAvailable,
+    knockoutEditable,
+    knockoutPendingActions,
+    matchPicksEditable,
+    matchWindow72h.pending,
+    matchWindow72h.total,
+    mode,
+    nextMatchdayWindow
+  ])
 
-  const groupLockLabel = useMemo(
-    () => (groupLockTime ? formatLocalDateTime(groupLockTime) : 'Group lock unavailable'),
-    [groupLockTime]
-  )
+  const viewerStandingSummary = useMemo(() => {
+    if (!snapshotReady || snapshotRows.length === 0) return null
 
-  const knockoutOpenLabel = knockoutAvailable
+    const rankedRows: Array<{ entry: LeaderboardEntry; rank: number; points: number }> = []
+    let previousPoints: number | null = null
+    let currentRank = 0
+
+    for (let index = 0; index < snapshotRows.length; index += 1) {
+      const entry = snapshotRows[index]
+      const points = Number.isFinite(entry.totalPoints) ? entry.totalPoints : 0
+      if (previousPoints === null || points !== previousPoints) {
+        currentRank = index + 1
+        previousPoints = points
+      }
+      rankedRows.push({ entry, rank: currentRank, points })
+    }
+
+    const viewerIndex = rankedRows.findIndex(({ entry }) =>
+      resolveLeaderboardIdentityKeys(entry).some((key) => viewerIdentityKeys.has(normalizeKey(key)))
+    )
+    if (viewerIndex < 0) return null
+
+    const viewerRow = rankedRows[viewerIndex]
+    const tiedCount = rankedRows.filter((row) => row.points === viewerRow.points).length
+
+    let aboveDifferentRank: { rank: number; points: number } | null = null
+    for (let index = viewerIndex - 1; index >= 0; index -= 1) {
+      const candidate = rankedRows[index]
+      if (candidate.rank < viewerRow.rank) {
+        aboveDifferentRank = candidate
+        break
+      }
+    }
+
+    let belowDifferentRank: { rank: number; points: number } | null = null
+    for (let index = viewerIndex + 1; index < rankedRows.length; index += 1) {
+      const candidate = rankedRows[index]
+      if (candidate.rank > viewerRow.rank) {
+        belowDifferentRank = candidate
+        break
+      }
+    }
+
+    const gapToAbove =
+      aboveDifferentRank && aboveDifferentRank.points > viewerRow.points
+        ? aboveDifferentRank.points - viewerRow.points
+        : null
+    const gapToBelow =
+      belowDifferentRank && viewerRow.points > belowDifferentRank.points
+        ? viewerRow.points - belowDifferentRank.points
+        : null
+
+    return {
+      rank: viewerRow.rank,
+      points: viewerRow.points,
+      tiedCount,
+      gapToAbove,
+      gapToAboveRank: aboveDifferentRank?.rank ?? null,
+      gapToBelow,
+      gapToBelowRank: belowDifferentRank?.rank ?? null
+    }
+  }, [snapshotReady, snapshotRows, viewerIdentityKeys])
+
+  const viewerStandingLabel = useMemo(() => {
+    if (!viewerStandingSummary) return 'Your position will appear after the next published snapshot.'
+
+    const segments = [`You are #${viewerStandingSummary.rank}`, `${viewerStandingSummary.points} pts`]
+    if (viewerStandingSummary.tiedCount > 1) {
+      const others = viewerStandingSummary.tiedCount - 1
+      segments.push(`Tied with ${others} ${others === 1 ? 'player' : 'players'}`)
+    }
+    if (viewerStandingSummary.gapToAbove && viewerStandingSummary.gapToAboveRank) {
+      segments.push(`${viewerStandingSummary.gapToAbove} pts to #${viewerStandingSummary.gapToAboveRank}`)
+    } else if (viewerStandingSummary.gapToBelow && viewerStandingSummary.gapToBelowRank) {
+      segments.push(`${viewerStandingSummary.gapToBelow} pts ahead of #${viewerStandingSummary.gapToBelowRank}`)
+    }
+    return segments.join(' · ')
+  }, [viewerStandingSummary])
+
+  const knockoutOpenLabel = knockoutEditable
     ? 'Knockout picks are open now.'
-    : 'Knockout picks open once group outcomes lock and matchups are confirmed.'
+    : knockoutAvailable
+      ? phaseState.tournamentPhase === 'FINAL'
+        ? 'Final snapshot. Knockout picks are closed.'
+        : 'Knockout picks lock at first knockout kickoff.'
+      : 'Knockout picks open once group outcomes lock and matchups are confirmed.'
 
   function persistRivals(nextRivals: string[]) {
     const normalized = sanitizeRivalUserIdsByIdentity({
@@ -1072,13 +1298,15 @@ export default function LandingPage() {
   const rivalsBoard = (
     <div className="space-y-3">
       <div className="landing-v2-rivals-header-row flex flex-wrap items-center justify-between gap-2">
-        <div className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-strong)]">Rivals</div>
+        <div className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-strong)]">
+          Rivals comparison
+        </div>
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
-          <span>{rivalUserIds.length}/3 selected</span>
+          <span>{`Tracking ${rivalUserIds.length}/3`}</span>
           {profileSaving ? <span>Saving...</span> : null}
           {rivalUserIds.length > 0 ? (
             <Button variant="ghost" size="sm" className="h-8 rounded-md px-2 text-[12px]" onClick={clearRivals}>
-              Clear all
+              Reset rivals
             </Button>
           ) : null}
         </div>
@@ -1086,7 +1314,10 @@ export default function LandingPage() {
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="landing-v2-rivals-pane space-y-2" data-pane="selected">
-          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Your lineup</div>
+          <div className="space-y-1">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">You and rivals</div>
+            <div className="text-[12px] text-muted-foreground">Drag rivals to set comparison order.</div>
+          </div>
           <div className="space-y-2">
             {rivalsListRows.map((row, index) => {
               const selectedRivalId = row.selectedIndex !== null ? rivalUserIds[row.selectedIndex] : null
@@ -1099,7 +1330,7 @@ export default function LandingPage() {
                   : row.kind === 'selected' && row.selectedIndex !== null
                     ? <StatusTagV2 tone="warning" className="v2-role-badge">{`Rival ${row.selectedIndex + 1}`}</StatusTagV2>
                     : null
-              const snapshotFillLabel = row.kind === 'fallback' ? `Snapshot fill${row.slotNumber ? ` • R${row.slotNumber}` : ''}` : null
+              const snapshotFillLabel = row.kind === 'fallback' ? 'Nearby in standings' : null
 
               return (
                 <RowShellV2
@@ -1170,16 +1401,16 @@ export default function LandingPage() {
 
         <div className="landing-v2-rivals-pane space-y-2" data-pane="suggested">
           <div className="space-y-2">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Find players</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Add rivals</div>
             <Input
               ref={rivalSearchInputRef}
               value={rivalQuery}
               onChange={(event) => setRivalQuery(event.target.value)}
-              placeholder="Search players"
+              placeholder="Search by player name"
               className="h-9"
             />
           </div>
-          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Suggestions</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Available players</div>
           {rivalsState.status === 'loading' ? (
             <div className="space-y-2">
               <div className="h-9 animate-pulse rounded-md border border-border/70 bg-muted/35" />
@@ -1205,7 +1436,7 @@ export default function LandingPage() {
 
           {rivalsState.status === 'ready' && rivalsState.entries.length === 0 ? (
             <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-[13px] text-muted-foreground">
-              No players are available yet.
+              No players are available for comparison yet.
             </div>
           ) : null}
 
@@ -1319,12 +1550,17 @@ export default function LandingPage() {
         {ENTRY_TILES.map((tile) => {
           const Icon = tile.icon
           const status = tileStatusByKey[tile.key]
+          const isRecommended = recommendedTileKey === tile.key
           return (
             <SectionCardV2
               key={tile.key}
               tone="tile"
               density="none"
-              className="landing-v2-card group h-full p-4 transition-all duration-[var(--motion-duration-fast)] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_var(--v2-glow-medium),var(--shadow1)]"
+              className={cn(
+                'landing-v2-card group h-full p-4 transition-all duration-[var(--motion-duration-fast)] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_var(--v2-glow-medium),var(--shadow1)]',
+                isRecommended &&
+                  'border-[color:var(--v2-glow-medium)] shadow-[0_0_0_1px_var(--v2-glow-medium),var(--shadow1)]'
+              )}
             >
               <div className="relative z-[1] flex h-full flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
@@ -1336,12 +1572,24 @@ export default function LandingPage() {
                     <Icon size={42} />
                   </div>
                 </div>
-                <StatusLineV2 tone={status.tone} className="min-h-10 bg-background/45">
-                  {status.label}
+                <div className="flex items-center justify-between gap-2">
+                  <StatusTagV2 tone={status.availabilityTone}>{status.availabilityLabel}</StatusTagV2>
+                  {isRecommended ? <StatusTagV2 tone="info">Next step</StatusTagV2> : null}
+                </div>
+                <StatusLineV2 tone={status.progressTone} className="min-h-10 bg-background/45">
+                  {status.progressLabel}
                 </StatusLineV2>
+                <div className="text-[12px] text-muted-foreground">
+                  {status.timingLabel}
+                </div>
                 <div className="pt-1">
-                  <Button variant="secondary" size="sm" className="h-9 px-3 text-[13px]" onClick={() => openRoute(routeForTile(tile.key))}>
-                    Open
+                  <Button
+                    variant={isRecommended ? 'primary' : 'secondary'}
+                    size="sm"
+                    className="h-9 px-3 text-[13px]"
+                    onClick={() => openRoute(routeForTile(tile.key))}
+                  >
+                    {status.actionLabel}
                   </Button>
                 </div>
               </div>
@@ -1354,12 +1602,13 @@ export default function LandingPage() {
         <div className="v2-section-flat-header">
           <div>
             <h2 className="v2-heading-h2 text-foreground">Leaderboard</h2>
+            <div className="mt-1 text-[13px] text-muted-foreground">{viewerStandingLabel}</div>
           </div>
           <div className="flex items-center gap-3">
             <SnapshotStamp timestamp={snapshotTimestamp} prefix="Latest snapshot: " />
             <div className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
               <UsersIcon size={13} />
-              <span>{rivalUserIds.length}/3 selected</span>
+              <span>{`Tracking ${rivalUserIds.length}/3`}</span>
             </div>
           </div>
         </div>
@@ -1410,7 +1659,6 @@ export default function LandingPage() {
           </div>
         ) : null}
       </div>
-
       <SectionCardV2 tone="subtle" className="landing-v2-rules">
         <div className="space-y-2 text-[15px] text-muted-foreground">
           <h2 className="v2-heading-h2 text-foreground">Rules at a glance</h2>
