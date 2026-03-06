@@ -54,14 +54,21 @@ type RankSnapshot = {
   points?: Record<string, number>
 }
 
+type RivalComparison = {
+  relation: 'ahead' | 'behind' | 'tied' | 'unranked'
+  pointsGap: number | null
+}
+
 type RivalFocusRow = {
   id: string
   name: string
   favoriteTeamCode: string | null
   rank: number | null
+  tieCount: number | null
   points: number | null
   rankDelta: number | null
   pointsDelta: number | null
+  comparison: RivalComparison | null
   kind: 'you' | 'rival'
   rivalSlot?: number | null
 }
@@ -238,6 +245,51 @@ function pointsDeltaLabel(delta: number | null): string {
   return 'Pts ='
 }
 
+function rankLabel(rank: number | null, tieCount: number | null): string {
+  if (rank === null) return 'Unranked'
+  if (tieCount !== null && tieCount > 1) return `T#${rank}`
+  return `#${rank}`
+}
+
+function tieLabel(tieCount: number | null): string {
+  if (tieCount === null || tieCount <= 1) return ''
+  return `Tied (${tieCount})`
+}
+
+function compareAgainstViewer(viewerPoints: number | null, otherPoints: number | null): RivalComparison {
+  if (viewerPoints === null || otherPoints === null) {
+    return { relation: 'unranked', pointsGap: null }
+  }
+  if (otherPoints === viewerPoints) {
+    return { relation: 'tied', pointsGap: 0 }
+  }
+  if (otherPoints > viewerPoints) {
+    return { relation: 'ahead', pointsGap: otherPoints - viewerPoints }
+  }
+  return { relation: 'behind', pointsGap: viewerPoints - otherPoints }
+}
+
+function comparisonTone(comparison: RivalComparison | null): 'success' | 'danger' | 'info' | 'secondary' {
+  if (!comparison) return 'secondary'
+  if (comparison.relation === 'behind') return 'success'
+  if (comparison.relation === 'ahead') return 'danger'
+  if (comparison.relation === 'tied') return 'info'
+  return 'secondary'
+}
+
+function comparisonLabel(comparison: RivalComparison | null): string {
+  if (!comparison || comparison.relation === 'unranked') return 'Not ranked in this snapshot'
+  if (comparison.relation === 'tied') return 'Tied with you'
+  if (comparison.relation === 'ahead') {
+    return comparison.pointsGap && comparison.pointsGap > 0
+      ? `Ahead of you by ${comparison.pointsGap} pts`
+      : 'Ahead of you'
+  }
+  return comparison.pointsGap && comparison.pointsGap > 0
+    ? `Behind you by ${comparison.pointsGap} pts`
+    : 'Behind you'
+}
+
 function shouldShowMomentumPill(delta: number | null): boolean {
   return delta !== null && delta !== 0
 }
@@ -295,9 +347,15 @@ function RivalFocusPanel({
                   {row.kind === 'you' ? 'You' : roleBadgeLabel({ isYou: false, rivalSlot: row.rivalSlot })}
                 </StatusTagV2>
               }
-              subtitle={<span>{row.rank ? `#${row.rank}` : 'Unranked'} • {row.points ?? '-'} pts</span>}
+              subtitle={<span>{rankLabel(row.rank, row.tieCount)} • {row.points ?? '-'} pts</span>}
               badges={(
                 <>
+                  {row.tieCount !== null && row.tieCount > 1 ? (
+                    <StatusTagV2 tone="secondary">{tieLabel(row.tieCount)}</StatusTagV2>
+                  ) : null}
+                  {row.kind === 'rival' ? (
+                    <StatusTagV2 tone={comparisonTone(row.comparison)}>{comparisonLabel(row.comparison)}</StatusTagV2>
+                  ) : null}
                   {row.rankDelta !== null ? (
                     <StatusTagV2 tone={movementTone(row.rankDelta)}>{rankDeltaLabel(row.rankDelta)}</StatusTagV2>
                   ) : null}
@@ -401,6 +459,21 @@ export default function LeaderboardPage() {
     }
     return map
   }, [activeTieRankedRows.rankedRows])
+
+  const tieCountByEntryKey = useMemo(() => {
+    const tieCountByPoints = new Map<number, number>()
+    for (const entry of activeRows) {
+      tieCountByPoints.set(entry.totalPoints, (tieCountByPoints.get(entry.totalPoints) ?? 0) + 1)
+    }
+
+    const tieCountByKey = new Map<string, number>()
+    for (const entry of activeRows) {
+      const entryKey = getEntryIdentityKey(entry)
+      tieCountByKey.set(entryKey, tieCountByPoints.get(entry.totalPoints) ?? 1)
+    }
+
+    return tieCountByKey
+  }, [activeRows])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -648,6 +721,7 @@ export default function LeaderboardPage() {
     const currentEntry = activeRows[currentIndex]
     const currentEntryKey = getEntryIdentityKey(currentEntry)
     const currentRank = rankByEntryKey.get(currentEntryKey) ?? currentIndex + 1
+    const currentTieCount = tieCountByEntryKey.get(currentEntryKey) ?? 1
     const aboveEntry = currentIndex > 0 ? activeRows[currentIndex - 1] : null
     const belowEntry = currentIndex < activeRows.length - 1 ? activeRows[currentIndex + 1] : null
 
@@ -655,24 +729,27 @@ export default function LeaderboardPage() {
       current: {
         entry: currentEntry,
         index: currentIndex,
-        rank: currentRank
+        rank: currentRank,
+        tieCount: currentTieCount
       },
       above: aboveEntry
         ? {
             entry: aboveEntry,
             index: currentIndex - 1,
-            rank: rankByEntryKey.get(getEntryIdentityKey(aboveEntry)) ?? currentIndex
+            rank: rankByEntryKey.get(getEntryIdentityKey(aboveEntry)) ?? currentIndex,
+            tieCount: tieCountByEntryKey.get(getEntryIdentityKey(aboveEntry)) ?? 1
           }
         : null,
       below: belowEntry
         ? {
             entry: belowEntry,
             index: currentIndex + 1,
-            rank: rankByEntryKey.get(getEntryIdentityKey(belowEntry)) ?? currentIndex + 2
+            rank: rankByEntryKey.get(getEntryIdentityKey(belowEntry)) ?? currentIndex + 2,
+            tieCount: tieCountByEntryKey.get(getEntryIdentityKey(belowEntry)) ?? 1
           }
         : null
     }
-  }, [activeRows, rankByEntryKey, viewerKeys])
+  }, [activeRows, rankByEntryKey, tieCountByEntryKey, viewerKeys])
 
   const activeRowsByIdentity = useMemo(() => {
     const map = new Map<string, { entry: LeaderboardEntry; rank: number; entryKey: string }>()
@@ -692,6 +769,7 @@ export default function LeaderboardPage() {
 
   const rivalFocusRows = useMemo<RivalFocusRow[]>(() => {
     const rows: RivalFocusRow[] = []
+    const viewerPoints = userContext?.current.entry.totalPoints ?? null
 
     if (userContext?.current) {
       const currentEntry = userContext.current.entry
@@ -704,9 +782,11 @@ export default function LeaderboardPage() {
         name: currentEntry.member.name,
         favoriteTeamCode: viewerFavoriteTeamCode,
         rank: userContext.current.rank,
+        tieCount: userContext.current.tieCount,
         points: currentEntry.totalPoints,
         rankDelta: typeof previousRank === 'number' ? previousRank - userContext.current.rank : null,
         pointsDelta: typeof previousPoints === 'number' ? currentEntry.totalPoints - previousPoints : null,
+        comparison: null,
         kind: 'you',
         rivalSlot: null
       })
@@ -716,9 +796,11 @@ export default function LeaderboardPage() {
         name: 'You',
         favoriteTeamCode: viewerFavoriteTeamCode,
         rank: null,
+        tieCount: null,
         points: null,
         rankDelta: null,
         pointsDelta: null,
+        comparison: null,
         kind: 'you',
         rivalSlot: null
       })
@@ -745,9 +827,11 @@ export default function LeaderboardPage() {
           name: rivalDisplayName,
           favoriteTeamCode: rivalFavoriteTeamCode,
           rank: null,
+          tieCount: null,
           points: null,
           rankDelta: null,
           pointsDelta: null,
+          comparison: { relation: 'unranked', pointsGap: null },
           kind: 'rival',
           rivalSlot
         })
@@ -762,9 +846,11 @@ export default function LeaderboardPage() {
         name: rivalDisplayName,
         favoriteTeamCode: rivalFavoriteTeamCode,
         rank: lookup.rank,
+        tieCount: tieCountByEntryKey.get(lookup.entryKey) ?? 1,
         points: lookup.entry.totalPoints,
         rankDelta: typeof previousRank === 'number' ? previousRank - lookup.rank : null,
         pointsDelta: typeof previousPoints === 'number' ? lookup.entry.totalPoints - previousPoints : null,
+        comparison: compareAgainstViewer(viewerPoints, lookup.entry.totalPoints),
         kind: 'rival',
         rivalSlot
       })
@@ -776,6 +862,7 @@ export default function LeaderboardPage() {
     previousSnapshot,
     rivalDirectoryByIdentity,
     rivalUserIds,
+    tieCountByEntryKey,
     userContext,
     userId,
     viewerFavoriteTeamCode
@@ -834,13 +921,55 @@ export default function LeaderboardPage() {
 
   const stickyUserRow = userContext?.current.entry ?? null
   const stickyUserFavoriteTeamCode = stickyUserRow ? resolveEntryFavoriteTeamCode(stickyUserRow) : null
+  const stickyUserTieCount = stickyUserRow ? (tieCountByEntryKey.get(getEntryIdentityKey(stickyUserRow)) ?? 1) : null
   const shouldShowStickyRow = Boolean(stickyUserRow) && !isCurrentRowVisible
+  const currentRowKey = userContext?.current ? getEntryIdentityKey(userContext.current.entry) : null
+  const currentRankDelta =
+    currentRowKey && userContext?.current
+      ? (() => {
+          const previousRank = previousSnapshot?.ranks[currentRowKey]
+          return typeof previousRank === 'number' ? previousRank - userContext.current.rank : null
+        })()
+      : null
+  const currentPointsDelta =
+    currentRowKey && userContext?.current
+      ? (() => {
+          const previousPoints = previousSnapshot?.points?.[currentRowKey]
+          return typeof previousPoints === 'number' ? userContext.current.entry.totalPoints - previousPoints : null
+        })()
+      : null
+
+  const rivalComparisonSummary = rivalFocusRows
+    .filter((row) => row.kind === 'rival')
+    .reduce(
+      (summary, row) => {
+        const relation = row.comparison?.relation ?? 'unranked'
+        if (relation === 'ahead') summary.ahead += 1
+        if (relation === 'behind') summary.behind += 1
+        if (relation === 'tied') summary.tied += 1
+        if (relation === 'unranked') summary.unranked += 1
+        return summary
+      },
+      { ahead: 0, behind: 0, tied: 0, unranked: 0 }
+    )
+  const rivalSummaryText = (() => {
+    if (rivalUserIds.length === 0) return 'No rivals selected yet.'
+    const parts: string[] = []
+    if (rivalComparisonSummary.ahead > 0) parts.push(`${rivalComparisonSummary.ahead} ahead`)
+    if (rivalComparisonSummary.tied > 0) parts.push(`${rivalComparisonSummary.tied} tied`)
+    if (rivalComparisonSummary.behind > 0) parts.push(`${rivalComparisonSummary.behind} behind`)
+    if (rivalComparisonSummary.unranked > 0) parts.push(`${rivalComparisonSummary.unranked} unranked`)
+    if (parts.length === 0) return 'No rival comparison data yet.'
+    return `${parts.join(' • ')}`
+  })()
 
   const podiumRows = activeRows.slice(0, 3).map((entry, index) => ({
     id: entry.member.id || `podium-${index + 1}`,
     name: entry.member.name,
     points: entry.totalPoints,
     rank: (index + 1) as 1 | 2 | 3,
+    displayRank: rankByEntryKey.get(getEntryIdentityKey(entry)) ?? index + 1,
+    tieCount: tieCountByEntryKey.get(getEntryIdentityKey(entry)) ?? 1,
     favoriteTeamCode: resolveEntryFavoriteTeamCode(entry),
     isViewer: isCurrentUserEntry(entry)
   }))
@@ -854,7 +983,7 @@ export default function LeaderboardPage() {
   function handleDownloadLeaderboardXlsx() {
     const exportedAt = new Date().toISOString()
     const snapshotAsOf = snapshotTimestamp || 'Snapshot unavailable'
-    const exportRows = activeBaseRows
+    const exportRows = activeRows
 
     const rows: string[][] = [
       ['exportedAt', exportedAt],
@@ -876,8 +1005,10 @@ export default function LeaderboardPage() {
     ]
 
     exportRows.forEach((entry, index) => {
+      const entryKey = getEntryIdentityKey(entry)
+      const rank = rankByEntryKey.get(entryKey) ?? index + 1
       rows.push([
-        String(index + 1),
+        String(rank),
         entry.member.id ?? '',
         entry.member.name,
         String(entry.totalPoints ?? 0),
@@ -968,9 +1099,113 @@ export default function LeaderboardPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="v2-heading-h2 text-foreground">Full leaderboard</h2>
-              <div className="mt-1 text-[13px] text-muted-foreground">Single-row standings with inline social hooks and full score breakdown.</div>
+              <div className="mt-1 text-[13px] text-muted-foreground">Total points set rank; breakdown columns explain where each total came from.</div>
             </div>
           </div>
+
+          {userContext?.current ? (
+            <div className="rounded-xl border border-border/70 bg-background/35 p-3 md:p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Your standing</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <div className="text-lg font-semibold tabular-nums text-foreground">
+                      {rankLabel(userContext.current.rank, userContext.current.tieCount)}
+                    </div>
+                    <div className="text-sm tabular-nums text-muted-foreground">{userContext.current.entry.totalPoints} pts</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">Selected rivals: {rivalSummaryText}</div>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-1">
+                  {userContext.current.tieCount > 1 ? (
+                    <StatusTagV2 tone="secondary">{tieLabel(userContext.current.tieCount)}</StatusTagV2>
+                  ) : null}
+                  {currentRankDelta !== null ? (
+                    <StatusTagV2 tone={movementTone(currentRankDelta)}>{rankDeltaLabel(currentRankDelta)}</StatusTagV2>
+                  ) : null}
+                  {currentPointsDelta !== null ? (
+                    <StatusTagV2 tone={movementTone(currentPointsDelta)}>{pointsDeltaLabel(currentPointsDelta)}</StatusTagV2>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-2 md:grid-cols-2">
+                <div className="rounded-lg border border-border/70 bg-background/40 p-2.5">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">One spot above</div>
+                  {userContext.above ? (
+                    <MemberIdentityRowV2
+                      name={`${rankLabel(userContext.above.rank, userContext.above.tieCount)} ${userContext.above.entry.member.name}`}
+                      favoriteTeamCode={resolveEntryFavoriteTeamCode(userContext.above.entry)}
+                      avatarClassName="h-12 w-[72px]"
+                      className="mt-1"
+                      subtitle={<span>{userContext.above.entry.totalPoints} pts</span>}
+                      badges={(
+                        <>
+                          {userContext.above.tieCount > 1 ? (
+                            <StatusTagV2 tone="secondary">{tieLabel(userContext.above.tieCount)}</StatusTagV2>
+                          ) : null}
+                          <StatusTagV2
+                            tone={comparisonTone(
+                              compareAgainstViewer(
+                                userContext.current.entry.totalPoints,
+                                userContext.above.entry.totalPoints
+                              )
+                            )}
+                          >
+                            {comparisonLabel(
+                              compareAgainstViewer(
+                                userContext.current.entry.totalPoints,
+                                userContext.above.entry.totalPoints
+                              )
+                            )}
+                          </StatusTagV2>
+                        </>
+                      )}
+                    />
+                  ) : (
+                    <div className="mt-1 text-xs text-muted-foreground">No one above you.</div>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-border/70 bg-background/40 p-2.5">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">One spot below</div>
+                  {userContext.below ? (
+                    <MemberIdentityRowV2
+                      name={`${rankLabel(userContext.below.rank, userContext.below.tieCount)} ${userContext.below.entry.member.name}`}
+                      favoriteTeamCode={resolveEntryFavoriteTeamCode(userContext.below.entry)}
+                      avatarClassName="h-12 w-[72px]"
+                      className="mt-1"
+                      subtitle={<span>{userContext.below.entry.totalPoints} pts</span>}
+                      badges={(
+                        <>
+                          {userContext.below.tieCount > 1 ? (
+                            <StatusTagV2 tone="secondary">{tieLabel(userContext.below.tieCount)}</StatusTagV2>
+                          ) : null}
+                          <StatusTagV2
+                            tone={comparisonTone(
+                              compareAgainstViewer(
+                                userContext.current.entry.totalPoints,
+                                userContext.below.entry.totalPoints
+                              )
+                            )}
+                          >
+                            {comparisonLabel(
+                              compareAgainstViewer(
+                                userContext.current.entry.totalPoints,
+                                userContext.below.entry.totalPoints
+                              )
+                            )}
+                          </StatusTagV2>
+                        </>
+                      )}
+                    />
+                  ) : (
+                    <div className="mt-1 text-xs text-muted-foreground">No one below you.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="overflow-x-auto">
             <div className="min-w-[980px] space-y-2">
@@ -987,6 +1222,7 @@ export default function LeaderboardPage() {
               {pageRows.map((entry, index) => {
                 const entryKey = getEntryIdentityKey(entry)
                 const rank = rankByEntryKey.get(entryKey) ?? start + index + 1
+                const tieCount = tieCountByEntryKey.get(entryKey) ?? 1
                 const entryBadges = socialBadgesByEntry.get(entryKey) ?? []
                 const isYou = isCurrentUserEntry(entry)
                 const isRival = isRivalEntry(entry)
@@ -1005,7 +1241,7 @@ export default function LeaderboardPage() {
                     className="rounded-xl px-3 py-3 focus-within:ring-2 focus-within:ring-ring"
                   >
                     <div className="hidden grid-cols-[72px_minmax(260px,1fr)_110px_72px_72px_72px_72px] items-center gap-2 md:grid">
-                      <div className="text-base font-semibold tabular-nums text-foreground">#{rank}</div>
+                      <div className="text-base font-semibold tabular-nums text-foreground">{rankLabel(rank, tieCount)}</div>
 
                       <div className="min-w-0">
                         <MemberIdentityRowV2
@@ -1026,6 +1262,7 @@ export default function LeaderboardPage() {
                           badges={(
                             <>
                               {isTopThree ? <StatusTagV2 tone="success">Top 3</StatusTagV2> : null}
+                              {tieCount > 1 ? <StatusTagV2 tone="secondary">{tieLabel(tieCount)}</StatusTagV2> : null}
                               {shouldShowMomentumPill(movementDelta) ? (
                                 <StatusTagV2 tone={movementTone(movementDelta)}>{movementLabel(movementDelta)}</StatusTagV2>
                               ) : null}
@@ -1053,7 +1290,7 @@ export default function LeaderboardPage() {
                     <div className="space-y-2 md:hidden">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="text-base font-semibold tabular-nums text-foreground">#{rank}</div>
+                          <div className="text-base font-semibold tabular-nums text-foreground">{rankLabel(rank, tieCount)}</div>
                           <MemberIdentityRowV2
                             name={entry.member.name}
                             favoriteTeamCode={favoriteTeamCode}
@@ -1082,6 +1319,7 @@ export default function LeaderboardPage() {
                         {isTopThree ? (
                           <StatusTagV2 tone="success">Top 3</StatusTagV2>
                         ) : null}
+                        {tieCount > 1 ? <StatusTagV2 tone="secondary">{tieLabel(tieCount)}</StatusTagV2> : null}
                         {shouldShowMomentumPill(movementDelta) ? (
                           <StatusTagV2 tone={movementTone(movementDelta)}>{movementLabel(movementDelta)}</StatusTagV2>
                         ) : null}
@@ -1149,12 +1387,17 @@ export default function LeaderboardPage() {
               <div className="min-w-0">
                 <div className="text-[12px] uppercase tracking-[0.12em] text-muted-foreground">Your row</div>
                 <MemberIdentityRowV2
-                  name={`#${userContext.current.rank} ${stickyUserRow.member.name}`}
+                  name={`${rankLabel(userContext.current.rank, stickyUserTieCount)} ${stickyUserRow.member.name}`}
                   favoriteTeamCode={stickyUserFavoriteTeamCode}
                   avatarClassName="h-12 w-[72px]"
                   className="mt-1"
                 />
-                <div className="text-xs text-muted-foreground">{stickyUserRow.totalPoints} pts</div>
+                <div className="mt-1 flex flex-wrap items-center gap-1">
+                  <span className="text-xs text-muted-foreground">{stickyUserRow.totalPoints} pts</span>
+                  {stickyUserTieCount !== null && stickyUserTieCount > 1 ? (
+                    <StatusTagV2 tone="secondary">{tieLabel(stickyUserTieCount)}</StatusTagV2>
+                  ) : null}
+                </div>
               </div>
               <Button size="sm" variant="secondary" className="v2-action-compact" onClick={jumpToCurrentUserRow}>
                 Jump to row
