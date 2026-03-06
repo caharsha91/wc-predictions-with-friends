@@ -18,8 +18,8 @@ export type MatchPickTeam = {
 
 export type MatchPickChange = {
   matchId: string
-  scoreA: number
-  scoreB: number
+  scoreA: number | undefined
+  scoreB: number | undefined
   decidedIn: MatchPickDecidedIn
   selectedWinnerId?: string
 }
@@ -29,8 +29,8 @@ export type MatchPickProps = {
   isKnockout: boolean
   teamA: MatchPickTeam
   teamB: MatchPickTeam
-  scoreA: number
-  scoreB: number
+  scoreA: number | undefined
+  scoreB: number | undefined
   decidedIn: MatchPickDecidedIn
   selectedWinnerId?: string
   onChange: (next: MatchPickChange) => void
@@ -47,8 +47,8 @@ const MANUAL_GLOW_STYLE: CSSProperties = {
   boxShadow: 'var(--tone-warning-glow)'
 }
 
-export function isDraw(scoreA: number, scoreB: number): boolean {
-  return scoreA === scoreB
+export function isDraw(scoreA: number | undefined, scoreB: number | undefined): boolean {
+  return typeof scoreA === 'number' && typeof scoreB === 'number' && scoreA === scoreB
 }
 
 export function getWinnerId({
@@ -62,10 +62,12 @@ export function getWinnerId({
   isKnockout: boolean
   teamAId: string
   teamBId: string
-  scoreA: number
-  scoreB: number
+  scoreA: number | undefined
+  scoreB: number | undefined
   selectedWinnerId?: string
 }): string | undefined {
+  const hasScores = typeof scoreA === 'number' && typeof scoreB === 'number'
+  if (!hasScores) return undefined
   if (scoreA > scoreB) return teamAId
   if (scoreB > scoreA) return teamBId
   if (!isKnockout) return undefined
@@ -78,9 +80,11 @@ function clampScore(value: number): number {
   return Math.max(0, Math.floor(value))
 }
 
-function parseInputScore(raw: string, fallback: number): number {
+function parseInputScore(raw: string): number | undefined {
+  const trimmed = raw.trim()
+  if (!trimmed) return undefined
   const parsed = Number(raw)
-  if (!Number.isFinite(parsed)) return fallback
+  if (!Number.isFinite(parsed)) return undefined
   return clampScore(parsed)
 }
 
@@ -171,6 +175,7 @@ export default function MatchPick({
   rowState,
   knockoutDrawEnabled
 }: MatchPickProps) {
+  const hasScores = typeof scoreA === 'number' && typeof scoreB === 'number'
   const draw = isDraw(scoreA, scoreB)
   const knockoutDrawByScore = isKnockout && draw
   const knockoutDraw = knockoutDrawEnabled ?? knockoutDrawByScore
@@ -189,6 +194,26 @@ export default function MatchPick({
   )
 
   const lastAutoNormalizeKeyRef = useRef<string | null>(null)
+  const latestInteractionRef = useRef<{
+    scoreA: number | undefined
+    scoreB: number | undefined
+    decidedIn: MatchPickDecidedIn
+    selectedWinnerId?: string
+  }>({
+    scoreA,
+    scoreB,
+    decidedIn,
+    selectedWinnerId
+  })
+
+  useEffect(() => {
+    latestInteractionRef.current = {
+      scoreA,
+      scoreB,
+      decidedIn,
+      selectedWinnerId
+    }
+  }, [decidedIn, scoreA, scoreB, selectedWinnerId])
 
   useEffect(() => {
     const hasManualSelection = Boolean(selectedWinnerId)
@@ -208,6 +233,13 @@ export default function MatchPick({
     if (lastAutoNormalizeKeyRef.current === key) return
     lastAutoNormalizeKeyRef.current = key
 
+    latestInteractionRef.current = {
+      scoreA,
+      scoreB,
+      decidedIn,
+      selectedWinnerId: undefined
+    }
+
     onChange({
       matchId,
       scoreA,
@@ -218,20 +250,37 @@ export default function MatchPick({
   }, [decidedIn, knockoutDraw, matchId, onChange, scoreA, scoreB, selectedWinnerId, teamA.id, teamB.id])
 
   function emit(next: {
-    scoreA?: number
-    scoreB?: number
+    scoreA?: number | undefined
+    scoreB?: number | undefined
     decidedIn?: MatchPickDecidedIn
     selectedWinnerId?: string
   }) {
-    const nextScoreA = clampScore(next.scoreA ?? scoreA)
-    const nextScoreB = clampScore(next.scoreB ?? scoreB)
+    const latest = latestInteractionRef.current
+    const nextScoreA =
+      Object.prototype.hasOwnProperty.call(next, 'scoreA')
+        ? (typeof next.scoreA === 'number' ? clampScore(next.scoreA) : undefined)
+        : latest.scoreA
+    const nextScoreB =
+      Object.prototype.hasOwnProperty.call(next, 'scoreB')
+        ? (typeof next.scoreB === 'number' ? clampScore(next.scoreB) : undefined)
+        : latest.scoreB
     const nextKnockoutDraw = isKnockout && isDraw(nextScoreA, nextScoreB)
-    const nextDecidedIn = next.decidedIn ?? decidedIn
-    const requestedWinnerId = next.selectedWinnerId ?? selectedWinnerId
+    const nextDecidedIn = nextKnockoutDraw ? (next.decidedIn ?? latest.decidedIn) : 'REG'
+    const requestedWinnerId =
+      Object.prototype.hasOwnProperty.call(next, 'selectedWinnerId')
+        ? next.selectedWinnerId
+        : latest.selectedWinnerId
     const nextSelectedWinnerId =
       nextKnockoutDraw && (requestedWinnerId === teamA.id || requestedWinnerId === teamB.id)
         ? requestedWinnerId
         : undefined
+
+    latestInteractionRef.current = {
+      scoreA: nextScoreA,
+      scoreB: nextScoreB,
+      decidedIn: nextDecidedIn,
+      selectedWinnerId: nextSelectedWinnerId
+    }
 
     onChange({
       matchId,
@@ -277,8 +326,8 @@ export default function MatchPick({
             min={0}
             step={1}
             inputMode="numeric"
-            value={String(scoreA)}
-            onChange={(event) => emit({ scoreA: parseInputScore(event.target.value, scoreA) })}
+            value={typeof scoreA === 'number' ? String(scoreA) : ''}
+            onChange={(event) => emit({ scoreA: parseInputScore(event.target.value) })}
             disabled={disabled}
             className="h-8 w-12 border-transparent bg-transparent px-1 py-1 text-center text-[13px] tabular-nums shadow-none focus-visible:ring-offset-0 focus-visible:shadow-none"
             aria-label={`${teamA.name} score`}
@@ -291,8 +340,8 @@ export default function MatchPick({
             min={0}
             step={1}
             inputMode="numeric"
-            value={String(scoreB)}
-            onChange={(event) => emit({ scoreB: parseInputScore(event.target.value, scoreB) })}
+            value={typeof scoreB === 'number' ? String(scoreB) : ''}
+            onChange={(event) => emit({ scoreB: parseInputScore(event.target.value) })}
             disabled={disabled}
             className="h-8 w-12 border-transparent bg-transparent px-1 py-1 text-center text-[13px] tabular-nums shadow-none focus-visible:ring-offset-0 focus-visible:shadow-none"
             aria-label={`${teamB.name} score`}
@@ -339,7 +388,7 @@ export default function MatchPick({
         ) : null}
       </div>
 
-      {isKnockout && knockoutDraw && (!winnerId || !hasKnockoutMethod) ? (
+      {isKnockout && hasScores && knockoutDraw && (!winnerId || !hasKnockoutMethod) ? (
         <p className="mt-1 text-[11px] text-muted-foreground">Draw predicted - choose eventual winner and AET/PEN.</p>
       ) : null}
     </RowShellV2>

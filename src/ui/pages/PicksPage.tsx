@@ -322,8 +322,8 @@ function MatchRow({
   const rowState = !item.editable ? 'disabled' : rowDirty ? 'selected' : 'default'
   const homeFlagPath = resolveTeamFlagMeta({ code: match.homeTeam.code, name: match.homeTeam.name }).assetPath
   const awayFlagPath = resolveTeamFlagMeta({ code: match.awayTeam.code, name: match.awayTeam.name }).assetPath
-  const scoreA = parsedHome ?? 0
-  const scoreB = parsedAway ?? 0
+  const scoreA = parsedHome
+  const scoreB = parsedAway
   const readOnlyLabel = readOnlyReasonLabel(item.readOnlyReason)
   const interactionTag = !item.editable
     ? { tone: 'locked' as const, label: 'Locked' }
@@ -336,11 +336,26 @@ function MatchRow({
 
   function handleMatchPickChange(next: MatchPickChange) {
     if (!item.editable || isSaving) return
+    const nextHomeScore = typeof next.scoreA === 'number' ? String(next.scoreA) : ''
+    const nextAwayScore = typeof next.scoreB === 'number' ? String(next.scoreB) : ''
+    const nextHasScores = typeof next.scoreA === 'number' && typeof next.scoreB === 'number'
+    const nextRequiresKoExtras = isKnockout && nextHasScores && next.scoreA === next.scoreB
+    const nextWinnerFromEvent =
+      next.selectedWinnerId === 'HOME' || next.selectedWinnerId === 'AWAY' ? next.selectedWinnerId : ''
+    const nextMethodFromEvent = fromMatchPickDecidedIn(next.decidedIn)
+    const mergedWinner = nextRequiresKoExtras
+      ? (nextWinnerFromEvent || draft.eventualWinnerTeamId)
+      : ''
+    const mergedMethod = nextRequiresKoExtras
+      ? (nextMethodFromEvent || draft.koWinMethod)
+      : ''
+
     onDraftChange({
-      homeScore: String(next.scoreA),
-      awayScore: String(next.scoreB),
-      eventualWinnerTeamId: next.selectedWinnerId === 'HOME' || next.selectedWinnerId === 'AWAY' ? next.selectedWinnerId : '',
-      koWinMethod: fromMatchPickDecidedIn(next.decidedIn)
+      homeScore: nextHomeScore,
+      awayScore: nextAwayScore,
+      eventualWinnerTeamId:
+        mergedWinner === 'HOME' || mergedWinner === 'AWAY' ? mergedWinner : '',
+      koWinMethod: mergedMethod === 'ET' || mergedMethod === 'PENS' ? mergedMethod : ''
     })
   }
 
