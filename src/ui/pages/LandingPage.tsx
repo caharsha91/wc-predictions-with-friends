@@ -1092,12 +1092,13 @@ export default function LandingPage() {
               const isSelectedDraggable = Boolean(row.kind === 'selected' && selectedRivalId && !profileSaving)
               const isDragging = Boolean(selectedRivalId && draggingRivalId === selectedRivalId)
               const isDragOver = Boolean(selectedRivalId && draggingRivalId && dragOverRivalId === selectedRivalId)
-              const lineupLabel =
+              const roleBadge =
                 row.kind === 'viewer'
-                  ? 'You'
+                  ? <StatusTagV2 tone="info" className="v2-role-badge">You</StatusTagV2>
                   : row.kind === 'selected' && row.selectedIndex !== null
-                    ? `Rival ${row.selectedIndex + 1}`
-                    : `Snapshot fill${row.slotNumber ? ` • R${row.slotNumber}` : ''}`
+                    ? <StatusTagV2 tone="warning" className="v2-role-badge">{`Rival ${row.selectedIndex + 1}`}</StatusTagV2>
+                    : null
+              const snapshotFillLabel = row.kind === 'fallback' ? `Snapshot fill${row.slotNumber ? ` • R${row.slotNumber}` : ''}` : null
 
               return (
                 <RowShellV2
@@ -1127,10 +1128,15 @@ export default function LandingPage() {
                     name={row.name}
                     favoriteTeamCode={row.favoriteTeamCode}
                     avatarClassName="h-12 w-[72px]"
+                    nameBadges={roleBadge}
                     subtitle={
                       <span>
-                        {lineupLabel}
-                        <span className="mx-1.5">·</span>
+                        {snapshotFillLabel ? (
+                          <>
+                            <span>{snapshotFillLabel}</span>
+                            <span className="mx-1.5">·</span>
+                          </>
+                        ) : null}
                         <span>{row.rank ? `#${row.rank}` : 'Unranked'}</span>
                         <span className="mx-1.5">·</span>
                         <span>{row.points ?? '—'} pts</span>

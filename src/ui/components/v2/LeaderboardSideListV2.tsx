@@ -214,6 +214,13 @@ export function LeaderboardCardCurated({
               name={`#${row.rank} ${row.name}`}
               favoriteTeamCode={row.favoriteTeamCode ?? null}
               avatarClassName="h-12 w-[72px] shrink-0"
+              nameBadges={
+                row.isYou ? (
+                  <StatusTagV2 tone="info" className="v2-role-badge">You</StatusTagV2>
+                ) : rivalSlot ? (
+                  <StatusTagV2 tone="warning" className="v2-role-badge">{`Rival ${rivalSlot}`}</StatusTagV2>
+                ) : null
+              }
               subtitle={(
                 <span>
                   Move {movementLabel(row.movement)}
@@ -222,12 +229,6 @@ export function LeaderboardCardCurated({
                     : ''}
                 </span>
               )}
-              badges={
-                <>
-                  {row.isYou ? <StatusTagV2 tone="info">You</StatusTagV2> : null}
-                  {!row.isYou && rivalSlot ? <StatusTagV2 tone="warning">{`Rival ${rivalSlot}`}</StatusTagV2> : null}
-                </>
-              }
               marker={(
                 <div className="text-right text-[12px] text-muted-foreground">
                   <div className="tabular-nums text-foreground">{row.points} pts</div>

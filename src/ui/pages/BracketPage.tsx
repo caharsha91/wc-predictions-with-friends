@@ -134,7 +134,7 @@ function bracketWinnerChoiceClass({
   return cn(
     'flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-all',
     compact ? 'text-[12px]' : 'text-[11px]',
-    selected ? 'bg-[color:var(--tone-info-bg-soft)] text-foreground' : 'bg-[var(--surface-2)] text-muted-foreground',
+    selected ? 'v2-selected-pick-info text-foreground' : 'bg-[var(--surface-2)] text-muted-foreground',
     interactive
       ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
       : undefined,
@@ -374,7 +374,7 @@ function BracketSummaryPanel({
           key={`summary-${round.stage}`}
           className={`rounded-xl border p-2.5 ${
             round.stage === activeStage
-              ? 'border-[color:var(--tone-info-border)] bg-[color:var(--tone-info-bg-soft)]'
+              ? 'v2-selected-pick-info'
               : 'border-border/50 bg-background/35'
           }`}
         >
@@ -1336,7 +1336,7 @@ export default function BracketPage() {
                     type="button"
                     className={`shrink-0 rounded-lg border px-2 py-1 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       round.stage === activeRound.stage
-                        ? 'border-[color:var(--tone-info-border)] bg-[color:var(--tone-info-bg-soft)] text-foreground'
+                        ? 'v2-selected-pick-info text-foreground'
                         : round.complete
                           ? 'border-[color:var(--tone-success-border)] bg-[color:var(--tone-success-bg-soft)] text-foreground'
                           : 'border-border/42 bg-background/25 text-muted-foreground'

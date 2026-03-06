@@ -218,6 +218,11 @@ function movementLabel(delta: number | null): string {
   return 'Momentum ='
 }
 
+function roleBadgeLabel({ isYou, rivalSlot }: { isYou: boolean; rivalSlot: number | null | undefined }): string {
+  if (isYou) return 'You'
+  return rivalSlot ? `Rival ${rivalSlot}` : 'Rival'
+}
+
 function rankDeltaLabel(delta: number | null): string {
   if (delta === null) return 'Rank -'
   if (delta > 0) return `Rank +${delta}`
@@ -284,12 +289,14 @@ function RivalFocusPanel({
               name={row.name}
               favoriteTeamCode={row.favoriteTeamCode}
               avatarClassName="h-12 w-[72px]"
+              nameBadges={
+                <StatusTagV2 tone={row.kind === 'you' ? 'info' : 'warning'} className="v2-role-badge">
+                  {row.kind === 'you' ? 'You' : roleBadgeLabel({ isYou: false, rivalSlot: row.rivalSlot })}
+                </StatusTagV2>
+              }
               subtitle={<span>{row.rank ? `#${row.rank}` : 'Unranked'} • {row.points ?? '-'} pts</span>}
               badges={(
                 <>
-                  <StatusTagV2 tone={row.kind === 'you' ? 'info' : 'warning'}>
-                    {row.kind === 'you' ? 'You' : row.rivalSlot ? `Rival ${row.rivalSlot}` : 'Rival'}
-                  </StatusTagV2>
                   {row.rankDelta !== null ? (
                     <StatusTagV2 tone={movementTone(row.rankDelta)}>{rankDeltaLabel(row.rankDelta)}</StatusTagV2>
                   ) : null}
@@ -999,14 +1006,19 @@ export default function LeaderboardPage() {
                           name={entry.member.name}
                           favoriteTeamCode={favoriteTeamCode}
                           avatarClassName="h-12 w-[72px]"
+                          nameBadges={
+                            isYou ? (
+                              <StatusTagV2 tone="info" className="v2-role-badge">
+                                {roleBadgeLabel({ isYou: true, rivalSlot: null })}
+                              </StatusTagV2>
+                            ) : isRival ? (
+                              <StatusTagV2 tone="warning" className="v2-role-badge">
+                                {roleBadgeLabel({ isYou: false, rivalSlot })}
+                              </StatusTagV2>
+                            ) : null
+                          }
                           badges={(
                             <>
-                              {isYou ? <StatusTagV2 tone="info">You</StatusTagV2> : null}
-                              {!isYou && isRival ? (
-                                <StatusTagV2 tone="warning">
-                                  {rivalSlot ? `Rival ${rivalSlot}` : 'Rival'}
-                                </StatusTagV2>
-                              ) : null}
                               {isTopThree ? <StatusTagV2 tone="success">Top 3</StatusTagV2> : null}
                               {shouldShowMomentumPill(movementDelta) ? (
                                 <StatusTagV2 tone={movementTone(movementDelta)}>{movementLabel(movementDelta)}</StatusTagV2>
@@ -1041,6 +1053,17 @@ export default function LeaderboardPage() {
                             favoriteTeamCode={favoriteTeamCode}
                             avatarClassName="h-12 w-[72px]"
                             className="mt-1"
+                            nameBadges={
+                              isYou ? (
+                                <StatusTagV2 tone="info" className="v2-role-badge">
+                                  {roleBadgeLabel({ isYou: true, rivalSlot: null })}
+                                </StatusTagV2>
+                              ) : isRival ? (
+                                <StatusTagV2 tone="warning" className="v2-role-badge">
+                                  {roleBadgeLabel({ isYou: false, rivalSlot })}
+                                </StatusTagV2>
+                              ) : null
+                            }
                           />
                         </div>
                         <div className="text-right">
@@ -1050,14 +1073,6 @@ export default function LeaderboardPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-1">
-                        {isYou ? (
-                          <StatusTagV2 tone="info">You</StatusTagV2>
-                        ) : null}
-                        {!isYou && isRival ? (
-                          <StatusTagV2 tone="warning">
-                            {rivalSlot ? `Rival ${rivalSlot}` : 'Rival'}
-                          </StatusTagV2>
-                        ) : null}
                         {isTopThree ? (
                           <StatusTagV2 tone="success">Top 3</StatusTagV2>
                         ) : null}

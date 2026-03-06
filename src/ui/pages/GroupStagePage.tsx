@@ -1005,7 +1005,7 @@ export default function GroupStagePage() {
                   key={`group-standing-${selectedStandingsGroup}-${entry.code}`}
                   className={cn(
                     pickedFirst || pickedSecond
-                      ? 'bg-background/72 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--v2-glow-soft)_56%,transparent)]'
+                      ? 'v2-selected-pick-info'
                       : 'hover:bg-background/45 transition-colors'
                   )}
                 >

@@ -2,6 +2,7 @@ import { ButtonLink } from '../ui/Button'
 import { useRouteDataMode } from '../../hooks/useRouteDataMode'
 import { cn } from '../../lib/utils'
 import MemberAvatarV2 from './MemberAvatarV2'
+import StatusTagV2 from './StatusTagV2'
 
 export type LeaderboardPodiumRow = {
   id: string
@@ -70,11 +71,13 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className, 
                     className="h-12 w-[72px]"
                   />
                 ) : null}
-                {slot.row?.isViewer ? <span className="landing-v2-podium-you-badge">You</span> : null}
               </div>
             </div>
-            <div className="mt-2 truncate text-2xl font-semibold leading-tight text-[color:var(--v2-text-strong)] md:text-3xl">
-              {slot.row?.name ?? '—'}
+            <div className="mt-2 flex min-w-0 items-center gap-1.5">
+              <div className="truncate text-2xl font-semibold leading-tight text-[color:var(--v2-text-strong)] md:text-3xl">
+                {slot.row?.name ?? '—'}
+              </div>
+              {slot.row?.isViewer ? <StatusTagV2 tone="info" className="v2-role-badge">You</StatusTagV2> : null}
             </div>
             <div className="mt-2 flex items-baseline gap-1">
               <span className="text-4xl font-semibold leading-none text-[color:var(--v2-text-strong)] md:text-[2.6rem]">

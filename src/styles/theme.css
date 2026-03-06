@@ -507,6 +507,27 @@
   font-size: var(--v2-chip-text-sm);
 }
 
+.v2-role-badge {
+  height: var(--v2-chip-height-sm);
+  padding-inline: var(--v2-chip-pad-x-sm);
+  border-radius: 999px;
+  font-size: var(--v2-chip-text-sm);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.v2-selected-pick-info {
+  border-color: var(--tone-info-border) !important;
+  background: var(--tone-info-bg-soft) !important;
+  box-shadow: var(--tone-info-glow);
+}
+
+.v2-selected-pick-warning {
+  border-color: var(--tone-warning-border) !important;
+  background: var(--tone-warning-bg-soft) !important;
+  box-shadow: var(--tone-warning-glow);
+}
+
 .v2-team-identity-inline {
   min-width: 0;
 }
@@ -779,9 +800,9 @@
 }
 
 .group-stage-v2-best-third-tile[data-selected='true'] {
-  border-color: color-mix(in srgb, var(--v2-glow-medium) 54%, var(--v2-border-soft) 46%);
-  background: color-mix(in srgb, var(--accent-soft) 34%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 42%, transparent);
+  border-color: var(--tone-info-border);
+  background: var(--tone-info-bg-soft);
+  box-shadow: var(--tone-info-glow);
 }
 
 .group-stage-v2-best-third-tile[data-disabled='true'] {
@@ -1585,18 +1606,6 @@
     0 0 0 1px color-mix(in srgb, var(--v2-glow-medium) 62%, transparent),
     0 14px 24px color-mix(in srgb, var(--v2-glow-medium) 24%, transparent),
     inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 74%, transparent);
-}
-
-.landing-v2-podium-you-badge {
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--v2-glow-medium) 64%, var(--v2-border-medium) 36%);
-  background: color-mix(in srgb, var(--accent-soft) 46%, transparent);
-  padding: 0.1rem 0.45rem;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 92%, var(--v2-text-strong) 8%);
 }
 
 .landing-v2-podium-race-tile[data-rank='1'] {
