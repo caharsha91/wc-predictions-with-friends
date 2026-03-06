@@ -40,11 +40,11 @@ export type MatchPickProps = {
 }
 
 const SCORE_GLOW_STYLE: CSSProperties = {
-  boxShadow: '0 0 15px rgba(var(--info-rgb),0.65), inset 0 0 0 1px rgba(var(--info-rgb),0.42)'
+  boxShadow: 'var(--tone-info-glow)'
 }
 
 const MANUAL_GLOW_STYLE: CSSProperties = {
-  boxShadow: '0 0 15px rgba(var(--warn-rgb),0.58), inset 0 0 0 1px rgba(var(--warn-rgb),0.42)'
+  boxShadow: 'var(--tone-warning-glow)'
 }
 
 export function isDraw(scoreA: number, scoreB: number): boolean {
@@ -114,8 +114,8 @@ function TeamButton({
     interactive
       ? 'cursor-pointer hover:-translate-y-px hover:bg-[var(--surface-1)]'
       : 'cursor-default',
-    activeTone === 'score' ? 'bg-[rgba(var(--info-rgb),0.12)]' : undefined,
-    activeTone === 'manual' ? 'bg-[rgba(var(--warn-rgb),0.12)]' : undefined
+    activeTone === 'score' ? 'bg-[color:var(--tone-info-bg-soft)]' : undefined,
+    activeTone === 'manual' ? 'bg-[color:var(--tone-warning-bg-soft)]' : undefined
   )
 
   const content = (

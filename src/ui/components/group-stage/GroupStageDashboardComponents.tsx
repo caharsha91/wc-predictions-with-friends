@@ -61,10 +61,10 @@ export function DashboardToolbar({
         </div>
 
         <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-background/50 p-1">
-          <ButtonLink to={playCenterPath} size="sm" variant="pill" className="h-8 rounded-lg px-3 text-[12px]">
+          <ButtonLink to={playCenterPath} size="sm" variant="pill" className="v2-action-compact">
             Play Center
           </ButtonLink>
-          <ButtonLink to={leaderboardPath} size="sm" variant="pillSecondary" className="h-8 rounded-lg px-3 text-[12px]">
+          <ButtonLink to={leaderboardPath} size="sm" variant="pillSecondary" className="v2-action-compact">
             Leaderboard
           </ButtonLink>
         </div>

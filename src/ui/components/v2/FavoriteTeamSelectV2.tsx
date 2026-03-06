@@ -165,9 +165,9 @@ export default function FavoriteTeamSelectV2({
   const isSidebarVariant = variant === 'sidebar'
 
   const triggerClassName = cn(
-    'flex w-full items-center justify-between gap-2 rounded-lg text-left',
+    'flex w-full items-center justify-between gap-2 rounded-[var(--v2-control-radius)] text-left',
     isSidebarVariant
-      ? 'account-menu-favorite-trigger px-2 py-1.5'
+      ? 'account-menu-favorite-trigger px-[calc(var(--v2-control-pad-x-sm)-1px)] py-1.5'
       : 'v2-row-shell v2-row-interactive border px-2.5 py-2',
     open && !isSidebarVariant ? 'v2-row-state-selected border-[color:var(--v2-row-active-border)]' : undefined,
     open && isSidebarVariant ? 'account-menu-favorite-trigger-open' : undefined,
@@ -218,7 +218,7 @@ export default function FavoriteTeamSelectV2({
       {open ? (
         <div
           className={cn(
-            'absolute left-0 right-0 z-30 rounded-xl border border-border/70 bg-popover p-2 shadow-[var(--shadow1)]',
+            'absolute left-0 right-0 z-30 rounded-[var(--overlay-radius)] border border-[var(--overlay-border-soft)] bg-[var(--overlay-surface-elevated)] p-2 shadow-[var(--overlay-shadow)] backdrop-blur-md',
             isSidebarVariant ? 'account-menu-favorite-popover' : undefined,
             menuPositionClass
           )}

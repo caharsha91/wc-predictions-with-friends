@@ -281,7 +281,7 @@ export default function AdminUsersPage() {
         <Button
           type="button"
           size="sm"
-          className="admin-v2-action-inline"
+          className="admin-v2-action-inline v2-action-compact"
           onClick={startCreate}
           disabled={!canManageMembers}
         >

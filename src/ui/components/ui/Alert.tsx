@@ -3,16 +3,13 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '../../lib/utils'
 
-const alertVariants = cva('rounded-lg border px-4 py-3 text-sm shadow-[var(--shadow0)]', {
+const alertVariants = cva('rounded-[var(--v2-control-radius-lg)] border px-4 py-3 text-sm shadow-[var(--shadow0)]', {
   variants: {
     tone: {
-      info: 'border-[rgba(var(--info-rgb),0.52)] bg-[rgba(var(--info-rgb),0.14)] text-foreground',
-      success:
-        'border-[rgba(var(--primary-rgb),0.5)] bg-[rgba(var(--primary-rgb),0.14)] text-foreground',
-      warning:
-        'border-[rgba(var(--warn-rgb),0.46)] bg-[rgba(var(--warn-rgb),0.14)] text-foreground',
-      danger:
-        'border-[rgba(var(--danger-rgb),0.48)] bg-[rgba(var(--danger-rgb),0.14)] text-foreground'
+      info: 'border-[color:var(--tone-info-border)] bg-[color:var(--tone-info-bg)] text-foreground',
+      success: 'border-[color:var(--tone-success-border)] bg-[color:var(--tone-success-bg)] text-foreground',
+      warning: 'border-[color:var(--tone-warning-border)] bg-[color:var(--tone-warning-bg)] text-foreground',
+      danger: 'border-[color:var(--tone-danger-border)] bg-[color:var(--tone-danger-bg)] text-foreground'
     }
   },
   defaultVariants: {

@@ -166,8 +166,8 @@ function getGroupJumpStatus(
 }
 
 function groupJumpStatusClass(status: GroupJumpStatus): string {
-  if (status === 'locked') return 'border-[rgba(var(--warn-rgb),0.46)] text-foreground'
-  if (status === 'complete') return 'border-[rgba(var(--primary-rgb),0.5)] text-foreground'
+  if (status === 'locked') return 'border-[color:var(--tone-warning-border)] text-foreground'
+  if (status === 'complete') return 'border-[color:var(--tone-success-border)] text-foreground'
   return 'border-border text-muted-foreground'
 }
 
@@ -1063,7 +1063,7 @@ export default function GroupStagePage() {
         title="Group Stage"
         subtitle="Set your group ranking and best-third qualifiers. Updates publish on daily snapshots."
         actions={(
-          <div className="flex items-center gap-2">
+          <>
             <ButtonLink to={homePath} size="sm" variant="secondary">
               Back to Play Center
             </ButtonLink>
@@ -1074,7 +1074,7 @@ export default function GroupStagePage() {
                 onDownloadXlsx={handleDownloadGroupStageXlsx}
               />
             ) : null}
-          </div>
+          </>
         )}
         metadataClassName="w-full"
         metadata={<span className="block w-full">{statusLineCopy}</span>}

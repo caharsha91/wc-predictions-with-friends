@@ -1537,7 +1537,7 @@ export default function AdminExportsPage() {
             <div className="flex items-end">
               <Button
                 size="md"
-                className="admin-v2-action h-11 rounded-lg px-7 text-[15px] lg:min-w-[180px]"
+                className="admin-v2-action v2-action-prominent lg:min-w-[180px]"
                 loading={exportStatus === 'exporting'}
                 disabled={exportStatus === 'exporting' || !canExport || Boolean(noDataHint)}
                 onClick={() => void runExport(selectedPresetId)}

@@ -13,11 +13,11 @@ type StatusLineV2Props = HTMLAttributes<HTMLDivElement> & {
 export default function StatusLineV2({ tone = 'neutral', icon, className, children, ...props }: StatusLineV2Props) {
   const toneClass =
     tone === 'success'
-      ? 'border-[rgba(var(--primary-rgb),0.46)] bg-[rgba(var(--primary-rgb),0.12)] text-foreground'
+      ? 'border-[color:var(--tone-success-border)] bg-[color:var(--tone-success-bg-soft)] text-foreground'
       : tone === 'warning' || tone === 'locked'
-        ? 'border-[rgba(var(--warn-rgb),0.48)] bg-[rgba(var(--warn-rgb),0.14)] text-foreground'
+        ? 'border-[color:var(--tone-warning-border)] bg-[color:var(--tone-warning-bg)] text-foreground'
         : tone === 'info'
-          ? 'border-[rgba(var(--info-rgb),0.48)] bg-[rgba(var(--info-rgb),0.12)] text-foreground'
+          ? 'border-[color:var(--tone-info-border)] bg-[color:var(--tone-info-bg-soft)] text-foreground'
           : 'border-border/80 bg-background/60 text-foreground'
 
   return (

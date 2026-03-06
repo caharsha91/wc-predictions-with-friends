@@ -12,7 +12,7 @@ export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 
 export function DropdownMenuContent({
   className,
-  sideOffset = 6,
+  sideOffset = 8,
   ...props
 }: ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>) {
   return (
@@ -20,7 +20,7 @@ export function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          'z-50 min-w-[200px] overflow-hidden rounded-lg border border-[var(--overlay-border)] bg-[var(--overlay-surface)] p-1 text-foreground shadow-[var(--overlay-shadow)]',
+          'z-50 min-w-[200px] overflow-hidden rounded-[var(--overlay-radius)] border border-[var(--overlay-border-soft)] bg-[var(--overlay-surface-elevated)] p-1 text-foreground shadow-[var(--overlay-shadow)] backdrop-blur-md',
           className
         )}
         {...props}
@@ -36,7 +36,7 @@ export function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        'flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none transition data-[highlighted]:bg-bg2 data-[highlighted]:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-45 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--overlay-surface)]',
+        'flex min-h-[var(--v2-control-height-sm)] cursor-pointer items-center gap-2 rounded-[calc(var(--v2-control-radius)-2px)] border border-transparent px-3 py-1.5 text-sm outline-none transition data-[highlighted]:border-[var(--overlay-border-soft)] data-[highlighted]:bg-[color:color-mix(in_srgb,var(--accent-soft)_30%,transparent)] data-[highlighted]:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-45 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--overlay-surface-elevated)]',
         className
       )}
       {...props}
@@ -50,7 +50,7 @@ export function DropdownMenuSeparator({
 }: ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>) {
   return (
     <DropdownMenuPrimitive.Separator
-      className={cn('my-1 h-px bg-border/80', className)}
+      className={cn('my-1 h-px bg-[var(--overlay-divider)]', className)}
       {...props}
     />
   )

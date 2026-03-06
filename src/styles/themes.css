@@ -119,9 +119,9 @@
   --demo-banner-bg: linear-gradient(90deg, rgba(179, 108, 0, 0.2), rgba(179, 108, 0, 0.14));
   --demo-banner-text: #6A3F00;
 
-  --overlay-backdrop-rgba: rgba(30, 39, 66, 0.46);
-  --overlay-border-color: rgba(159, 175, 208, 0.66);
-  --overlay-shadow-value: 0 22px 44px rgba(30, 39, 66, 0.22);
+  --overlay-backdrop-rgba: rgba(30, 39, 66, 0.52);
+  --overlay-border-color: rgba(159, 175, 208, 0.62);
+  --overlay-shadow-value: 0 24px 52px rgba(30, 39, 66, 0.24);
 
   --bg-image:
     radial-gradient(1200px 420px at 70% -10%, rgba(92, 106, 207, 0.05), transparent 60%),
@@ -151,8 +151,8 @@
   --v2-row-border: rgba(159, 175, 208, 0.54);
   --v2-row-active-border: rgba(92, 106, 207, 0.6);
 
-  --v2-chip-height-sm: 1.3rem;
-  --v2-chip-pad-x-sm: 0.45rem;
+  --v2-chip-height-sm: 1.35rem;
+  --v2-chip-pad-x-sm: 0.5rem;
   --v2-chip-text-sm: 11px;
   --v2-kicker-text: rgba(53, 66, 100, 0.9);
   --v2-meta-text: rgba(53, 66, 100, 0.84);
@@ -276,9 +276,9 @@
   --demo-banner-bg: linear-gradient(90deg, rgba(110, 106, 210, 0.46), rgba(154, 68, 178, 0.38));
   --demo-banner-text: #ECECFA;
 
-  --overlay-backdrop-rgba: rgba(20, 18, 42, 0.68);
-  --overlay-border-color: rgba(154, 156, 195, 0.3);
-  --overlay-shadow-value: 0 24px 52px rgba(18, 20, 36, 0.56);
+  --overlay-backdrop-rgba: rgba(20, 18, 42, 0.74);
+  --overlay-border-color: rgba(154, 156, 195, 0.36);
+  --overlay-shadow-value: 0 28px 58px rgba(18, 20, 36, 0.58);
 
   --bg-image:
     radial-gradient(1200px 420px at 72% -12%, rgba(110, 106, 210, 0.26), transparent 62%),
@@ -309,8 +309,8 @@
   --v2-row-border: rgba(154, 156, 195, 0.46);
   --v2-row-active-border: rgba(125, 120, 224, 0.66);
 
-  --v2-chip-height-sm: 1.3rem;
-  --v2-chip-pad-x-sm: 0.45rem;
+  --v2-chip-height-sm: 1.35rem;
+  --v2-chip-pad-x-sm: 0.5rem;
   --v2-chip-text-sm: 11px;
   --v2-kicker-text: rgba(200, 200, 222, 0.84);
   --v2-meta-text: rgba(200, 200, 222, 0.76);

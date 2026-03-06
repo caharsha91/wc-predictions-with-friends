@@ -28,7 +28,7 @@ const RowShellV2 = forwardRef<HTMLDivElement, RowShellV2Props>(function RowShell
       {...props}
       ref={ref}
       className={cn(
-        'v2-row-shell rounded-lg border px-3 py-2.5 md:py-3',
+        'v2-row-shell rounded-[var(--v2-control-radius)] border px-3 py-2.5 md:py-3',
         interactive ? 'v2-row-interactive' : undefined,
         tone === 'muted' ? 'v2-row-tone-muted' : tone === 'inset' ? 'v2-row-tone-inset' : 'v2-row-tone-default',
         state === 'selected'

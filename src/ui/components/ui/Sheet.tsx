@@ -34,10 +34,10 @@ export const SheetContent = forwardRef<
   SheetContentProps
 >(function SheetContent({ className, side = 'right', ...props }, ref) {
   const sideClasses: Record<string, string> = {
-    top: 'inset-x-0 top-0 border-b pt-[env(safe-area-inset-top)]',
-    bottom: 'inset-x-0 bottom-0 border-t pb-[env(safe-area-inset-bottom)]',
-    left: 'inset-y-0 left-0 h-full w-[92vw] max-w-sm border-r',
-    right: 'inset-y-0 right-0 h-full w-[92vw] max-w-sm border-l'
+    top: 'inset-x-0 top-0 border-b rounded-b-[var(--overlay-radius)] pt-[env(safe-area-inset-top)]',
+    bottom: 'inset-x-0 bottom-0 border-t rounded-t-[var(--overlay-radius)] pb-[env(safe-area-inset-bottom)]',
+    left: 'inset-y-0 left-0 h-full w-[92vw] max-w-sm border-r rounded-r-[var(--overlay-radius)]',
+    right: 'inset-y-0 right-0 h-full w-[92vw] max-w-sm border-l rounded-l-[var(--overlay-radius)]'
   }
 
   return (
@@ -46,7 +46,7 @@ export const SheetContent = forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          'fixed z-50 flex max-h-[100vh] max-h-[100dvh] flex-col gap-4 overflow-y-auto border border-[var(--overlay-border)] bg-[var(--overlay-surface)] text-foreground shadow-[var(--overlay-shadow)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          'fixed z-50 flex max-h-[100vh] max-h-[100dvh] flex-col gap-4 overflow-y-auto border border-[var(--overlay-border-soft)] bg-[var(--overlay-surface-elevated)] text-foreground shadow-[var(--overlay-shadow)] backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           sideClasses[side],
           className
         )}
@@ -59,7 +59,7 @@ SheetContent.displayName = 'SheetContent'
 
 export function SheetHeader({ className, ...props }: ComponentPropsWithoutRef<'div'>) {
   return (
-    <div className={cn('border-b border-border/60 px-4 py-3', className)} {...props} />
+    <div className={cn('border-b border-[var(--overlay-divider)] px-4 py-3', className)} {...props} />
   )
 }
 
@@ -89,6 +89,6 @@ export function SheetDescription({
 
 export function SheetFooter({ className, ...props }: ComponentPropsWithoutRef<'div'>) {
   return (
-    <div className={cn('mt-auto border-t border-border/60 px-4 py-3', className)} {...props} />
+    <div className={cn('mt-auto border-t border-[var(--overlay-divider)] px-4 py-3', className)} {...props} />
   )
 }

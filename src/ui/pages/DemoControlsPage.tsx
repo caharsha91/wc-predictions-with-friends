@@ -373,7 +373,7 @@ export default function DemoControlsPage() {
                     variant="secondary"
                     onClick={() => setPendingAction('reload-snapshots')}
                     icon={<SettingsIcon size={15} />}
-                    className="admin-v2-action w-full justify-start rounded-lg"
+                    className="admin-v2-action w-full justify-start"
                   >
                     Reload snapshots
                   </Button>
@@ -381,7 +381,7 @@ export default function DemoControlsPage() {
                     variant="secondary"
                     onClick={() => setPendingAction('clear-session')}
                     icon={<CloseIcon size={15} />}
-                    className="admin-v2-action admin-v2-danger w-full justify-start rounded-lg"
+                    className="admin-v2-action admin-v2-danger w-full justify-start"
                   >
                     Clear session
                   </Button>

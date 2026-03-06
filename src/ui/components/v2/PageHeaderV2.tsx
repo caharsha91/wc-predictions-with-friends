@@ -69,7 +69,7 @@ export default function PageHeaderV2({
               </p>
             ) : null}
           </div>
-          {actions ? <div className="flex items-center gap-2 self-start md:pt-0.5">{actions}</div> : null}
+          {actions ? <div className="v2-header-actions self-start md:pt-0.5">{actions}</div> : null}
         </div>
         {metadata ? (
           <div

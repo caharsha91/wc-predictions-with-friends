@@ -20,7 +20,7 @@ type SelectFieldProps = FieldBaseProps & SelectHTMLAttributes<HTMLSelectElement>
 type TextareaFieldProps = FieldBaseProps & TextareaHTMLAttributes<HTMLTextAreaElement>
 
 const baseFieldControlClass =
-  'w-full rounded-md border border-input bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground placeholder:text-fg2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60'
+  'min-h-[var(--v2-control-height-md)] w-full rounded-[var(--v2-control-radius)] border border-transparent bg-[var(--input-bg)] px-3 py-2 text-sm text-foreground shadow-[inset_0_0_0_1px_var(--v2-border-soft)] placeholder:text-fg2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:shadow-[inset_0_0_0_1px_var(--focus-ring-strong)] disabled:cursor-not-allowed disabled:opacity-60'
 
 function useFieldIds(id?: string, helperText?: string, error?: string) {
   const fallbackId = useId()

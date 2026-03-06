@@ -364,7 +364,7 @@ function MatchRow({
         {item.editable && rowDirty ? (
           <Button
             size="sm"
-            className="h-8 rounded-lg px-3 text-[12px]"
+            className="v2-action-compact"
             onClick={onSave}
             disabled={!canSave}
             loading={isSaving}
@@ -961,7 +961,7 @@ export default function PicksPage() {
         title="Match Picks"
         subtitle="Use the shared timeline model to edit only the active 72-hour window."
         actions={(
-          <div className="flex items-center gap-2">
+          <>
             <ButtonLink to={homePath} size="sm" variant="secondary">
               Back to Play Center
             </ButtonLink>
@@ -972,7 +972,7 @@ export default function PicksPage() {
                 onDownloadXlsx={handleDownloadMatchPicksXlsx}
               />
             ) : null}
-          </div>
+          </>
         )}
         metadata={
           <>

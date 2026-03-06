@@ -117,7 +117,7 @@ const BRACKET_NODE_CARD_HEIGHT =
   BRACKET_NODE_METRICS.footerHeight
 
 const BRACKET_WINNER_HIGHLIGHT_STYLE: CSSProperties = {
-  boxShadow: '0 0 15px rgba(var(--info-rgb),0.65), inset 0 0 0 1px rgba(var(--info-rgb),0.42)'
+  boxShadow: 'var(--tone-info-glow)'
 }
 
 function bracketWinnerChoiceClass({
@@ -134,7 +134,7 @@ function bracketWinnerChoiceClass({
   return cn(
     'flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-all',
     compact ? 'text-[12px]' : 'text-[11px]',
-    selected ? 'bg-[rgba(var(--info-rgb),0.12)] text-foreground' : 'bg-[var(--surface-2)] text-muted-foreground',
+    selected ? 'bg-[color:var(--tone-info-bg-soft)] text-foreground' : 'bg-[var(--surface-2)] text-muted-foreground',
     interactive
       ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
       : undefined,
@@ -200,8 +200,8 @@ function resultLabel(status: PredictionResult): string {
 }
 
 function resultSurfaceClass(status: PredictionResult): string {
-  if (status === 'correct') return 'bg-[rgba(var(--primary-rgb),0.08)]'
-  if (status === 'wrong') return 'bg-[rgba(var(--danger-rgb),0.08)]'
+  if (status === 'correct') return 'bg-[color:var(--tone-success-bg-soft)]'
+  if (status === 'wrong') return 'bg-[color:var(--tone-danger-bg-soft)]'
   return ''
 }
 
@@ -374,7 +374,7 @@ function BracketSummaryPanel({
           key={`summary-${round.stage}`}
           className={`rounded-xl border p-2.5 ${
             round.stage === activeStage
-              ? 'border-[rgba(var(--primary-rgb),0.36)] bg-background/60'
+              ? 'border-[color:var(--tone-info-border)] bg-[color:var(--tone-info-bg-soft)]'
               : 'border-border/50 bg-background/35'
           }`}
         >
@@ -963,7 +963,7 @@ function DesktopVisualBracket({
                 key={connector.id}
                 d={connector.path}
                 fill="none"
-                stroke={touchesActiveStage ? 'rgba(var(--info-rgb), 0.20)' : 'rgba(var(--info-rgb), 0.10)'}
+                stroke={touchesActiveStage ? 'var(--tone-info-line-active)' : 'var(--tone-info-line)'}
                 strokeWidth={touchesActiveStage ? 1.05 : 0.85}
                 strokeDasharray={connector.dashed ? '4 4' : undefined}
                 strokeLinecap="round"
@@ -1235,11 +1235,11 @@ export default function BracketPage() {
           title="Knockout Bracket"
           subtitle="The knockout bracket opens after the round-of-32 draw is confirmed from fixture data."
           actions={(
-            <div className="flex items-center gap-2">
+            <>
               <ButtonLink to={homePath} size="sm" variant="secondary">
                 Back to Play Center
               </ButtonLink>
-            </div>
+            </>
           )}
           metadata={<SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Snapshot " />}
         />
@@ -1266,7 +1266,7 @@ export default function BracketPage() {
         title="Knockout Bracket"
         subtitle="Pick one active round at a time. Your selections flow through the visual bracket."
         actions={(
-          <div className="flex items-center gap-2">
+          <>
             <ButtonLink to={homePath} size="sm" variant="secondary">
               Back to Play Center
             </ButtonLink>
@@ -1277,7 +1277,7 @@ export default function BracketPage() {
                 onDownloadXlsx={handleDownloadBracketXlsx}
               />
             ) : null}
-          </div>
+          </>
         )}
         metadata={
           <>
@@ -1336,9 +1336,9 @@ export default function BracketPage() {
                     type="button"
                     className={`shrink-0 rounded-lg border px-2 py-1 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       round.stage === activeRound.stage
-                        ? 'border-[rgba(var(--primary-rgb),0.42)] bg-background/60 text-foreground'
+                        ? 'border-[color:var(--tone-info-border)] bg-[color:var(--tone-info-bg-soft)] text-foreground'
                         : round.complete
-                          ? 'border-[rgba(var(--primary-rgb),0.3)] bg-background/35 text-foreground'
+                          ? 'border-[color:var(--tone-success-border)] bg-[color:var(--tone-success-bg-soft)] text-foreground'
                           : 'border-border/42 bg-background/25 text-muted-foreground'
                     }`}
                     disabled={!(round.unlocked || round.complete || round.stage === activeRound.stage)}

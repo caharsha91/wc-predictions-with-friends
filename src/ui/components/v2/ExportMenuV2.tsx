@@ -22,16 +22,16 @@ export default function ExportMenuV2({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="secondary" className="h-9 rounded-lg px-3 text-[12px]" disabled={disabled}>
+        <Button size="sm" variant="secondary" disabled={disabled}>
           Export
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-[280px] overflow-hidden rounded-xl border-border/35 bg-background/94 p-2 backdrop-blur-md"
+        className="w-[290px]"
       >
-        <div className="space-y-1.5 rounded-lg bg-bg2/16 px-2.5 py-2.5">
+        <div className="space-y-1.5 rounded-[var(--v2-control-radius)] border border-[var(--overlay-divider)] bg-[color:color-mix(in_srgb,var(--surface-2)_68%,transparent)] px-2.5 py-2.5">
           <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Workbook export
           </div>
@@ -41,7 +41,7 @@ export default function ExportMenuV2({
           ) : null}
         </div>
         <DropdownMenuItem
-          className="mt-1 rounded-lg border border-border/45 bg-background/50 data-[highlighted]:border-border/70 data-[highlighted]:bg-bg2/40"
+          className="mt-1 border-[var(--overlay-divider)] bg-[color:color-mix(in_srgb,var(--background)_58%,transparent)]"
           onSelect={(event) => {
             event.preventDefault()
             onDownloadXlsx()

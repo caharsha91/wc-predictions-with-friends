@@ -267,7 +267,7 @@ function RivalFocusPanel({
       className="landing-v2-standings-panel"
       contentClassName="space-y-2"
       footer={
-        <Button size="xs" variant="tertiary" className="h-8 rounded-lg px-3 text-[12px]" onClick={onManageRivals}>
+        <Button size="xs" variant="tertiary" className="v2-action-compact" onClick={onManageRivals}>
           Manage rivals
         </Button>
       }
@@ -1097,7 +1097,7 @@ export default function LeaderboardPage() {
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-8 rounded-lg px-3 text-[12px]"
+                  className="v2-action-compact"
                   disabled={safePage <= 1}
                   onClick={() => setPage((current) => Math.max(1, current - 1))}
                 >
@@ -1109,7 +1109,7 @@ export default function LeaderboardPage() {
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-8 rounded-lg px-3 text-[12px]"
+                  className="v2-action-compact"
                   disabled={safePage >= totalPages}
                   onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                 >
@@ -1135,7 +1135,7 @@ export default function LeaderboardPage() {
                 />
                 <div className="text-xs text-muted-foreground">{stickyUserRow.totalPoints} pts</div>
               </div>
-              <Button size="sm" variant="secondary" className="h-8 rounded-lg px-3 text-[12px]" onClick={jumpToCurrentUserRow}>
+              <Button size="sm" variant="secondary" className="v2-action-compact" onClick={jumpToCurrentUserRow}>
                 Jump to row
               </Button>
             </div>

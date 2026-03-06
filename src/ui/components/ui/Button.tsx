@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-55',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--v2-control-radius)] border text-sm font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-55',
   {
     variants: {
       variant: {
@@ -21,14 +21,14 @@ const buttonVariants = cva(
         quiet:
           'border-transparent bg-transparent text-muted-foreground shadow-none hover:border-border/70 hover:bg-background/50 hover:text-foreground',
         pill:
-          'border-border1 bg-[var(--accent-soft)] text-foreground shadow-[var(--shadow0)] hover:border-primary hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow1)] data-[active=true]:border-[var(--pill-active-border)] data-[active=true]:[background:var(--pill-active-bg)] data-[active=true]:shadow-[var(--pill-active-shadow)] disabled:shadow-none',
+          'rounded-full border-border1 bg-[var(--accent-soft)] text-foreground shadow-[var(--shadow0)] hover:border-primary hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow1)] data-[active=true]:border-[var(--pill-active-border)] data-[active=true]:[background:var(--pill-active-bg)] data-[active=true]:shadow-[var(--pill-active-shadow)] disabled:shadow-none',
         pillSecondary:
-          'border-[rgba(var(--secondary-rgb),0.46)] bg-[rgba(var(--secondary-rgb),0.12)] text-foreground shadow-[var(--shadow0)] hover:border-secondary hover:bg-[rgba(var(--secondary-rgb),0.2)] hover:shadow-[var(--shadow1)] data-[active=true]:border-secondary data-[active=true]:bg-[rgba(var(--secondary-rgb),0.26)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
+          'rounded-full border-[color:var(--tone-secondary-border)] bg-[color:var(--tone-secondary-bg)] text-foreground shadow-[var(--shadow0)] hover:border-secondary hover:bg-[color:var(--tone-secondary-bg-hover)] hover:shadow-[var(--shadow1)] data-[active=true]:border-secondary data-[active=true]:bg-[color:var(--tone-secondary-bg-active)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
       },
       size: {
-        xs: 'h-8 px-2.5 text-[12px]',
-        sm: 'h-9 px-3 text-[13px]',
-        md: 'h-10 px-4 text-sm'
+        xs: 'h-[var(--v2-control-height-xs)] px-[var(--v2-control-pad-x-xs)] text-[12px]',
+        sm: 'h-[var(--v2-control-height-sm)] px-[var(--v2-control-pad-x-sm)] text-[13px]',
+        md: 'h-[var(--v2-control-height-md)] px-[var(--v2-control-pad-x-md)] text-sm'
       }
     },
     defaultVariants: {
