@@ -278,7 +278,7 @@ function comparisonTone(comparison: RivalComparison | null): 'success' | 'danger
 }
 
 function comparisonLabel(comparison: RivalComparison | null): string {
-  if (!comparison || comparison.relation === 'unranked') return 'Not ranked in this snapshot'
+  if (!comparison || comparison.relation === 'unranked') return 'Not ranked in latest snapshot'
   if (comparison.relation === 'tied') return 'Tied with you'
   if (comparison.relation === 'ahead') {
     return comparison.pointsGap && comparison.pointsGap > 0
@@ -319,7 +319,7 @@ function RivalFocusPanel({
 
   return (
     <SideListPanelV2
-      title="Rival focus"
+      title="Rival watch"
       subtitle={<SnapshotStamp timestamp={snapshotTimestamp} prefix="Latest snapshot: " />}
       meta={`${selectedCount}/3 selected`}
       className="landing-v2-standings-panel"
@@ -373,7 +373,7 @@ function RivalFocusPanel({
         <PanelState
           className="mt-2 text-xs"
           tone="empty"
-          message="No rivals selected. Add rivals on the landing page to track head-to-head movement here."
+          message="No rivals selected yet. Add rivals in Play Center to track head-to-head movement here."
         />
       ) : null}
     </SideListPanelV2>
@@ -923,45 +923,6 @@ export default function LeaderboardPage() {
   const stickyUserFavoriteTeamCode = stickyUserRow ? resolveEntryFavoriteTeamCode(stickyUserRow) : null
   const stickyUserTieCount = stickyUserRow ? (tieCountByEntryKey.get(getEntryIdentityKey(stickyUserRow)) ?? 1) : null
   const shouldShowStickyRow = Boolean(stickyUserRow) && !isCurrentRowVisible
-  const currentRowKey = userContext?.current ? getEntryIdentityKey(userContext.current.entry) : null
-  const currentRankDelta =
-    currentRowKey && userContext?.current
-      ? (() => {
-          const previousRank = previousSnapshot?.ranks[currentRowKey]
-          return typeof previousRank === 'number' ? previousRank - userContext.current.rank : null
-        })()
-      : null
-  const currentPointsDelta =
-    currentRowKey && userContext?.current
-      ? (() => {
-          const previousPoints = previousSnapshot?.points?.[currentRowKey]
-          return typeof previousPoints === 'number' ? userContext.current.entry.totalPoints - previousPoints : null
-        })()
-      : null
-
-  const rivalComparisonSummary = rivalFocusRows
-    .filter((row) => row.kind === 'rival')
-    .reduce(
-      (summary, row) => {
-        const relation = row.comparison?.relation ?? 'unranked'
-        if (relation === 'ahead') summary.ahead += 1
-        if (relation === 'behind') summary.behind += 1
-        if (relation === 'tied') summary.tied += 1
-        if (relation === 'unranked') summary.unranked += 1
-        return summary
-      },
-      { ahead: 0, behind: 0, tied: 0, unranked: 0 }
-    )
-  const rivalSummaryText = (() => {
-    if (rivalUserIds.length === 0) return 'No rivals selected yet.'
-    const parts: string[] = []
-    if (rivalComparisonSummary.ahead > 0) parts.push(`${rivalComparisonSummary.ahead} ahead`)
-    if (rivalComparisonSummary.tied > 0) parts.push(`${rivalComparisonSummary.tied} tied`)
-    if (rivalComparisonSummary.behind > 0) parts.push(`${rivalComparisonSummary.behind} behind`)
-    if (rivalComparisonSummary.unranked > 0) parts.push(`${rivalComparisonSummary.unranked} unranked`)
-    if (parts.length === 0) return 'No rival comparison data yet.'
-    return `${parts.join(' • ')}`
-  })()
 
   const podiumRows = activeRows.slice(0, 3).map((entry, index) => ({
     id: entry.member.id || `podium-${index + 1}`,
@@ -977,8 +938,8 @@ export default function LeaderboardPage() {
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
   const leaderboardPublishedCopy =
     phaseState.tournamentPhase === 'FINAL'
-      ? 'Published: Final standings'
-      : 'Published: Latest snapshot standings'
+      ? 'Published: Final'
+      : 'Published: Latest snapshot'
 
   function handleDownloadLeaderboardXlsx() {
     const exportedAt = new Date().toISOString()
@@ -1050,11 +1011,11 @@ export default function LeaderboardPage() {
         className="landing-v2-hero"
         kicker="Standings"
         title="Leaderboard"
-        subtitle="Compare published standings with rivals from the latest snapshot."
+        subtitle="See where you stand and keep rival banter close from the latest snapshot."
         actions={
           showExportMenu ? (
             <ExportMenuV2
-              contextLabel="Download the latest leaderboard workbook for all members."
+              contextLabel="Download the leaderboard workbook from the latest snapshot."
               snapshotLabel={`Latest snapshot ${formatSnapshotTimestamp(snapshotTimestamp)}`}
               onDownloadXlsx={handleDownloadLeaderboardXlsx}
             />
@@ -1071,14 +1032,14 @@ export default function LeaderboardPage() {
       />
 
       {snapshotReady?.projectedGroupPredictionsLimited ? (
-        <Alert tone="warning" title="Projected comparison limited">
-          Group-stage projection comparisons are partially unavailable for your role.
+        <Alert tone="warning" title="Comparison data limited">
+          Some group comparison data is unavailable with your current access.
         </Alert>
       ) : null}
 
       {state.status === 'ready' && state.socialDataLimited ? (
-        <Alert tone="warning" title="Social badges limited">
-          League-wide picks access is restricted for your role, so social badges are limited.
+        <Alert tone="warning" title="Social view limited">
+          Some social badges are unavailable with your current access.
         </Alert>
       ) : null}
 
@@ -1099,113 +1060,8 @@ export default function LeaderboardPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="v2-heading-h2 text-foreground">Full leaderboard</h2>
-              <div className="mt-1 text-[13px] text-muted-foreground">Total points set rank; breakdown columns explain where each total came from.</div>
             </div>
           </div>
-
-          {userContext?.current ? (
-            <div className="rounded-xl border border-border/70 bg-background/35 p-3 md:p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Your standing</div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="text-lg font-semibold tabular-nums text-foreground">
-                      {rankLabel(userContext.current.rank, userContext.current.tieCount)}
-                    </div>
-                    <div className="text-sm tabular-nums text-muted-foreground">{userContext.current.entry.totalPoints} pts</div>
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">Selected rivals: {rivalSummaryText}</div>
-                </div>
-                <div className="flex flex-wrap items-center justify-end gap-1">
-                  {userContext.current.tieCount > 1 ? (
-                    <StatusTagV2 tone="secondary">{tieLabel(userContext.current.tieCount)}</StatusTagV2>
-                  ) : null}
-                  {currentRankDelta !== null ? (
-                    <StatusTagV2 tone={movementTone(currentRankDelta)}>{rankDeltaLabel(currentRankDelta)}</StatusTagV2>
-                  ) : null}
-                  {currentPointsDelta !== null ? (
-                    <StatusTagV2 tone={movementTone(currentPointsDelta)}>{pointsDeltaLabel(currentPointsDelta)}</StatusTagV2>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-2 md:grid-cols-2">
-                <div className="rounded-lg border border-border/70 bg-background/40 p-2.5">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">One spot above</div>
-                  {userContext.above ? (
-                    <MemberIdentityRowV2
-                      name={`${rankLabel(userContext.above.rank, userContext.above.tieCount)} ${userContext.above.entry.member.name}`}
-                      favoriteTeamCode={resolveEntryFavoriteTeamCode(userContext.above.entry)}
-                      avatarClassName="h-12 w-[72px]"
-                      className="mt-1"
-                      subtitle={<span>{userContext.above.entry.totalPoints} pts</span>}
-                      badges={(
-                        <>
-                          {userContext.above.tieCount > 1 ? (
-                            <StatusTagV2 tone="secondary">{tieLabel(userContext.above.tieCount)}</StatusTagV2>
-                          ) : null}
-                          <StatusTagV2
-                            tone={comparisonTone(
-                              compareAgainstViewer(
-                                userContext.current.entry.totalPoints,
-                                userContext.above.entry.totalPoints
-                              )
-                            )}
-                          >
-                            {comparisonLabel(
-                              compareAgainstViewer(
-                                userContext.current.entry.totalPoints,
-                                userContext.above.entry.totalPoints
-                              )
-                            )}
-                          </StatusTagV2>
-                        </>
-                      )}
-                    />
-                  ) : (
-                    <div className="mt-1 text-xs text-muted-foreground">No one above you.</div>
-                  )}
-                </div>
-
-                <div className="rounded-lg border border-border/70 bg-background/40 p-2.5">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">One spot below</div>
-                  {userContext.below ? (
-                    <MemberIdentityRowV2
-                      name={`${rankLabel(userContext.below.rank, userContext.below.tieCount)} ${userContext.below.entry.member.name}`}
-                      favoriteTeamCode={resolveEntryFavoriteTeamCode(userContext.below.entry)}
-                      avatarClassName="h-12 w-[72px]"
-                      className="mt-1"
-                      subtitle={<span>{userContext.below.entry.totalPoints} pts</span>}
-                      badges={(
-                        <>
-                          {userContext.below.tieCount > 1 ? (
-                            <StatusTagV2 tone="secondary">{tieLabel(userContext.below.tieCount)}</StatusTagV2>
-                          ) : null}
-                          <StatusTagV2
-                            tone={comparisonTone(
-                              compareAgainstViewer(
-                                userContext.current.entry.totalPoints,
-                                userContext.below.entry.totalPoints
-                              )
-                            )}
-                          >
-                            {comparisonLabel(
-                              compareAgainstViewer(
-                                userContext.current.entry.totalPoints,
-                                userContext.below.entry.totalPoints
-                              )
-                            )}
-                          </StatusTagV2>
-                        </>
-                      )}
-                    />
-                  ) : (
-                    <div className="mt-1 text-xs text-muted-foreground">No one below you.</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : null}
 
           <div className="overflow-x-auto">
             <div className="min-w-[980px] space-y-2">

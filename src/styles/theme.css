@@ -1099,6 +1099,14 @@
   min-width: 0;
 }
 
+.players-v2-name-line {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
 .players-v2-name {
   font-size: 1.02rem;
   font-weight: 600;
@@ -1107,7 +1115,6 @@
 }
 
 .players-v2-email {
-  margin-top: 0.2rem;
   font-size: 14px;
   color: var(--muted-foreground);
   line-height: 1.35;

@@ -57,8 +57,8 @@ export function DashboardToolbar({
     <V2Card tone="panel" className="rounded-xl px-4 py-2">
       <div className="flex h-full items-center gap-3">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-base font-semibold tracking-tight text-foreground">Group stage</div>
-          <div className="truncate text-[11px] text-muted-foreground">Updates daily from published snapshots.</div>
+          <div className="truncate text-base font-semibold tracking-tight text-foreground">Group Stage</div>
+          <div className="truncate text-[11px] text-muted-foreground">Latest snapshot updates publish daily.</div>
         </div>
 
         <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-background/50 p-1">
@@ -71,9 +71,9 @@ export function DashboardToolbar({
         </div>
 
         <div className="min-w-0 max-w-[34ch] items-center gap-2 text-[11px] text-muted-foreground">
-          <span className="truncate whitespace-nowrap">Saved {picksLastSavedLabel}</span>
+          <span className="truncate whitespace-nowrap">Saved: {picksLastSavedLabel}</span>
           <span className="h-3 w-px bg-border" aria-hidden="true" />
-          <span className="truncate whitespace-nowrap">Snapshot {scoringSnapshotLabel}</span>
+          <span className="truncate whitespace-nowrap">Latest snapshot: {scoringSnapshotLabel}</span>
         </div>
       </div>
     </V2Card>
@@ -262,11 +262,11 @@ export function GroupPicksDenseTable({
           const interactionTag = isReadOnly
             ? { tone: 'locked' as const, label: 'Locked' }
             : rowIsSaving
-              ? { tone: 'warning' as const, label: 'Saving order...' }
+              ? { tone: 'warning' as const, label: 'Saving...' }
               : rowIsSaved
-                ? { tone: 'success' as const, label: 'Order saved' }
+                ? { tone: 'success' as const, label: 'Saved' }
                 : null
-          const interactionHintLabel = rowIsEditing ? 'Unsaved order' : null
+          const interactionHintLabel = rowIsEditing ? 'Unsaved' : null
 
           return (
             <div
@@ -411,7 +411,7 @@ export function BestThirdPicksCompact({
   return (
     <SideListPanelV2
       title={meterLabel}
-      subtitle="Select 8 third-place groups."
+      subtitle="Pick 8 third-place groups."
       className="group-stage-v2-leaderboard"
       contentClassName="space-y-2 p-3"
       actions={(

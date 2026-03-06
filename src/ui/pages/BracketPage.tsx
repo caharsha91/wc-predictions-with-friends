@@ -327,11 +327,11 @@ function deriveTeamsForMatch(
 }
 
 function roundHelperCopy(round: RoundModel, nextRound: RoundModel | null, bracketEditable: boolean): string {
-  if (!bracketEditable) return 'Bracket edits close at first knockout kickoff.'
+  if (!bracketEditable) return 'Locked. Bracket edits close at first knockout kickoff.'
 
   const remaining = Math.max(0, round.total - round.picked)
   if (remaining > 0) {
-    return `${remaining} ${remaining === 1 ? 'pick remains' : 'picks remain'} in this round. Winners flow forward automatically.`
+    return `${remaining} ${remaining === 1 ? 'pick left' : 'picks left'} in this round. Winners flow forward automatically.`
   }
 
   if (nextRound) return `Round complete. Continue to ${STAGE_LABELS[nextRound.stage]}.`
@@ -479,7 +479,7 @@ function BracketOrientationStrip({
   bracketEditable: boolean
   hasAwaitingMatchups: boolean
 }) {
-  const openRoundLabel = openRound ? STAGE_LABELS[openRound.stage] : bracketEditable ? 'All rounds complete' : 'Read-only bracket'
+  const openRoundLabel = openRound ? STAGE_LABELS[openRound.stage] : bracketEditable ? 'All rounds complete' : 'Locked'
   const openRoundProgressLabel = openRound
     ? `${openRound.picked} of ${openRound.total} picks set`
     : totalMatches > 0
@@ -501,7 +501,7 @@ function BracketOrientationStrip({
           <StatusTagV2 tone={activeRound.stage === openRound?.stage ? 'info' : 'secondary'}>
             Viewing {STAGE_SHORT_LABELS[activeRound.stage]}
           </StatusTagV2>
-          {!bracketEditable ? <StatusTagV2 tone="locked">Read-only bracket</StatusTagV2> : null}
+          {!bracketEditable ? <StatusTagV2 tone="locked">Locked</StatusTagV2> : null}
         </div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
@@ -510,7 +510,7 @@ function BracketOrientationStrip({
         <span>Winners flow forward automatically into later rounds.</span>
         {hasAwaitingMatchups ? (
           <StatusTagV2 tone="secondary" className="ml-auto">
-            Awaiting matchups in later rounds
+            Awaiting later matchups
           </StatusTagV2>
         ) : null}
       </div>
@@ -958,7 +958,7 @@ function DesktopVisualBracket({
   if (layout.nodes.length === 0) {
     return (
       <div ref={viewportRef} className="rounded-xl border border-dashed border-border/35 p-4 text-sm text-muted-foreground">
-        No bracket fixtures are available in this snapshot.
+        No bracket fixtures are available in the latest snapshot.
       </div>
     )
   }
@@ -1474,7 +1474,7 @@ export default function BracketPage() {
           <div className="space-y-2">
             <div className="text-sm font-semibold text-foreground">Bracket not available yet</div>
             <div className="text-sm text-muted-foreground">
-              Stay on this page. Your winners-only bracket unlocks once the draw is published.
+              Your winners-only bracket unlocks once the draw is published.
             </div>
             <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />
           </div>
@@ -1497,8 +1497,8 @@ export default function BracketPage() {
       ? `Edits close at ${firstKnockoutKickoffLabel}.`
       : 'Edits close at first knockout kickoff.'
     : firstKnockoutKickoffLabel
-      ? `Read-only. Edits closed at ${firstKnockoutKickoffLabel}.`
-      : 'Read-only bracket for this snapshot.'
+      ? `Locked since ${firstKnockoutKickoffLabel}.`
+      : 'Locked for this snapshot.'
 
   return (
     <PageShellV2 className="landing-v2-canvas p-4">
@@ -1507,7 +1507,7 @@ export default function BracketPage() {
         className="landing-v2-hero"
         kicker="Knockout"
         title="Knockout Bracket"
-        subtitle="Pick one active round at a time. Your selections flow through the visual bracket."
+        subtitle="Pick winners round by round. Your selections flow through the bracket."
         actions={(
           <>
             <ButtonLink to={homePath} size="sm" variant="secondary">
@@ -1538,7 +1538,7 @@ export default function BracketPage() {
           <div className="space-y-2">
             <div className="text-sm font-semibold text-foreground">No knockout fixtures available</div>
             <div className="text-sm text-muted-foreground">
-              Fixture data does not include knockout rounds yet for this snapshot.
+              The latest snapshot does not include knockout rounds yet.
             </div>
             <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />
           </div>
@@ -1570,7 +1570,7 @@ export default function BracketPage() {
                 {STAGE_SHORT_LABELS[activeRound.stage]} {activeRound.picked}/{activeRound.total}
               </StatusTagV2>
               {!bracketEditable ? (
-                <Badge tone="locked">Read-only bracket</Badge>
+                <Badge tone="locked">Locked</Badge>
               ) : (
                 <InlineStateHintV2>Round-by-round picks</InlineStateHintV2>
               )}
@@ -1774,7 +1774,7 @@ export default function BracketPage() {
         <Sheet open={reviewSheetOpen} onOpenChange={setReviewSheetOpen}>
           <SheetContent side="bottom" className="max-h-[82dvh] rounded-t-2xl p-0">
             <SheetHeader>
-              <SheetTitle>Bracket Review</SheetTitle>
+              <SheetTitle>Bracket overview</SheetTitle>
               <SheetDescription>Review your full knockout path from your current picks.</SheetDescription>
             </SheetHeader>
             <div className="overflow-auto p-3">

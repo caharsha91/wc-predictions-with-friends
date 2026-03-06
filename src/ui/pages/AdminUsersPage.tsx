@@ -85,6 +85,7 @@ export default function AdminUsersPage() {
 
   const firestoreEnabled = hasFirebase && !!firebaseDb && !isDemoMode
   const canManageMembers = firestoreEnabled
+  const modeLabel = isDemoMode ? 'Demo testing data' : 'Live roster data'
 
   useEffect(() => {
     let canceled = false
@@ -249,20 +250,13 @@ export default function AdminUsersPage() {
     return entries.filter((entry) => {
       const nameValue = (entry.name ?? '').toLowerCase()
       const emailValue = entry.email.toLowerCase()
-      const memberIdValue = entry.memberId.toLowerCase()
-      const authUidValue = (entry.authUid ?? '').toLowerCase()
-      return (
-        nameValue.includes(normalizedSearchQuery) ||
-        emailValue.includes(normalizedSearchQuery) ||
-        memberIdValue.includes(normalizedSearchQuery) ||
-        authUidValue.includes(normalizedSearchQuery)
-      )
+      return nameValue.includes(normalizedSearchQuery) || emailValue.includes(normalizedSearchQuery)
     })
   }, [entries, normalizedSearchQuery, state.status])
 
   const headerMetadata = (
     <>
-      <span>{canManageMembers ? 'Updates enabled' : 'Read only'}</span>
+      <span>{modeLabel}</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
       <span>{entries.length} players</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
@@ -275,8 +269,9 @@ export default function AdminUsersPage() {
   return (
     <AdminWorkspaceShellV2
       title="Players"
-      subtitle="Manage league roster access and admin permissions."
+      subtitle={isDemoMode ? 'Review demo roster snapshot state for testing.' : 'Manage league roster access and admin permissions.'}
       metadata={headerMetadata}
+      kicker={isDemoMode ? 'Admin Demo' : 'Admin'}
       actions={(
         <Button
           type="button"
@@ -290,11 +285,15 @@ export default function AdminUsersPage() {
       )}
     >
       <div className="space-y-4">
-        {!canManageMembers ? (
+        {isDemoMode ? (
+          <Alert tone="warning" title="Demo testing mode" className="admin-v2-inline-alert">
+            Demo roster is snapshot-only for testing. Add/edit actions are intentionally disabled here.
+          </Alert>
+        ) : null}
+
+        {!canManageMembers && !isDemoMode ? (
           <Alert tone="warning" title="Read-only roster view" className="admin-v2-inline-alert">
-            {isDemoMode
-              ? 'Demo mode uses snapshot data for roster display only.'
-              : 'Live roster updates are unavailable in this environment.'}
+            Live roster updates are unavailable in this environment.
           </Alert>
         ) : null}
         {state.status === 'error' ? (
@@ -315,9 +314,15 @@ export default function AdminUsersPage() {
                 type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search players..."
+                placeholder="Search by name or email..."
                 className="players-v2-search"
               />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge tone="info" className="admin-v2-pill">{adminCount} admin</Badge>
+              <Badge tone="secondary" className="admin-v2-pill">{memberCount} member</Badge>
+              {isDemoMode ? <Badge tone="warning" className="admin-v2-pill">Demo snapshot</Badge> : null}
             </div>
 
             <div className="admin-v2-divider" />
@@ -342,11 +347,13 @@ export default function AdminUsersPage() {
                   {filteredEntries.map((entry) => (
                     <div key={entry.docId} className="players-v2-row">
                       <div className="players-v2-name-col">
-                        <div className="players-v2-name">{entry.name || 'Unnamed user'}</div>
-                        <div className="players-v2-email">{entry.email}</div>
+                        <div className="players-v2-name-line">
+                          <span className="players-v2-name">{entry.name || 'Unnamed user'}</span>
+                          <span className="players-v2-email">{entry.email}</span>
+                        </div>
                       </div>
 
-                      <div className="players-v2-role-col">
+                      <div className="players-v2-role-col flex flex-wrap gap-1">
                         {entry.isAdmin ? (
                           <Badge tone="info" className="admin-v2-pill players-v2-role-pill">
                             Admin
@@ -356,6 +363,11 @@ export default function AdminUsersPage() {
                             Member
                           </Badge>
                         )}
+                        {isDemoMode ? (
+                          <Badge tone="warning" className="admin-v2-pill players-v2-role-pill">
+                            Demo snapshot
+                          </Badge>
+                        ) : null}
                       </div>
 
                       <div className="players-v2-action-col">
@@ -367,7 +379,7 @@ export default function AdminUsersPage() {
                           onClick={() => startEdit(entry)}
                           disabled={!canManageMembers}
                         >
-                          Edit <span aria-hidden="true">-&gt;</span>
+                          Edit
                         </Button>
                       </div>
                     </div>
@@ -383,9 +395,11 @@ export default function AdminUsersPage() {
             <SheetHeader className="admin-v2-sheet-header">
               <SheetTitle>{editing ? 'Edit Player' : 'Add Player'}</SheetTitle>
               <SheetDescription>
-                {editing
-                  ? 'Update player details and admin permissions.'
-                  : 'Add a player to the invite-only league roster.'}
+                {isDemoMode
+                  ? 'Demo mode preview only. Editing is disabled in testing mode.'
+                  : editing
+                    ? 'Update player details and admin permissions for the live roster.'
+                    : 'Add a player to the invite-only live league roster.'}
               </SheetDescription>
             </SheetHeader>
 

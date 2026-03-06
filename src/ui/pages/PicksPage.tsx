@@ -114,11 +114,11 @@ function formatKoWinMethodLabel(value: string | undefined): string {
 }
 
 function readOnlyReasonLabel(reason: MatchReadOnlyReason): string {
-  if (reason === 'global-lock') return 'Final snapshot. Picks are closed.'
-  if (reason === 'in-progress') return 'Kickoff passed for this match.'
-  if (reason === 'outside-window') return 'Opens 72 hours before kickoff.'
+  if (reason === 'global-lock') return 'Locked: Final.'
+  if (reason === 'in-progress') return 'Locked: Kickoff passed for this match.'
+  if (reason === 'outside-window') return 'Locked until 72 hours before kickoff.'
   if (reason === 'missing-kickoff') return 'Kickoff unavailable.'
-  return 'Picks are closed.'
+  return 'Locked.'
 }
 
 function formatWindowDeadline(utcIso: string | null): string {
@@ -535,8 +535,8 @@ function PicksSupportRail({
 
   return (
     <SideListPanelV2
-      title="Pick Window"
-      subtitle="Finish remaining picks before the next lock."
+      title="Pick window"
+      subtitle="Set your remaining picks before the next lock."
       contentClassName="v2-list-divider space-y-0 p-3"
     >
       <section className="flex items-start gap-2">
@@ -549,7 +549,7 @@ function PicksSupportRail({
           <div className="mt-1 text-[11px] text-muted-foreground">{setCount} / {totalCount} set</div>
         </div>
         <StatusTagV2 tone={completionTone} className="ml-auto mt-1 shrink-0">
-          {remainingCount === 0 && totalCount > 0 ? 'All set' : 'In progress'}
+          {remainingCount === 0 && totalCount > 0 ? 'All set' : 'Open'}
         </StatusTagV2>
       </section>
 
@@ -583,7 +583,7 @@ function PicksSupportRail({
             <span className="font-medium tabular-nums text-foreground">{missingScoresCount}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <span>Draw picks missing winner/AET/PEN</span>
+            <span>Draw picks missing winner + AET/PEN</span>
             <span className="font-medium tabular-nums text-foreground">{drawExtrasMissingCount}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
@@ -604,7 +604,7 @@ function PicksSupportRail({
       </section>
 
       <p className="text-[12px] leading-[1.4] text-muted-foreground">
-        If you predict a knockout draw, set the eventual winner and AET/PEN. Non-draw picks ignore AET/PEN.
+        If you call a knockout draw, choose the eventual winner and AET/PEN. Non-draw picks ignore AET/PEN.
       </p>
     </SideListPanelV2>
   )
@@ -988,7 +988,7 @@ export default function PicksPage() {
         className="landing-v2-hero"
         kicker="Predictions"
         title="Match Picks"
-        subtitle="Make picks in the current 72-hour window before matches lock."
+        subtitle="Set your picks in the current 72-hour window before each match locks."
         actions={(
           <>
             <ButtonLink to={homePath} size="sm" variant="secondary">
@@ -1049,7 +1049,7 @@ export default function PicksPage() {
 
               {upcomingMatches.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
-                  No active upcoming matches right now.
+                  No upcoming matches are editable right now.
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1139,7 +1139,7 @@ export default function PicksPage() {
                 )
               ) : (
                 <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
-                  Fixtures are collapsed by default.
+                  Show fixtures to browse upcoming matches.
                 </div>
               )}
             </SectionCardV2>
@@ -1163,7 +1163,7 @@ export default function PicksPage() {
                 />
               ) : (
                 <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
-                  Archive collapsed by default.
+                  Show archive to review older results.
                 </div>
               )}
             </SectionCardV2>
@@ -1201,7 +1201,7 @@ export default function PicksPage() {
             <SheetContent side="bottom" className="league-peek-sheet-content max-h-[80dvh] rounded-t-2xl p-0">
               <SheetHeader>
                 <SheetTitle>Pick guide</SheetTitle>
-                <SheetDescription>Remaining picks, next lock, and blockers to clear.</SheetDescription>
+                <SheetDescription>Remaining picks, next lock, and what still needs attention.</SheetDescription>
               </SheetHeader>
               <div className="p-3">
                 <PicksSupportRail

@@ -1099,6 +1099,7 @@ function formatSheetDisplayLabel(name: string): string {
 export default function AdminExportsPage() {
   // QA-SMOKE: route=/admin/exports and /demo/admin/exports ; checklist-id=smoke-admin-exports
   const dataMode = useRouteDataMode()
+  const isDemoMode = dataMode === 'demo'
   const phaseState = useTournamentPhaseState()
   const isDesktopViewport = useMediaQuery('(min-width: 768px)')
   const { showToast, updateToast } = useToast()
@@ -1206,10 +1207,13 @@ export default function AdminExportsPage() {
   const requiresUser = selectedPreset.requires === 'user' || selectedPreset.requires === 'both'
   const requiresMatchday = selectedPreset.requires === 'matchday' || selectedPreset.requires === 'both'
   const isAuditPreset = selectedPreset.id === 'FULL_AUDIT_PACK'
+  const exportDisabledReason = !canExport ? exportGateMessage : noDataHint
+  const isExportActionDisabled = exportStatus === 'exporting' || Boolean(exportDisabledReason)
   const exportControlsDesktopClass = isAuditPreset
     ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]'
     : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
-  const availabilityText = canExport ? 'Exports available' : exportGateMessage ?? 'Exports unavailable.'
+  const availabilityText = canExport ? 'Exports enabled' : exportGateMessage ?? 'Exports unavailable.'
+  const modeContextText = isDemoMode ? 'Demo testing mode' : 'Live admin mode'
   const headerMetadata = (
     <>
       {state.status === 'ready' ? (
@@ -1217,6 +1221,8 @@ export default function AdminExportsPage() {
       ) : (
         <span>{state.status === 'loading' ? 'Loading offline snapshot...' : 'Offline snapshot unavailable'}</span>
       )}
+      <span className="h-3 w-px bg-border" aria-hidden="true" />
+      <span>{modeContextText}</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
       <span>{availabilityText}</span>
     </>
@@ -1455,8 +1461,9 @@ export default function AdminExportsPage() {
     return (
       <AdminWorkspaceShellV2
         title="Exports"
-        subtitle="Generate and download league workbooks."
+        subtitle={isDemoMode ? 'Generate demo snapshot workbooks for testing.' : 'Generate tournament workbooks for league operations.'}
         metadata={headerMetadata}
+        kicker={isDemoMode ? 'Admin Demo' : 'Admin'}
       >
         <div className="space-y-4">
           <Skeleton className="h-24 rounded-2xl" />
@@ -1470,8 +1477,9 @@ export default function AdminExportsPage() {
     return (
       <AdminWorkspaceShellV2
         title="Exports"
-        subtitle="Generate and download league workbooks."
+        subtitle={isDemoMode ? 'Generate demo snapshot workbooks for testing.' : 'Generate tournament workbooks for league operations.'}
         metadata={headerMetadata}
+        kicker={isDemoMode ? 'Admin Demo' : 'Admin'}
       >
         <Alert tone="danger" title="Unable to load exports" className="admin-v2-inline-alert">
           {state.message}
@@ -1483,11 +1491,18 @@ export default function AdminExportsPage() {
   return (
     <AdminWorkspaceShellV2
       title="Exports"
-      subtitle="Generate tournament workbooks instantly."
+      subtitle={isDemoMode ? 'Generate demo snapshot workbooks for testing.' : 'Generate tournament workbooks for league operations.'}
       metadata={headerMetadata}
+      kicker={isDemoMode ? 'Admin Demo' : 'Admin'}
     >
       <div className="v2-section-flat">
         <div className="space-y-3.5">
+          {isDemoMode ? (
+            <Alert tone="warning" title="Demo testing export context" className="admin-v2-inline-alert py-2.5 text-[13px]">
+              Demo exports use test snapshot data only and do not change live league data.
+            </Alert>
+          ) : null}
+
           <div className="admin-v2-section-label">Export</div>
 
           <div className={`admin-v2-controls grid gap-3 ${exportControlsDesktopClass}`}>
@@ -1539,7 +1554,7 @@ export default function AdminExportsPage() {
                 size="md"
                 className="admin-v2-action v2-action-prominent lg:min-w-[180px]"
                 loading={exportStatus === 'exporting'}
-                disabled={exportStatus === 'exporting' || !canExport || Boolean(noDataHint)}
+                disabled={isExportActionDisabled}
                 onClick={() => void runExport(selectedPresetId)}
               >
                 {exportStatus === 'exporting' ? 'Preparing...' : 'Export'}
@@ -1547,13 +1562,17 @@ export default function AdminExportsPage() {
             </div>
           </div>
 
-          {!canExport ? (
-            <Alert tone="warning" className="admin-v2-inline-alert py-2.5 text-[13px]">
-              {exportGateMessage}
-            </Alert>
-          ) : noDataHint ? (
-            <Alert tone="warning" className="admin-v2-inline-alert py-2.5 text-[13px]">
-              {noDataHint}
+          <div className="admin-v2-row-meta">
+            {exportDisabledReason ? `Export disabled: ${exportDisabledReason}` : 'Export enabled for current selection.'}
+          </div>
+
+          {exportDisabledReason ? (
+            <Alert
+              tone="warning"
+              title={!canExport ? 'Export unavailable in current admin state' : 'Export blocked for current selection'}
+              className="admin-v2-inline-alert py-2.5 text-[13px]"
+            >
+              {exportDisabledReason}
             </Alert>
           ) : null}
 

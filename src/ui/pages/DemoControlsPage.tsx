@@ -11,6 +11,7 @@ import Progress from '../components/ui/Progress'
 import { CalendarIcon, CloseIcon, SettingsIcon, UsersIcon } from '../components/Icons'
 import AdminWorkspaceShellV2 from '../components/v2/AdminWorkspaceShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
+import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import {
   DEMO_SCENARIO_OPTIONS,
   type DemoScenarioId,
@@ -116,6 +117,8 @@ export default function DemoControlsPage() {
   const [sessionProgressLabel, setSessionProgressLabel] = useState<string>('Idle')
   const [sessionProgressIntent, setSessionProgressIntent] = useState<'default' | 'momentum' | 'warning' | 'success'>('default')
   const { showToast, updateToast } = useToast()
+  const mode = useRouteDataMode()
+  const routeModeLabel = mode === 'demo' ? 'Demo route active' : 'Admin demo controls'
 
   useEffect(() => {
     let canceled = false
@@ -152,6 +155,8 @@ export default function DemoControlsPage() {
   }, [selectedViewerId, state])
   const headerMetadata = (
     <>
+      <span>{routeModeLabel}</span>
+      <span className="h-3 w-px bg-border" aria-hidden="true" />
       <span>{getScenarioLabel(selectedScenario)}</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
       <span>{toLabel(scenarioNow)}</span>
@@ -269,14 +274,14 @@ export default function DemoControlsPage() {
     if (pendingAction === 'reload-snapshots') {
       return {
         title: 'Reload demo snapshots?',
-        description: 'This will clear cached demo snapshot data and reload the page.',
+        description: 'This clears cached demo snapshot keys and reloads this tab. Scenario/viewer settings stay saved.',
         confirmLabel: 'Reload snapshots'
       }
     }
     if (pendingAction === 'clear-session') {
       return {
         title: 'Clear demo session?',
-        description: 'This clears demo scenario and viewer settings saved in this browser.',
+        description: 'This clears demo scenario/viewer/cache settings in this browser only. Live league data is not affected.',
         confirmLabel: 'Clear session'
       }
     }
@@ -286,10 +291,15 @@ export default function DemoControlsPage() {
   return (
     <AdminWorkspaceShellV2
       title="Demo Controls"
-      subtitle="Configure scenario, viewer, and demo session data."
+      subtitle="Configure scenario, viewer, and cached session behavior for demo testing."
       metadata={headerMetadata}
+      kicker="Admin Demo"
     >
       <div className="space-y-4">
+        <Alert tone="warning" title="Testing-only controls" className="admin-v2-inline-alert">
+          These controls affect demo state in this browser session and never modify live league data.
+        </Alert>
+
         {state.status === 'loading' ? (
           <SectionCardV2 tone="panel" density="none" className="admin-v2-surface-muted p-4 md:p-5">
             Loading demo controls...
@@ -305,6 +315,27 @@ export default function DemoControlsPage() {
         {state.status === 'ready' ? (
           <div className="v2-section-flat">
             <div className="space-y-4">
+              <SectionCardV2 tone="panel" density="none" className="admin-v2-surface p-3.5 md:p-4">
+                <div className="space-y-2">
+                  <div className="admin-v2-section-label">Current demo session</div>
+                  <div className="grid gap-2 md:grid-cols-3">
+                    <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
+                      <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Scenario</div>
+                      <div className="mt-1 text-sm font-medium text-foreground">{getScenarioLabel(selectedScenario)}</div>
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
+                      <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Demo clock</div>
+                      <div className="mt-1 text-sm font-medium text-foreground">{toLabel(scenarioNow)}</div>
+                      <div className="text-xs text-muted-foreground">{toRelativeLabel(scenarioNow)}</div>
+                    </div>
+                    <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
+                      <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Viewer</div>
+                      <div className="mt-1 text-sm font-medium text-foreground">{selectedViewerLabel}</div>
+                    </div>
+                  </div>
+                </div>
+              </SectionCardV2>
+
               <div className="space-y-3">
                 <div className="admin-v2-section-label">Scenario</div>
                 <div className="admin-v2-controls">
@@ -330,7 +361,7 @@ export default function DemoControlsPage() {
                   </Button>
                 </div>
                 <div className="admin-v2-row-meta">
-                  {toLabel(scenarioNow)} • {toRelativeLabel(scenarioNow)}
+                  Applies scenario + demo clock override across demo pages in this browser.
                 </div>
               </div>
 
@@ -361,7 +392,7 @@ export default function DemoControlsPage() {
                     Switch viewer
                   </Button>
                 </div>
-                <div className="admin-v2-row-meta">Affects leaderboard + user data.</div>
+                <div className="admin-v2-row-meta">Changes who appears as You across demo picks, bracket, and leaderboard views.</div>
               </div>
 
               <div className="admin-v2-divider" />
@@ -369,26 +400,34 @@ export default function DemoControlsPage() {
               <div className="space-y-3">
                 <div className="admin-v2-section-label">Utilities</div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => setPendingAction('reload-snapshots')}
-                    icon={<SettingsIcon size={15} />}
-                    className="admin-v2-action w-full justify-start"
-                  >
-                    Reload snapshots
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setPendingAction('clear-session')}
-                    icon={<CloseIcon size={15} />}
-                    className="admin-v2-action admin-v2-danger w-full justify-start"
-                  >
-                    Clear session
-                  </Button>
+                  <div className="rounded-lg border border-border/70 bg-background/35 p-2.5">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setPendingAction('reload-snapshots')}
+                      icon={<SettingsIcon size={15} />}
+                      className="admin-v2-action w-full justify-start"
+                    >
+                      Reload snapshots
+                    </Button>
+                    <div className="mt-2 text-[12px] text-muted-foreground">
+                      Clears cached demo snapshot keys and reloads this tab. Scenario/viewer settings stay saved.
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border/70 bg-background/35 p-2.5">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setPendingAction('clear-session')}
+                      icon={<CloseIcon size={15} />}
+                      className="admin-v2-action admin-v2-danger w-full justify-start"
+                    >
+                      Clear session
+                    </Button>
+                    <div className="mt-2 text-[12px] text-muted-foreground">
+                      Clears demo scenario, viewer, and cached session overrides from this browser.
+                    </div>
+                  </div>
                 </div>
-                <div className="admin-v2-inline-alert admin-v2-inline-alert-warning text-[13px]">
-                  Reload overrides current demo data.
-                </div>
+                <div className="admin-v2-row-meta">Both utilities affect demo testing state only.</div>
                 {sessionProgress > 0 ? (
                   <div className="space-y-1">
                     <div className="text-[13px] text-muted-foreground">{sessionProgressLabel}</div>

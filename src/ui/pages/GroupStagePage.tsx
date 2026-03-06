@@ -566,7 +566,7 @@ export default function GroupStagePage() {
 
   const bestThirdMeterLabel = `Third-place qualifiers: ${selectedBestThirdCount} / ${BEST_THIRD_SLOTS} selected`
   const bestThirdHintLabel =
-    selectedBestThirdCount < BEST_THIRD_SLOTS ? `${BEST_THIRD_SLOTS - selectedBestThirdCount} more left` : 'All set'
+    selectedBestThirdCount < BEST_THIRD_SLOTS ? `${BEST_THIRD_SLOTS - selectedBestThirdCount} to pick` : 'All set'
 
   const selectedThirdCodeByGroup = useMemo(() => {
     const next: Record<string, string> = {}
@@ -898,14 +898,14 @@ export default function GroupStagePage() {
 
   const groupPicksAlert =
     groupStage.saveStatus === 'locked' ? (
-      <Alert tone="warning" title="Lock enforced">
-        Group-stage edits are blocked after lock ({groupLockLabel}).
+      <Alert tone="warning" title="Locked">
+        Group Stage picks are locked after {groupLockLabel}.
       </Alert>
     ) : null
 
   const projectedComparisonAlert = snapshotReady?.projectedGroupPredictionsLimited ? (
-    <Alert tone="warning" title="Projected comparison limited">
-      Group-stage projection comparisons are partially unavailable for your role.
+    <Alert tone="warning" title="Comparison data limited">
+      Some group comparison data is unavailable with your current access.
     </Alert>
   ) : null
 
@@ -965,7 +965,7 @@ export default function GroupStagePage() {
   const standingsPanel = (
     <SideListPanelV2
       title="Published standings"
-      subtitle="Use this panel to compare your picks by group."
+      subtitle="See how your group calls compare."
       className="group-stage-v2-leaderboard min-h-0"
       actions={(
         <Badge tone="secondary" className="h-7 rounded-full px-2 text-[12px] normal-case tracking-normal">
@@ -1021,9 +1021,9 @@ export default function GroupStagePage() {
 
   const groupStageStateCopy =
     groupsFinal || isFinalResultsMode
-      ? 'State: Final'
+      ? 'Locked: Final.'
       : isReadOnly
-        ? 'State: Locked'
+        ? 'Locked.'
         : `Editable until: ${groupLockLabel}.`
 
   const groupStagePublishedCopy = groupsFinal || isFinalResultsMode ? 'Published: Final' : 'Published: Latest snapshot'
@@ -1033,7 +1033,7 @@ export default function GroupStagePage() {
       rows={leaderboardRowsForCard}
       snapshotLabel={scoringSnapshotLabel}
       topCount={3}
-      title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Projected Leaderboard'}
+      title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Leaderboard Outlook'}
       leaderboardPath={leaderboardPath}
       previewRowCount={isDesktopRailViewport ? DESKTOP_PREVIEW_ROW_COUNT : undefined}
       priorityUserIds={rivalUserIds}
@@ -1047,7 +1047,7 @@ export default function GroupStagePage() {
         className="group-stage-v2-hero"
         kicker="Your move"
         title="Group Stage"
-        subtitle="Set your group ranking and best-third qualifiers. Updates publish on daily snapshots."
+        subtitle="Set your group rankings and best-third qualifiers. Latest snapshot updates publish daily."
         actions={(
           <>
             <ButtonLink to={homePath} size="sm" variant="secondary">

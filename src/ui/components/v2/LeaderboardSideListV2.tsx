@@ -193,7 +193,11 @@ export function LeaderboardCardCurated({
   return (
     <SideListPanelV2
       title={title}
-      subtitle={snapshotLabel === SNAPSHOT_UNAVAILABLE_LABEL ? snapshotLabel : `As of ${snapshotLabel}`}
+      subtitle={
+        snapshotLabel === SNAPSHOT_UNAVAILABLE_LABEL
+          ? SNAPSHOT_UNAVAILABLE_LABEL
+          : `Latest snapshot: ${snapshotLabel}`
+      }
       className="group-stage-v2-leaderboard"
       contentClassName="v2-list-divider space-y-0"
       footer={
@@ -259,7 +263,7 @@ export function LeaderboardCardCurated({
 
       {rows.length === 0 ? (
         <RowShellV2 tone="inset" interactive={false} className="text-[13px] text-muted-foreground">
-          No leaderboard snapshot rows available.
+          No leaderboard rows are available in the latest snapshot.
         </RowShellV2>
       ) : null}
     </SideListPanelV2>

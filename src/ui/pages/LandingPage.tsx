@@ -107,19 +107,19 @@ const ENTRY_TILES: EntryTile[] = [
   {
     key: 'group-stage',
     label: 'Group Stage',
-    description: 'Set your group winners and best-third qualifiers.',
+    description: 'Call your group winners and best-third qualifiers.',
     icon: CalendarIcon
   },
   {
     key: 'match-picks',
     label: 'Match Picks',
-    description: 'Make your next score picks before lock.',
+    description: 'Back your scorelines before each lock.',
     icon: ResultsIcon
   },
   {
     key: 'knockout-bracket',
     label: 'Knockout Bracket',
-    description: 'Lock your knockout path round by round.',
+    description: 'Map your knockout path one round at a time.',
     icon: BracketIcon
   }
 ]
@@ -899,9 +899,9 @@ export default function LandingPage() {
         : {
             progressLabel: `${groupCompletion.groupsDone}/${groupCompletion.groupsTotal} groups set • ${groupCompletion.bestThirdDone}/8 best-thirds selected`,
             progressTone: groupCompletion.pending === 0 ? 'success' : 'warning',
-            availabilityLabel: 'Open for edits',
+            availabilityLabel: 'Editable',
             availabilityTone: 'info',
-            timingLabel: `Editable until ${groupLockLabel}`,
+            timingLabel: `Editable until: ${groupLockLabel}`,
             actionLabel: groupCompletion.pending > 0 ? 'Finish Group Stage picks' : 'Review Group Stage'
           }
 
@@ -927,7 +927,7 @@ export default function LandingPage() {
         ? {
             progressLabel: `${matchWindow72h.picked}/${matchWindow72h.total} picks set in the active 72-hour window`,
             progressTone: matchWindow72h.pending === 0 ? 'success' : 'info',
-            availabilityLabel: 'Open for edits',
+            availabilityLabel: 'Editable',
             availabilityTone: 'info',
             timingLabel: `Next lock: ${nextMatchLockLabel}`,
             actionLabel: matchWindow72h.pending > 0 ? 'Make Match Picks' : 'Review Match Picks'
@@ -972,9 +972,9 @@ export default function LandingPage() {
           ? {
               progressLabel: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set`,
               progressTone: knockoutPendingActions === 0 ? 'success' : 'info',
-              availabilityLabel: 'Open for edits',
+              availabilityLabel: 'Editable',
               availabilityTone: 'info',
-              timingLabel: `Editable until ${firstKnockoutKickoffLabel}`,
+              timingLabel: `Editable until: ${firstKnockoutKickoffLabel}`,
               actionLabel: knockoutPendingActions > 0 ? 'Set Knockout winners' : 'Review Knockout picks'
             }
           : {
@@ -1145,8 +1145,8 @@ export default function LandingPage() {
     ? 'Knockout picks are open now.'
     : knockoutAvailable
       ? phaseState.tournamentPhase === 'FINAL'
-        ? 'Final snapshot. Knockout picks are closed.'
-        : 'Knockout picks lock at first knockout kickoff.'
+        ? 'Locked: Final.'
+        : 'Locked at first knockout kickoff.'
       : 'Knockout picks open once group outcomes lock and matchups are confirmed.'
 
   function persistRivals(nextRivals: string[]) {
@@ -1299,7 +1299,7 @@ export default function LandingPage() {
     <div className="space-y-3">
       <div className="landing-v2-rivals-header-row flex flex-wrap items-center justify-between gap-2">
         <div className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-strong)]">
-          Rivals comparison
+          Rival watch
         </div>
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
           <span>{`Tracking ${rivalUserIds.length}/3`}</span>
@@ -1316,7 +1316,7 @@ export default function LandingPage() {
         <div className="landing-v2-rivals-pane space-y-2" data-pane="selected">
           <div className="space-y-1">
             <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">You and rivals</div>
-            <div className="text-[12px] text-muted-foreground">Drag rivals to set comparison order.</div>
+            <div className="text-[12px] text-muted-foreground">Drag rivals to set your comparison order.</div>
           </div>
           <div className="space-y-2">
             {rivalsListRows.map((row, index) => {
@@ -1406,7 +1406,7 @@ export default function LandingPage() {
               ref={rivalSearchInputRef}
               value={rivalQuery}
               onChange={(event) => setRivalQuery(event.target.value)}
-              placeholder="Search by player name"
+              placeholder="Find a player"
               className="h-9"
             />
           </div>
@@ -1503,7 +1503,7 @@ export default function LandingPage() {
         className="landing-v2-hero"
         kicker="Your move"
         title="Play Center"
-        subtitle="Plan your next picks and keep your rivals in view."
+        subtitle="Plan your next picks and keep your rivals close."
         actions={(
           <div className="flex flex-col items-end gap-2">
             <div className="landing-v2-current-time text-right text-xl font-semibold text-[color:var(--v2-text-strong)]">
@@ -1635,8 +1635,8 @@ export default function LandingPage() {
         ) : null}
 
         {snapshotReady?.projectedGroupPredictionsLimited ? (
-          <Alert tone="warning" title="Projected comparison limited">
-            Group-stage projection comparisons are partially unavailable for your role.
+          <Alert tone="warning" title="Comparison data limited">
+            Some group comparison data is unavailable with your current access.
           </Alert>
         ) : null}
 
@@ -1664,7 +1664,7 @@ export default function LandingPage() {
           <h2 className="v2-heading-h2 text-foreground">Rules at a glance</h2>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Picks stay editable inside the active 72-hour match window.</span>
+            <span>Match picks stay editable inside the active 72-hour window.</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
@@ -1680,7 +1680,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Leaderboard reflects published snapshots.</span>
+            <span>Leaderboard updates with each published snapshot.</span>
           </div>
         </div>
       </SectionCardV2>

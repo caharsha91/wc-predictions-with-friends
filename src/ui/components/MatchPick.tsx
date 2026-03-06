@@ -382,14 +382,14 @@ export default function MatchPick({
                 </button>
               </div>
             ) : (
-              <span className="text-[11px] text-muted-foreground">AET/PEN not needed</span>
+              <span className="text-[11px] text-muted-foreground">No AET/PEN needed</span>
             )}
           </div>
         ) : null}
       </div>
 
       {isKnockout && hasScores && knockoutDraw && (!winnerId || !hasKnockoutMethod) ? (
-        <p className="mt-1 text-[11px] text-muted-foreground">Draw predicted - choose eventual winner and AET/PEN.</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">Draw picked. Choose eventual winner and AET/PEN.</p>
       ) : null}
     </RowShellV2>
   )
