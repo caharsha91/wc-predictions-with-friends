@@ -16,6 +16,7 @@ import {
 } from '../components/ui/Sheet'
 import Skeleton from '../components/ui/Skeleton'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
+import InlineStateHintV2 from '../components/v2/InlineStateHintV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
@@ -88,6 +89,7 @@ type BracketNode = {
   y: number
   side: 'left' | 'right' | 'center'
   interactive: boolean
+  roundUnlocked: boolean
 }
 
 type BracketConnector = {
@@ -98,10 +100,13 @@ type BracketConnector = {
   dashed?: boolean
 }
 
-type BracketInteractionState = {
-  tone: 'locked' | 'warning' | 'success' | 'secondary'
-  label: string
-}
+type BracketInteractionState =
+  | {
+      kind: 'tag'
+      tone: 'locked' | 'warning' | 'success'
+      label: string
+    }
+  | { kind: 'none' }
 
 const BRACKET_NODE_METRICS = {
   paddingX: 8,
@@ -232,19 +237,24 @@ function interactionKeyForMatch(match: ResolvedMatch): string {
 function resolveBracketInteractionState({
   match,
   editable,
+  roundUnlocked,
+  globallyLocked,
   savingMatchKey,
   savedMatchKey
 }: {
   match: ResolvedMatch
   editable: boolean
+  roundUnlocked: boolean
+  globallyLocked: boolean
   savingMatchKey: string | null
   savedMatchKey: string | null
 }): BracketInteractionState {
   const key = interactionKeyForMatch(match)
-  if (!editable) return { tone: 'locked', label: 'Locked' }
-  if (savingMatchKey === key) return { tone: 'warning', label: 'Saving...' }
-  if (savedMatchKey === key) return { tone: 'success', label: 'Saved' }
-  return { tone: 'secondary', label: 'Editable' }
+  if (savingMatchKey === key) return { kind: 'tag', tone: 'warning', label: 'Saving pick...' }
+  if (savedMatchKey === key) return { kind: 'tag', tone: 'success', label: 'Pick saved' }
+  if (globallyLocked) return { kind: 'none' }
+  if (!roundUnlocked || !editable) return { kind: 'none' }
+  return { kind: 'none' }
 }
 
 function resolveSourceTeam(
@@ -313,12 +323,11 @@ function deriveTeamsForMatch(
 }
 
 function roundHelperCopy(round: RoundModel, nextRound: RoundModel | null, bracketEditable: boolean): string {
-  if (!round.unlocked) return 'Complete the previous round to unlock this stage.'
-  if (!bracketEditable) return 'Bracket is locked for all rounds after the first knockout kickoff.'
+  if (!bracketEditable) return 'Bracket edits close at first knockout kickoff.'
 
   const remaining = Math.max(0, round.total - round.picked)
   if (remaining > 0) {
-    return `${remaining} ${remaining === 1 ? 'pick remains' : 'picks remain'} before the next round unlocks.`
+    return `${remaining} ${remaining === 1 ? 'pick remains' : 'picks remain'} in this round.`
   }
 
   if (nextRound) return `Round complete. Continue to ${STAGE_LABELS[nextRound.stage]}.`
@@ -452,17 +461,22 @@ function BracketSummaryPanel({
 function BracketMatchNode({
   node,
   isActiveRound,
+  globallyLocked,
+  isSavingAny,
   savingMatchKey,
   savedMatchKey,
   onPick
 }: {
   node: BracketNode
   isActiveRound: boolean
+  globallyLocked: boolean
+  isSavingAny: boolean
   savingMatchKey: string | null
   savedMatchKey: string | null
   onPick: (match: ResolvedMatch, winner: MatchWinner) => void
 }) {
   const { match, interactive, side } = node
+  const canInteract = interactive && !isSavingAny
   const homeLabel = resolveTeamDisplayLabel(match.homeTeam)
   const awayLabel = resolveTeamDisplayLabel(match.awayTeam)
   const cardShellClass = isActiveRound
@@ -472,6 +486,8 @@ function BracketMatchNode({
   const interactionState = resolveBracketInteractionState({
     match,
     editable: interactive,
+    roundUnlocked: node.roundUnlocked,
+    globallyLocked,
     savingMatchKey,
     savedMatchKey
   })
@@ -482,12 +498,12 @@ function BracketMatchNode({
     const teamIdentityClass = side === 'right' ? 'min-w-0 flex-1 justify-end text-right' : 'min-w-0 flex-1'
     const choiceClass = bracketWinnerChoiceClass({
       selected,
-      interactive,
+      interactive: canInteract,
       compact: false
     })
     const choiceStyle = bracketWinnerChoiceStyle(selected, { height: BRACKET_NODE_METRICS.teamRowHeight })
 
-    if (interactive) {
+    if (canInteract) {
       return (
         <button
           type="button"
@@ -553,7 +569,7 @@ function BracketMatchNode({
       </div>
 
       <div
-        className="flex min-w-0 items-center justify-between gap-2"
+        className="flex min-w-0 items-center justify-end gap-1.5"
         style={{
           marginTop: BRACKET_NODE_METRICS.sectionGap,
           height: BRACKET_NODE_METRICS.footerHeight
@@ -567,12 +583,14 @@ function BracketMatchNode({
             {resultLabel(match.result)}
           </StatusTagV2>
         ) : null}
-        <StatusTagV2
-          tone={interactionState.tone}
-          className={`h-4 shrink-0 px-1.5 text-[9px] ${isActiveRound ? '' : 'opacity-75'}`}
-        >
-          {interactionState.label}
-        </StatusTagV2>
+        {interactionState.kind === 'tag' ? (
+          <StatusTagV2
+            tone={interactionState.tone}
+            className={`h-4 shrink-0 px-1.5 text-[9px] ${isActiveRound ? '' : 'opacity-75'}`}
+          >
+            {interactionState.label}
+          </StatusTagV2>
+        ) : null}
       </div>
     </article>
   )
@@ -581,6 +599,7 @@ function BracketMatchNode({
 function DesktopVisualBracket({
   rounds,
   bracketEditable,
+  isSavingAny,
   activeStage,
   savingMatchKey,
   savedMatchKey,
@@ -588,6 +607,7 @@ function DesktopVisualBracket({
 }: {
   rounds: RoundModel[]
   bracketEditable: boolean
+  isSavingAny: boolean
   activeStage: KnockoutStage
   savingMatchKey: string | null
   savedMatchKey: string | null
@@ -652,14 +672,17 @@ function DesktopVisualBracket({
       for (let index = 0; index < matches.length; index += 1) {
         const match = matches[index]
         const y = (yPositions[index] ?? 0) + topPad
-        const interactive = byStage.get(match.stage)?.editable ?? false
+        const roundModel = byStage.get(match.stage)
+        const interactive = roundModel?.editable ?? false
+        const roundUnlocked = roundModel?.unlocked ?? false
         nodes.push({
           id: `${match.stage}-${match.match.id}`,
           match,
           x,
           y,
           side,
-          interactive
+          interactive,
+          roundUnlocked
         })
       }
     }
@@ -702,28 +725,34 @@ function DesktopVisualBracket({
             : fallbackFinalY
 
     if (finalMatch) {
-      const interactive = byStage.get(finalMatch.stage)?.editable ?? false
+      const roundModel = byStage.get(finalMatch.stage)
+      const interactive = roundModel?.editable ?? false
+      const roundUnlocked = roundModel?.unlocked ?? false
       nodes.push({
         id: `${finalMatch.stage}-${finalMatch.match.id}`,
         match: finalMatch,
         x: xFinal,
         y: finalY,
         side: 'center',
-        interactive
+        interactive,
+        roundUnlocked
       })
     }
 
     const thirdY = finalY + cardHeight + 86
 
     if (thirdMatch) {
-      const interactive = byStage.get(thirdMatch.stage)?.editable ?? false
+      const roundModel = byStage.get(thirdMatch.stage)
+      const interactive = roundModel?.editable ?? false
+      const roundUnlocked = roundModel?.unlocked ?? false
       nodes.push({
         id: `${thirdMatch.stage}-${thirdMatch.match.id}`,
         match: thirdMatch,
         x: xFinal,
         y: thirdY,
         side: 'center',
-        interactive
+        interactive,
+        roundUnlocked
       })
     }
 
@@ -888,10 +917,7 @@ function DesktopVisualBracket({
               <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-foreground">
                 {STAGE_LABELS[round.stage]}
               </div>
-              <div className="flex items-center gap-1.5">
-                <StatusTagV2 tone={round.editable ? 'secondary' : 'locked'}>
-                  {round.editable ? 'Open' : 'Locked'}
-                </StatusTagV2>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
                 <StatusTagV2 tone={round.complete ? 'success' : 'warning'}>
                   {round.picked}/{round.total}
                 </StatusTagV2>
@@ -905,6 +931,8 @@ function DesktopVisualBracket({
                 const interactionState = resolveBracketInteractionState({
                   match,
                   editable: round.editable,
+                  roundUnlocked: round.unlocked,
+                  globallyLocked: !bracketEditable,
                   savingMatchKey,
                   savedMatchKey
                 })
@@ -930,11 +958,13 @@ function DesktopVisualBracket({
                         </div>
                         <div className="text-[11px] text-muted-foreground">{formatKickoff(match.match.kickoffUtc)}</div>
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
                         {match.result !== 'pending' ? (
                           <StatusTagV2 tone={resultTone(match.result)}>{resultLabel(match.result)}</StatusTagV2>
                         ) : null}
-                        <StatusTagV2 tone={interactionState.tone}>{interactionState.label}</StatusTagV2>
+                        {interactionState.kind === 'tag' ? (
+                          <StatusTagV2 tone={interactionState.tone}>{interactionState.label}</StatusTagV2>
+                        ) : null}
                       </div>
                     </div>
 
@@ -944,11 +974,11 @@ function DesktopVisualBracket({
                         className={bracketWinnerChoiceClass({
                           selected: match.pickedWinner === 'HOME',
                           interactive: true,
-                          disabled: !round.editable,
+                          disabled: !round.editable || isSavingAny,
                           compact: true
                         })}
                         style={bracketWinnerChoiceStyle(match.pickedWinner === 'HOME')}
-                        disabled={!round.editable}
+                        disabled={!round.editable || isSavingAny}
                         aria-label={`Set ${homeLabel} as winner`}
                         aria-pressed={match.pickedWinner === 'HOME'}
                         onClick={() => onPick(match, 'HOME')}
@@ -966,11 +996,11 @@ function DesktopVisualBracket({
                         className={bracketWinnerChoiceClass({
                           selected: match.pickedWinner === 'AWAY',
                           interactive: true,
-                          disabled: !round.editable,
+                          disabled: !round.editable || isSavingAny,
                           compact: true
                         })}
                         style={bracketWinnerChoiceStyle(match.pickedWinner === 'AWAY')}
-                        disabled={!round.editable}
+                        disabled={!round.editable || isSavingAny}
                         aria-label={`Set ${awayLabel} as winner`}
                         aria-pressed={match.pickedWinner === 'AWAY'}
                         onClick={() => onPick(match, 'AWAY')}
@@ -1056,6 +1086,8 @@ function DesktopVisualBracket({
             <BracketMatchNode
               node={node}
               isActiveRound={isStageActive(node.match.stage)}
+              globallyLocked={!bracketEditable}
+              isSavingAny={isSavingAny}
               savingMatchKey={savingMatchKey}
               savedMatchKey={savedMatchKey}
               onPick={onPick}
@@ -1102,7 +1134,6 @@ export default function BracketPage() {
   const rounds = useMemo<RoundModel[]>(() => {
     if (!readyBracketState) return []
 
-    let priorRoundComplete = true
     const resolvedByStage: Partial<Record<KnockoutStage, ResolvedMatch[]>> = {}
 
     return bracket.stageOrder.map((stage) => {
@@ -1129,9 +1160,8 @@ export default function BracketPage() {
       const total = resolvedMatches.length
       const picked = resolvedMatches.filter((match) => Boolean(match.pickedWinner)).length
       const complete = total === 0 ? true : picked === total
-      const unlocked = priorRoundComplete
-      const editable = unlocked && bracketEditable && !bracketBusySaving
-      priorRoundComplete = unlocked && complete
+      const unlocked = true
+      const editable = unlocked && bracketEditable
 
       return {
         stage,
@@ -1143,7 +1173,7 @@ export default function BracketPage() {
         editable
       }
     })
-  }, [readyBracketState, bracket.stageOrder, bracket.knockout, bracketBusySaving, bracketEditable])
+  }, [readyBracketState, bracket.stageOrder, bracket.knockout, bracketEditable])
 
   useEffect(() => {
     if (!savedMatchKey) return
@@ -1348,7 +1378,7 @@ export default function BracketPage() {
 
   const bracketStateCopy = bracketEditable
     ? 'Editable until: first knockout kickoff.'
-    : 'Locked: Bracket edits are closed.'
+    : 'Locked: Bracket edits close at first knockout kickoff.'
   const bracketPublishedCopy =
     phaseState.tournamentPhase === 'FINAL' ? 'Published: Final' : 'Published: Latest snapshot'
 
@@ -1401,11 +1431,11 @@ export default function BracketPage() {
             <div>
               <div className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Knockout bracket</div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               {!bracketEditable ? (
                 <Badge tone="locked">Read-only bracket</Badge>
               ) : (
-                <Badge tone="secondary">PICKS OPEN NOW</Badge>
+                <InlineStateHintV2>Round-by-round picks</InlineStateHintV2>
               )}
             </div>
           </div>
@@ -1413,6 +1443,7 @@ export default function BracketPage() {
           <DesktopVisualBracket
             rounds={loadedRounds}
             bracketEditable={bracketEditable}
+            isSavingAny={bracketBusySaving}
             activeStage={activeRound.stage}
             savingMatchKey={savingMatchKey}
             savedMatchKey={savedMatchKey}
@@ -1457,12 +1488,9 @@ export default function BracketPage() {
                     {activeRound.picked} of {activeRound.total} picked
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                   <Badge tone={activeRound.complete ? 'success' : 'warning'}>
                     {activeRound.complete ? 'Round complete' : `${remainingPicks} remaining`}
-                  </Badge>
-                  <Badge tone={activeRound.editable ? 'secondary' : 'locked'}>
-                    {activeRound.editable ? 'Open' : 'Locked'}
                   </Badge>
                 </div>
               </div>
@@ -1476,6 +1504,8 @@ export default function BracketPage() {
                   const interactionState = resolveBracketInteractionState({
                     match,
                     editable: activeRound.editable,
+                    roundUnlocked: activeRound.unlocked,
+                    globallyLocked: !bracketEditable,
                     savingMatchKey,
                     savedMatchKey
                   })
@@ -1503,11 +1533,13 @@ export default function BracketPage() {
                             </div>
                             <div className="text-[11px] text-muted-foreground">{formatKickoff(match.match.kickoffUtc)}</div>
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
                             {match.result !== 'pending' ? (
                               <Badge tone={resultTone(match.result)}>{resultLabel(match.result)}</Badge>
                             ) : null}
-                            <StatusTagV2 tone={interactionState.tone}>{interactionState.label}</StatusTagV2>
+                            {interactionState.kind === 'tag' ? (
+                              <StatusTagV2 tone={interactionState.tone}>{interactionState.label}</StatusTagV2>
+                            ) : null}
                           </div>
                         </div>
 
@@ -1517,11 +1549,11 @@ export default function BracketPage() {
                             className={bracketWinnerChoiceClass({
                               selected: match.pickedWinner === 'HOME',
                               interactive: true,
-                              disabled: !activeRound.editable,
+                              disabled: !activeRound.editable || bracketBusySaving,
                               compact: true
                             })}
                             style={bracketWinnerChoiceStyle(match.pickedWinner === 'HOME')}
-                            disabled={!activeRound.editable}
+                            disabled={!activeRound.editable || bracketBusySaving}
                             aria-label={`Set ${resolveTeamDisplayLabel(match.homeTeam)} as winner`}
                             aria-pressed={match.pickedWinner === 'HOME'}
                             onClick={() => void handlePick(match, 'HOME')}
@@ -1539,11 +1571,11 @@ export default function BracketPage() {
                             className={bracketWinnerChoiceClass({
                               selected: match.pickedWinner === 'AWAY',
                               interactive: true,
-                              disabled: !activeRound.editable,
+                              disabled: !activeRound.editable || bracketBusySaving,
                               compact: true
                             })}
                             style={bracketWinnerChoiceStyle(match.pickedWinner === 'AWAY')}
-                            disabled={!activeRound.editable}
+                            disabled={!activeRound.editable || bracketBusySaving}
                             aria-label={`Set ${resolveTeamDisplayLabel(match.awayTeam)} as winner`}
                             aria-pressed={match.pickedWinner === 'AWAY'}
                             onClick={() => void handlePick(match, 'AWAY')}

@@ -5,6 +5,7 @@ import type { BestThirdStatus, GroupPlacementStatus } from '../../../lib/groupSt
 import type { Team } from '../../../types/matches'
 import { cn } from '../../lib/utils'
 import { Button, ButtonLink } from '../ui/Button'
+import InlineStateHintV2 from '../v2/InlineStateHintV2'
 import RowShellV2 from '../v2/RowShellV2'
 import SectionCardV2 from '../v2/SectionCardV2'
 import StatusTagV2 from '../v2/StatusTagV2'
@@ -98,7 +99,7 @@ export function StatusBar({
 }: StatusBarProps) {
   return (
     <V2Card tone="panel" className="group-stage-v2-status rounded-xl px-3 py-1.5">
-      <div className="flex h-full items-center gap-2.5 overflow-hidden">
+      <div className="flex h-full w-full flex-wrap items-center justify-end gap-2.5 overflow-hidden">
         <StatusTagV2 tone={groupsDone === groupsTotal && groupsTotal > 0 ? 'success' : 'warning'}>
           Groups {groupsDone}/{groupsTotal}
         </StatusTagV2>
@@ -235,6 +236,11 @@ export function GroupPicksDenseTable({
           <div className="text-[13px] font-semibold tracking-[0.02em] text-foreground">Group picks</div>
           <div className="text-[13px] text-muted-foreground">{groupsDone}/{groupsTotal} groups complete</div>
         </div>
+        {isReadOnly ? (
+          <div className="px-3 pt-2 text-[11px] text-muted-foreground">
+            Group picks are locked for this snapshot.
+          </div>
+        ) : null}
 
         <div className="min-h-0 flex-1 overflow-auto">
           <div className="space-y-3 p-3">
@@ -252,24 +258,14 @@ export function GroupPicksDenseTable({
               const rowIsSaved = saveStatus !== 'saving' && savedRowGroupId === row.groupId
               const rowIsEditing =
                 (dragging?.groupId === row.groupId || dragOver?.groupId === row.groupId) && !isReadOnly
-              const interactionTone = isReadOnly
-                ? 'locked'
+              const interactionTag = isReadOnly
+                ? { tone: 'locked' as const, label: 'Locked' }
                 : rowIsSaving
-                  ? 'warning'
+                  ? { tone: 'warning' as const, label: 'Saving order...' }
                   : rowIsSaved
-                    ? 'success'
-                    : rowIsEditing
-                      ? 'info'
-                      : 'secondary'
-              const interactionLabel = isReadOnly
-                ? 'Locked'
-                : rowIsSaving
-                  ? 'Saving...'
-                  : rowIsSaved
-                    ? 'Saved'
-                    : rowIsEditing
-                      ? 'Editing'
-                      : 'Editable'
+                    ? { tone: 'success' as const, label: 'Order saved' }
+                    : null
+              const interactionHintLabel = rowIsEditing ? 'Unsaved order' : null
 
               return (
                 <div
@@ -284,13 +280,19 @@ export function GroupPicksDenseTable({
                     <span className="inline-flex h-8 w-11 items-center justify-center rounded-lg bg-background/55 text-[12px] font-medium text-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_26%,transparent)]">
                       {row.groupId}
                     </span>
-                    <StatusTagV2 tone={row.rankingComplete ? 'success' : 'warning'}>
-                      {row.rankingComplete ? 'All set' : 'Incomplete'}
-                    </StatusTagV2>
-                    <StatusTagV2 tone="secondary">
-                      Potential +{rowDelta}
-                    </StatusTagV2>
-                    <StatusTagV2 tone={interactionTone}>{interactionLabel}</StatusTagV2>
+                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                      <StatusTagV2 tone={row.rankingComplete ? 'success' : 'warning'}>
+                        {row.rankingComplete ? 'All set' : 'Incomplete'}
+                      </StatusTagV2>
+                      <StatusTagV2 tone="secondary">
+                        Potential +{rowDelta}
+                      </StatusTagV2>
+                      {interactionTag ? (
+                        <StatusTagV2 tone={interactionTag.tone}>{interactionTag.label}</StatusTagV2>
+                      ) : interactionHintLabel ? (
+                        <InlineStateHintV2>{interactionHintLabel}</InlineStateHintV2>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -333,9 +335,17 @@ export function GroupPicksDenseTable({
                           </div>
 
                           <div className="flex shrink-0 items-center gap-2">
-                            <span className="text-[12px] text-muted-foreground">
-                              {isReadOnly ? 'Locked' : rowIsSaving ? 'Saving...' : 'Drag to reorder'}
-                            </span>
+                            {isReadOnly || rowIsSaving || rowIsSaved || rowIsEditing ? (
+                              <span className="text-[12px] text-muted-foreground">
+                                {isReadOnly
+                                  ? 'Locked'
+                                  : rowIsSaving
+                                    ? 'Saving order...'
+                                    : rowIsSaved
+                                      ? 'Order saved'
+                                      : 'Unsaved order'}
+                              </span>
+                            ) : null}
                             <span className="font-mono text-[13px] leading-none text-muted-foreground" aria-hidden="true">
                               ::
                             </span>
@@ -416,25 +426,27 @@ export function BestThirdPicksCompact({
           <div className="truncate text-[13px] font-semibold tracking-[0.02em] text-foreground">{meterLabel}</div>
         </div>
 
-        <StatusTagV2 tone={selectedCount < totalCount ? 'warning' : 'success'}>
-          {hintLabel}
-        </StatusTagV2>
-
-        {statusLabel ? (
-          <StatusTagV2 tone={statusLabel === 'Final' ? 'success' : statusLabel === 'Locked' ? 'locked' : 'warning'}>
-            {statusLabel}
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <StatusTagV2 tone={selectedCount < totalCount ? 'warning' : 'success'}>
+            {hintLabel}
           </StatusTagV2>
-        ) : null}
 
-        {!isReadOnly && isDirty ? (
-          <Button size="sm" className="h-9 rounded-lg px-3 text-[13px]" loading={saveStatus === 'saving'} onClick={onSave}>
-            Save
+          {statusLabel ? (
+            <StatusTagV2 tone={statusLabel === 'Final' ? 'success' : statusLabel === 'Locked' ? 'locked' : 'warning'}>
+              {statusLabel}
+            </StatusTagV2>
+          ) : null}
+
+          {!isReadOnly && isDirty ? (
+            <Button size="sm" className="h-9 rounded-lg px-3 text-[13px]" loading={saveStatus === 'saving'} onClick={onSave}>
+              Save
+            </Button>
+          ) : null}
+
+          <Button size="sm" variant="ghost" className="h-8 w-8 rounded-lg px-0 text-[13px]" onClick={() => setCollapsed((current) => !current)} aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}>
+            {collapsed ? 'v' : '^'}
           </Button>
-        ) : null}
-
-        <Button size="sm" variant="ghost" className="h-8 w-8 rounded-lg px-0 text-[13px]" onClick={() => setCollapsed((current) => !current)} aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}>
-          {collapsed ? 'v' : '^'}
-        </Button>
+        </div>
       </div>
 
       {!collapsed ? (

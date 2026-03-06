@@ -21,6 +21,7 @@ import {
 import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
+import InlineStateHintV2 from '../components/v2/InlineStateHintV2'
 import { LeaderboardCardCurated, RightRailSticky } from '../components/v2/LeaderboardSideListV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
 import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
@@ -147,11 +148,11 @@ function formatKoWinMethodLabel(value: string | undefined): string {
 }
 
 function readOnlyReasonLabel(reason: MatchReadOnlyReason): string {
-  if (reason === 'global-lock') return 'Locked by tournament phase.'
-  if (reason === 'in-progress') return 'Matches already in progress are read-only.'
-  if (reason === 'outside-window') return 'Locked until this match enters the active 72-hour window.'
+  if (reason === 'global-lock') return 'Final snapshot. Picks are closed.'
+  if (reason === 'in-progress') return 'Kickoff passed for this match.'
+  if (reason === 'outside-window') return 'Opens 72 hours before kickoff.'
   if (reason === 'missing-kickoff') return 'Kickoff unavailable.'
-  return 'Read-only.'
+  return 'Picks are closed.'
 }
 
 function formatWindowDeadline(utcIso: string | null): string {
@@ -358,24 +359,14 @@ function MatchRow({
   const scoreA = parsedHome ?? 0
   const scoreB = parsedAway ?? 0
   const readOnlyLabel = readOnlyReasonLabel(item.readOnlyReason)
-  const interactionTone = !item.editable
-    ? 'locked'
+  const interactionTag = !item.editable
+    ? { tone: 'locked' as const, label: 'Locked' }
     : isSaving
-      ? 'warning'
+      ? { tone: 'warning' as const, label: 'Saving pick...' }
       : isSaved
-        ? 'success'
-        : rowDirty
-          ? 'info'
-          : 'secondary'
-  const interactionLabel = !item.editable
-    ? 'Locked'
-    : isSaving
-      ? 'Saving...'
-      : isSaved
-        ? 'Saved'
-        : rowDirty
-          ? 'Editing'
-          : 'Editable'
+        ? { tone: 'success' as const, label: 'Pick saved' }
+        : null
+  const interactionHintLabel = rowDirty ? 'Unsaved pick' : null
 
   function handleMatchPickChange(next: MatchPickChange) {
     if (!item.editable || isSaving) return
@@ -395,8 +386,12 @@ function MatchRow({
             {stageLabel} · {kickoffLabel}
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <StatusTagV2 tone={interactionTone}>{interactionLabel}</StatusTagV2>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+          {interactionTag ? (
+            <StatusTagV2 tone={interactionTag.tone}>{interactionTag.label}</StatusTagV2>
+          ) : interactionHintLabel ? (
+            <InlineStateHintV2>{interactionHintLabel}</InlineStateHintV2>
+          ) : null}
           {item.editable && rowDirty ? (
             <Button
               size="sm"
@@ -1064,7 +1059,9 @@ export default function PicksPage() {
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="v2-heading-h2 text-foreground">UP NEXT</h2>
-                <StatusTagV2 tone="info">{String(upcomingVisibleCount)}</StatusTagV2>
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                  <StatusTagV2 tone="info">{String(upcomingVisibleCount)}</StatusTagV2>
+                </div>
               </div>
 
               {upcomingMatches.length === 0 ? (
@@ -1103,7 +1100,9 @@ export default function PicksPage() {
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="v2-heading-h2 text-foreground">RECENT RESULTS</h2>
-                <StatusTagV2 tone="secondary">{String(recentResultsDisplay.length)}</StatusTagV2>
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                  <StatusTagV2 tone="secondary">{String(recentResultsDisplay.length)}</StatusTagV2>
+                </div>
               </div>
               <ResultsTable
                 items={recentResultsDisplay}
@@ -1116,7 +1115,7 @@ export default function PicksPage() {
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="v2-heading-h2 text-foreground">FIXTURES</h2>
-                <div className="flex items-center gap-2">
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                   <StatusTagV2 tone="secondary">{String(laterMatches.length)}</StatusTagV2>
                   <Button size="sm" variant="secondary" onClick={() => setLaterExpanded((current) => !current)}>
                     {laterExpanded ? 'Hide fixtures' : 'Show fixtures'}
@@ -1165,7 +1164,7 @@ export default function PicksPage() {
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="v2-heading-h2 text-foreground">ARCHIVE</h2>
-                <div className="flex items-center gap-2">
+                <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                   <StatusTagV2 tone="secondary">{String(archiveResultsDisplay.length)}</StatusTagV2>
                   <Button size="sm" variant="secondary" onClick={() => setArchiveExpanded((current) => !current)}>
                     {archiveExpanded ? 'Hide archive' : 'Show archive'}
