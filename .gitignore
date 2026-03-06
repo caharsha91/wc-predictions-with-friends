@@ -20,3 +20,5 @@ firebase-debug.log*
 firestore-debug.log*
 screenshots
 coverage
+audit.md
+implement.md
