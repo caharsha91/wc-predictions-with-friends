@@ -8,7 +8,6 @@ import { ToastProvider } from './ui/hooks/useToast'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { applyInitialTheme } from './theme/themeState'
 import './styles/index.css'
-import './ui/styles.css'
 applyInitialTheme()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

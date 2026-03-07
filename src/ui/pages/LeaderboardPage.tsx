@@ -330,6 +330,7 @@ function RivalFocusPanel({
         {rows.map((row) => (
           <RowShellV2
             key={`rival-focus-${row.kind}-${row.id}`}
+            depth={row.kind === 'you' ? 'prominent' : 'embedded'}
             state={row.kind === 'you' ? 'you' : 'rival'}
             className="px-3 py-2"
             interactive={false}
@@ -1132,6 +1133,7 @@ export default function LeaderboardPage() {
                   <RowShellV2
                     key={`leaderboard-row-${entryKey}`}
                     ref={isYou ? currentRowRef : null}
+                    depth={isYou ? 'prominent' : 'embedded'}
                     state={rowState}
                     className="rounded-xl px-3 py-3 focus-within:ring-2 focus-within:ring-ring"
                   >

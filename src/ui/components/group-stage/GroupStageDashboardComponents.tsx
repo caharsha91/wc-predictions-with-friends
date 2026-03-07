@@ -300,6 +300,7 @@ export function GroupPicksDenseTable({
                   return (
                     <RowShellV2
                       key={`${row.groupId}-${teamCode}`}
+                      depth="embedded"
                       state={isReadOnly ? 'disabled' : isDragOver || rowIsEditing ? 'selected' : 'default'}
                       tone="inset"
                       draggable={!isDragDisabled}

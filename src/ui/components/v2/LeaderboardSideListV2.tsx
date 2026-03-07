@@ -226,7 +226,13 @@ export function LeaderboardCardCurated({
         const tieCount = tieCountByRank.get(row.rank) ?? 1
 
         return (
-          <RowShellV2 key={`leaderboard-row-wrap-${row.id}`} state={rowState} className="min-h-11 px-2 py-1.5" interactive>
+          <RowShellV2
+            key={`leaderboard-row-wrap-${row.id}`}
+            depth={row.isYou ? 'prominent' : 'embedded'}
+            state={rowState}
+            className="min-h-11 px-2 py-1.5"
+            interactive
+          >
             <MemberIdentityRowV2
               name={`${rankLabel(row.rank, tieCount)} ${row.name}`}
               favoriteTeamCode={row.favoriteTeamCode ?? null}
@@ -263,6 +269,7 @@ export function LeaderboardCardCurated({
         ? Array.from({ length: previewPlaceholderCount }, (_, index) => (
             <RowShellV2
               key={`leaderboard-row-placeholder-${index}`}
+              depth="embedded"
               tone="inset"
               state="disabled"
               interactive={false}
@@ -275,7 +282,7 @@ export function LeaderboardCardCurated({
         : null}
 
       {rows.length === 0 ? (
-        <RowShellV2 tone="inset" interactive={false} className="v2-type-meta">
+        <RowShellV2 depth="embedded" tone="inset" interactive={false} className="v2-type-meta">
           No leaderboard rows are available in the latest snapshot.
         </RowShellV2>
       ) : null}

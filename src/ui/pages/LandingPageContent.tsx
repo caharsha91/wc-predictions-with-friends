@@ -1336,6 +1336,7 @@ export default function LandingPage() {
               return (
                 <RowShellV2
                   key={`${row.id}-${index}`}
+                  depth={row.kind === 'viewer' ? 'prominent' : 'embedded'}
                   state={row.kind === 'viewer' ? 'you' : row.kind === 'selected' ? 'rival' : 'disabled'}
                   className="landing-v2-rivals-row landing-v2-rival-slot px-2 py-1.5"
                   data-kind={row.kind}
@@ -1455,6 +1456,7 @@ export default function LandingPage() {
                     return (
                       <RowShellV2
                         key={entry.id}
+                        depth="embedded"
                         className="landing-v2-rivals-row px-2 py-1.5"
                         data-kind="suggestion"
                       >

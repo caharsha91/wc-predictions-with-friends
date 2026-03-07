@@ -12,7 +12,7 @@ export default function SnapshotStamp({ timestamp, prefix, className }: Snapshot
   const text = prefix && label !== SNAPSHOT_UNAVAILABLE_LABEL ? `${prefix}${label}` : label
 
   return (
-    <span className={cn('text-[13px] leading-[1.35] text-muted-foreground', className)} data-last-updated="true">
+    <span className={cn('text-[13px] leading-[1.35] text-muted-foreground', className)} data-v2-last-updated="true">
       {text}
     </span>
   )

@@ -370,7 +370,7 @@ function LayoutFrameContent() {
   function handleMainClickCapture(event: MouseEvent<HTMLElement>) {
     const target = event.target
     if (!(target instanceof HTMLElement)) return
-    const lastUpdatedEl = target.closest('[data-last-updated]')
+    const lastUpdatedEl = target.closest('[data-v2-last-updated]')
     if (!lastUpdatedEl) return
     onLastUpdatedTap()
   }
@@ -447,19 +447,19 @@ function LayoutFrameContent() {
 
   return (
     <div
-      className="app-shell-root min-h-screen bg-background bg-[var(--shell-bg-overlay)] bg-no-repeat md:h-[100dvh] md:overflow-hidden"
-      data-pop-highlight={popHighlightActive ? 'true' : 'false'}
+      className="v2-shell-root min-h-screen bg-background bg-[var(--shell-bg-overlay)] bg-no-repeat md:h-[100dvh] md:overflow-hidden"
+      data-v2-pop-highlight={popHighlightActive ? 'true' : 'false'}
     >
       <div
-        data-testid="app-shell-grid"
+        data-testid="v2-shell-grid"
         className={cn(
-          'app-shell-grid min-h-screen md:grid md:h-[100dvh] md:overflow-hidden',
+          'v2-shell-grid min-h-screen md:grid md:h-[100dvh] md:overflow-hidden',
           sidebarCompact ? 'md:grid-cols-[96px_minmax(0,1fr)]' : 'md:grid-cols-[320px_minmax(0,1fr)]'
         )}
       >
         <aside
-          data-testid="app-shell-sidebar"
-          className="app-shell-sidebar hidden h-full flex-col border-r border-[var(--shell-sidebar-divider)] bg-[var(--sidebar-bg)] px-3 py-4 shadow-[var(--shadow1)] md:flex md:overflow-hidden"
+          data-testid="v2-shell-sidebar"
+          className="v2-shell-sidebar hidden h-full flex-col border-r border-[var(--shell-sidebar-divider)] bg-[var(--sidebar-bg)] px-3 py-4 shadow-[var(--shadow1)] md:flex md:overflow-hidden"
         >
           <div className="space-y-3 px-1 pb-4">
             <BrandLogo
@@ -467,7 +467,7 @@ function LayoutFrameContent() {
               variant={sidebarCompact ? 'mark' : 'full'}
               tone="inverse"
               markButtonProps={{
-                className: 'egg-pop-target',
+                className: 'v2-pop-target',
                 onClick: onLogoClick,
                 onPointerDown: onLogoPointerDown,
                 onPointerUp: onLogoPointerUp,
@@ -512,7 +512,7 @@ function LayoutFrameContent() {
               />
             ) : hasFirebase ? (
               <button
-                className="egg-pop-target inline-flex h-9 w-full items-center justify-center rounded-full border border-[var(--primary-cta-border)] [background:var(--primary-cta-bg)] px-3 text-xs font-semibold text-primary-foreground shadow-[var(--primary-cta-shadow)] transition hover:[background:var(--primary-cta-hover-bg)] active:translate-y-[1px]"
+                className="v2-pop-target inline-flex h-9 w-full items-center justify-center rounded-full border border-[var(--primary-cta-border)] [background:var(--primary-cta-bg)] px-3 text-xs font-semibold text-primary-foreground shadow-[var(--primary-cta-shadow)] transition hover:[background:var(--primary-cta-hover-bg)] active:translate-y-[1px]"
                 type="button"
                 onClick={() => void handleSignIn()}
               >
@@ -529,9 +529,9 @@ function LayoutFrameContent() {
         <div className="flex min-h-0 min-w-0 flex-col">
           {isDemoRoute ? <DemoBanner /> : null}
           <main
-            data-testid="app-shell-main"
+            data-testid="v2-shell-main"
             className={cn(
-              'app-shell-main relative z-10 flex-1 overflow-y-auto md:min-h-0',
+              'v2-shell-main relative z-10 flex-1 overflow-y-auto md:min-h-0',
               appContentRoute ? 'px-4 py-5 md:px-6 lg:px-8 xl:px-10' : 'container py-5'
             )}
             onClickCapture={handleMainClickCapture}

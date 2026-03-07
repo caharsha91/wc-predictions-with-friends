@@ -237,7 +237,13 @@ export default function FavoriteTeamSelectV2({
 
           <div className="mt-2 max-h-64 space-y-1 overflow-y-auto" role="listbox" aria-label="Favorite team options">
             {selectOptions.length === 0 ? (
-              <RowShellV2 tone="inset" state="disabled" interactive={false} className="px-2 py-2 text-[12px] text-muted-foreground">
+              <RowShellV2
+                depth="embedded"
+                tone="inset"
+                state="disabled"
+                interactive={false}
+                className="px-2 py-2 text-[12px] text-muted-foreground"
+              >
                 No teams match your search.
               </RowShellV2>
             ) : (
@@ -259,6 +265,7 @@ export default function FavoriteTeamSelectV2({
                     onClick={() => commitSelection(option)}
                   >
                     <RowShellV2
+                      depth="embedded"
                       state={isSelected || isActive ? 'selected' : 'default'}
                       interactive
                       className="px-2 py-1.5"

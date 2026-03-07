@@ -261,6 +261,7 @@ export default function MatchPick({
 
   return (
     <RowShellV2
+      depth="embedded"
       state={rowState ?? (disabled ? 'disabled' : winnerId ? 'selected' : 'default')}
       className="px-2.5 py-2"
       style={{ borderColor: 'var(--border-subtle)' }}

@@ -56,7 +56,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type={type ?? 'button'}
       className={cn(
-        'egg-pop-target',
+        'v2-pop-target',
         buttonVariants({ variant, size }),
         loading && 'cursor-wait',
         className
@@ -87,7 +87,7 @@ export function ButtonLink({
   ...props
 }: ButtonLinkProps) {
   return (
-    <Link {...props} className={cn('egg-pop-target', buttonVariants({ variant, size }), className)}>
+    <Link {...props} className={cn('v2-pop-target', buttonVariants({ variant, size }), className)}>
       <span className="inline-flex items-center gap-2">
         {icon ? <span aria-hidden="true">{icon}</span> : null}
         {children}

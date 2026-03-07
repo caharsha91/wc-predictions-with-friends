@@ -431,6 +431,7 @@ function BracketSummaryPanel({
               return (
                 <RowShellV2
                   key={`summary-${round.stage}-${match.match.id}`}
+                  depth="embedded"
                   tone="inset"
                   interactive={false}
                   className="flex items-center justify-between gap-2 px-2 py-1"
@@ -1013,9 +1014,11 @@ function DesktopVisualBracket({
                   savedMatchKey
                 })
                 return (
-                  <div
+                  <RowShellV2
                     key={`desktop-compact-match-${round.stage}-${match.match.id}`}
-                    className={`rounded-lg border border-border/35 p-2.5 ${resultSurfaceClass(match.result)}`}
+                    depth="embedded"
+                    interactive={false}
+                    className={`p-2.5 ${resultSurfaceClass(match.result)}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -1094,7 +1097,7 @@ function DesktopVisualBracket({
                         <span className="v2-track-10 ml-auto shrink-0 text-[11px] uppercase text-current/85">advances</span>
                       </button>
                     </div>
-                  </div>
+                  </RowShellV2>
                 )
               })}
             </div>
@@ -1645,9 +1648,11 @@ export default function BracketPage() {
                   })
 
                   return (
-                    <div
+                    <RowShellV2
                       key={`${activeRound.stage}-${match.match.id}`}
-                      className={`rounded-xl border border-border/35 p-2.5 ${resultSurfaceClass(match.result)}`}
+                      depth="embedded"
+                      interactive={false}
+                      className={`p-2.5 ${resultSurfaceClass(match.result)}`}
                     >
                       <div className="space-y-2">
                         <div className="flex items-start justify-between gap-2">
@@ -1728,7 +1733,7 @@ export default function BracketPage() {
                           </button>
                         </div>
                       </div>
-                    </div>
+                    </RowShellV2>
                   )
                 })}
               </div>

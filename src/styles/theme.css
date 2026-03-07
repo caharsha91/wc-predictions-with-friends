@@ -490,6 +490,22 @@
   border-color: var(--border-subtle);
 }
 
+.v2-section-depth-primary {
+  border-color: var(--border-subtle);
+}
+
+.v2-section-depth-embedded {
+  border-color: color-mix(in srgb, var(--v2-border-soft) 68%, transparent);
+  background:
+    radial-gradient(108% 112% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 18%, transparent), transparent 74%),
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--card) 94%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 40%, transparent) 100%
+    );
+  box-shadow: var(--shadow0);
+}
+
 .v2-panel-header {
   border-bottom: 1px solid color-mix(in srgb, var(--divider) 88%, transparent);
   padding-bottom: 0.15rem;
@@ -518,10 +534,32 @@
     transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
+.v2-row-shell.v2-row-depth-primary {
+  border-color: color-mix(in srgb, var(--v2-row-border) 76%, transparent);
+  background: var(--surface-2);
+}
+
+.v2-row-shell.v2-row-depth-embedded {
+  border-color: color-mix(in srgb, var(--v2-row-border) 58%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+  box-shadow: none;
+}
+
+.v2-row-shell.v2-row-depth-prominent {
+  border-color: color-mix(in srgb, var(--v2-row-active-border) 66%, var(--v2-row-border) 34%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 44%, transparent);
+}
+
 .v2-row-shell.v2-row-interactive:hover {
   background: var(--surface-1);
   border-color: color-mix(in srgb, var(--v2-row-active-border) 82%, var(--v2-row-border) 18%);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 36%, transparent);
+}
+
+.v2-row-shell.v2-row-depth-embedded.v2-row-interactive:hover {
+  background: color-mix(in srgb, var(--surface-1) 78%, transparent);
+  border-color: color-mix(in srgb, var(--v2-row-active-border) 72%, var(--v2-row-border) 28%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 28%, transparent);
 }
 
 .v2-highlight-soft-hover {
@@ -625,6 +663,88 @@
   border-top: 1px solid var(--divider);
   margin-top: 0.5rem;
   padding-top: 0.5rem;
+}
+
+[data-v2-last-updated] {
+  user-select: none;
+}
+
+@keyframes v2-pop-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--info-rgb), 0.28);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(var(--info-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--info-rgb), 0);
+  }
+}
+
+[data-v2-pop-highlight='true'] .v2-pop-target {
+  border-color: rgba(var(--info-rgb), 0.5) !important;
+  box-shadow:
+    0 0 0 1px rgba(var(--info-rgb), 0.34),
+    0 10px 24px rgba(var(--info-rgb), 0.12);
+  animation: v2-pop-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-v2-pop-highlight='true'] .v2-pop-target {
+    animation: none;
+  }
+}
+
+@media (min-width: 768px) and (min-height: 700px) {
+  .v2-shell-root {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .v2-shell-grid {
+    height: 100dvh;
+    min-height: 100dvh;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .v2-shell-sidebar {
+    overflow: hidden !important;
+  }
+
+  .v2-shell-main {
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 699px) {
+  .v2-shell-root {
+    height: auto !important;
+    min-height: 100dvh;
+    overflow-y: auto !important;
+  }
+
+  .v2-shell-grid {
+    height: auto !important;
+    min-height: 100dvh;
+  }
+
+  .v2-shell-main {
+    min-height: 0 !important;
+    overflow-y: visible !important;
+  }
+
+  .v2-shell-sidebar {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .v2-shell-sidebar [aria-label='Primary'] {
+    overflow: visible !important;
+  }
 }
 
 .account-menu-content {
@@ -1171,9 +1291,9 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 0.6rem;
   padding: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 78%, transparent);
-  border-radius: var(--v2-control-radius);
-  background: color-mix(in srgb, var(--background) 46%, transparent);
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 64%, transparent);
+  border-radius: calc(var(--v2-control-radius) - 0.08rem);
+  background: color-mix(in srgb, var(--background) 26%, transparent);
 }
 
 .players-v2-name-col {
