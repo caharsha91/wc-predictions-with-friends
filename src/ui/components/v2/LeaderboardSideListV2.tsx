@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 
 import { SNAPSHOT_METADATA_PREFIX } from '../../lib/pageStatusCopy'
+import { resolveSemanticState } from '../../lib/semanticState'
 import { SNAPSHOT_UNAVAILABLE_LABEL } from '../../lib/snapshotStamp'
 import { ButtonLink } from '../ui/Button'
 import MemberIdentityRowV2 from './MemberIdentityRowV2'
@@ -225,7 +226,10 @@ export function LeaderboardCardCurated({
     >
       {displayRows.map((row) => {
         const rivalSlot = resolveRivalSlot(row, priorityUserIds)
-        const rowState = row.isYou ? 'you' : rivalSlot ? 'rival' : 'default'
+        const rowState = resolveSemanticState({
+          you: row.isYou,
+          rival: !row.isYou && Boolean(rivalSlot)
+        })
         const tieCount = tieCountByRank.get(row.rank) ?? 1
 
         return (

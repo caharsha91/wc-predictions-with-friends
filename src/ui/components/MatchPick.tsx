@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
-import type { CSSProperties } from 'react'
 
 import { cn } from '../lib/utils'
+import { resolveSemanticState, type SemanticState } from '../lib/semanticState'
 import { UNKNOWN_FLAG_ASSET_PATH } from '../lib/teamFlag'
 import { clampScore, getWinnerId, isDraw, parseInputScore } from '../lib/matchPickLogic'
 import { Input } from './ui/Input'
@@ -9,6 +9,7 @@ import FlagBadgeV2 from './v2/FlagBadgeV2'
 import RowShellV2 from './v2/RowShellV2'
 
 export type MatchPickDecidedIn = 'REG' | 'AET' | 'PEN'
+export type MatchPickSelectionResult = 'correct' | 'wrong' | 'pending'
 
 export type MatchPickTeam = {
   id: string
@@ -36,16 +37,9 @@ export type MatchPickProps = {
   selectedWinnerId?: string
   onChange: (next: MatchPickChange) => void
   disabled?: boolean
-  rowState?: 'default' | 'selected' | 'disabled'
+  rowState?: SemanticState | 'selected'
   knockoutDrawEnabled?: boolean
-}
-
-const SCORE_GLOW_STYLE: CSSProperties = {
-  boxShadow: 'var(--tone-info-glow)'
-}
-
-const MANUAL_GLOW_STYLE: CSSProperties = {
-  boxShadow: 'var(--tone-warning-glow)'
+  selectionResult?: MatchPickSelectionResult
 }
 
 export { isDraw, getWinnerId } from '../lib/matchPickLogic'
@@ -64,24 +58,36 @@ function segmentClass(selected: boolean, disabled: boolean): string {
 function TeamButton({
   team,
   activeTone,
+  selectionResult,
   interactive,
   selected,
   onSelect
 }: {
   team: MatchPickTeam
   activeTone: 'score' | 'manual' | null
+  selectionResult: MatchPickSelectionResult
   interactive: boolean
   selected: boolean
   onSelect: () => void
 }) {
+  const selectedSurfaceClass = selected
+    ? selectionResult === 'correct'
+      ? 'border-[var(--hl-success-border)] bg-[var(--hl-success-bg)] shadow-[inset_0_0_0_1px_var(--hl-success-border-soft)]'
+      : selectionResult === 'wrong'
+        ? 'border-[var(--hl-conflict-border)] bg-[var(--hl-conflict-bg)] shadow-[inset_0_0_0_1px_var(--hl-conflict-border-soft)]'
+        : activeTone === 'manual'
+          ? 'border-[var(--hl-warning-border)] bg-[var(--hl-warning-bg)] shadow-[inset_0_0_0_1px_var(--hl-warning-border-soft)]'
+          : activeTone === 'score'
+            ? 'border-[var(--hl-selection-border)] bg-[var(--hl-selection-bg)] shadow-[inset_0_0_0_1px_var(--hl-selection-border-soft)]'
+            : 'border-[var(--border-subtle)] bg-[var(--surface-2)]'
+    : 'border-[var(--border-subtle)] bg-[var(--surface-2)]'
+
   const baseClass = cn(
-    'flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-left transition-all',
-    'bg-[var(--surface-2)]',
+    'flex w-full min-w-0 items-center gap-2 rounded-lg border px-2 py-2 text-left transition-all',
     interactive
       ? 'cursor-pointer hover:-translate-y-px hover:bg-[var(--surface-1)]'
       : 'cursor-default',
-    activeTone === 'score' ? 'bg-[color:var(--tone-info-bg-soft)]' : undefined,
-    activeTone === 'manual' ? 'bg-[color:var(--tone-warning-bg-soft)]' : undefined
+    selectedSurfaceClass
   )
 
   const content = (
@@ -102,11 +108,7 @@ function TeamButton({
   )
 
   if (!interactive) {
-    return (
-      <div className={baseClass} style={activeTone === 'manual' ? MANUAL_GLOW_STYLE : activeTone === 'score' ? SCORE_GLOW_STYLE : undefined}>
-        {content}
-      </div>
-    )
+    return <div className={baseClass}>{content}</div>
   }
 
   return (
@@ -116,7 +118,6 @@ function TeamButton({
       aria-pressed={selected}
       aria-label={`Select ${team.name} as eventual winner`}
       onClick={onSelect}
-      style={activeTone === 'manual' ? MANUAL_GLOW_STYLE : activeTone === 'score' ? SCORE_GLOW_STYLE : undefined}
     >
       {content}
     </button>
@@ -135,7 +136,8 @@ export default function MatchPick({
   onChange,
   disabled = false,
   rowState,
-  knockoutDrawEnabled
+  knockoutDrawEnabled,
+  selectionResult = 'pending'
 }: MatchPickProps) {
   const hasScores = typeof scoreA === 'number' && typeof scoreB === 'number'
   const draw = isDraw(scoreA, scoreB)
@@ -257,12 +259,18 @@ export default function MatchPick({
     winnerId === teamA.id ? (draw ? 'manual' : 'score') : null
   const teamBActiveTone: 'score' | 'manual' | null =
     winnerId === teamB.id ? (draw ? 'manual' : 'score') : null
+  const isTeamASelected = winnerId === teamA.id
+  const isTeamBSelected = winnerId === teamB.id
   const hasKnockoutMethod = decidedIn === 'AET' || decidedIn === 'PEN'
+  const resolvedRowState =
+    rowState === 'selected'
+      ? 'selection'
+      : (rowState ?? resolveSemanticState({ disabled, selected: Boolean(winnerId) }))
 
   return (
     <RowShellV2
       depth="embedded"
-      state={rowState ?? (disabled ? 'disabled' : winnerId ? 'selected' : 'default')}
+      state={resolvedRowState}
       className="px-2.5 py-2"
       style={{ borderColor: 'var(--border-subtle)' }}
       aria-label={`${teamA.name} versus ${teamB.name} match pick`}
@@ -278,8 +286,9 @@ export default function MatchPick({
         <TeamButton
           team={teamA}
           activeTone={teamAActiveTone}
+          selectionResult={selectionResult}
           interactive={knockoutDraw && !disabled}
-          selected={selectedWinnerId === teamA.id}
+          selected={isTeamASelected}
           onSelect={() => emit({ selectedWinnerId: teamA.id })}
         />
 
@@ -314,8 +323,9 @@ export default function MatchPick({
         <TeamButton
           team={teamB}
           activeTone={teamBActiveTone}
+          selectionResult={selectionResult}
           interactive={knockoutDraw && !disabled}
-          selected={selectedWinnerId === teamB.id}
+          selected={isTeamBSelected}
           onSelect={() => emit({ selectedWinnerId: teamB.id })}
         />
 

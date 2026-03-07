@@ -1,6 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 
+import { semanticChipClass } from '../../lib/semanticState'
 import { cn } from '../../lib/utils'
 
 const badgeVariants = cva(
@@ -9,12 +10,17 @@ const badgeVariants = cva(
     variants: {
       tone: {
         default: 'border-border bg-bg2 text-fg1',
-        success: 'border-[color:var(--tone-success-border)] bg-[color:var(--tone-success-bg)] text-foreground',
-        warning: 'border-[color:var(--tone-warning-border)] bg-[color:var(--tone-warning-bg)] text-foreground',
-        danger: 'border-[color:var(--tone-danger-border)] bg-[color:var(--tone-danger-bg)] text-foreground',
-        info: 'border-[color:var(--tone-info-border)] bg-[color:var(--tone-info-bg)] text-foreground',
-        secondary: 'border-[color:var(--tone-secondary-border)] bg-[color:var(--tone-secondary-bg)] text-foreground',
-        locked: 'border-[color:var(--tone-warning-border)] bg-[color:var(--tone-warning-bg)] text-foreground'
+        success: semanticChipClass('success'),
+        warning: semanticChipClass('warning'),
+        danger: semanticChipClass('conflict'),
+        info: semanticChipClass('selection'),
+        secondary: semanticChipClass('rival'),
+        locked: semanticChipClass('locked'),
+        you: semanticChipClass('you'),
+        rival: semanticChipClass('rival'),
+        selection: semanticChipClass('selection'),
+        published: semanticChipClass('published'),
+        disabled: semanticChipClass('disabled')
       },
       size: {
         xs: 'h-[var(--v2-chip-height-sm)] px-[var(--v2-chip-pad-x-sm)] text-[var(--v2-chip-text-sm)]',

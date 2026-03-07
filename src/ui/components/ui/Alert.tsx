@@ -1,15 +1,16 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 
+import { semanticSurfaceClass } from '../../lib/semanticState'
 import { cn } from '../../lib/utils'
 
 const alertVariants = cva('rounded-[var(--v2-control-radius-lg)] border px-4 py-3 text-sm shadow-[var(--shadow0)]', {
   variants: {
     tone: {
-      info: 'border-[color:var(--tone-info-border)] bg-[color:var(--tone-info-bg)] text-foreground',
-      success: 'border-[color:var(--tone-success-border)] bg-[color:var(--tone-success-bg)] text-foreground',
-      warning: 'border-[color:var(--tone-warning-border)] bg-[color:var(--tone-warning-bg)] text-foreground',
-      danger: 'border-[color:var(--tone-danger-border)] bg-[color:var(--tone-danger-bg)] text-foreground'
+      info: semanticSurfaceClass('selection'),
+      success: semanticSurfaceClass('success'),
+      warning: semanticSurfaceClass('warning'),
+      danger: semanticSurfaceClass('conflict')
     }
   },
   defaultVariants: {

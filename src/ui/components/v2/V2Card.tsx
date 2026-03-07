@@ -1,5 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 
+import type { SemanticState } from '../../lib/semanticState'
+import { semanticSurfaceClass } from '../../lib/semanticState'
 import { cn } from '../../lib/utils'
 
 export type V2CardTone = 'default' | 'hero' | 'tile' | 'panel' | 'subtle' | 'side' | 'inset' | 'row'
@@ -9,6 +11,7 @@ type V2CardProps = HTMLAttributes<HTMLElement> & {
   as?: 'section' | 'article' | 'div'
   withGlow?: boolean
   tone?: V2CardTone
+  state?: SemanticState
 }
 
 export default function V2Card({
@@ -17,6 +20,7 @@ export default function V2Card({
   as: Tag = 'section',
   withGlow = true,
   tone = 'default',
+  state = 'default',
   style,
   ...props
 }: V2CardProps) {
@@ -44,6 +48,7 @@ export default function V2Card({
         'v2-card-base rounded-2xl border text-card-foreground',
         toneClass,
         withGlow ? 'v2-card-glow' : 'v2-card-no-glow',
+        semanticSurfaceClass(state),
         className
       )}
       style={{
@@ -51,6 +56,7 @@ export default function V2Card({
           'box-shadow var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard), background var(--motion-duration-fast) var(--motion-ease-standard)',
         ...style
       }}
+      data-semantic-state={state}
     >
       {children}
     </Tag>

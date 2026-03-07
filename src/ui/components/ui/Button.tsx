@@ -23,7 +23,7 @@ const buttonVariants = cva(
         pill:
           'rounded-full border-border1 bg-[var(--accent-soft)] text-foreground shadow-[var(--shadow0)] hover:border-primary hover:bg-[var(--accent-soft)] hover:shadow-[var(--shadow1)] data-[active=true]:border-[var(--pill-active-border)] data-[active=true]:[background:var(--pill-active-bg)] data-[active=true]:shadow-[var(--pill-active-shadow)] disabled:shadow-none',
         pillSecondary:
-          'rounded-full border-[color:var(--tone-secondary-border)] bg-[color:var(--tone-secondary-bg)] text-foreground shadow-[var(--shadow0)] hover:border-secondary hover:bg-[color:var(--tone-secondary-bg-hover)] hover:shadow-[var(--shadow1)] data-[active=true]:border-secondary data-[active=true]:bg-[color:var(--tone-secondary-bg-active)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
+          'rounded-full border-[color:var(--hl-rival-border)] bg-[color:var(--hl-rival-bg)] text-foreground shadow-[var(--shadow0)] hover:border-[color:var(--hl-rival-border-strong)] hover:bg-[color:var(--hl-rival-bg-strong)] hover:shadow-[var(--shadow1)] data-[active=true]:border-[color:var(--hl-rival-border-strong)] data-[active=true]:bg-[color:var(--hl-rival-bg-strong)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
       },
       size: {
         xs: 'h-[var(--v2-control-height-xs)] px-[var(--v2-control-pad-x-xs)] text-[length:var(--text-xs)]',

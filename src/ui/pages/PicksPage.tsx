@@ -6,7 +6,11 @@ import { getPickOutcome, getPredictedWinner, isPickComplete, upsertPick } from '
 import type { Match } from '../../types/matches'
 import type { Pick, PickAdvances } from '../../types/picks'
 import type { KnockoutStage, ScoringConfig, StageScoring } from '../../types/scoring'
-import MatchPick, { type MatchPickChange, type MatchPickDecidedIn } from '../components/MatchPick'
+import MatchPick, {
+  type MatchPickChange,
+  type MatchPickDecidedIn,
+  type MatchPickSelectionResult
+} from '../components/MatchPick'
 import { Alert } from '../components/ui/Alert'
 import { Button, ButtonLink } from '../components/ui/Button'
 import {
@@ -46,6 +50,7 @@ import {
   publishedStateLabel,
   SNAPSHOT_METADATA_PREFIX
 } from '../lib/pageStatusCopy'
+import { resolveSemanticState } from '../lib/semanticState'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { resolveTeamFlagMeta } from '../lib/teamFlag'
 import { downloadWorkbook } from '../lib/exportWorkbook'
@@ -283,6 +288,35 @@ function getPredictionResult(match: Match, pick: Pick | undefined): PredictionRe
   return predictedWinner === match.winner ? 'correct' : 'wrong'
 }
 
+function getDraftPredictionResult(match: Match, draft: MatchDraft): MatchPickSelectionResult {
+  if (!isMatchCompleted(match) || !match.score) return 'pending'
+  const predictedHome = parseScore(draft.homeScore)
+  const predictedAway = parseScore(draft.awayScore)
+  if (predictedHome === undefined || predictedAway === undefined) return 'wrong'
+
+  if (match.stage === 'Group') {
+    const predictedOutcome =
+      predictedHome > predictedAway ? 'WIN' : predictedHome < predictedAway ? 'LOSS' : 'DRAW'
+    const actualOutcome = getActualOutcome(match)
+    if (!actualOutcome) return 'wrong'
+    return predictedOutcome === actualOutcome ? 'correct' : 'wrong'
+  }
+
+  if (!match.winner) return 'pending'
+  if (predictedHome === predictedAway) {
+    const predictedWinner =
+      draft.eventualWinnerTeamId === 'HOME' || draft.eventualWinnerTeamId === 'AWAY'
+        ? draft.eventualWinnerTeamId
+        : null
+    const hasKoMethod = draft.koWinMethod === 'ET' || draft.koWinMethod === 'PENS'
+    if (!predictedWinner || !hasKoMethod) return 'wrong'
+    return predictedWinner === match.winner ? 'correct' : 'wrong'
+  }
+
+  const predictedWinner = predictedHome > predictedAway ? 'HOME' : 'AWAY'
+  return predictedWinner === match.winner ? 'correct' : 'wrong'
+}
+
 function resultTone(status: PredictionResult): 'success' | 'danger' | 'secondary' {
   if (status === 'correct') return 'success'
   if (status === 'wrong') return 'danger'
@@ -293,6 +327,18 @@ function resultLabel(status: PredictionResult): string {
   if (status === 'correct') return 'Correct'
   if (status === 'wrong') return 'Wrong'
   return 'Pending'
+}
+
+function pickTeamSurfaceClass(selected: boolean, outcome: PredictionResult): string {
+  const base = 'rounded-md border px-2 py-1'
+  if (!selected) return `${base} border-[var(--border-subtle)] bg-[var(--surface-2)]`
+  if (outcome === 'correct') {
+    return `${base} border-[var(--hl-success-border)] bg-[var(--hl-success-bg)] shadow-[inset_0_0_0_1px_var(--hl-success-border-soft)]`
+  }
+  if (outcome === 'wrong') {
+    return `${base} border-[var(--hl-conflict-border)] bg-[var(--hl-conflict-bg)] shadow-[inset_0_0_0_1px_var(--hl-conflict-border-soft)]`
+  }
+  return `${base} border-[var(--hl-selection-border)] bg-[var(--hl-selection-bg)] shadow-[inset_0_0_0_1px_var(--hl-selection-border-soft)]`
 }
 
 function formatPointsLabel(points: number): string {
@@ -323,12 +369,16 @@ function MatchRow({
   const canSave = item.editable && rowDirty && validForSave && !isSaving
   const stageLabel = match.group ? `Group ${match.group}` : match.stage
   const kickoffLabel = formatKickoff(match.kickoffUtc)
-  const rowState = !item.editable ? 'disabled' : rowDirty ? 'selected' : 'default'
+  const rowState = resolveSemanticState({
+    disabled: !item.editable,
+    selected: item.editable && rowDirty
+  })
   const homeFlagPath = resolveTeamFlagMeta({ code: match.homeTeam.code, name: match.homeTeam.name }).assetPath
   const awayFlagPath = resolveTeamFlagMeta({ code: match.awayTeam.code, name: match.awayTeam.name }).assetPath
   const scoreA = parsedHome
   const scoreB = parsedAway
   const readOnlyLabel = readOnlyReasonLabel(item.readOnlyReason)
+  const draftPredictionResult = getDraftPredictionResult(match, draft)
   const interactionTag = !item.editable
     ? { tone: 'locked' as const, label: 'Locked' }
     : isSaving
@@ -417,6 +467,7 @@ function MatchRow({
         disabled={!item.editable || isSaving}
         knockoutDrawEnabled={requiresKoExtras}
         rowState={rowState}
+        selectionResult={draftPredictionResult}
         onChange={handleMatchPickChange}
       />
 
@@ -436,6 +487,9 @@ function ResultRow({ item, pick, scoring }: ResultRowProps) {
   const outcome = getPredictionResult(match, pick)
   const points = scoring && isMatchCompleted(match) ? scoreMatchPick(match, pick, scoring).total : null
   const stageLabel = match.group ? `Group ${match.group}` : match.stage
+  const predictedWinner = pick ? getPredictedWinner(pick) : undefined
+  const homeSelected = predictedWinner === 'HOME'
+  const awaySelected = predictedWinner === 'AWAY'
 
   return (
     <tr>
@@ -451,7 +505,20 @@ function ResultRow({ item, pick, scoring }: ResultRowProps) {
           </div>
         </div>
       </td>
-      <td className="v2-type-meta tabular-nums">{resolvePredictedLabel(pick)}</td>
+      <td>
+        <div className="min-w-[210px] space-y-1.5">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5">
+            <div className={pickTeamSurfaceClass(homeSelected, outcome)}>
+              <TeamIdentityInlineV2 code={match.homeTeam.code} name={match.homeTeam.name} size="xs" />
+            </div>
+            <span className="v2-type-caption text-center text-muted-foreground">vs</span>
+            <div className={pickTeamSurfaceClass(awaySelected, outcome)}>
+              <TeamIdentityInlineV2 code={match.awayTeam.code} name={match.awayTeam.name} size="xs" />
+            </div>
+          </div>
+          <div className="v2-type-caption tabular-nums">{resolvePredictedLabel(pick)}</div>
+        </div>
+      </td>
       <td className="v2-type-meta tabular-nums">{resolveActualLabel(match)}</td>
       <td>
         <StatusTagV2 tone={resultTone(outcome)}>
@@ -473,7 +540,7 @@ function ResultsTable({ items, picksByMatchId, scoring, emptyMessage }: ResultsT
   return (
     <Table
       unframed
-      className="[&_th]:h-8 [&_th]:border-b-[color:var(--divider)] [&_th]:px-2 [&_th]:py-0 [&_th]:uppercase [&_th]:tracking-[0.1em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:var(--divider)] [&_td]:px-2 [&_td]:py-1.5"
+      className="[&_th]:h-8 [&_th]:border-b-[color:var(--divider)] [&_th]:px-2 [&_th]:py-0 [&_th]:uppercase [&_th]:tracking-[0.1em] [&_th]:text-muted-foreground [&_td]:border-b-[color:var(--divider)] [&_td]:px-2 [&_td]:py-2 [&_td]:align-top"
     >
       <thead>
         <tr>

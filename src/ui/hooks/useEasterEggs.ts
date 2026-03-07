@@ -7,7 +7,7 @@ const SIDEBAR_COMPACT_KEY = 'wc-sidebar-compact'
 const LOGO_CLICK_WINDOW_MS = 2000
 const LAST_UPDATED_TAP_WINDOW_MS = 2200
 const LOGO_HOLD_MS = 900
-const POP_HIGHLIGHT_MS = 20_000
+const FOCUS_HIGHLIGHT_MS = 20_000
 
 function readCompactMode() {
   if (typeof window === 'undefined') return false
@@ -18,12 +18,12 @@ export function useEasterEggs() {
   const { mode, isSystemMode, setMode, setSystemMode } = useTheme()
   const { showToast } = useToast()
   const [sidebarCompact, setSidebarCompact] = useState(readCompactMode)
-  const [popHighlightActive, setPopHighlightActive] = useState(false)
+  const [focusHighlightActive, setFocusHighlightActive] = useState(false)
 
   const logoClicksRef = useRef<number[]>([])
   const metaTapsRef = useRef<number[]>([])
   const holdTimerRef = useRef<number | null>(null)
-  const popTimerRef = useRef<number | null>(null)
+  const focusTimerRef = useRef<number | null>(null)
   const suppressNextClickRef = useRef(false)
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export function useEasterEggs() {
   useEffect(
     () => () => {
       if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current)
-      if (popTimerRef.current) window.clearTimeout(popTimerRef.current)
+      if (focusTimerRef.current) window.clearTimeout(focusTimerRef.current)
     },
     []
   )
@@ -56,15 +56,15 @@ export function useEasterEggs() {
     showToast({ title: 'Theme updated', message: 'Theme: System', tone: 'info' })
   }, [isSystemMode, mode, setMode, setSystemMode, showToast])
 
-  const activatePopHighlight = useCallback(() => {
-    setPopHighlightActive(true)
-    if (popTimerRef.current) {
-      window.clearTimeout(popTimerRef.current)
+  const activateFocusHighlight = useCallback(() => {
+    setFocusHighlightActive(true)
+    if (focusTimerRef.current) {
+      window.clearTimeout(focusTimerRef.current)
     }
-    popTimerRef.current = window.setTimeout(() => {
-      setPopHighlightActive(false)
-      popTimerRef.current = null
-    }, POP_HIGHLIGHT_MS)
+    focusTimerRef.current = window.setTimeout(() => {
+      setFocusHighlightActive(false)
+      focusTimerRef.current = null
+    }, FOCUS_HIGHLIGHT_MS)
   }, [])
 
   const onLogoClick = useCallback(() => {
@@ -118,14 +118,14 @@ export function useEasterEggs() {
     if (metaTapsRef.current.length < 4) return
 
     metaTapsRef.current = []
-    activatePopHighlight()
-    showToast({ title: 'Pop focus', message: 'Pop focus active for 20s', tone: 'info' })
-  }, [activatePopHighlight, showToast])
+    activateFocusHighlight()
+    showToast({ title: 'Focus mode', message: 'Focus highlight active for 20s', tone: 'info' })
+  }, [activateFocusHighlight, showToast])
 
   return useMemo(
     () => ({
       sidebarCompact,
-      popHighlightActive,
+      focusHighlightActive,
       onLogoClick,
       onLogoPointerDown,
       onLogoPointerUp,
@@ -138,7 +138,7 @@ export function useEasterEggs() {
       onLogoClick,
       onLogoPointerDown,
       onLogoPointerUp,
-      popHighlightActive,
+      focusHighlightActive,
       sidebarCompact
     ]
   )

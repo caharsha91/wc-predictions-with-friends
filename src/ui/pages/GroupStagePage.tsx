@@ -174,8 +174,8 @@ function getGroupJumpStatus(
 }
 
 function groupJumpStatusClass(status: GroupJumpStatus): string {
-  if (status === 'locked') return 'border-[color:var(--tone-warning-border)] text-foreground'
-  if (status === 'complete') return 'border-[color:var(--tone-success-border)] text-foreground'
+  if (status === 'locked') return 'border-[color:var(--hl-locked-border)] text-foreground'
+  if (status === 'complete') return 'border-[color:var(--hl-success-border)] text-foreground'
   return 'border-border text-muted-foreground'
 }
 

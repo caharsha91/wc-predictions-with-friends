@@ -128,6 +128,7 @@ export function resolveBestThirdStatus(
   qualifiersSet: Set<string>
 ): BestThirdStatus {
   if (!isFinal) return isLocked ? 'locked' : 'pending'
-  if (!isSelectionValid || !predictedCode) return 'missed'
+  if (!predictedCode) return 'pending'
+  if (!isSelectionValid) return 'missed'
   return qualifiersSet.has(predictedCode) ? 'qualified' : 'missed'
 }

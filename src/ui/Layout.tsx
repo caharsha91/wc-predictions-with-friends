@@ -313,7 +313,7 @@ function LayoutFrameContent() {
   const persistedRouteRef = useRef<string | null>(null)
   const {
     sidebarCompact,
-    popHighlightActive,
+    focusHighlightActive,
     onLogoClick,
     onLogoPointerDown,
     onLogoPointerUp,
@@ -451,7 +451,7 @@ function LayoutFrameContent() {
   return (
     <div
       className="v2-shell-root min-h-screen bg-background bg-[var(--shell-bg-overlay)] bg-no-repeat md:h-[100dvh] md:overflow-hidden"
-      data-v2-pop-highlight={popHighlightActive ? 'true' : 'false'}
+      data-v2-focus-highlight={focusHighlightActive ? 'true' : 'false'}
     >
       <div
         data-testid="v2-shell-grid"

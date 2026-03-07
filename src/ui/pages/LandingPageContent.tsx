@@ -1557,9 +1557,9 @@ export default function LandingPage() {
               tone="tile"
               density="none"
               className={cn(
-                'landing-v2-card group h-full p-4 transition-all duration-[var(--motion-duration-fast)] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_var(--v2-glow-medium),var(--shadow1)]',
+                'landing-v2-card group h-full p-4 transition-all duration-[var(--motion-duration-fast)] hover:-translate-y-0.5 hover:border-[color:var(--hl-hover-neutral-border)] hover:shadow-[var(--shadow1)]',
                 isRecommended &&
-                  'border-[color:var(--v2-glow-medium)] shadow-[0_0_0_1px_var(--v2-glow-medium),var(--shadow1)]'
+                  'v2-semantic-surface v2-semantic-published shadow-[var(--shadow1)]'
               )}
             >
               <div className="relative z-[1] flex h-full flex-col gap-3">
@@ -1574,7 +1574,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <StatusTagV2 tone={status.availabilityTone}>{status.availabilityLabel}</StatusTagV2>
-                  {isRecommended ? <StatusTagV2 tone="info">Next step</StatusTagV2> : null}
+                  {isRecommended ? <StatusTagV2 tone="published">Next step</StatusTagV2> : null}
                 </div>
                 <StatusLineV2 tone={status.progressTone} className="min-h-10 bg-background/45">
                   {status.progressLabel}

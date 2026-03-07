@@ -84,7 +84,6 @@ const config: Config = {
         mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace']
       },
       boxShadow: {
-        glow: '0 0 24px var(--glow)',
         soft: '0 12px 30px rgba(0, 0, 0, 0.25)',
         0: 'var(--shadow0)',
         1: 'var(--shadow1)',

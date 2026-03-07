@@ -189,29 +189,83 @@
   --status-locked: var(--status-warn);
   --status-alert: var(--status-warn);
   --status-danger-soft: rgba(var(--danger-rgb), 0.14);
-  --tone-success-border: rgba(var(--primary-rgb), 0.5);
-  --tone-success-bg: rgba(var(--primary-rgb), 0.14);
-  --tone-success-bg-soft: rgba(var(--primary-rgb), 0.1);
-  --tone-info-border: rgba(var(--info-rgb), 0.5);
-  --tone-info-bg: rgba(var(--info-rgb), 0.14);
-  --tone-info-bg-soft: rgba(var(--info-rgb), 0.12);
-  --tone-warning-border: rgba(var(--warn-rgb), 0.48);
-  --tone-warning-bg: rgba(var(--warn-rgb), 0.15);
-  --tone-warning-bg-soft: rgba(var(--warn-rgb), 0.12);
-  --tone-danger-border: rgba(var(--danger-rgb), 0.48);
-  --tone-danger-bg: rgba(var(--danger-rgb), 0.14);
-  --tone-danger-bg-soft: rgba(var(--danger-rgb), 0.1);
-  --tone-secondary-border: rgba(var(--secondary-rgb), 0.5);
-  --tone-secondary-bg: rgba(var(--secondary-rgb), 0.14);
-  --tone-secondary-bg-hover: rgba(var(--secondary-rgb), 0.2);
-  --tone-secondary-bg-active: rgba(var(--secondary-rgb), 0.26);
-  --tone-momentum-border: var(--border-accent);
-  --tone-momentum-bg: rgba(var(--primary-rgb), 0.76);
-  --tone-momentum-glow: 0 0 16px rgba(var(--primary-rgb), 0.56);
-  --tone-info-glow: 0 0 15px rgba(var(--info-rgb), 0.65), inset 0 0 0 1px rgba(var(--info-rgb), 0.42);
-  --tone-warning-glow:
-    0 0 15px rgba(var(--warn-rgb), 0.58),
-    inset 0 0 0 1px rgba(var(--warn-rgb), 0.42);
+  --hl-selection-bg: rgba(var(--hl-selection-rgb), 0.1);
+  --hl-selection-bg-strong: rgba(var(--hl-selection-rgb), 0.16);
+  --hl-selection-border: rgba(var(--hl-selection-rgb), 0.58);
+  --hl-selection-border-strong: rgba(var(--hl-selection-rgb), 0.72);
+  --hl-selection-border-soft: rgba(var(--hl-selection-rgb), 0.34);
+  --hl-selection-fg: var(--foreground);
+  --hl-you-bg: rgba(var(--hl-you-rgb), 0.1);
+  --hl-you-bg-strong: rgba(var(--hl-you-rgb), 0.16);
+  --hl-you-border: rgba(var(--hl-you-rgb), 0.56);
+  --hl-you-border-strong: rgba(var(--hl-you-rgb), 0.68);
+  --hl-you-border-soft: rgba(var(--hl-you-rgb), 0.32);
+  --hl-you-fg: var(--foreground);
+  --hl-rival-bg: rgba(var(--hl-rival-rgb), 0.1);
+  --hl-rival-bg-strong: rgba(var(--hl-rival-rgb), 0.16);
+  --hl-rival-border: rgba(var(--hl-rival-rgb), 0.54);
+  --hl-rival-border-strong: rgba(var(--hl-rival-rgb), 0.66);
+  --hl-rival-border-soft: rgba(var(--hl-rival-rgb), 0.3);
+  --hl-rival-fg: var(--foreground);
+  --hl-warning-bg: rgba(var(--hl-warning-rgb), 0.12);
+  --hl-warning-bg-strong: rgba(var(--hl-warning-rgb), 0.16);
+  --hl-warning-border: rgba(var(--hl-warning-rgb), 0.56);
+  --hl-warning-border-strong: rgba(var(--hl-warning-rgb), 0.68);
+  --hl-warning-border-soft: rgba(var(--hl-warning-rgb), 0.32);
+  --hl-warning-fg: var(--foreground);
+  --hl-conflict-bg: rgba(var(--hl-conflict-rgb), 0.1);
+  --hl-conflict-bg-strong: rgba(var(--hl-conflict-rgb), 0.15);
+  --hl-conflict-border: rgba(var(--hl-conflict-rgb), 0.58);
+  --hl-conflict-border-strong: rgba(var(--hl-conflict-rgb), 0.72);
+  --hl-conflict-border-soft: rgba(var(--hl-conflict-rgb), 0.34);
+  --hl-conflict-fg: var(--foreground);
+  --hl-success-bg: rgba(var(--hl-success-rgb), 0.1);
+  --hl-success-bg-strong: rgba(var(--hl-success-rgb), 0.15);
+  --hl-success-border: rgba(var(--hl-success-rgb), 0.56);
+  --hl-success-border-strong: rgba(var(--hl-success-rgb), 0.68);
+  --hl-success-border-soft: rgba(var(--hl-success-rgb), 0.3);
+  --hl-success-fg: var(--foreground);
+  --hl-locked-bg: rgba(var(--hl-locked-rgb), 0.08);
+  --hl-locked-bg-strong: rgba(var(--hl-locked-rgb), 0.12);
+  --hl-locked-border: rgba(var(--hl-locked-rgb), 0.48);
+  --hl-locked-border-strong: rgba(var(--hl-locked-rgb), 0.6);
+  --hl-locked-border-soft: rgba(var(--hl-locked-rgb), 0.26);
+  --hl-locked-fg: var(--foreground);
+  --hl-published-bg: rgba(var(--hl-published-rgb), 0.06);
+  --hl-published-bg-strong: rgba(var(--hl-published-rgb), 0.1);
+  --hl-published-border: rgba(var(--hl-published-rgb), 0.42);
+  --hl-published-border-strong: rgba(var(--hl-published-rgb), 0.54);
+  --hl-published-border-soft: rgba(var(--hl-published-rgb), 0.22);
+  --hl-published-fg: var(--foreground);
+  --hl-disabled-bg: color-mix(in srgb, var(--surface-2) 86%, transparent);
+  --hl-disabled-border: color-mix(in srgb, var(--v2-row-border) 64%, transparent);
+  --hl-disabled-border-soft: transparent;
+  --hl-disabled-fg: color-mix(in srgb, var(--muted-foreground) 92%, transparent);
+  --hl-hover-neutral-bg: rgba(var(--hl-hover-neutral-rgb), 0.05);
+  --hl-hover-neutral-border: rgba(var(--hl-hover-neutral-rgb), 0.28);
+  --hl-focus-ring: var(--focus-ring-strong);
+
+  --tone-success-border: var(--hl-success-border);
+  --tone-success-bg: var(--hl-success-bg);
+  --tone-success-bg-soft: var(--hl-success-bg-strong);
+  --tone-info-border: var(--hl-selection-border);
+  --tone-info-bg: var(--hl-selection-bg);
+  --tone-info-bg-soft: var(--hl-selection-bg-strong);
+  --tone-warning-border: var(--hl-warning-border);
+  --tone-warning-bg: var(--hl-warning-bg);
+  --tone-warning-bg-soft: var(--hl-warning-bg-strong);
+  --tone-danger-border: var(--hl-conflict-border);
+  --tone-danger-bg: var(--hl-conflict-bg);
+  --tone-danger-bg-soft: var(--hl-conflict-bg-strong);
+  --tone-secondary-border: var(--hl-rival-border);
+  --tone-secondary-bg: var(--hl-rival-bg);
+  --tone-secondary-bg-hover: var(--hl-rival-bg-strong);
+  --tone-secondary-bg-active: var(--hl-rival-bg-strong);
+  --tone-momentum-border: var(--hl-selection-border);
+  --tone-momentum-bg: var(--hl-selection-bg-strong);
+  --tone-momentum-glow: inset 0 0 0 1px var(--hl-selection-border-soft);
+  --tone-info-glow: inset 0 0 0 1px var(--hl-selection-border-soft);
+  --tone-warning-glow: inset 0 0 0 1px var(--hl-warning-border-soft);
   --tone-info-line-active: rgba(var(--info-rgb), 0.2);
   --tone-info-line: rgba(var(--info-rgb), 0.1);
 
@@ -256,16 +310,16 @@
   --wash-from: var(--v2-wash-from);
   --wash-via: var(--v2-wash-via);
   --wash-to: var(--v2-wash-to);
-  --glow-color: var(--v2-glow-color);
+  --glow-color: color-mix(in srgb, var(--hl-selection-border) 36%, transparent);
   --v2-surface-blend-soft: color-mix(in srgb, var(--muted) 56%, transparent);
   --v2-surface-blend-medium: color-mix(in srgb, var(--card) 76%, var(--muted) 24%);
   --v2-surface-blend-strong: color-mix(in srgb, var(--card) 90%, transparent);
-  --v2-border-soft: color-mix(in srgb, var(--border) 90%, var(--glow-color) 10%);
-  --v2-border-medium: color-mix(in srgb, var(--border) 82%, var(--glow-color) 18%);
-  --v2-border-strong: color-mix(in srgb, var(--border) 74%, var(--glow-color) 26%);
-  --v2-glow-soft: color-mix(in srgb, var(--glow-color) 38%, transparent);
-  --v2-glow-medium: color-mix(in srgb, var(--glow-color) 52%, transparent);
-  --v2-glow-strong: color-mix(in srgb, var(--glow-color) 68%, transparent);
+  --v2-border-soft: color-mix(in srgb, var(--border) 92%, var(--hl-published-border) 8%);
+  --v2-border-medium: color-mix(in srgb, var(--border) 86%, var(--hl-published-border) 14%);
+  --v2-border-strong: color-mix(in srgb, var(--border) 80%, var(--hl-selection-border) 20%);
+  --v2-glow-soft: color-mix(in srgb, var(--hl-published-border-soft) 72%, transparent);
+  --v2-glow-medium: color-mix(in srgb, var(--hl-published-border) 76%, transparent);
+  --v2-glow-strong: color-mix(in srgb, var(--hl-selection-border-soft) 82%, transparent);
   --v2-text-strong: color-mix(in srgb, var(--foreground) 96%, transparent);
   --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 92%, transparent);
   --v2-panel-primary-bg: var(--card);
@@ -274,12 +328,12 @@
   --v2-panel-primary-border: var(--v2-border-medium);
   --v2-panel-side-border: var(--v2-border-soft);
   --v2-row-bg: color-mix(in srgb, var(--card) 88%, transparent);
-  --v2-row-hover-bg: color-mix(in srgb, var(--accent-soft) 32%, transparent);
-  --v2-row-selected-bg: color-mix(in srgb, var(--accent-soft) 36%, transparent);
-  --v2-row-you-bg: rgba(var(--info-rgb), 0.14);
-  --v2-row-rival-bg: rgba(var(--secondary-rgb), 0.14);
+  --v2-row-hover-bg: var(--hl-hover-neutral-bg);
+  --v2-row-selected-bg: var(--hl-selection-bg);
+  --v2-row-you-bg: var(--hl-you-bg);
+  --v2-row-rival-bg: var(--hl-rival-bg);
   --v2-row-border: var(--v2-border-soft);
-  --v2-row-active-border: var(--v2-border-strong);
+  --v2-row-active-border: var(--hl-selection-border);
   --v2-chip-height-sm: 1.3rem;
   --v2-chip-pad-x-sm: 0.45rem;
   --v2-chip-text-sm: 11px;
@@ -352,7 +406,7 @@
 
 .v2-glow-surface {
   box-shadow:
-    0 14px 30px color-mix(in srgb, var(--v2-glow-medium) 44%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--hl-published-border-soft) 88%, transparent),
     var(--shadow1);
 }
 
@@ -413,7 +467,7 @@
 
 .v2-card-glow {
   box-shadow:
-    0 14px 30px color-mix(in srgb, var(--v2-glow-medium) 28%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--hl-published-border-soft) 84%, transparent),
     var(--shadow1);
 }
 
@@ -577,6 +631,108 @@
     transform var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
+.v2-semantic-surface {
+  --v2-semantic-bg: transparent;
+  --v2-semantic-border: transparent;
+  --v2-semantic-border-soft: transparent;
+  --v2-semantic-fg: inherit;
+  background: var(--v2-semantic-bg);
+  border-color: var(--v2-semantic-border);
+  box-shadow: inset 0 0 0 1px var(--v2-semantic-border-soft);
+  color: var(--v2-semantic-fg);
+}
+
+.v2-semantic-chip {
+  --v2-semantic-bg: transparent;
+  --v2-semantic-border: transparent;
+  --v2-semantic-border-soft: transparent;
+  --v2-semantic-fg: var(--foreground);
+  background: var(--v2-semantic-bg);
+  border-color: var(--v2-semantic-border);
+  box-shadow: inset 0 0 0 1px var(--v2-semantic-border-soft);
+  color: var(--v2-semantic-fg);
+}
+
+.v2-semantic-selection {
+  --v2-semantic-bg: var(--hl-selection-bg);
+  --v2-semantic-border: var(--hl-selection-border);
+  --v2-semantic-border-soft: var(--hl-selection-border-soft);
+  --v2-semantic-fg: var(--hl-selection-fg);
+}
+
+.v2-semantic-you {
+  --v2-semantic-bg: var(--hl-you-bg);
+  --v2-semantic-border: var(--hl-you-border);
+  --v2-semantic-border-soft: var(--hl-you-border-soft);
+  --v2-semantic-fg: var(--hl-you-fg);
+}
+
+.v2-semantic-rival {
+  --v2-semantic-bg: var(--hl-rival-bg);
+  --v2-semantic-border: var(--hl-rival-border);
+  --v2-semantic-border-soft: var(--hl-rival-border-soft);
+  --v2-semantic-fg: var(--hl-rival-fg);
+}
+
+.v2-semantic-warning {
+  --v2-semantic-bg: var(--hl-warning-bg);
+  --v2-semantic-border: var(--hl-warning-border);
+  --v2-semantic-border-soft: var(--hl-warning-border-soft);
+  --v2-semantic-fg: var(--hl-warning-fg);
+}
+
+.v2-semantic-conflict {
+  --v2-semantic-bg: var(--hl-conflict-bg);
+  --v2-semantic-border: var(--hl-conflict-border);
+  --v2-semantic-border-soft: var(--hl-conflict-border-soft);
+  --v2-semantic-fg: var(--hl-conflict-fg);
+}
+
+.v2-semantic-success {
+  --v2-semantic-bg: var(--hl-success-bg);
+  --v2-semantic-border: var(--hl-success-border);
+  --v2-semantic-border-soft: var(--hl-success-border-soft);
+  --v2-semantic-fg: var(--hl-success-fg);
+}
+
+.v2-semantic-locked {
+  --v2-semantic-bg: var(--hl-locked-bg);
+  --v2-semantic-border: var(--hl-locked-border);
+  --v2-semantic-border-soft: var(--hl-locked-border-soft);
+  --v2-semantic-fg: var(--hl-locked-fg);
+}
+
+.v2-semantic-published {
+  --v2-semantic-bg: var(--hl-published-bg);
+  --v2-semantic-border: var(--hl-published-border);
+  --v2-semantic-border-soft: var(--hl-published-border-soft);
+  --v2-semantic-fg: var(--hl-published-fg);
+}
+
+.v2-semantic-disabled {
+  --v2-semantic-bg: var(--hl-disabled-bg);
+  --v2-semantic-border: var(--hl-disabled-border);
+  --v2-semantic-border-soft: var(--hl-disabled-border-soft);
+  --v2-semantic-fg: var(--hl-disabled-fg);
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+.v2-semantic-text-selection,
+.v2-semantic-text-you,
+.v2-semantic-text-rival,
+.v2-semantic-text-warning,
+.v2-semantic-text-conflict,
+.v2-semantic-text-success,
+.v2-semantic-text-locked,
+.v2-semantic-text-published {
+  color: var(--foreground);
+}
+
+.v2-semantic-text-disabled {
+  color: var(--hl-disabled-fg);
+}
+
 .v2-row-shell.v2-row-depth-primary {
   border-color: color-mix(in srgb, var(--v2-row-border) 76%, transparent);
   background: var(--surface-2);
@@ -589,29 +745,29 @@
 }
 
 .v2-row-shell.v2-row-depth-prominent {
-  border-color: color-mix(in srgb, var(--v2-row-active-border) 66%, var(--v2-row-border) 34%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 44%, transparent);
+  border-color: color-mix(in srgb, var(--hl-selection-border) 66%, var(--v2-row-border) 34%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hl-selection-border-soft) 58%, transparent);
 }
 
 .v2-row-shell.v2-row-interactive:hover {
-  background: var(--surface-1);
-  border-color: color-mix(in srgb, var(--v2-row-active-border) 82%, var(--v2-row-border) 18%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 36%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 78%, var(--hl-hover-neutral-bg) 22%);
+  border-color: color-mix(in srgb, var(--v2-row-border) 74%, var(--hl-hover-neutral-border) 26%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hl-hover-neutral-border) 42%, transparent);
 }
 
 .v2-row-shell.v2-row-depth-embedded.v2-row-interactive:hover {
-  background: color-mix(in srgb, var(--surface-1) 78%, transparent);
-  border-color: color-mix(in srgb, var(--v2-row-active-border) 72%, var(--v2-row-border) 28%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 28%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 72%, var(--hl-hover-neutral-bg) 28%);
+  border-color: color-mix(in srgb, var(--v2-row-border) 76%, var(--hl-hover-neutral-border) 24%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hl-hover-neutral-border) 34%, transparent);
 }
 
 .v2-highlight-soft-hover {
-  background: color-mix(in srgb, var(--accent-soft) 32%, transparent);
+  background: var(--hl-hover-neutral-bg);
 }
 
 .v2-highlight-interactive {
-  border-color: color-mix(in srgb, var(--v2-row-active-border) 82%, var(--v2-row-border) 18%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 36%, transparent);
+  border-color: color-mix(in srgb, var(--v2-row-border) 74%, var(--hl-hover-neutral-border) 26%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hl-hover-neutral-border) 42%, transparent);
 }
 
 .v2-row-shell.v2-row-tone-muted {
@@ -622,45 +778,68 @@
   background: color-mix(in srgb, var(--v2-row-bg) 64%, var(--background) 36%);
 }
 
+.v2-row-shell.v2-semantic-surface {
+  background: var(--v2-semantic-bg);
+  border-color: var(--v2-semantic-border);
+  box-shadow: inset 0 0 0 1px var(--v2-semantic-border-soft);
+}
+
+.v2-row-shell.v2-row-interactive.v2-semantic-surface:hover {
+  background: color-mix(in srgb, var(--v2-semantic-bg) 82%, var(--hl-hover-neutral-bg) 18%);
+  border-color: color-mix(in srgb, var(--v2-semantic-border) 82%, var(--hl-hover-neutral-border) 18%);
+}
+
+.v2-row-shell[data-semantic-state='locked'].v2-row-interactive:hover,
+.v2-row-shell[data-semantic-state='published'].v2-row-interactive:hover,
+.v2-row-shell[data-semantic-state='disabled'].v2-row-interactive:hover {
+  background: var(--v2-semantic-bg);
+  border-color: var(--v2-semantic-border);
+  box-shadow: inset 0 0 0 1px var(--v2-semantic-border-soft);
+  transform: none;
+}
+
 .v2-row-shell.v2-row-state-selected {
-  background: var(--v2-row-selected-bg);
-  border-color: color-mix(in srgb, var(--v2-row-active-border) 86%, var(--v2-row-border) 14%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 52%, transparent);
+  background: var(--hl-selection-bg);
+  border-color: var(--hl-selection-border);
+  box-shadow: inset 0 0 0 1px var(--hl-selection-border-soft);
 }
 
 .v2-highlight-selected-surface {
-  background: var(--v2-row-selected-bg);
-  border-color: color-mix(in srgb, var(--v2-row-active-border) 86%, var(--v2-row-border) 14%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 52%, transparent);
+  background: var(--hl-selection-bg);
+  border-color: var(--hl-selection-border);
+  box-shadow: inset 0 0 0 1px var(--hl-selection-border-soft);
 }
 
 .v2-row-shell.v2-row-state-you {
-  background: var(--v2-row-you-bg);
-  border-color: color-mix(in srgb, rgba(var(--info-rgb), 0.34) 52%, var(--v2-row-border) 48%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgba(var(--info-rgb), 0.38) 58%, transparent);
+  background: var(--hl-you-bg);
+  border-color: var(--hl-you-border);
+  box-shadow: inset 0 0 0 1px var(--hl-you-border-soft);
 }
 
 .v2-highlight-you-surface {
-  background: var(--v2-row-you-bg);
-  border-color: color-mix(in srgb, rgba(var(--info-rgb), 0.34) 52%, var(--v2-row-border) 48%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgba(var(--info-rgb), 0.38) 58%, transparent);
+  background: var(--hl-you-bg);
+  border-color: var(--hl-you-border);
+  box-shadow: inset 0 0 0 1px var(--hl-you-border-soft);
 }
 
 .v2-row-shell.v2-row-state-rival {
-  background: var(--v2-row-rival-bg);
-  border-color: color-mix(in srgb, rgba(var(--secondary-rgb), 0.3) 52%, var(--v2-row-border) 48%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgba(var(--secondary-rgb), 0.32) 54%, transparent);
+  background: var(--hl-rival-bg);
+  border-color: var(--hl-rival-border);
+  box-shadow: inset 0 0 0 1px var(--hl-rival-border-soft);
 }
 
 .v2-highlight-rival-surface {
-  background: var(--v2-row-rival-bg);
-  border-color: color-mix(in srgb, rgba(var(--secondary-rgb), 0.3) 52%, var(--v2-row-border) 48%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, rgba(var(--secondary-rgb), 0.32) 54%, transparent);
+  background: var(--hl-rival-bg);
+  border-color: var(--hl-rival-border);
+  box-shadow: inset 0 0 0 1px var(--hl-rival-border-soft);
 }
 
 .v2-row-shell.v2-row-state-disabled {
-  opacity: 0.7;
+  background: var(--hl-disabled-bg);
+  border-color: var(--hl-disabled-border);
   box-shadow: none;
+  color: var(--hl-disabled-fg);
+  opacity: 0.7;
 }
 
 .v2-status-tag {
@@ -679,15 +858,15 @@
 }
 
 .v2-selected-pick-info {
-  border-color: var(--tone-info-border) !important;
-  background: var(--tone-info-bg-soft) !important;
-  box-shadow: var(--tone-info-glow);
+  border-color: var(--hl-selection-border) !important;
+  background: var(--hl-selection-bg-strong) !important;
+  box-shadow: inset 0 0 0 1px var(--hl-selection-border-soft);
 }
 
 .v2-selected-pick-warning {
-  border-color: var(--tone-warning-border) !important;
-  background: var(--tone-warning-bg-soft) !important;
-  box-shadow: var(--tone-warning-glow);
+  border-color: var(--hl-warning-border) !important;
+  background: var(--hl-warning-bg-strong) !important;
+  box-shadow: inset 0 0 0 1px var(--hl-warning-border-soft);
 }
 
 .v2-team-identity-inline {
@@ -712,28 +891,28 @@
   user-select: none;
 }
 
-@keyframes v2-pop-pulse {
+@keyframes v2-focus-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(var(--info-rgb), 0.28);
+    box-shadow: 0 0 0 0 var(--hl-selection-border-soft);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(var(--info-rgb), 0);
+    box-shadow: 0 0 0 8px transparent;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(var(--info-rgb), 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
-[data-v2-pop-highlight='true'] .v2-pop-target {
-  border-color: rgba(var(--info-rgb), 0.5) !important;
+[data-v2-focus-highlight='true'] .v2-pop-target {
+  border-color: var(--hl-selection-border) !important;
   box-shadow:
-    0 0 0 1px rgba(var(--info-rgb), 0.34),
-    0 10px 24px rgba(var(--info-rgb), 0.12);
-  animation: v2-pop-pulse 1.6s ease-in-out infinite;
+    0 0 0 1px var(--hl-selection-border-soft),
+    var(--shadow0);
+  animation: v2-focus-pulse 1.6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-v2-pop-highlight='true'] .v2-pop-target {
+  [data-v2-focus-highlight='true'] .v2-pop-target {
     animation: none;
   }
 }
@@ -1016,15 +1195,21 @@
     border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
-.group-stage-v2-best-third-row:hover {
-  background: color-mix(in srgb, var(--accent-soft) 34%, transparent);
-  border-color: color-mix(in srgb, var(--v2-glow-medium) 42%, var(--v2-border-soft) 58%);
+.group-stage-v2-best-third-row.v2-semantic-surface {
+  background: var(--v2-semantic-bg);
+  border-color: var(--v2-semantic-border);
+  box-shadow: inset 0 0 0 1px var(--v2-semantic-border-soft);
 }
 
-.group-stage-v2-best-third-row[data-selected='true'] {
-  border-color: var(--tone-info-border);
-  background: var(--tone-info-bg-soft);
-  box-shadow: var(--tone-info-glow);
+.group-stage-v2-best-third-row:hover {
+  background: color-mix(in srgb, var(--hl-hover-neutral-bg) 62%, var(--background) 38%);
+  border-color: color-mix(in srgb, var(--hl-hover-neutral-border) 44%, var(--v2-border-soft) 56%);
+}
+
+.group-stage-v2-best-third-row[data-selected='true']:not(.v2-semantic-success):not(.v2-semantic-conflict):not(.v2-semantic-locked) {
+  border-color: var(--hl-selection-border);
+  background: var(--hl-selection-bg-strong);
+  box-shadow: inset 0 0 0 1px var(--hl-selection-border-soft);
 }
 
 .group-stage-v2-best-third-row[data-disabled='true'] {
@@ -1068,13 +1253,13 @@
 @keyframes group-stage-best-third-pulse {
   0% {
     box-shadow:
-      0 0 0 0 color-mix(in srgb, var(--v2-glow-medium) 70%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 62%, transparent);
+      0 0 0 0 color-mix(in srgb, var(--hl-selection-border) 58%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--hl-selection-border-soft) 84%, transparent);
   }
   100% {
     box-shadow:
-      0 0 0 9px color-mix(in srgb, var(--v2-glow-medium) 0%, transparent),
-      inset 0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 0%, transparent);
+      0 0 0 9px color-mix(in srgb, var(--hl-selection-border) 0%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--hl-selection-border-soft) 0%, transparent);
   }
 }
 
@@ -1495,6 +1680,14 @@
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 84%, transparent),
     0 12px 24px color-mix(in srgb, var(--v2-glow-medium) 24%, transparent),
+    var(--shadow1);
+}
+
+.landing-v2-card.v2-semantic-surface {
+  border-color: var(--v2-semantic-border);
+  background: var(--v2-semantic-bg);
+  box-shadow:
+    inset 0 0 0 1px var(--v2-semantic-border-soft),
     var(--shadow1);
 }
 

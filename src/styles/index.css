@@ -131,8 +131,4 @@
       linear-gradient(90deg, rgba(var(--color-accent-rgb), 0.08) 1px, transparent 1px);
     background-size: 100% 100%, 24px 24px;
   }
-
-  .text-glow {
-    text-shadow: 0 0 12px var(--glow);
-  }
 }

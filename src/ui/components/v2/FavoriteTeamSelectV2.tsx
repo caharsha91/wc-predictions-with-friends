@@ -266,7 +266,7 @@ export default function FavoriteTeamSelectV2({
                   >
                     <RowShellV2
                       depth="embedded"
-                      state={isSelected || isActive ? 'selected' : 'default'}
+                      state={isSelected || isActive ? 'selection' : 'default'}
                       interactive
                       className="px-2 py-1.5"
                     >

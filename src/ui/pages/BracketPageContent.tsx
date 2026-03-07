@@ -132,10 +132,6 @@ const BRACKET_NODE_CARD_HEIGHT =
   BRACKET_NODE_METRICS.sectionGap +
   BRACKET_NODE_METRICS.footerHeight
 
-const BRACKET_WINNER_HIGHLIGHT_STYLE: CSSProperties = {
-  boxShadow: 'var(--tone-info-glow)'
-}
-
 function bracketWinnerChoiceClass({
   selected,
   interactive,
@@ -150,7 +146,9 @@ function bracketWinnerChoiceClass({
   return cn(
     'flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-all',
     compact ? 'v2-type-body-sm' : 'v2-type-caption',
-    selected ? 'v2-selected-pick-info text-foreground' : 'bg-[var(--surface-2)] text-muted-foreground',
+    selected
+      ? 'v2-semantic-surface v2-semantic-selection text-foreground'
+      : 'bg-[var(--surface-2)] text-muted-foreground',
     interactive
       ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
       : undefined,
@@ -163,7 +161,7 @@ function bracketWinnerChoiceClass({
 }
 
 function bracketWinnerChoiceStyle(selected: boolean, style?: CSSProperties): CSSProperties | undefined {
-  if (selected) return { ...style, ...BRACKET_WINNER_HIGHLIGHT_STYLE }
+  if (selected) return style
   return style
 }
 
@@ -216,8 +214,8 @@ function resultLabel(status: PredictionResult): string {
 }
 
 function resultSurfaceClass(status: PredictionResult): string {
-  if (status === 'correct') return 'bg-[color:var(--tone-success-bg-soft)]'
-  if (status === 'wrong') return 'bg-[color:var(--tone-danger-bg-soft)]'
+  if (status === 'correct') return 'v2-semantic-surface v2-semantic-success'
+  if (status === 'wrong') return 'v2-semantic-surface v2-semantic-conflict'
   return ''
 }
 
@@ -420,7 +418,7 @@ function BracketSummaryPanel({
           key={`summary-${round.stage}`}
           className={`rounded-xl border p-2.5 ${
             round.stage === activeStage
-              ? 'v2-selected-pick-info'
+              ? 'v2-semantic-surface v2-semantic-selection'
               : 'border-border/50 bg-background/35'
           }`}
         >
@@ -698,7 +696,6 @@ function DesktopVisualBracket({
 }) {
   const viewportRef = useRef<HTMLDivElement | null>(null)
   const firstNodeRef = useRef<HTMLDivElement | null>(null)
-  const [fitBounds, setFitBounds] = useState<{ availableHeight: number } | null>(null)
   const [supportsResizeObserver, setSupportsResizeObserver] = useState(true)
 
   const layout = useMemo(() => {
@@ -928,38 +925,8 @@ function DesktopVisualBracket({
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (typeof window.ResizeObserver !== 'function') {
-      setSupportsResizeObserver(false)
-      return
-    }
-
-    const node = viewportRef.current
-    if (!node) return
-
-    setSupportsResizeObserver(true)
-
-    const updateBounds = () => {
-      const rect = node.getBoundingClientRect()
-      const viewportBottomPadding = 20
-      const availableHeight = Math.max(0, window.innerHeight - rect.top - viewportBottomPadding)
-      setFitBounds({
-        availableHeight
-      })
-    }
-
-    updateBounds()
-
-    const observer = new window.ResizeObserver(() => {
-      updateBounds()
-    })
-    observer.observe(node)
-
-    window.addEventListener('resize', updateBounds)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', updateBounds)
-    }
-  }, [layout.height, layout.width])
+    setSupportsResizeObserver(typeof window.ResizeObserver === 'function')
+  }, [])
 
   if (layout.nodes.length === 0) {
     return (
@@ -970,8 +937,6 @@ function DesktopVisualBracket({
   }
 
   const shouldUseCompactFallback = !supportsResizeObserver
-  const canvasMaxHeight = fitBounds ? Math.max(420, fitBounds.availableHeight) : undefined
-
   useEffect(() => {
     if (!import.meta.env.DEV) return
     if (shouldUseCompactFallback || layout.nodes.length === 0) return
@@ -1116,8 +1081,7 @@ function DesktopVisualBracket({
   return (
     <div
       ref={viewportRef}
-      className="w-full overflow-x-auto overflow-y-auto pb-1"
-      style={{ maxHeight: canvasMaxHeight }}
+      className="w-full pb-1"
     >
       <div
         className="relative mx-auto"
@@ -1497,9 +1461,12 @@ export default function BracketPage() {
     : firstKnockoutKickoffLabel
       ? `Locked since ${firstKnockoutKickoffLabel}.`
       : 'Locked for this snapshot.'
+  const bracketCanvasStyle: CSSProperties | undefined = isDesktopRailViewport
+    ? { width: 'max-content', minWidth: '100%' }
+    : undefined
 
   return (
-    <PageShellV2 className="landing-v2-canvas">
+    <PageShellV2 className="landing-v2-canvas" style={bracketCanvasStyle}>
       <PageHeaderV2
         variant="hero"
         className="landing-v2-hero"
@@ -1593,9 +1560,9 @@ export default function BracketPage() {
                     type="button"
                     className={`v2-type-body-sm shrink-0 rounded-lg border px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       round.stage === activeRound.stage
-                        ? 'v2-selected-pick-info text-foreground'
+                        ? 'v2-semantic-surface v2-semantic-selection text-foreground'
                         : round.complete
-                          ? 'border-[color:var(--tone-success-border)] bg-[color:var(--tone-success-bg-soft)] text-foreground'
+                          ? 'v2-semantic-surface v2-semantic-success text-foreground'
                           : 'border-border/42 bg-background/25 text-muted-foreground'
                     }`}
                     disabled={!(round.unlocked || round.complete || round.stage === activeRound.stage)}

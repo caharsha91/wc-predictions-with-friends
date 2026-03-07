@@ -156,6 +156,33 @@ function resolveDeltaTag(row: GroupStageDenseRow, delta: number): { tone: 'succe
   }
 }
 
+function placementStatusText(status: GroupPlacementStatus): string | null {
+  if (status === 'correct') return 'Correct'
+  if (status === 'incorrect') return 'Incorrect'
+  if (status === 'locked') return 'Locked'
+  return null
+}
+
+function placementStatusTone(status: GroupPlacementStatus): 'success' | 'danger' | 'locked' | null {
+  if (status === 'correct') return 'success'
+  if (status === 'incorrect') return 'danger'
+  if (status === 'locked') return 'locked'
+  return null
+}
+
+function placementRowState(
+  index: number,
+  status: GroupPlacementStatus,
+  isReadOnly: boolean
+): 'default' | 'disabled' | 'success' | 'conflict' | 'locked' {
+  if (index === 0 || index === 1) {
+    if (status === 'correct') return 'success'
+    if (status === 'incorrect') return 'conflict'
+    if (status === 'locked') return 'locked'
+  }
+  return isReadOnly ? 'disabled' : 'default'
+}
+
 type GroupPicksDenseTableProps = {
   rows: GroupStageDenseRow[]
   groupsDone: number
@@ -297,12 +324,19 @@ export function GroupPicksDenseTable({
                   const team = teamByCode.get(teamCode)
                   const isDragging = dragging?.groupId === row.groupId && dragging.code === teamCode
                   const isDragOver = dragOver?.groupId === row.groupId && dragOver.code === teamCode
+                  const placementStatus =
+                    index === 0 ? row.firstResult : index === 1 ? row.secondResult : 'pending'
+                  const placementTagText = placementStatusText(placementStatus)
+                  const placementTagTone = placementStatusTone(placementStatus)
+                  const rowState = isDragOver || rowIsEditing
+                    ? 'selection'
+                    : placementRowState(index, placementStatus, isReadOnly)
 
                   return (
                     <RowShellV2
                       key={`${row.groupId}-${teamCode}`}
                       depth="embedded"
-                      state={isReadOnly ? 'disabled' : isDragOver || rowIsEditing ? 'selected' : 'default'}
+                      state={rowState}
                       tone="inset"
                       draggable={!isDragDisabled}
                       className={cn(
@@ -334,6 +368,9 @@ export function GroupPicksDenseTable({
                       </div>
 
                       <div className="flex shrink-0 items-center gap-2">
+                        {placementTagText && placementTagTone ? (
+                          <StatusTagV2 tone={placementTagTone}>{placementTagText}</StatusTagV2>
+                        ) : null}
                         <span className="v2-type-meta font-mono leading-none" aria-hidden="true">
                           ::
                         </span>
@@ -369,9 +406,9 @@ type BestThirdPicksCompactProps = {
 }
 
 function bestThirdSurfaceClass(status: BestThirdStatus): string {
-  if (status === 'qualified') return 'bg-success/10'
-  if (status === 'missed') return 'bg-destructive/10'
-  if (status === 'locked') return 'bg-warn/10'
+  if (status === 'qualified') return 'v2-semantic-surface v2-semantic-success'
+  if (status === 'missed') return 'v2-semantic-surface v2-semantic-conflict'
+  if (status === 'locked') return 'v2-semantic-surface v2-semantic-locked'
   return 'bg-background/40'
 }
 
@@ -413,7 +450,6 @@ export function BestThirdPicksCompact({
   return (
     <SideListPanelV2
       title={meterLabel}
-      subtitle="Pick 8 third-place groups."
       className="group-stage-v2-leaderboard"
       contentClassName="space-y-2 p-3"
       actions={(

@@ -150,6 +150,15 @@
   --v2-row-rival-bg: rgba(142, 79, 176, 0.12);
   --v2-row-border: rgba(159, 175, 208, 0.54);
   --v2-row-active-border: rgba(92, 106, 207, 0.6);
+  --hl-selection-rgb: 37, 99, 235;
+  --hl-you-rgb: 15, 118, 110;
+  --hl-rival-rgb: 147, 51, 234;
+  --hl-warning-rgb: 180, 83, 9;
+  --hl-conflict-rgb: 185, 28, 28;
+  --hl-success-rgb: 21, 128, 61;
+  --hl-locked-rgb: 71, 85, 105;
+  --hl-published-rgb: 71, 85, 105;
+  --hl-hover-neutral-rgb: 71, 85, 105;
 
   --v2-chip-height-sm: 1.35rem;
   --v2-chip-pad-x-sm: 0.5rem;
@@ -308,6 +317,15 @@
   --v2-row-rival-bg: rgba(154, 68, 178, 0.2);
   --v2-row-border: rgba(154, 156, 195, 0.46);
   --v2-row-active-border: rgba(125, 120, 224, 0.66);
+  --hl-selection-rgb: 96, 165, 250;
+  --hl-you-rgb: 45, 212, 191;
+  --hl-rival-rgb: 196, 181, 253;
+  --hl-warning-rgb: 251, 191, 36;
+  --hl-conflict-rgb: 252, 165, 165;
+  --hl-success-rgb: 74, 222, 128;
+  --hl-locked-rgb: 148, 163, 184;
+  --hl-published-rgb: 148, 163, 184;
+  --hl-hover-neutral-rgb: 148, 163, 184;
 
   --v2-chip-height-sm: 1.35rem;
   --v2-chip-pad-x-sm: 0.5rem;

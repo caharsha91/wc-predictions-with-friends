@@ -34,6 +34,7 @@ import { publishedStateLabel, SNAPSHOT_METADATA_PREFIX } from '../lib/pageStatus
 import { fetchRivalDirectory, readUserProfile, type RivalDirectoryEntry } from '../lib/profilePersistence'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
+import { resolveSemanticState } from '../lib/semanticState'
 import { normalizeFavoriteTeamCode } from '../lib/teamFlag'
 import { downloadWorkbook } from '../lib/exportWorkbook'
 
@@ -1117,7 +1118,11 @@ export default function LeaderboardPage() {
                 const isTopThree = rank <= 3
                 const previousRank = previousSnapshot?.ranks[entryKey]
                 const movementDelta = typeof previousRank === 'number' ? previousRank - rank : null
-                const rowState = isYou ? 'you' : isRival ? 'rival' : isTopThree ? 'selected' : 'default'
+                const rowState = resolveSemanticState({
+                  you: isYou,
+                  rival: !isYou && isRival,
+                  selected: !isYou && !isRival && isTopThree
+                })
                 const favoriteTeamCode = resolveEntryFavoriteTeamCode(entry)
 
                 return (
@@ -1264,7 +1269,7 @@ export default function LeaderboardPage() {
 
       {shouldShowStickyRow && stickyUserRow && userContext?.current.rank ? (
         <div className="fixed inset-x-4 bottom-4 z-40 mx-auto max-w-5xl" data-testid="leaderboard-sticky-user-row">
-          <div className="rounded-xl border border-[color:var(--v2-glow-medium)] bg-background/95 p-3 shadow-[0_0_0_1px_color-mix(in_srgb,var(--v2-glow-medium)_65%,transparent),var(--shadow1)] backdrop-blur-md">
+          <div className="v2-semantic-surface v2-semantic-you rounded-xl border bg-background/95 p-3 shadow-[var(--shadow1)] backdrop-blur-md">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="v2-type-kicker">Your row</div>

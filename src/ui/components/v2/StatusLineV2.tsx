@@ -1,8 +1,9 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 
+import { semanticSurfaceClass } from '../../lib/semanticState'
 import { cn } from '../../lib/utils'
 
-type StatusLineTone = 'neutral' | 'info' | 'success' | 'warning' | 'locked'
+type StatusLineTone = 'neutral' | 'info' | 'success' | 'warning' | 'locked' | 'published'
 
 type StatusLineV2Props = HTMLAttributes<HTMLDivElement> & {
   tone?: StatusLineTone
@@ -13,11 +14,15 @@ type StatusLineV2Props = HTMLAttributes<HTMLDivElement> & {
 export default function StatusLineV2({ tone = 'neutral', icon, className, children, ...props }: StatusLineV2Props) {
   const toneClass =
     tone === 'success'
-      ? 'border-[color:var(--tone-success-border)] bg-[color:var(--tone-success-bg-soft)] text-foreground'
+      ? semanticSurfaceClass('success')
       : tone === 'warning' || tone === 'locked'
-        ? 'border-[color:var(--tone-warning-border)] bg-[color:var(--tone-warning-bg)] text-foreground'
+        ? tone === 'locked'
+          ? semanticSurfaceClass('locked')
+          : semanticSurfaceClass('warning')
         : tone === 'info'
-          ? 'border-[color:var(--tone-info-border)] bg-[color:var(--tone-info-bg-soft)] text-foreground'
+          ? semanticSurfaceClass('selection')
+          : tone === 'published'
+            ? semanticSurfaceClass('published')
           : 'border-border/80 bg-background/60 text-foreground'
 
   return (

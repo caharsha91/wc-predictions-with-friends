@@ -7,10 +7,10 @@ import { cn } from '../../lib/utils'
 const progressRootVariants = cva('relative w-full overflow-hidden rounded-full border bg-[var(--surface-muted)]', {
   variants: {
     intent: {
-      default: 'border-[color:var(--tone-info-border)]',
-      momentum: 'border-[color:var(--tone-momentum-border)] shadow-[0_0_0_1px_var(--tone-momentum-border),0_0_16px_var(--glow)]',
-      warning: 'border-[color:var(--tone-warning-border)]',
-      success: 'border-[color:var(--tone-success-border)]'
+      default: 'border-[color:var(--hl-selection-border)]',
+      momentum: 'border-[color:var(--hl-selection-border)] shadow-[inset_0_0_0_1px_var(--hl-selection-border-soft)]',
+      warning: 'border-[color:var(--hl-warning-border)]',
+      success: 'border-[color:var(--hl-success-border)]'
     },
     size: {
       xs: 'h-1.5',
@@ -27,10 +27,10 @@ const progressRootVariants = cva('relative w-full overflow-hidden rounded-full b
 const progressIndicatorVariants = cva('h-full w-full transition-transform duration-300 ease-out', {
   variants: {
     intent: {
-      default: 'bg-[color:var(--tone-info-border)]',
-      momentum: 'bg-[color:var(--tone-momentum-bg)] shadow-[var(--tone-momentum-glow)]',
-      warning: 'bg-[color:var(--tone-warning-border)]',
-      success: 'bg-[color:var(--tone-success-border)]'
+      default: 'bg-[color:var(--hl-selection-border)]',
+      momentum: 'bg-[color:var(--hl-selection-border)]',
+      warning: 'bg-[color:var(--hl-warning-border)]',
+      success: 'bg-[color:var(--hl-success-border)]'
     }
   },
   defaultVariants: {
