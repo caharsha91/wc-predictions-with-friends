@@ -20,9 +20,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import {
   CompanionHomePage,
   CompanionLeaderboardPage,
-  CompanionMatchesPage,
-  CompanionPredictionsPage,
-  CompanionProfilePage
+  CompanionPredictionsPage
 } from './pages/mobile/CompanionPages'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
@@ -201,10 +199,10 @@ export default function App() {
             <Route index element={<CompanionHomePage />} />
             <Route path="predictions" element={<CompanionPredictionsPage />} />
             <Route path="leaderboard" element={<CompanionLeaderboardPage />} />
-            <Route path="matches" element={<CompanionMatchesPage />} />
-            <Route path="profile" element={<CompanionProfilePage />} />
-            <Route path="admin/*" element={<Navigate to="/m/profile" replace />} />
-            <Route path="demo/*" element={<Navigate to="/m/profile" replace />} />
+            <Route path="matches" element={<Navigate to="/m" replace />} />
+            <Route path="profile" element={<Navigate to="/m" replace />} />
+            <Route path="admin/*" element={<Navigate to="/m" replace />} />
+            <Route path="demo/*" element={<Navigate to="/m" replace />} />
             <Route path="group-stage/*" element={<Navigate to="/m/predictions" replace />} />
             <Route path="match-picks" element={<Navigate to="/m/predictions" replace />} />
             <Route path="knockout-bracket" element={<Navigate to="/m/predictions" replace />} />

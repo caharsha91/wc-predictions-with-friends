@@ -130,6 +130,15 @@ Objective: complete companion loop and remove remaining drift points.
   - remove dead legacy mobile UX paths and stale routing hooks
   - consolidate docs and tests to the companion steady state
 
+### Phase 7: Companion Theming Finalization (System Mode Only)
+Objective: finalize companion visual consistency only after routes, shell, and core companion screens are stable.
+
+- Run companion theming as the final chunk in sequence, after structural companion work is validated.
+- Restrict mobile theming behavior to existing system-mode behavior (`light`/`dark` follows OS setting).
+- Do not add separate mobile theme controls, mobile-only theme persistence, or companion-specific mode toggles.
+- Focus this phase on rendering correctness and style alignment across `/m/*` surfaces under system light/dark.
+- Keep theme-provider behavior and persistence model unchanged while consolidating companion-specific styling drift.
+
 ## 5. Safeguards and Risk Controls
 Cross-cutting controls required across phases:
 
@@ -151,6 +160,9 @@ Cross-cutting controls required across phases:
 - Migration safety:
   - keep web routes operational during migration
   - remove legacy mobile paths only after replacement validation
+- Theme scope safety:
+  - mobile theming changes are final-phase only and system-mode-only
+  - no new mobile theme preference controls, flags, or storage keys
 - Telemetry (required for rollout confidence):
   - companion route entry (`/m` area opened)
   - prediction save attempt / success / failure
@@ -177,12 +189,14 @@ MVP is outcome-based, not hard-coupled to exact phase numbers:
 - Lightweight predictions flow with explicit web handoff for out-of-scope flows.
 - Leaderboard/rivalry flow.
 - Match center included only if low-risk using existing timeline model.
+- Mobile theming restyling is not an MVP parity target; final theming alignment lands after structural companion routes/screens are stable.
 
 Later follow-up:
 
 - Push notification pipeline.
 - Deeper analytics dashboards.
 - Additional companion refinements after observed usage.
+- Final companion theming pass (system-mode-only, no mobile-specific theme controls).
 
 ## 8. Cleanup/Deprecation Recommendations
 ### Remove
@@ -200,6 +214,7 @@ Later follow-up:
 ### Reduce Scope
 - Keep exports/admin/demo/advanced comparisons web-only.
 - Keep full dense group/bracket manipulation web-only.
+- Keep mobile on system-mode theming only (no separate mobile theme switcher as part of this refactor).
 
 ### Final Sweep
 - Retire duplicate controls that compete with companion shell.
@@ -223,3 +238,4 @@ This cleanup pass:
 - Added concrete telemetry examples (route entry, saves, handoff taps, rivalry, reminders).
 - Strengthened final deprecation sweep to include overlays/shortcuts/superseded affordances, not just CSS.
 - Added decision rule for when workflows belong on mobile vs web.
+- Added a final implementation chunk for companion theming, explicitly sequenced after structural work and restricted to system-mode-only behavior.

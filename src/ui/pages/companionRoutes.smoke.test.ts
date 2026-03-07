@@ -21,14 +21,26 @@ test('companion route smoke: app includes /m route namespace', async () => {
   )
 
   assert.equal(
-    source.includes('<Route path="admin/*" element={<Navigate to="/m/profile" replace />} />'),
+    source.includes('<Route path="admin/*" element={<Navigate to="/m" replace />} />'),
     true,
     'Companion route should redirect admin paths away from companion surface'
   )
 
   assert.equal(
-    source.includes('<Route path="demo/*" element={<Navigate to="/m/profile" replace />} />'),
+    source.includes('<Route path="demo/*" element={<Navigate to="/m" replace />} />'),
     true,
     'Companion route should redirect demo paths away from companion surface'
+  )
+
+  assert.equal(
+    source.includes('<Route path="matches" element={<Navigate to="/m" replace />} />'),
+    true,
+    'Companion should deprecate /m/matches to /m'
+  )
+
+  assert.equal(
+    source.includes('<Route path="profile" element={<Navigate to="/m" replace />} />'),
+    true,
+    'Companion should deprecate /m/profile to /m'
   )
 })

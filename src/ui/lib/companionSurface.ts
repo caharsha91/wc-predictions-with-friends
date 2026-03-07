@@ -1,95 +1,36 @@
-export type AppSurface = 'web' | 'companion'
+export type CompanionArea = 'home' | 'predictions' | 'leaderboard'
 
-export type CompanionArea = 'home' | 'predictions' | 'leaderboard' | 'matches' | 'profile'
-
-export type CompanionRole = 'member' | 'admin'
-
-export type RouteCapability = {
-  surface: AppSurface
-  area: CompanionArea
-  requiresMember: boolean
-  allowsAdminTools: boolean
-  allowsDemoTools: boolean
-  roles: CompanionRole[]
+export const COMPANION_ROUTE_CAPABILITIES: Record<string, CompanionArea> = {
+  '/m': 'home',
+  '/m/predictions': 'predictions',
+  '/m/leaderboard': 'leaderboard'
 }
 
-export const COMPANION_ROUTE_CAPABILITIES: Record<
-  '/m' | '/m/predictions' | '/m/leaderboard' | '/m/matches' | '/m/profile',
-  RouteCapability
-> = {
-  '/m': {
-    surface: 'companion',
-    area: 'home',
-    requiresMember: true,
-    allowsAdminTools: false,
-    allowsDemoTools: false,
-    roles: ['member', 'admin']
-  },
-  '/m/predictions': {
-    surface: 'companion',
-    area: 'predictions',
-    requiresMember: true,
-    allowsAdminTools: false,
-    allowsDemoTools: false,
-    roles: ['member', 'admin']
-  },
-  '/m/leaderboard': {
-    surface: 'companion',
-    area: 'leaderboard',
-    requiresMember: true,
-    allowsAdminTools: false,
-    allowsDemoTools: false,
-    roles: ['member', 'admin']
-  },
-  '/m/matches': {
-    surface: 'companion',
-    area: 'matches',
-    requiresMember: true,
-    allowsAdminTools: false,
-    allowsDemoTools: false,
-    roles: ['member', 'admin']
-  },
-  '/m/profile': {
-    surface: 'companion',
-    area: 'profile',
-    requiresMember: true,
-    allowsAdminTools: false,
-    allowsDemoTools: false,
-    roles: ['member', 'admin']
-  }
-}
-
-type CompanionFeatureFlags = {
-  enabled: boolean
-  areas: Record<CompanionArea, boolean>
-}
-
-function readEnvFlag(name: string, fallback: boolean): boolean {
-  const env = (import.meta as { env?: Record<string, string | undefined> }).env ?? {}
-  const raw = env[name]
-  if (raw === undefined) return fallback
-  const normalized = raw.trim().toLowerCase()
-  if (normalized === 'true') return true
-  if (normalized === 'false') return false
-  return fallback
-}
-
-export const companionFeatureFlags: CompanionFeatureFlags = {
-  enabled: readEnvFlag('VITE_COMPANION_ENABLED', true),
+export const companionFeatureFlags = {
+  enabled: true,
   areas: {
-    home: readEnvFlag('VITE_COMPANION_HOME_ENABLED', true),
-    predictions: readEnvFlag('VITE_COMPANION_PREDICTIONS_ENABLED', true),
-    leaderboard: readEnvFlag('VITE_COMPANION_LEADERBOARD_ENABLED', true),
-    matches: readEnvFlag('VITE_COMPANION_MATCHES_ENABLED', true),
-    profile: readEnvFlag('VITE_COMPANION_PROFILE_ENABLED', true)
+    home: true,
+    predictions: true,
+    leaderboard: true
   }
-}
+} as const
+
+const DENIED_PREFIXES = ['/m/admin', '/m/demo', '/m/group-stage']
+const DEPRECATED_ROUTES = new Set(['/m/matches', '/m/profile'])
+const PREDICTIONS_FALLBACK_PREFIXES = ['/m/match-picks', '/m/knockout-bracket']
 
 function normalizePathname(pathname: string): string {
-  const trimmed = pathname.trim()
-  if (!trimmed) return '/'
-  if (!trimmed.startsWith('/')) return `/${trimmed}`
-  return trimmed
+  const trimmed = String(pathname ?? '').trim()
+  if (!trimmed) return '/m'
+
+  const withoutHash = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed
+  const [withoutQuery] = withoutHash.split('?')
+  const [withoutFragment] = withoutQuery.split('#')
+  const normalized = withoutFragment.trim()
+
+  if (!normalized) return '/m'
+  if (normalized.length > 1 && normalized.endsWith('/')) return normalized.replace(/\/+$/, '') || '/'
+  return normalized
 }
 
 export function isCompanionPath(pathname: string): boolean {
@@ -99,55 +40,65 @@ export function isCompanionPath(pathname: string): boolean {
 
 export function resolveCompanionArea(pathname: string): CompanionArea | null {
   const normalized = normalizePathname(pathname)
-  if (normalized === '/m') return 'home'
-  if (normalized === '/m/predictions' || normalized.startsWith('/m/predictions/')) return 'predictions'
-  if (normalized === '/m/leaderboard' || normalized.startsWith('/m/leaderboard/')) return 'leaderboard'
-  if (normalized === '/m/matches' || normalized.startsWith('/m/matches/')) return 'matches'
-  if (normalized === '/m/profile' || normalized.startsWith('/m/profile/')) return 'profile'
-  return null
+  return COMPANION_ROUTE_CAPABILITIES[normalized] ?? null
 }
 
 export function isCompanionAreaEnabled(pathname: string): boolean {
   const area = resolveCompanionArea(pathname)
-  if (!area) return true
+  if (!area) return false
   return companionFeatureFlags.areas[area]
+}
+
+export function isAdminOrDemoPath(pathname: string): boolean {
+  const normalized = normalizePathname(pathname)
+  return (
+    normalized.startsWith('/admin') ||
+    normalized.startsWith('/demo') ||
+    normalized.startsWith('/m/admin') ||
+    normalized.startsWith('/m/demo')
+  )
 }
 
 export function isCompanionDeniedPath(pathname: string): boolean {
   const normalized = normalizePathname(pathname)
-  return (
-    normalized === '/m/admin' ||
-    normalized.startsWith('/m/admin/') ||
-    normalized === '/m/demo' ||
-    normalized.startsWith('/m/demo/') ||
-    normalized === '/m/group-stage' ||
-    normalized.startsWith('/m/group-stage/') ||
-    normalized === '/m/match-picks' ||
-    normalized.startsWith('/m/match-picks/') ||
-    normalized === '/m/knockout-bracket' ||
-    normalized.startsWith('/m/knockout-bracket/')
-  )
+  if (!isCompanionPath(normalized)) return false
+  if (DEPRECATED_ROUTES.has(normalized)) return true
+  if (DENIED_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))) return true
+  if (
+    PREDICTIONS_FALLBACK_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
+  ) {
+    return true
+  }
+  return false
 }
 
-export function resolveCompanionFallbackPath(pathname: string): '/m' | '/m/predictions' | '/m/profile' {
+export function resolveCompanionFallbackPath(pathname: string): string {
   const normalized = normalizePathname(pathname)
+
+  if (DEPRECATED_ROUTES.has(normalized)) return '/m'
+  if (isAdminOrDemoPath(normalized)) return '/m'
+  if (DENIED_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))) return '/m'
   if (
-    normalized === '/m/admin' ||
-    normalized.startsWith('/m/admin/') ||
-    normalized === '/m/demo' ||
-    normalized.startsWith('/m/demo/')
-  ) {
-    return '/m/profile'
-  }
-  if (
-    normalized === '/m/group-stage' ||
-    normalized.startsWith('/m/group-stage/') ||
-    normalized === '/m/match-picks' ||
-    normalized.startsWith('/m/match-picks/') ||
-    normalized === '/m/knockout-bracket' ||
-    normalized.startsWith('/m/knockout-bracket/')
+    PREDICTIONS_FALLBACK_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
   ) {
     return '/m/predictions'
   }
   return '/m'
+}
+
+export function resolveCompanionSafePath(pathname: string): string {
+  const normalized = normalizePathname(pathname)
+
+  // Companion mode is self-contained: never allow links to leave /m routes.
+  if (!isCompanionPath(normalized)) return '/m'
+
+  if (isCompanionDeniedPath(normalized)) {
+    return resolveCompanionFallbackPath(normalized)
+  }
+
+  if (!resolveCompanionArea(normalized)) {
+    return '/m'
+  }
+
+  return normalized
 }
