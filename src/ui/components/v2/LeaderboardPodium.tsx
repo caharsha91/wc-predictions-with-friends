@@ -86,13 +86,13 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className, 
               </div>
             </div>
             <div className="mt-2 flex min-w-0 items-center gap-1.5">
-              <div className="truncate text-2xl font-semibold leading-tight text-[color:var(--v2-text-strong)] md:text-3xl">
+              <div className="v2-type-body-lg truncate font-semibold text-[color:var(--v2-text-strong)] md:text-3xl">
                 {slot.row?.name ?? '—'}
               </div>
               {slot.row?.isViewer ? <StatusTagV2 tone="info" className="v2-role-badge">You</StatusTagV2> : null}
             </div>
             <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-4xl font-semibold leading-none text-[color:var(--v2-text-strong)] md:text-[2.6rem]">
+              <span className="text-4xl font-semibold leading-none text-[color:var(--v2-text-strong)] md:text-5xl">
                 {slot.row?.points ?? 0}
               </span>
               <span className="v2-type-kicker">pts</span>
@@ -107,7 +107,7 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className, 
             to={leaderboardPath}
             variant="secondary"
             size="sm"
-            className="h-9 rounded-full px-3 text-[12px]"
+            className="h-9 rounded-full px-3"
           >
             View full leaderboard
           </ButtonLink>

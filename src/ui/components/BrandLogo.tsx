@@ -19,7 +19,7 @@ const SIZE_STYLES: Record<BrandLogoSize, { mark: string; title: string; subtitle
   sm: {
     mark: 'h-8 w-8',
     title: 'text-xs v2-track-14',
-    subtitle: 'text-[11px] v2-track-14',
+    subtitle: 'v2-type-chip v2-track-14',
     gap: 'gap-2'
   },
   md: {
@@ -31,7 +31,7 @@ const SIZE_STYLES: Record<BrandLogoSize, { mark: string; title: string; subtitle
   lg: {
     mark: 'h-12 w-12',
     title: 'text-base v2-track-12',
-    subtitle: 'text-[13px] v2-track-14',
+    subtitle: 'v2-type-body-sm v2-track-14',
     gap: 'gap-3'
   }
 }

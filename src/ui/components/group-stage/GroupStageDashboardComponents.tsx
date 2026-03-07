@@ -4,6 +4,7 @@ import type { GroupPrediction } from '../../../types/bracket'
 import type { BestThirdStatus, GroupPlacementStatus } from '../../../lib/groupStageSnapshot'
 import type { Team } from '../../../types/matches'
 import { cn } from '../../lib/utils'
+import { SNAPSHOT_METADATA_PREFIX } from '../../lib/pageStatusCopy'
 import { Button, ButtonLink } from '../ui/Button'
 import InlineStateHintV2 from '../v2/InlineStateHintV2'
 import RowShellV2 from '../v2/RowShellV2'
@@ -73,7 +74,7 @@ export function DashboardToolbar({
         <div className="v2-type-caption min-w-0 max-w-[34ch] items-center gap-2">
           <span className="truncate whitespace-nowrap">Saved: {picksLastSavedLabel}</span>
           <span className="h-3 w-px bg-border" aria-hidden="true" />
-          <span className="truncate whitespace-nowrap">Latest snapshot: {scoringSnapshotLabel}</span>
+          <span className="truncate whitespace-nowrap">{SNAPSHOT_METADATA_PREFIX}{scoringSnapshotLabel}</span>
         </div>
       </div>
     </V2Card>
@@ -273,7 +274,7 @@ export function GroupPicksDenseTable({
               key={`group-row-${row.groupId}`}
               className={cn('px-3 py-2.5', saveStatus === 'error' ? 'ring-1 ring-destructive/40 ring-inset' : undefined)}
             >
-              <div className="mb-2.5 flex flex-wrap items-start gap-2 text-[13px]">
+              <div className="v2-type-meta mb-2.5 flex flex-wrap items-start gap-2">
                 <div className="min-w-0 v2-type-caption">
                   {`Published matches complete: ${row.finishedCount}/${row.totalCount}`}
                 </div>
@@ -317,14 +318,14 @@ export function GroupPicksDenseTable({
                       interactive={!isDragDisabled}
                     >
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-background/55 text-[11px] font-semibold text-muted-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_24%,transparent)]">
+                        <span className="v2-type-chip inline-flex h-6 w-6 items-center justify-center rounded-md bg-background/55 font-semibold text-muted-foreground shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--border)_24%,transparent)]">
                           {index + 1}
                         </span>
                         <TeamIdentityInlineV2
                           code={team?.code ?? teamCode}
                           name={team?.name ?? teamCode}
                           showName
-                          className="min-w-0 text-[14px] leading-tight text-foreground"
+                          className="v2-type-body-sm min-w-0 text-foreground"
                           primaryClassName="v2-track-10 font-semibold"
                         />
                         <span className="truncate v2-type-caption">
@@ -333,7 +334,7 @@ export function GroupPicksDenseTable({
                       </div>
 
                       <div className="flex shrink-0 items-center gap-2">
-                        <span className="font-mono text-[13px] leading-none text-muted-foreground" aria-hidden="true">
+                        <span className="v2-type-meta font-mono leading-none" aria-hidden="true">
                           ::
                         </span>
                       </div>
@@ -428,7 +429,7 @@ export function BestThirdPicksCompact({
           ) : null}
 
           {!isReadOnly && isDirty ? (
-            <Button size="sm" className="h-8 rounded-md px-2.5 text-[12px]" loading={saveStatus === 'saving'} onClick={onSave}>
+            <Button size="sm" className="h-8 rounded-md px-2.5" loading={saveStatus === 'saving'} onClick={onSave}>
               Save
             </Button>
           ) : null}
@@ -436,7 +437,7 @@ export function BestThirdPicksCompact({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 w-8 rounded-md px-0 text-[13px]"
+            className="h-8 w-8 rounded-md px-0"
             onClick={() => setCollapsed((current) => !current)}
             aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}
           >
@@ -447,7 +448,7 @@ export function BestThirdPicksCompact({
     >
       {!collapsed ? (
         <>
-          {warning ? <div className="text-[13px]">{warning}</div> : null}
+          {warning ? <div className="v2-type-meta">{warning}</div> : null}
           <div className="group-stage-v2-best-third-list space-y-0">
             {tiles.map((tile) => {
               const tileDisabled = isReadOnly || tile.disabled
@@ -482,7 +483,7 @@ export function BestThirdPicksCompact({
                   }}
                 >
                   <div className="min-w-0 flex items-center gap-2.5 px-3">
-                    <span className="v2-track-10 inline-flex h-7 shrink-0 items-center rounded-md border border-border/45 bg-background/55 px-2 text-[11px] font-semibold uppercase text-muted-foreground">
+                    <span className="v2-track-10 v2-type-chip inline-flex h-7 shrink-0 items-center rounded-md border border-border/45 bg-background/55 px-2 font-semibold uppercase text-muted-foreground">
                       Group {tile.groupId}
                     </span>
                     <div className="min-w-0">
@@ -494,7 +495,7 @@ export function BestThirdPicksCompact({
                           name={tile.teamName}
                           label={tile.teamCode}
                           showName
-                          className="max-w-full text-[13px]"
+                          className="v2-type-body-sm max-w-full"
                           primaryClassName="font-semibold"
                         />
                       )}

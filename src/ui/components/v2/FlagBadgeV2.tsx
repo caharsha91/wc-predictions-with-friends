@@ -58,7 +58,7 @@ export default function FlagBadgeV2({
           onError={() => setFailedCandidateIndex((current) => current + 1)}
         />
       ) : (
-        <span aria-hidden="true" className="text-[11px] font-semibold text-muted-foreground">
+        <span aria-hidden="true" className="v2-type-chip font-semibold text-muted-foreground">
           ?
         </span>
       )}

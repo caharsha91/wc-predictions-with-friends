@@ -1498,7 +1498,7 @@ export default function AdminExportsPage() {
       <div className="v2-section-flat">
         <div className="space-y-3.5">
           {isDemoMode ? (
-            <Alert tone="warning" title="Demo testing export context" className="admin-v2-inline-alert py-2.5 text-[13px]">
+            <Alert tone="warning" title="Demo testing export context" className="admin-v2-inline-alert v2-type-meta py-2.5">
               Demo exports use test snapshot data only and do not change live league data.
             </Alert>
           ) : null}
@@ -1570,7 +1570,7 @@ export default function AdminExportsPage() {
             <Alert
               tone="warning"
               title={!canExport ? 'Export unavailable in current admin state' : 'Export blocked for current selection'}
-              className="admin-v2-inline-alert py-2.5 text-[13px]"
+              className="admin-v2-inline-alert v2-type-meta py-2.5"
             >
               {exportDisabledReason}
             </Alert>
@@ -1578,7 +1578,7 @@ export default function AdminExportsPage() {
 
           <div className="admin-v2-divider" />
 
-          <div className="text-[15px] leading-snug text-foreground">
+          <div className="v2-type-body-md leading-snug text-foreground">
             <span className="text-muted-foreground">Included:</span> {includedSheetsText}
           </div>
 

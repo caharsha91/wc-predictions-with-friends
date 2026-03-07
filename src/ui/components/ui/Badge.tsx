@@ -19,7 +19,7 @@ const badgeVariants = cva(
       size: {
         xs: 'h-[var(--v2-chip-height-sm)] px-[var(--v2-chip-pad-x-sm)] text-[var(--v2-chip-text-sm)]',
         sm: 'h-[var(--v2-chip-height-sm)] px-[var(--v2-chip-pad-x-sm)]',
-        md: 'px-3 py-1.5 text-[12px] leading-none'
+        md: 'px-3 py-1.5 text-[length:var(--text-xs)] leading-none'
       },
       case: {
         normal: 'normal-case tracking-normal',

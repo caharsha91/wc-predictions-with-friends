@@ -319,12 +319,6 @@ export default function AdminUsersPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Badge tone="info" className="admin-v2-pill">{adminCount} admin</Badge>
-              <Badge tone="secondary" className="admin-v2-pill">{memberCount} member</Badge>
-              {isDemoMode ? <Badge tone="warning" className="admin-v2-pill">Demo snapshot</Badge> : null}
-            </div>
-
             <div className="admin-v2-divider" />
 
             <div className="players-v2-head hidden md:grid">
@@ -445,7 +439,7 @@ export default function AdminUsersPage() {
                 placeholder="Not set"
                 helperText="Authentication reference (read-only). Member ID is used for league data."
               />
-              <label className="admin-v2-sheet-checkbox flex items-center gap-2 text-[14px] text-foreground">
+              <label className="admin-v2-sheet-checkbox v2-type-body-sm flex items-center gap-2 text-foreground">
                 <input
                   type="checkbox"
                   checked={isAdmin}

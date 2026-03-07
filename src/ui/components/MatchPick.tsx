@@ -52,7 +52,7 @@ export { isDraw, getWinnerId } from '../lib/matchPickLogic'
 
 function segmentClass(selected: boolean, disabled: boolean): string {
   return cn(
-    'v2-track-10 inline-flex h-9 min-w-[3.2rem] flex-1 items-center justify-center rounded-md px-2 text-[12px] font-medium uppercase transition-colors',
+    'v2-track-10 v2-type-chip inline-flex h-9 min-w-[3.2rem] flex-1 items-center justify-center rounded-md px-2 font-medium uppercase transition-colors',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-strong)] focus-visible:ring-offset-1 focus-visible:ring-offset-background',
     selected
       ? 'bg-[var(--surface-1)] text-foreground shadow-[inset_0_0_0_1px_var(--border-subtle)]'
@@ -93,9 +93,9 @@ function TeamButton({
         className="rounded-sm"
       />
       <span className="min-w-0">
-        <span className="block truncate text-[12px] font-semibold text-foreground">{team.abbr ?? team.name}</span>
+        <span className="v2-type-body-sm block truncate font-semibold text-foreground">{team.abbr ?? team.name}</span>
         {team.abbr && team.abbr !== team.name ? (
-          <span className="block truncate text-[11px] text-muted-foreground">{team.name}</span>
+          <span className="v2-type-caption block truncate">{team.name}</span>
         ) : null}
       </span>
     </>
@@ -292,7 +292,7 @@ export default function MatchPick({
             value={typeof scoreA === 'number' ? String(scoreA) : ''}
             onChange={(event) => emit({ scoreA: parseInputScore(event.target.value) })}
             disabled={disabled}
-            className="h-8 w-12 border-transparent bg-transparent px-1 py-1 text-center text-[13px] tabular-nums shadow-none focus-visible:ring-offset-0 focus-visible:shadow-none"
+            className="v2-type-body-sm h-8 w-12 border-transparent bg-transparent px-1 py-1 text-center tabular-nums shadow-none focus-visible:ring-offset-0 focus-visible:shadow-none"
             aria-label={`${teamA.name} score`}
           />
           <span className="text-xs text-muted-foreground" aria-hidden="true">
@@ -306,7 +306,7 @@ export default function MatchPick({
             value={typeof scoreB === 'number' ? String(scoreB) : ''}
             onChange={(event) => emit({ scoreB: parseInputScore(event.target.value) })}
             disabled={disabled}
-            className="h-8 w-12 border-transparent bg-transparent px-1 py-1 text-center text-[13px] tabular-nums shadow-none focus-visible:ring-offset-0 focus-visible:shadow-none"
+            className="v2-type-body-sm h-8 w-12 border-transparent bg-transparent px-1 py-1 text-center tabular-nums shadow-none focus-visible:ring-offset-0 focus-visible:shadow-none"
             aria-label={`${teamB.name} score`}
           />
         </div>
@@ -344,15 +344,13 @@ export default function MatchPick({
                   PEN
                 </button>
               </div>
-            ) : (
-              <span className="text-[11px] text-muted-foreground">No AET/PEN needed</span>
-            )}
+            ) : null}
           </div>
         ) : null}
       </div>
 
       {isKnockout && hasScores && knockoutDraw && (!winnerId || !hasKnockoutMethod) ? (
-        <p className="mt-1 text-[11px] text-muted-foreground">Draw picked. Choose eventual winner and AET/PEN.</p>
+        <p className="v2-type-caption mt-1">Draw picked. Choose eventual winner and AET/PEN.</p>
       ) : null}
     </RowShellV2>
   )

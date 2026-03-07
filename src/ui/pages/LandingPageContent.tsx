@@ -20,7 +20,6 @@ import LeaderboardPodium, { type LeaderboardPodiumRow } from '../components/v2/L
 import FavoriteTeamSelectV2 from '../components/v2/FavoriteTeamSelectV2'
 import MemberIdentityRowV2 from '../components/v2/MemberIdentityRowV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
-import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import PanelHeaderV2 from '../components/v2/PanelHeaderV2'
 import RowShellV2 from '../components/v2/RowShellV2'
@@ -42,7 +41,11 @@ import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
 import { validateLastRoute } from '../lib/lastRoute'
-import { lockedFinalLabel, publishedStateLabel } from '../lib/pageStatusCopy'
+import {
+  lockedFinalLabel,
+  publishedStateLabel,
+  SNAPSHOT_METADATA_PREFIX
+} from '../lib/pageStatusCopy'
 import {
   fetchRivalDirectory,
   readUserProfile,
@@ -1306,7 +1309,7 @@ export default function LandingPage() {
           <span>{`Tracking ${rivalUserIds.length}/3`}</span>
           {profileSaving ? <span>Saving...</span> : null}
           {rivalUserIds.length > 0 ? (
-            <Button variant="ghost" size="sm" className="h-8 rounded-md px-2 text-[12px]" onClick={clearRivals}>
+            <Button variant="ghost" size="sm" className="h-8 rounded-md px-2" onClick={clearRivals}>
               Reset rivals
             </Button>
           ) : null}
@@ -1379,13 +1382,13 @@ export default function LandingPage() {
                     trailing={
                       row.kind === 'selected' && row.selectedIndex !== null && selectedRivalId ? (
                         <div className="flex items-center gap-1">
-                          <span className="landing-v2-rival-drag-handle text-[11px] text-muted-foreground" aria-hidden="true">
+                          <span className="landing-v2-rival-drag-handle v2-type-chip text-muted-foreground" aria-hidden="true">
                             ::
                           </span>
                           <Button
                             variant="quiet"
                             size="xs"
-                            className="h-8 rounded px-2 text-[12px]"
+                            className="h-8 rounded px-2"
                             disabled={profileSaving}
                             onClick={() => removeRival(selectedRivalId)}
                           >
@@ -1427,7 +1430,7 @@ export default function LandingPage() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="h-8 rounded px-2 text-[12px]"
+                  className="h-8 rounded px-2"
                   onClick={() => setRivalsReloadCount((current) => current + 1)}
                 >
                   Retry
@@ -1469,7 +1472,7 @@ export default function LandingPage() {
                               <Button
                                 variant="tertiary"
                                 size="xs"
-                                className="h-8 rounded px-2 text-[12px]"
+                                className="h-8 rounded px-2"
                                 disabled={capReached || profileSaving}
                                 onClick={() => addRival(entry.id)}
                                 aria-describedby={capReached ? `rival-cap-tip-${entry.id}` : undefined}
@@ -1517,17 +1520,11 @@ export default function LandingPage() {
             </Button>
           </div>
         )}
-        metadata={(
-          <PageHeaderMetadataV2
-            items={[
-              <span key="saved">{`Saved: ${picksLastSavedLabel}`}</span>,
-              <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} prefix="Latest snapshot: " />,
-              <span key="published">
-                {publishedStateLabel(phaseState.tournamentPhase)}
-              </span>
-            ]}
-          />
-        )}
+        metadataItems={[
+          <span key="saved">{`Saved: ${picksLastSavedLabel}`}</span>,
+          <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
+          <span key="published">{publishedStateLabel(phaseState.tournamentPhase)}</span>
+        ]}
       />
 
       <SectionCardV2 tone="panel" density="none" className="p-4 md:hidden">
@@ -1568,8 +1565,8 @@ export default function LandingPage() {
               <div className="relative z-[1] flex h-full flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-[18px] font-semibold leading-tight text-[color:var(--v2-text-strong)]">{tile.label}</div>
-                    <p className="mt-1 text-[14px] text-[color:var(--v2-text-muted)]">{tile.description}</p>
+                    <div className="v2-type-body-lg font-semibold leading-tight text-[color:var(--v2-text-strong)]">{tile.label}</div>
+                    <p className="v2-type-body-sm mt-1 text-[color:var(--v2-text-muted)]">{tile.description}</p>
                   </div>
                   <div className="landing-v2-card-icon-rail flex w-[74px] shrink-0 items-center justify-center">
                     <Icon size={42} />
@@ -1589,7 +1586,7 @@ export default function LandingPage() {
                   <Button
                     variant={isRecommended ? 'primary' : 'secondary'}
                     size="sm"
-                    className="h-9 px-3 text-[13px]"
+                    className="h-9 px-3"
                     onClick={() => openRoute(routeForTile(tile.key))}
                   >
                     {status.actionLabel}
@@ -1607,12 +1604,9 @@ export default function LandingPage() {
             <h2 className="v2-heading-h2 text-foreground">Leaderboard</h2>
             <div className="mt-1 v2-type-meta">{viewerStandingLabel}</div>
           </div>
-          <div className="flex items-center gap-3">
-            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Latest snapshot: " />
-            <div className="inline-flex items-center gap-1 v2-type-meta">
-              <UsersIcon size={13} />
-              <span>{`Tracking ${rivalUserIds.length}/3`}</span>
-            </div>
+          <div className="inline-flex items-center gap-1 v2-type-meta">
+            <UsersIcon size={13} />
+            <span>{`Tracking ${rivalUserIds.length}/3`}</span>
           </div>
         </div>
 
@@ -1644,7 +1638,7 @@ export default function LandingPage() {
         ) : null}
 
         {snapshotReady && snapshotReady.leaderboardRows.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/70 bg-muted/35 px-3 py-3 text-[14px] text-muted-foreground">
+          <div className="v2-type-body-sm rounded-xl border border-dashed border-border/70 bg-muted/35 px-3 py-3 text-muted-foreground">
             No standings are available in this snapshot yet.
           </div>
         ) : null}
@@ -1663,7 +1657,7 @@ export default function LandingPage() {
         ) : null}
       </div>
       <SectionCardV2 tone="subtle" className="landing-v2-rules">
-        <div className="space-y-2 text-[15px] text-muted-foreground">
+        <div className="v2-type-body-md space-y-2 text-muted-foreground">
           <h2 className="v2-heading-h2 text-foreground">Rules at a glance</h2>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />

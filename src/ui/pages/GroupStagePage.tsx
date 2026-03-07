@@ -26,7 +26,6 @@ import Skeleton from '../components/ui/Skeleton'
 import Table from '../components/ui/Table'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
-import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import { LeaderboardCardCurated, type LeaderboardCardRow } from '../components/v2/LeaderboardSideListV2'
@@ -52,7 +51,12 @@ import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { useFavoriteTeamPreference } from '../context/FavoriteTeamPreferenceContext'
 import { formatUtcAndLocalDeadline } from '../lib/deadline'
-import { lockedFinalLabel, publishedStateLabel } from '../lib/pageStatusCopy'
+import {
+  editableUntilLabel,
+  lockedFinalLabel,
+  publishedStateLabel,
+  SNAPSHOT_METADATA_PREFIX
+} from '../lib/pageStatusCopy'
 import {
   fetchRivalDirectory,
   readUserProfile,
@@ -788,7 +792,6 @@ export default function GroupStagePage() {
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
   const homePath = mode === 'demo' ? '/demo' : '/'
   const leaderboardPath = mode === 'demo' ? '/demo/leaderboard' : '/leaderboard'
-  const scoringSnapshotLabel = formatSnapshotTimestamp(scoringSnapshotTimestamp)
   const groupLockLabel = groupLockTime ? formatUtcAndLocalDeadline(groupLockTime.toISOString()) : 'Lock deadline unavailable'
 
   const saveBestThirdSelections = useCallback(async () => {
@@ -944,7 +947,7 @@ export default function GroupStagePage() {
                 <Badge
                   key={`missing-qualifier-${teamCode}`}
                   tone="warning"
-                  className="px-2 py-0 text-[11px] normal-case tracking-normal"
+                  className="px-2 py-0 normal-case tracking-normal"
                   title="Correct qualifier not selected"
                 >
                   <TeamIdentityInlineV2 code={teamCode} label={teamCode} size="xs" />
@@ -969,14 +972,14 @@ export default function GroupStagePage() {
       subtitle="See how your group calls compare."
       className="group-stage-v2-leaderboard min-h-0"
       actions={(
-        <Badge tone="secondary" className="h-7 rounded-full px-2 text-[12px] normal-case tracking-normal">
+        <Badge tone="secondary" className="h-7 rounded-full px-2 normal-case tracking-normal">
           Group {selectedStandingsGroup}
         </Badge>
       )}
     >
       <Table
         unframed
-        className="[&_th]:h-9 [&_th]:border-b-[color:color-mix(in_srgb,var(--border)_42%,transparent)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-[0.12em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)] [&_td]:px-2 [&_td]:py-0 [&_td]:text-[14px]"
+        className="[&_th]:h-9 [&_th]:border-b-[color:color-mix(in_srgb,var(--border)_42%,transparent)] [&_th]:px-2 [&_th]:py-0 [&_th]:uppercase [&_th]:tracking-[0.12em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)] [&_td]:px-2 [&_td]:py-0"
       >
         <thead>
           <tr>
@@ -998,8 +1001,8 @@ export default function GroupStagePage() {
                 <td>
                   <div className="flex min-w-0 items-center gap-1.5">
                     <TeamIdentityInlineV2 code={entry.code} label={entry.code} />
-                    {pickedFirst ? <Badge tone="info" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Predicted 1st</Badge> : null}
-                    {pickedSecond ? <Badge tone="secondary" className="px-1.5 py-0 text-[11px] normal-case tracking-normal">Predicted 2nd</Badge> : null}
+                    {pickedFirst ? <Badge tone="info" className="px-1.5 py-0 normal-case tracking-normal">Predicted 1st</Badge> : null}
+                    {pickedSecond ? <Badge tone="secondary" className="px-1.5 py-0 normal-case tracking-normal">Predicted 2nd</Badge> : null}
                   </div>
                 </td>
                 <td>{entry.points}</td>
@@ -1025,7 +1028,7 @@ export default function GroupStagePage() {
       ? lockedFinalLabel('FINAL')
       : isReadOnly
         ? lockedFinalLabel(phaseState.tournamentPhase)
-        : `Editable until: ${groupLockLabel}.`
+        : editableUntilLabel(groupLockLabel)
 
   const groupStagePublishedCopy = groupsFinal || isFinalResultsMode
     ? publishedStateLabel('FINAL')
@@ -1034,7 +1037,6 @@ export default function GroupStagePage() {
   const projectedLeaderboardCard = (
     <LeaderboardCardCurated
       rows={leaderboardRowsForCard}
-      snapshotLabel={scoringSnapshotLabel}
       topCount={3}
       title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Leaderboard Outlook'}
       leaderboardPath={leaderboardPath}
@@ -1044,7 +1046,7 @@ export default function GroupStagePage() {
   )
 
   return (
-    <PageShellV2 className="group-stage-v2-canvas p-4">
+    <PageShellV2 className="group-stage-v2-canvas">
       <PageHeaderV2
         variant="hero"
         className="group-stage-v2-hero"
@@ -1058,26 +1060,26 @@ export default function GroupStagePage() {
             </ButtonLink>
             {showExportMenu ? (
               <ExportMenuV2
-                contextLabel="Download your group rankings and best-third selections workbook."
-                snapshotLabel={`Latest snapshot ${formatSnapshotTimestamp(scoringSnapshotTimestamp)}`}
-                onDownloadXlsx={handleDownloadGroupStageXlsx}
+                description={`Download your group rankings and best-third selections workbook from ${formatSnapshotTimestamp(scoringSnapshotTimestamp)}.`}
+                onAction={handleDownloadGroupStageXlsx}
               />
             ) : null}
           </>
         )}
         metadataClassName="w-full"
-        metadata={(
-          <PageHeaderMetadataV2
-            items={[
-              <SnapshotStamp key="snapshot" timestamp={scoringSnapshotTimestamp} prefix="Latest snapshot: " />,
-              <span key="state">{groupStageStateCopy}</span>,
-              <span key="published">{groupStagePublishedCopy}</span>
-            ]}
-          />
-        )}
+        metadataItems={[
+          <SnapshotStamp key="snapshot" timestamp={scoringSnapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
+          <span key="state">{groupStageStateCopy}</span>,
+          <span key="published">{groupStagePublishedCopy}</span>
+        ]}
       />
 
-      <SectionCardV2 tone="panel" density="none" className="group-stage-v2-group-nav sticky top-0 z-20 rounded-xl px-2 py-2 backdrop-blur-sm">
+      <SectionCardV2
+        tone="panel"
+        density="none"
+        className="group-stage-v2-group-nav sticky z-20 rounded-xl px-2 py-2 backdrop-blur-sm"
+        style={{ top: 'var(--v2-sticky-offset)' }}
+      >
         <div className="flex items-center gap-2">
           <div className="v2-type-kicker shrink-0 px-2">Groups</div>
           <div className="min-w-0 flex-1 overflow-x-auto">
@@ -1090,7 +1092,7 @@ export default function GroupStagePage() {
                     size="sm"
                     variant={groupId === activeGroupId ? 'primary' : 'secondary'}
                     className={cn(
-                      'h-9 rounded-full px-3 text-[13px]',
+                      'h-9 rounded-full px-3',
                       groupId !== activeGroupId ? groupJumpStatusClass(status) : undefined
                     )}
                     onClick={() => navigateToGroup(groupId)}

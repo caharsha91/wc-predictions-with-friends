@@ -29,7 +29,7 @@ export default function AdminWorkspaceShellV2({
   children
 }: AdminWorkspaceShellV2Props) {
   return (
-    <PageShellV2 className="landing-v2-canvas p-4">
+    <PageShellV2 preset="admin" className="landing-v2-canvas">
       <PageHeaderV2
         variant={variant}
         className={cn(variant === 'hero' ? 'landing-v2-hero admin-v2-hero' : 'admin-v2-hero', headerClassName)}

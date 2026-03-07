@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MouseEvent } from 'react'
+import { useEffect, useRef, type CSSProperties, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
 
@@ -377,6 +377,9 @@ function LayoutFrameContent() {
 
   const appContentRoute = isAppContentRoute(location.pathname)
   const isDemoRoute = isDemoPath(location.pathname)
+  const shellMainStyle: CSSProperties = {
+    ['--v2-shell-top-offset' as string]: isDemoRoute ? '44px' : '8px'
+  }
   const mainNavItems = isDemoRoute ? DEMO_MAIN_NAV : MAIN_NAV
   const adminNavItems = isDemoRoute ? DEMO_ADMIN_NAV : ADMIN_NAV
 
@@ -534,6 +537,7 @@ function LayoutFrameContent() {
               'v2-shell-main relative z-10 flex-1 overflow-y-auto md:min-h-0',
               appContentRoute ? 'px-4 py-5 md:px-6 lg:px-8 xl:px-10' : 'container py-5'
             )}
+            style={shellMainStyle}
             onClickCapture={handleMainClickCapture}
           >
             <Outlet />

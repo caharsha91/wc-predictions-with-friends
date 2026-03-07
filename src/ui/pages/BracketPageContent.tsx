@@ -18,7 +18,6 @@ import Skeleton from '../components/ui/Skeleton'
 import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import InlineStateHintV2 from '../components/v2/InlineStateHintV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
-import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import RowShellV2 from '../components/v2/RowShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
@@ -33,7 +32,12 @@ import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { cn } from '../lib/utils'
-import { publishedStateLabel } from '../lib/pageStatusCopy'
+import {
+  editableUntilLabel,
+  lockedAtLabel,
+  publishedStateLabel,
+  SNAPSHOT_METADATA_PREFIX
+} from '../lib/pageStatusCopy'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { downloadWorkbook } from '../lib/exportWorkbook'
 
@@ -145,7 +149,7 @@ function bracketWinnerChoiceClass({
 }): string {
   return cn(
     'flex w-full min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-all',
-    compact ? 'text-[12px]' : 'text-[11px]',
+    compact ? 'v2-type-body-sm' : 'v2-type-caption',
     selected ? 'v2-selected-pick-info text-foreground' : 'bg-[var(--surface-2)] text-muted-foreground',
     interactive
       ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
@@ -421,8 +425,8 @@ function BracketSummaryPanel({
           }`}
         >
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <div className="text-[12px] font-semibold text-foreground">{STAGE_LABELS[round.stage]}</div>
-            <div className="text-[11px] text-muted-foreground">{round.picked}/{round.total}</div>
+            <div className="v2-type-body-sm font-semibold text-foreground">{STAGE_LABELS[round.stage]}</div>
+            <div className="v2-type-caption">{round.picked}/{round.total}</div>
           </div>
           <div className="space-y-1">
             {round.matches.map((match) => {
@@ -436,7 +440,7 @@ function BracketSummaryPanel({
                   interactive={false}
                   className="flex items-center justify-between gap-2 px-2 py-1"
                 >
-                  <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <div className="v2-type-caption flex min-w-0 items-center gap-1.5">
                     <TeamIdentityInlineV2
                       code={match.homeTeam.code}
                       name={match.homeTeam.name}
@@ -620,10 +624,10 @@ function BracketMatchNode({
       data-stage={match.stage}
     >
       <div className="flex items-center justify-between gap-2 overflow-hidden" style={{ height: BRACKET_NODE_METRICS.headerHeight }}>
-        <span className={`v2-track-10 truncate text-[11px] font-medium uppercase ${metadataTextClass}`}>
+        <span className={`v2-track-10 v2-type-chip truncate font-medium uppercase ${metadataTextClass}`}>
           {STAGE_SHORT_LABELS[match.stage]}
         </span>
-        <span className={`truncate text-[11px] ${metadataTextClass}`}>{formatKickoff(match.match.kickoffUtc)}</span>
+        <span className={`v2-type-caption truncate ${metadataTextClass}`}>{formatKickoff(match.match.kickoffUtc)}</span>
       </div>
 
       <div
@@ -647,7 +651,7 @@ function BracketMatchNode({
         {match.result !== 'pending' ? (
           <StatusTagV2
             tone={resultTone(match.result)}
-            className={`h-4 shrink-0 px-1.5 text-[9px] ${isActiveRound ? '' : 'opacity-75'}`}
+            className={`h-4 shrink-0 px-1.5 ${isActiveRound ? '' : 'opacity-75'}`}
           >
             {resultLabel(match.result)}
           </StatusTagV2>
@@ -655,18 +659,18 @@ function BracketMatchNode({
         {interactionState.kind === 'tag' ? (
           <StatusTagV2
             tone={interactionState.tone}
-            className={`h-4 shrink-0 px-1.5 text-[9px] ${isActiveRound ? '' : 'opacity-75'}`}
+            className={`h-4 shrink-0 px-1.5 ${isActiveRound ? '' : 'opacity-75'}`}
           >
             {interactionState.label}
           </StatusTagV2>
         ) : null}
         {awaitingMatchup ? (
-          <StatusTagV2 tone="secondary" className={`h-4 shrink-0 px-1.5 text-[9px] ${isActiveRound ? '' : 'opacity-75'}`}>
+          <StatusTagV2 tone="secondary" className={`h-4 shrink-0 px-1.5 ${isActiveRound ? '' : 'opacity-75'}`}>
             Awaiting matchup
           </StatusTagV2>
         ) : null}
         {showOpenPickTag ? (
-          <StatusTagV2 tone="info" className="h-4 shrink-0 px-1.5 text-[9px]">
+          <StatusTagV2 tone="info" className="h-4 shrink-0 px-1.5">
             Pick winner
           </StatusTagV2>
         ) : null}
@@ -1035,7 +1039,7 @@ function DesktopVisualBracket({
                             label={awayLabel}
                           />
                         </div>
-                        <div className="text-[11px] text-muted-foreground">{formatKickoff(match.match.kickoffUtc)}</div>
+                        <div className="v2-type-caption">{formatKickoff(match.match.kickoffUtc)}</div>
                       </div>
                       <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
                         {match.result !== 'pending' ? (
@@ -1072,7 +1076,7 @@ function DesktopVisualBracket({
                           label={homeLabel}
                           className="max-w-full flex-1"
                         />
-                        <span className="v2-track-10 ml-auto shrink-0 text-[11px] uppercase text-current/85">advances</span>
+                        <span className="v2-track-10 v2-type-chip ml-auto shrink-0 uppercase text-current/85">advances</span>
                       </button>
                       <button
                         type="button"
@@ -1094,7 +1098,7 @@ function DesktopVisualBracket({
                           label={awayLabel}
                           className="max-w-full flex-1"
                         />
-                        <span className="v2-track-10 ml-auto shrink-0 text-[11px] uppercase text-current/85">advances</span>
+                        <span className="v2-track-10 v2-type-chip ml-auto shrink-0 uppercase text-current/85">advances</span>
                       </button>
                     </div>
                   </RowShellV2>
@@ -1445,7 +1449,7 @@ export default function BracketPage() {
     const preDrawPublishedCopy = publishedStateLabel(phaseState.tournamentPhase)
 
     return (
-      <PageShellV2 className="landing-v2-canvas p-4">
+      <PageShellV2 className="landing-v2-canvas">
         <PageHeaderV2
           variant="hero"
           className="landing-v2-hero"
@@ -1459,15 +1463,11 @@ export default function BracketPage() {
               </ButtonLink>
             </>
           )}
-          metadata={(
-            <PageHeaderMetadataV2
-              items={[
-                <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />,
-                <span key="state">Locked: Waiting for published knockout matchups.</span>,
-                <span key="published">{preDrawPublishedCopy}</span>
-              ]}
-            />
-          )}
+          metadataItems={[
+            <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
+            <span key="state">Locked: Waiting for published knockout matchups.</span>,
+            <span key="published">{preDrawPublishedCopy}</span>
+          ]}
         />
 
         <SectionCardV2 tone="panel" className="p-4 md:p-5">
@@ -1476,7 +1476,6 @@ export default function BracketPage() {
             <div className="text-sm text-muted-foreground">
               Your winners-only bracket unlocks once the draw is published.
             </div>
-            <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />
           </div>
         </SectionCardV2>
       </PageShellV2>
@@ -1485,10 +1484,10 @@ export default function BracketPage() {
 
   const bracketStateCopy = bracketEditable
     ? firstKnockoutKickoffLabel
-      ? `Editable until: ${firstKnockoutKickoffLabel}.`
+      ? editableUntilLabel(firstKnockoutKickoffLabel)
       : 'Editable until: first knockout kickoff.'
     : firstKnockoutKickoffLabel
-      ? `Locked: Bracket edits closed at ${firstKnockoutKickoffLabel}.`
+      ? lockedAtLabel(firstKnockoutKickoffLabel)
       : 'Locked: Bracket edits close at first knockout kickoff.'
   const bracketPublishedCopy = publishedStateLabel(phaseState.tournamentPhase)
   const orientationLockLabel = bracketEditable
@@ -1500,7 +1499,7 @@ export default function BracketPage() {
       : 'Locked for this snapshot.'
 
   return (
-    <PageShellV2 className="landing-v2-canvas p-4">
+    <PageShellV2 className="landing-v2-canvas">
       <PageHeaderV2
         variant="hero"
         className="landing-v2-hero"
@@ -1514,22 +1513,17 @@ export default function BracketPage() {
             </ButtonLink>
             {showExportMenu ? (
               <ExportMenuV2
-                contextLabel="Download your knockout bracket workbook from the latest snapshot."
-                snapshotLabel={`Latest snapshot ${snapshotLabel}`}
-                onDownloadXlsx={handleDownloadBracketXlsx}
+                description={`Download your knockout bracket workbook from ${snapshotLabel}.`}
+                onAction={handleDownloadBracketXlsx}
               />
             ) : null}
           </>
         )}
-        metadata={(
-          <PageHeaderMetadataV2
-            items={[
-              <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />,
-              <span key="state">{bracketStateCopy}</span>,
-              <span key="published">{bracketPublishedCopy}</span>
-            ]}
-          />
-        )}
+        metadataItems={[
+          <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
+          <span key="state">{bracketStateCopy}</span>,
+          <span key="published">{bracketPublishedCopy}</span>
+        ]}
       />
 
       {loadedRounds.length === 0 || !activeRound ? (
@@ -1539,7 +1533,6 @@ export default function BracketPage() {
             <div className="text-sm text-muted-foreground">
               The latest snapshot does not include knockout rounds yet.
             </div>
-            <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />
           </div>
         </SectionCardV2>
       ) : (
@@ -1598,7 +1591,7 @@ export default function BracketPage() {
                   <button
                     key={`stage-step-${round.stage}`}
                     type="button"
-                    className={`shrink-0 rounded-lg border px-2 py-1 text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    className={`v2-type-body-sm shrink-0 rounded-lg border px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       round.stage === activeRound.stage
                         ? 'v2-selected-pick-info text-foreground'
                         : round.complete
@@ -1707,7 +1700,7 @@ export default function BracketPage() {
                               label={resolveTeamDisplayLabel(match.homeTeam)}
                               className="max-w-full flex-1"
                             />
-                            <span className="v2-track-10 ml-auto shrink-0 text-[11px] uppercase text-current/85">advances</span>
+                            <span className="v2-track-10 v2-type-chip ml-auto shrink-0 uppercase text-current/85">advances</span>
                           </button>
                           <button
                             type="button"
@@ -1729,7 +1722,7 @@ export default function BracketPage() {
                               label={resolveTeamDisplayLabel(match.awayTeam)}
                               className="max-w-full flex-1"
                             />
-                            <span className="v2-track-10 ml-auto shrink-0 text-[11px] uppercase text-current/85">advances</span>
+                            <span className="v2-track-10 v2-type-chip ml-auto shrink-0 uppercase text-current/85">advances</span>
                           </button>
                         </div>
                       </div>

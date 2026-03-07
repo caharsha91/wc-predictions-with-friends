@@ -195,7 +195,7 @@ export default function FavoriteTeamSelectV2({
             imageClassName="h-full w-full object-cover"
           />
           <div className="min-w-0">
-            <div className="truncate text-[13px] font-semibold text-foreground">
+            <div className="v2-type-body-sm truncate font-semibold text-foreground">
               {selectedMeta.textPrimary}
               {selectedMeta.kind === 'canonical' && selectedOption?.name ? (
                 <span className="ml-1 text-muted-foreground">{selectedOption.name}</span>
@@ -242,7 +242,7 @@ export default function FavoriteTeamSelectV2({
                 tone="inset"
                 state="disabled"
                 interactive={false}
-                className="px-2 py-2 text-[12px] text-muted-foreground"
+                className="v2-type-caption px-2 py-2"
               >
                 No teams match your search.
               </RowShellV2>
@@ -279,10 +279,10 @@ export default function FavoriteTeamSelectV2({
                             imageClassName="h-full w-full object-cover"
                           />
                           <div className="min-w-0">
-                            <div className="truncate text-[13px] font-semibold text-foreground">
+                            <div className="v2-type-body-sm truncate font-semibold text-foreground">
                               {optionMeta.kind === 'canonical' && option.code ? option.code : optionMeta.textPrimary}
                             </div>
-                            <div className="truncate text-[12px] text-muted-foreground">{option.name}</div>
+                            <div className="v2-type-caption truncate">{option.name}</div>
                           </div>
                         </div>
                         {isSelected ? (

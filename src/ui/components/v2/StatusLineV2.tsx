@@ -24,7 +24,7 @@ export default function StatusLineV2({ tone = 'neutral', icon, className, childr
     <div
       {...props}
       className={cn(
-        'v2-status-line flex min-h-10 items-start gap-2 rounded-xl border px-3 py-2 text-[13px] leading-[1.35] md:text-[14px]',
+        'v2-status-line v2-type-meta flex min-h-10 items-start gap-2 rounded-xl border px-3 py-2',
         toneClass,
         className
       )}

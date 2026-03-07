@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { cn } from '../../lib/utils'
+import PageHeaderMetadataV2 from './PageHeaderMetadataV2'
 import V2Card from './V2Card'
 
 export type PageHeaderV2Variant = 'hero' | 'section'
@@ -11,6 +12,8 @@ type PageHeaderV2Props = {
   kicker?: ReactNode
   actions?: ReactNode
   metadata?: ReactNode
+  metadataItems?: ReactNode[]
+  metadataItemClassName?: string
   metadataClassName?: string
   className?: string
   variant?: PageHeaderV2Variant
@@ -22,11 +25,18 @@ export default function PageHeaderV2({
   kicker,
   actions,
   metadata,
+  metadataItems,
+  metadataItemClassName,
   metadataClassName,
   className,
   variant = 'section'
 }: PageHeaderV2Props) {
   const isHero = variant === 'hero'
+  const resolvedMetadata =
+    metadata ??
+    (metadataItems && metadataItems.length > 0 ? (
+      <PageHeaderMetadataV2 items={metadataItems} itemClassName={metadataItemClassName} />
+    ) : null)
 
   return (
     <V2Card tone={isHero ? 'hero' : 'panel'} className={cn('v2-page-header overflow-hidden', className)}>
@@ -70,14 +80,14 @@ export default function PageHeaderV2({
           </div>
           {actions ? <div className="v2-header-actions self-start md:pt-0.5">{actions}</div> : null}
         </div>
-        {metadata ? (
+        {resolvedMetadata ? (
           <div
             className={cn(
               'v2-page-header-meta v2-type-meta flex flex-wrap items-center gap-x-2 gap-y-1.5',
               metadataClassName
             )}
           >
-            {metadata}
+            {resolvedMetadata}
           </div>
         ) : null}
       </div>

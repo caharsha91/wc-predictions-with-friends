@@ -26,8 +26,8 @@ const buttonVariants = cva(
           'rounded-full border-[color:var(--tone-secondary-border)] bg-[color:var(--tone-secondary-bg)] text-foreground shadow-[var(--shadow0)] hover:border-secondary hover:bg-[color:var(--tone-secondary-bg-hover)] hover:shadow-[var(--shadow1)] data-[active=true]:border-secondary data-[active=true]:bg-[color:var(--tone-secondary-bg-active)] data-[active=true]:shadow-[var(--shadow1)] disabled:shadow-none'
       },
       size: {
-        xs: 'h-[var(--v2-control-height-xs)] px-[var(--v2-control-pad-x-xs)] text-[12px]',
-        sm: 'h-[var(--v2-control-height-sm)] px-[var(--v2-control-pad-x-sm)] text-[13px]',
+        xs: 'h-[var(--v2-control-height-xs)] px-[var(--v2-control-pad-x-xs)] text-[length:var(--text-xs)]',
+        sm: 'h-[var(--v2-control-height-sm)] px-[var(--v2-control-pad-x-sm)] text-[length:var(--text-sm)]',
         md: 'h-[var(--v2-control-height-md)] px-[var(--v2-control-pad-x-md)] text-sm'
       }
     },

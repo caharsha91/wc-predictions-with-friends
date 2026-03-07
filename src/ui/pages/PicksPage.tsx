@@ -22,7 +22,6 @@ import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import InlineStateHintV2 from '../components/v2/InlineStateHintV2'
 import { RightRailSticky } from '../components/v2/LeaderboardSideListV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
-import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import SideListPanelV2 from '../components/v2/SideListPanelV2'
@@ -42,7 +41,11 @@ import {
   type MatchReadOnlyReason,
   type MatchTimelineItem
 } from '../lib/matchTimeline'
-import { lockedFinalLabel, publishedStateLabel } from '../lib/pageStatusCopy'
+import {
+  lockedFinalLabel,
+  publishedStateLabel,
+  SNAPSHOT_METADATA_PREFIX
+} from '../lib/pageStatusCopy'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { resolveTeamFlagMeta } from '../lib/teamFlag'
 import { downloadWorkbook } from '../lib/exportWorkbook'
@@ -364,7 +367,7 @@ function MatchRow({
     <div className="space-y-1.5">
       <div className="flex min-w-0 items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="truncate text-[11px] text-muted-foreground">
+          <div className="v2-type-caption truncate">
             {stageLabel} · {kickoffLabel}
           </div>
         </div>
@@ -418,12 +421,12 @@ function MatchRow({
       />
 
       {!item.editable && readOnlyLabel ? (
-        <div className="truncate text-[11px] text-muted-foreground">
+        <div className="v2-type-caption truncate">
           {readOnlyLabel}
         </div>
       ) : null}
 
-      {rowError ? <div className="text-[11px] text-destructive">{rowError}</div> : null}
+      {rowError ? <div className="v2-type-caption text-destructive">{rowError}</div> : null}
     </div>
   )
 }
@@ -438,24 +441,24 @@ function ResultRow({ item, pick, scoring }: ResultRowProps) {
     <tr>
       <td>
         <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-foreground">
+          <div className="v2-type-body-sm flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
             <TeamIdentityInlineV2 code={match.homeTeam.code} name={match.homeTeam.name} />
             <span className="shrink-0 text-muted-foreground">vs</span>
             <TeamIdentityInlineV2 code={match.awayTeam.code} name={match.awayTeam.name} />
           </div>
-          <div className="truncate text-[11px] text-muted-foreground">
+          <div className="v2-type-caption truncate">
             {stageLabel} · {formatKickoff(match.kickoffUtc)}
           </div>
         </div>
       </td>
-      <td className="text-[13px] tabular-nums">{resolvePredictedLabel(pick)}</td>
-      <td className="text-[13px] tabular-nums">{resolveActualLabel(match)}</td>
+      <td className="v2-type-meta tabular-nums">{resolvePredictedLabel(pick)}</td>
+      <td className="v2-type-meta tabular-nums">{resolveActualLabel(match)}</td>
       <td>
         <StatusTagV2 tone={resultTone(outcome)}>
           {resultLabel(outcome)}
         </StatusTagV2>
       </td>
-      <td className="text-right text-[13px] font-semibold tabular-nums text-foreground">
+      <td className="v2-type-meta text-right font-semibold tabular-nums text-foreground">
         {points === null ? '—' : formatPointsLabel(points)}
       </td>
     </tr>
@@ -470,7 +473,7 @@ function ResultsTable({ items, picksByMatchId, scoring, emptyMessage }: ResultsT
   return (
     <Table
       unframed
-      className="[&_th]:h-8 [&_th]:border-b-[color:var(--divider)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-[0.1em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:var(--divider)] [&_td]:px-2 [&_td]:py-1.5"
+      className="[&_th]:h-8 [&_th]:border-b-[color:var(--divider)] [&_th]:px-2 [&_th]:py-0 [&_th]:uppercase [&_th]:tracking-[0.1em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:var(--divider)] [&_td]:px-2 [&_td]:py-1.5"
     >
       <thead>
         <tr>
@@ -543,11 +546,11 @@ function PicksSupportRail({
       <section className="flex items-start gap-2">
         <div className="min-w-0">
           <div className="v2-type-kicker v2-track-10">Remaining picks</div>
-          <div className="mt-1.5 text-[34px] font-semibold leading-none tabular-nums text-foreground">
+          <div className="mt-1.5 text-4xl font-semibold leading-none tabular-nums text-foreground">
             {remainingCount}
-            <span className="ml-1 text-[15px] font-medium text-muted-foreground">/ {totalCount}</span>
+            <span className="v2-type-body-md ml-1 font-medium text-muted-foreground">/ {totalCount}</span>
           </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">{setCount} / {totalCount} set</div>
+          <div className="v2-type-caption mt-1">{setCount} / {totalCount} set</div>
         </div>
         <StatusTagV2 tone={completionTone} className="ml-auto mt-1 shrink-0">
           {remainingCount === 0 && totalCount > 0 ? 'All set' : 'Open'}
@@ -558,13 +561,13 @@ function PicksSupportRail({
         <div className="v2-type-kicker v2-track-10">Next lock</div>
         {nextLockMatch ? (
           <>
-            <div className="mt-1.5 text-[12px] font-medium text-foreground">{formatKickoff(nextLockMatch.match.kickoffUtc)}</div>
-            <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[12px] text-foreground">
+            <div className="v2-type-body-sm mt-1.5 font-medium text-foreground">{formatKickoff(nextLockMatch.match.kickoffUtc)}</div>
+            <div className="v2-type-body-sm mt-1.5 flex min-w-0 items-center gap-1.5 text-foreground">
               <TeamIdentityInlineV2 code={nextLockMatch.match.homeTeam.code} name={nextLockMatch.match.homeTeam.name} size="xs" />
               <span className="text-muted-foreground">vs</span>
               <TeamIdentityInlineV2 code={nextLockMatch.match.awayTeam.code} name={nextLockMatch.match.awayTeam.name} size="xs" />
             </div>
-            <div className="mt-1 text-[11px] text-muted-foreground">{stageLabel}</div>
+            <div className="v2-type-caption mt-1">{stageLabel}</div>
           </>
         ) : (
           <div className="mt-1.5 v2-type-caption">{nextLockLabel}</div>
@@ -604,7 +607,7 @@ function PicksSupportRail({
         <div className="mt-1 v2-type-caption">{resolveKnockoutWinnerLegend(scoring)}</div>
       </section>
 
-      <p className="text-[12px] leading-[1.4] text-muted-foreground">
+      <p className="v2-type-caption leading-[1.4] text-muted-foreground">
         If you call a knockout draw, choose the eventual winner and AET/PEN. Non-draw picks ignore AET/PEN.
       </p>
     </SideListPanelV2>
@@ -983,7 +986,7 @@ export default function PicksPage() {
   }
 
   return (
-    <PageShellV2 className="landing-v2-canvas p-4">
+    <PageShellV2 className="landing-v2-canvas">
       <PageHeaderV2
         variant="hero"
         className="landing-v2-hero"
@@ -997,22 +1000,17 @@ export default function PicksPage() {
             </ButtonLink>
             {showExportMenu ? (
               <ExportMenuV2
-                contextLabel="Download your match picks workbook from the latest snapshot."
-                snapshotLabel={`Latest snapshot ${formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}`}
-                onDownloadXlsx={handleDownloadMatchPicksXlsx}
+                description={`Download your match picks workbook from ${formatSnapshotTimestamp(snapshotReady?.snapshotTimestamp)}.`}
+                onAction={handleDownloadMatchPicksXlsx}
               />
             ) : null}
           </>
         )}
-        metadata={(
-          <PageHeaderMetadataV2
-            items={[
-              <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />,
-              <span key="state">{picksStateCopy}</span>,
-              <span key="published">{picksPublishedCopy}</span>
-            ]}
-          />
-        )}
+        metadataItems={[
+          <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
+          <span key="state">{picksStateCopy}</span>,
+          <span key="published">{picksPublishedCopy}</span>
+        ]}
       />
 
       {publishedSnapshot.state.status === 'error' ? (
@@ -1034,7 +1032,6 @@ export default function PicksPage() {
             <div className="text-sm text-muted-foreground">
               No upcoming or historical kickoff timestamps were found in this dataset.
             </div>
-            <SnapshotStamp timestamp={snapshotReady?.snapshotTimestamp} prefix="Latest snapshot: " />
           </div>
         </SectionCardV2>
       ) : (
@@ -1193,7 +1190,7 @@ export default function PicksPage() {
           <Button
             size="sm"
             variant="secondary"
-            className="league-peek-fab fixed bottom-[calc(var(--bottom-nav-height)+0.75rem)] right-4 z-40 h-10 rounded-full px-4 text-[12px] lg:hidden"
+            className="league-peek-fab fixed bottom-[calc(var(--bottom-nav-height)+0.75rem)] right-4 z-40 h-10 rounded-full px-4 lg:hidden"
             onClick={() => setPickGuideOpen(true)}
           >
             Pick guide

@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 
+import { SNAPSHOT_METADATA_PREFIX } from '../../lib/pageStatusCopy'
 import { SNAPSHOT_UNAVAILABLE_LABEL } from '../../lib/snapshotStamp'
 import { ButtonLink } from '../ui/Button'
 import MemberIdentityRowV2 from './MemberIdentityRowV2'
@@ -24,7 +25,7 @@ type RightRailStickyProps = {
 
 type LeaderboardCardCuratedProps = {
   rows: LeaderboardCardRow[]
-  snapshotLabel: string
+  snapshotLabel?: string
   topCount: 3 | 5
   title: string
   leaderboardPath?: string
@@ -33,7 +34,7 @@ type LeaderboardCardCuratedProps = {
 }
 
 export function RightRailSticky({ children }: RightRailStickyProps) {
-  return <aside className="max-lg:static lg:sticky lg:top-[calc(var(--toolbar-h,56px)+var(--meta-h,32px)+20px)] lg:self-start">{children}</aside>
+  return <aside className="max-lg:static lg:sticky lg:top-[calc(var(--v2-sticky-offset)+12px)] lg:self-start">{children}</aside>
 }
 
 function movementLabel(movement: number | undefined): string {
@@ -206,9 +207,11 @@ export function LeaderboardCardCurated({
     <SideListPanelV2
       title={title}
       subtitle={
-        snapshotLabel === SNAPSHOT_UNAVAILABLE_LABEL
-          ? SNAPSHOT_UNAVAILABLE_LABEL
-          : `Latest snapshot: ${snapshotLabel}`
+        !snapshotLabel
+          ? undefined
+          : snapshotLabel === SNAPSHOT_UNAVAILABLE_LABEL
+            ? SNAPSHOT_UNAVAILABLE_LABEL
+            : `${SNAPSHOT_METADATA_PREFIX}${snapshotLabel}`
       }
       className="group-stage-v2-leaderboard"
       contentClassName="v2-list-divider space-y-0"

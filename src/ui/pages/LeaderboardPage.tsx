@@ -12,7 +12,6 @@ import ExportMenuV2 from '../components/v2/ExportMenuV2'
 import LeaderboardPodium from '../components/v2/LeaderboardPodium'
 import MemberIdentityRowV2 from '../components/v2/MemberIdentityRowV2'
 import PageHeaderV2 from '../components/v2/PageHeaderV2'
-import PageHeaderMetadataV2 from '../components/v2/PageHeaderMetadataV2'
 import PageShellV2 from '../components/v2/PageShellV2'
 import RowShellV2 from '../components/v2/RowShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
@@ -31,7 +30,7 @@ import { useToast } from '../hooks/useToast'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
 import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
-import { publishedStateLabel } from '../lib/pageStatusCopy'
+import { publishedStateLabel, SNAPSHOT_METADATA_PREFIX } from '../lib/pageStatusCopy'
 import { fetchRivalDirectory, readUserProfile, type RivalDirectoryEntry } from '../lib/profilePersistence'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
@@ -292,7 +291,7 @@ function shouldShowMomentumPill(delta: number | null): boolean {
 
 function LeaderboardSkeleton() {
   return (
-    <PageShellV2 className="landing-v2-canvas p-4">
+    <PageShellV2 className="landing-v2-canvas">
       <div className="h-40 animate-pulse rounded-2xl border border-border/70 bg-muted/35" />
       <div className="h-48 animate-pulse rounded-2xl border border-border/70 bg-muted/35" />
       <div className="h-[34rem] animate-pulse rounded-2xl border border-border/70 bg-muted/35" />
@@ -303,12 +302,10 @@ function LeaderboardSkeleton() {
 function RivalFocusPanel({
   rows,
   selectedCount,
-  snapshotTimestamp,
   onManageRivals
 }: {
   rows: RivalFocusRow[]
   selectedCount: number
-  snapshotTimestamp: string
   onManageRivals: () => void
 }) {
   const rivalRows = rows.filter((row) => row.kind === 'rival')
@@ -316,7 +313,7 @@ function RivalFocusPanel({
   return (
     <SideListPanelV2
       title="Rival watch"
-      subtitle={<SnapshotStamp timestamp={snapshotTimestamp} prefix="Latest snapshot: " />}
+      subtitle="Track up to 3 selected rivals."
       meta={`${selectedCount}/3 selected`}
       className="landing-v2-standings-panel"
       contentClassName="space-y-2"
@@ -1045,7 +1042,7 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <PageShellV2 className="landing-v2-canvas p-4">
+    <PageShellV2 className="landing-v2-canvas">
       <PageHeaderV2
         variant="hero"
         className="landing-v2-hero"
@@ -1055,20 +1052,15 @@ export default function LeaderboardPage() {
         actions={
           showExportMenu ? (
             <ExportMenuV2
-              contextLabel="Download the leaderboard workbook from the latest snapshot."
-              snapshotLabel={`Latest snapshot ${formatSnapshotTimestamp(snapshotTimestamp)}`}
-              onDownloadXlsx={handleDownloadLeaderboardXlsx}
+              description={`Download the leaderboard workbook from ${formatSnapshotTimestamp(snapshotTimestamp)}.`}
+              onAction={handleDownloadLeaderboardXlsx}
             />
           ) : undefined
         }
-        metadata={(
-          <PageHeaderMetadataV2
-            items={[
-              <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} prefix="Latest snapshot: " />,
-              <span key="published">{leaderboardPublishedCopy}</span>
-            ]}
-          />
-        )}
+        metadataItems={[
+          <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
+          <span key="published">{leaderboardPublishedCopy}</span>
+        ]}
       />
 
       {snapshotReady?.projectedGroupPredictionsLimited ? (
@@ -1089,7 +1081,6 @@ export default function LeaderboardPage() {
           <RivalFocusPanel
             rows={rivalFocusRows}
             selectedCount={rivalUserIds.length}
-            snapshotTimestamp={snapshotTimestamp}
             onManageRivals={() => navigate(landingRoot)}
           />
         </div>
@@ -1158,7 +1149,6 @@ export default function LeaderboardPage() {
                           }
                           badges={(
                             <>
-                              {isTopThree ? <StatusTagV2 tone="success">Top 3</StatusTagV2> : null}
                               {shouldShowMomentumPill(movementDelta) ? (
                                 <StatusTagV2 tone={movementTone(movementDelta)}>{movementLabel(movementDelta)}</StatusTagV2>
                               ) : null}
@@ -1212,9 +1202,6 @@ export default function LeaderboardPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-1">
-                        {isTopThree ? (
-                          <StatusTagV2 tone="success">Top 3</StatusTagV2>
-                        ) : null}
                         {shouldShowMomentumPill(movementDelta) ? (
                           <StatusTagV2 tone={movementTone(movementDelta)}>{movementLabel(movementDelta)}</StatusTagV2>
                         ) : null}
@@ -1229,7 +1216,7 @@ export default function LeaderboardPage() {
                         ))}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-1 text-[12px]">
+                      <div className="v2-type-caption grid grid-cols-2 gap-1">
                         <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Exact {entry.exactPoints}</div>
                         <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Outcome {entry.resultPoints}</div>
                         <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">KO {entry.knockoutPoints}</div>

@@ -5,18 +5,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '../ui/DropdownMenu'
+import {
+  EXPORT_MENU_ACTION_HINT,
+  EXPORT_MENU_ACTION_LABEL,
+  EXPORT_MENU_TITLE
+} from '../../lib/pageStatusCopy'
 
 type ExportMenuV2Props = {
-  contextLabel: string
-  snapshotLabel?: string
-  onDownloadXlsx: () => void
+  description: string
+  title?: string
+  actionLabel?: string
+  actionHint?: string
+  onAction: () => void
   disabled?: boolean
 }
 
 export default function ExportMenuV2({
-  contextLabel,
-  snapshotLabel,
-  onDownloadXlsx,
+  description,
+  title = EXPORT_MENU_TITLE,
+  actionLabel = EXPORT_MENU_ACTION_LABEL,
+  actionHint = EXPORT_MENU_ACTION_HINT,
+  onAction,
   disabled = false
 }: ExportMenuV2Props) {
   return (
@@ -31,25 +40,20 @@ export default function ExportMenuV2({
         sideOffset={8}
         className="w-[290px]"
       >
-        <div className="space-y-1.5 rounded-[var(--v2-control-radius)] border border-[var(--overlay-divider)] bg-[color:color-mix(in_srgb,var(--surface-2)_68%,transparent)] px-2.5 py-2.5">
-          <div className="v2-type-kicker">
-            Workbook export
-          </div>
-          <p className="v2-type-body-sm leading-snug text-foreground">{contextLabel}</p>
-          {snapshotLabel ? (
-            <p className="v2-type-caption leading-snug">{snapshotLabel}</p>
-          ) : null}
+        <div className="space-y-1 px-2.5 py-2">
+          <div className="v2-type-kicker">{title}</div>
+          <p className="v2-type-body-sm leading-snug text-foreground">{description}</p>
         </div>
         <DropdownMenuItem
-          className="mt-1 border-[var(--overlay-divider)] bg-[color:color-mix(in_srgb,var(--background)_58%,transparent)]"
+          className="mt-1"
           onSelect={(event) => {
             event.preventDefault()
-            onDownloadXlsx()
+            onAction()
           }}
         >
           <div className="flex flex-col items-start gap-0.5">
-            <span className="text-sm font-semibold text-foreground">Download .xlsx now</span>
-            <span className="v2-type-caption">Click to start the file download</span>
+            <span className="text-sm font-semibold text-foreground">{actionLabel}</span>
+            <span className="v2-type-caption">{actionHint}</span>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
