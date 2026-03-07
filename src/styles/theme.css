@@ -344,34 +344,51 @@
 :root[data-mode='light'] {
   color-scheme: light;
 
-  --focus-alpha: 0.42;
+  --focus-alpha: 0.48;
   --glow-alpha: 0.18;
-  --border-accent-alpha: 0.44;
-  --border-warning-alpha: 0.52;
+  --border-accent-alpha: 0.5;
+  --border-warning-alpha: 0.46;
   --border-danger-alpha: 0.5;
-  --accent-soft-alpha: 0.18;
+  --accent-soft-alpha: 0.2;
   --accent-violet-soft-alpha: 0.16;
-  --banner-accent-alpha: 0.24;
+  --banner-accent-alpha: 0.2;
   --group-ticker-bg-alpha: 0.18;
-  --group-ticker-border-alpha: 0.32;
-  --button-border-alpha: 0.5;
-  --button-bg-alpha: 0.18;
-  --row-hover-border-alpha: 0.42;
-  --row-inset-alpha: 0.06;
-  --team-border-alpha: 0.2;
-  --pill-border-alpha: 0.22;
-  --pill-bg-alpha: 0.08;
+  --group-ticker-border-alpha: 0.34;
+  --button-border-alpha: 0.52;
+  --button-bg-alpha: 0.16;
+  --row-hover-border-alpha: 0.48;
+  --row-inset-alpha: 0.035;
+  --team-border-alpha: 0.24;
+  --pill-border-alpha: 0.34;
+  --pill-bg-alpha: 0.1;
+
+  --focus-ring-strong: rgba(var(--primary-rgb), 0.92);
+  --hl-selection-bg: rgba(var(--hl-selection-rgb), 0.16);
+  --hl-selection-bg-strong: rgba(var(--hl-selection-rgb), 0.24);
+  --hl-selection-border: rgba(var(--hl-selection-rgb), 0.78);
+  --hl-selection-border-strong: rgba(var(--hl-selection-rgb), 0.9);
+  --hl-selection-border-soft: rgba(var(--hl-selection-rgb), 0.44);
+  --hl-you-bg: rgba(var(--hl-you-rgb), 0.18);
+  --hl-you-bg-strong: rgba(var(--hl-you-rgb), 0.25);
+  --hl-you-border: rgba(var(--hl-you-rgb), 0.74);
+  --hl-you-border-strong: rgba(var(--hl-you-rgb), 0.86);
+  --hl-you-border-soft: rgba(var(--hl-you-rgb), 0.42);
+  --hl-rival-bg: rgba(var(--hl-rival-rgb), 0.16);
+  --hl-rival-bg-strong: rgba(var(--hl-rival-rgb), 0.22);
+  --hl-rival-border: rgba(var(--hl-rival-rgb), 0.68);
+  --hl-rival-border-strong: rgba(var(--hl-rival-rgb), 0.8);
+  --hl-rival-border-soft: rgba(var(--hl-rival-rgb), 0.36);
 
   --surface-1: color-mix(in srgb, var(--card) 98%, var(--muted) 2%);
-  --surface-2: color-mix(in srgb, var(--card) 92%, var(--muted) 8%);
-  --surface-3: color-mix(in srgb, var(--muted) 96%, var(--card) 4%);
-  --divider: color-mix(in srgb, var(--border) 62%, transparent);
-  --border-subtle: color-mix(in srgb, var(--border) 70%, transparent);
-  --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 98%, transparent);
+  --surface-2: color-mix(in srgb, var(--card) 90%, var(--muted) 10%);
+  --surface-3: color-mix(in srgb, var(--muted) 97%, var(--card) 3%);
+  --divider: color-mix(in srgb, var(--border) 70%, transparent);
+  --border-subtle: color-mix(in srgb, var(--border) 78%, transparent);
+  --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 96%, transparent);
 
-  --noise-color: rgba(92, 106, 207, 0.015);
-  --noise-opacity: 0.2;
-  --input-bg: var(--surface-3);
+  --noise-color: rgba(36, 87, 245, 0.03);
+  --noise-opacity: 0.06;
+  --input-bg: color-mix(in srgb, var(--surface-3) 94%, var(--card) 6%);
 }
 
 :root[data-mode='dark'] {
@@ -1156,9 +1173,11 @@
   content: '';
   position: absolute;
   inset: 0;
-  background:
+  background: var(
+    --hero-overlay-surface,
     radial-gradient(120% 132% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 34%, transparent), transparent 64%),
-    radial-gradient(116% 120% at 100% 100%, rgba(var(--secondary-rgb), 0.15), transparent 68%);
+    radial-gradient(116% 120% at 100% 100%, rgba(var(--secondary-rgb), 0.15), transparent 68%)
+  );
   opacity: 0.58;
   pointer-events: none;
 }
@@ -1651,9 +1670,11 @@
   content: '';
   position: absolute;
   inset: 0;
-  background:
+  background: var(
+    --hero-overlay-surface,
     radial-gradient(130% 140% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 38%, transparent), transparent 64%),
-    radial-gradient(120% 120% at 100% 100%, rgba(var(--secondary-rgb), 0.16), transparent 68%);
+    radial-gradient(120% 120% at 100% 100%, rgba(var(--secondary-rgb), 0.16), transparent 68%)
+  );
   opacity: 0.62;
   pointer-events: none;
 }
@@ -1741,11 +1762,11 @@
 }
 
 .landing-v2-progress-pill[data-tone='success'] {
-  border-color: rgba(var(--primary-rgb), 0.54);
-  background: rgba(var(--primary-rgb), 0.2);
+  border-color: rgba(var(--hl-success-rgb), 0.6);
+  background: rgba(var(--hl-success-rgb), 0.2);
   box-shadow:
-    0 0 0 1px rgba(var(--primary-rgb), 0.34),
-    0 8px 14px rgba(var(--primary-rgb), 0.18);
+    0 0 0 1px rgba(var(--hl-success-rgb), 0.36),
+    0 8px 14px rgba(var(--hl-success-rgb), 0.18);
 }
 
 .landing-v2-progress-pill[data-tone='secondary'] {
