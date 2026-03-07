@@ -1,14 +1,29 @@
 import { Suspense, lazy, type ReactNode } from 'react'
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 
 import { hasFirebase } from '../lib/firebase'
 import { Card } from './components/ui/Card'
 import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
+import MobileCompanionLayout from './components/mobile/MobileCompanionLayout'
+import {
+  companionFeatureFlags,
+  isCompanionAreaEnabled,
+  isCompanionDeniedPath,
+  isCompanionPath,
+  resolveCompanionFallbackPath
+} from './lib/companionSurface'
 import Layout from './Layout'
 import AccessDeniedPage from './pages/AccessDeniedPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
+import {
+  CompanionHomePage,
+  CompanionLeaderboardPage,
+  CompanionMatchesPage,
+  CompanionPredictionsPage,
+  CompanionProfilePage
+} from './pages/mobile/CompanionPages'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const GroupStagePage = lazy(() => import('./pages/GroupStagePage'))
@@ -159,9 +174,45 @@ function DemoAdminGate() {
   return <Navigate to="/" replace />
 }
 
+function CompanionSurfaceGate() {
+  const location = useLocation()
+
+  if (!companionFeatureFlags.enabled) {
+    return <Navigate to="/" replace />
+  }
+
+  if (isCompanionPath(location.pathname) && isCompanionDeniedPath(location.pathname)) {
+    return <Navigate to={resolveCompanionFallbackPath(location.pathname)} replace />
+  }
+
+  if (isCompanionPath(location.pathname) && !isCompanionAreaEnabled(location.pathname)) {
+    return <Navigate to="/m" replace />
+  }
+
+  return <Outlet />
+}
+
 export default function App() {
   return (
     <Routes>
+      <Route path="/m" element={<CompanionSurfaceGate />}>
+        <Route element={<MemberGate />}>
+          <Route element={<MobileCompanionLayout />}>
+            <Route index element={<CompanionHomePage />} />
+            <Route path="predictions" element={<CompanionPredictionsPage />} />
+            <Route path="leaderboard" element={<CompanionLeaderboardPage />} />
+            <Route path="matches" element={<CompanionMatchesPage />} />
+            <Route path="profile" element={<CompanionProfilePage />} />
+            <Route path="admin/*" element={<Navigate to="/m/profile" replace />} />
+            <Route path="demo/*" element={<Navigate to="/m/profile" replace />} />
+            <Route path="group-stage/*" element={<Navigate to="/m/predictions" replace />} />
+            <Route path="match-picks" element={<Navigate to="/m/predictions" replace />} />
+            <Route path="knockout-bracket" element={<Navigate to="/m/predictions" replace />} />
+            <Route path="*" element={<Navigate to="/m" replace />} />
+          </Route>
+        </Route>
+      </Route>
+
       <Route path="/" element={<Layout />}>
         <Route path="login" element={<LoginPage />} />
         <Route path="access-denied" element={<AccessDeniedPage />} />
