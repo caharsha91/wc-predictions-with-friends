@@ -36,8 +36,8 @@ export default function PageHeaderV2({
             {kicker ? (
               <div
                 className={cn(
-                  'uppercase text-[var(--page-header-kicker)]',
-                  isHero ? 'text-[13px] tracking-[0.14em]' : 'text-[12px] tracking-[0.12em]'
+                  'v2-type-kicker text-[var(--page-header-kicker)]',
+                  isHero ? 'v2-track-14' : 'v2-track-12'
                 )}
               >
                 {kicker}
@@ -59,9 +59,8 @@ export default function PageHeaderV2({
             </h1>
             {subtitle ? (
               <p
-                className="text-[var(--page-header-subtitle)]"
+                className="v2-type-body-sm text-[var(--page-header-subtitle)]"
                 style={{
-                  fontSize: 'var(--text-sm)',
                   lineHeight: 'var(--line-height-body)'
                 }}
               >
@@ -74,7 +73,7 @@ export default function PageHeaderV2({
         {metadata ? (
           <div
             className={cn(
-              'v2-page-header-meta flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] leading-[1.5] text-muted-foreground',
+              'v2-page-header-meta v2-type-meta flex flex-wrap items-center gap-x-2 gap-y-1.5',
               metadataClassName
             )}
           >

@@ -275,7 +275,7 @@ function comparisonTone(comparison: RivalComparison | null): 'success' | 'danger
 
 function comparisonLabel(comparison: RivalComparison | null): string {
   if (!comparison || comparison.relation === 'unranked') return 'Not ranked in latest snapshot'
-  if (comparison.relation === 'tied') return 'Tied with you'
+  if (comparison.relation === 'tied') return 'Level with you'
   if (comparison.relation === 'ahead') {
     return comparison.pointsGap && comparison.pointsGap > 0
       ? `Ahead of you by ${comparison.pointsGap} pts`
@@ -764,10 +764,25 @@ export default function LeaderboardPage() {
       const entry = activeRows[index]
       const entryKey = getEntryIdentityKey(entry)
       const rank = rankByEntryKey.get(entryKey) ?? index + 1
+      const nameKey = normalizeIdentity(entry.member.name)
+      const emailKey = normalizeIdentity(entry.member.email)
+      const idKey = normalizeIdentity(entry.member.id)
 
       for (const key of resolveLeaderboardIdentityKeys(entry)) {
         map.set(key, { entry, rank, entryKey })
         map.set(normalizeIdentity(key), { entry, rank, entryKey })
+      }
+      if (nameKey) {
+        map.set(nameKey, { entry, rank, entryKey })
+        map.set(`name:${nameKey}`, { entry, rank, entryKey })
+      }
+      if (emailKey) {
+        map.set(emailKey, { entry, rank, entryKey })
+        map.set(`email:${emailKey}`, { entry, rank, entryKey })
+      }
+      if (idKey) {
+        map.set(idKey, { entry, rank, entryKey })
+        map.set(`id:${idKey}`, { entry, rank, entryKey })
       }
     }
 
@@ -823,6 +838,9 @@ export default function LeaderboardPage() {
         rivalDirectoryByIdentity.get(rawRivalId) ??
         rivalDirectoryByIdentity.get(rivalIdKey) ??
         rivalDirectoryByIdentity.get(rivalLookupKey)
+      const rivalDisplayNameKey = normalizeIdentity(rivalDirectoryEntry?.displayName)
+      const rivalEmailKey = normalizeIdentity(rivalDirectoryEntry?.email)
+      const rivalAuthIdKey = normalizeIdentity(rivalDirectoryEntry?.id)
       const rivalIdentityKeys = buildViewerKeySet([
         rawRivalId,
         rivalDirectoryEntry?.id ?? null,
@@ -832,6 +850,12 @@ export default function LeaderboardPage() {
       const lookup =
         activeRowsByIdentity.get(rivalLookupKey) ??
         activeRowsByIdentity.get(rivalIdKey) ??
+        (rivalDisplayNameKey ? activeRowsByIdentity.get(rivalDisplayNameKey) : undefined) ??
+        (rivalDisplayNameKey ? activeRowsByIdentity.get(`name:${rivalDisplayNameKey}`) : undefined) ??
+        (rivalEmailKey ? activeRowsByIdentity.get(rivalEmailKey) : undefined) ??
+        (rivalEmailKey ? activeRowsByIdentity.get(`email:${rivalEmailKey}`) : undefined) ??
+        (rivalAuthIdKey ? activeRowsByIdentity.get(rivalAuthIdKey) : undefined) ??
+        (rivalAuthIdKey ? activeRowsByIdentity.get(`id:${rivalAuthIdKey}`) : undefined) ??
         [...rivalIdentityKeys]
           .map((key) => activeRowsByIdentity.get(key))
           .find((candidate) => Boolean(candidate))
@@ -1080,7 +1104,7 @@ export default function LeaderboardPage() {
 
           <div className="overflow-x-auto">
             <div className="min-w-[980px] space-y-2">
-              <div className="hidden grid-cols-[72px_minmax(260px,1fr)_110px_72px_72px_72px_72px] gap-2 px-3 text-[12px] font-semibold uppercase tracking-[0.1em] text-muted-foreground md:grid">
+              <div className="v2-type-kicker hidden grid-cols-[72px_minmax(260px,1fr)_110px_72px_72px_72px_72px] gap-2 px-3 md:grid">
                 <div>Rank</div>
                 <div>Player</div>
                 <div>Total</div>
@@ -1181,7 +1205,7 @@ export default function LeaderboardPage() {
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
-                          <div className="text-[12px] uppercase tracking-[0.1em] text-muted-foreground">Total</div>
+                          <div className="v2-type-kicker">Total</div>
                         </div>
                       </div>
 
@@ -1218,7 +1242,7 @@ export default function LeaderboardPage() {
 
           {activeRows.length > LEADERBOARD_LIST_PAGE_SIZE ? (
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <div className="text-xs text-muted-foreground">
+              <div className="v2-type-caption">
                 Showing {start + 1}-{Math.min(start + LEADERBOARD_LIST_PAGE_SIZE, activeRows.length)} of {activeRows.length}
               </div>
               <div className="flex items-center gap-2">
@@ -1231,7 +1255,7 @@ export default function LeaderboardPage() {
                 >
                   Prev
                 </Button>
-                <div className="text-xs text-muted-foreground">
+                <div className="v2-type-caption">
                   Page {safePage} / {totalPages}
                 </div>
                 <Button
@@ -1254,7 +1278,7 @@ export default function LeaderboardPage() {
           <div className="rounded-xl border border-[color:var(--v2-glow-medium)] bg-background/95 p-3 shadow-[0_0_0_1px_color-mix(in_srgb,var(--v2-glow-medium)_65%,transparent),var(--shadow1)] backdrop-blur-md">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-[12px] uppercase tracking-[0.12em] text-muted-foreground">Your row</div>
+                <div className="v2-type-kicker">Your row</div>
                 <MemberIdentityRowV2
                   name={`${rankLabel(userContext.current.rank, stickyUserTieCount)} ${stickyUserRow.member.name}`}
                   favoriteTeamCode={stickyUserFavoriteTeamCode}

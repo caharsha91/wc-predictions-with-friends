@@ -1299,10 +1299,10 @@ export default function LandingPage() {
   const rivalsBoard = (
     <div className="space-y-3">
       <div className="landing-v2-rivals-header-row flex flex-wrap items-center justify-between gap-2">
-        <div className="text-[13px] font-semibold uppercase tracking-[0.16em] text-[color:var(--v2-text-strong)]">
+        <div className="v2-type-kicker text-[color:var(--v2-text-strong)]">
           Rival watch
         </div>
-        <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+        <div className="flex items-center gap-2 v2-type-meta">
           <span>{`Tracking ${rivalUserIds.length}/3`}</span>
           {profileSaving ? <span>Saving...</span> : null}
           {rivalUserIds.length > 0 ? (
@@ -1316,8 +1316,8 @@ export default function LandingPage() {
       <div className="grid gap-3 md:grid-cols-2">
         <div className="landing-v2-rivals-pane space-y-2" data-pane="selected">
           <div className="space-y-1">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">You and rivals</div>
-            <div className="text-[12px] text-muted-foreground">Drag rivals to set your comparison order.</div>
+            <div className="v2-type-kicker">You and rivals</div>
+            <div className="v2-type-caption">Drag rivals to set your comparison order.</div>
           </div>
           <div className="space-y-2">
             {rivalsListRows.map((row, index) => {
@@ -1402,7 +1402,7 @@ export default function LandingPage() {
 
         <div className="landing-v2-rivals-pane space-y-2" data-pane="suggested">
           <div className="space-y-2">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Add rivals</div>
+            <div className="v2-type-kicker">Add rivals</div>
             <Input
               ref={rivalSearchInputRef}
               value={rivalQuery}
@@ -1411,7 +1411,7 @@ export default function LandingPage() {
               className="h-9"
             />
           </div>
-          <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Available players</div>
+          <div className="v2-type-kicker">Available players</div>
           {rivalsState.status === 'loading' ? (
             <div className="space-y-2">
               <div className="h-9 animate-pulse rounded-md border border-border/70 bg-muted/35" />
@@ -1422,7 +1422,7 @@ export default function LandingPage() {
           {rivalsState.status === 'error' ? (
             <Alert tone="danger" title="Could not load players right now">
               <div className="mt-2 flex items-center justify-between gap-3">
-                <span className="text-[13px] text-muted-foreground">{rivalsState.message}</span>
+                <span className="v2-type-meta">{rivalsState.message}</span>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -1436,13 +1436,13 @@ export default function LandingPage() {
           ) : null}
 
           {rivalsState.status === 'ready' && rivalsState.entries.length === 0 ? (
-            <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-[13px] text-muted-foreground">
+            <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 v2-type-meta">
               No players are available for comparison yet.
             </div>
           ) : null}
 
           {rivalsState.status === 'ready' && rivalsState.entries.length > 0 && filteredRivalSuggestions.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 text-[13px] text-muted-foreground">
+              <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 v2-type-meta">
                 No players match that search.
               </div>
             ) : null}
@@ -1580,7 +1580,7 @@ export default function LandingPage() {
                 <StatusLineV2 tone={status.progressTone} className="min-h-10 bg-background/45">
                   {status.progressLabel}
                 </StatusLineV2>
-                <div className="text-[12px] text-muted-foreground">
+                <div className="v2-type-caption">
                   {status.timingLabel}
                 </div>
                 <div className="pt-1">
@@ -1603,11 +1603,11 @@ export default function LandingPage() {
         <div className="v2-section-flat-header">
           <div>
             <h2 className="v2-heading-h2 text-foreground">Leaderboard</h2>
-            <div className="mt-1 text-[13px] text-muted-foreground">{viewerStandingLabel}</div>
+            <div className="mt-1 v2-type-meta">{viewerStandingLabel}</div>
           </div>
           <div className="flex items-center gap-3">
             <SnapshotStamp timestamp={snapshotTimestamp} prefix="Latest snapshot: " />
-            <div className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
+            <div className="inline-flex items-center gap-1 v2-type-meta">
               <UsersIcon size={13} />
               <span>{`Tracking ${rivalUserIds.length}/3`}</span>
             </div>

@@ -952,7 +952,7 @@ export default function GroupStagePage() {
               ))}
             </div>
           ) : (
-            <div className="text-[12px] text-muted-foreground">Selection does not match final qualifiers.</div>
+            <div className="v2-type-caption">Selection does not match final qualifiers.</div>
           )
         ) : undefined
       }
@@ -976,7 +976,7 @@ export default function GroupStagePage() {
     >
       <Table
         unframed
-        className="[&_th]:h-9 [&_th]:border-b-[color:color-mix(in_srgb,var(--border)_42%,transparent)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)] [&_td]:px-2 [&_td]:py-0 [&_td]:text-[14px]"
+        className="[&_th]:h-9 [&_th]:border-b-[color:color-mix(in_srgb,var(--border)_42%,transparent)] [&_th]:px-2 [&_th]:py-0 [&_th]:text-[12px] [&_th]:uppercase [&_th]:tracking-[0.12em] [&_th]:text-muted-foreground [&_td]:h-10 [&_td]:border-b-[color:color-mix(in_srgb,var(--border)_30%,transparent)] [&_td]:px-2 [&_td]:py-0 [&_td]:text-[14px]"
       >
         <thead>
           <tr>
@@ -1010,7 +1010,7 @@ export default function GroupStagePage() {
           })}
           {(standings.standingsByGroup.get(selectedStandingsGroup) ?? []).length === 0 ? (
             <tr>
-              <td colSpan={4} className="text-center text-[13px] text-muted-foreground">
+              <td colSpan={4} className="text-center v2-type-meta">
                 No standings data yet.
               </td>
             </tr>
@@ -1079,7 +1079,7 @@ export default function GroupStagePage() {
 
       <SectionCardV2 tone="panel" density="none" className="group-stage-v2-group-nav sticky top-0 z-20 rounded-xl px-2 py-2 backdrop-blur-sm">
         <div className="flex items-center gap-2">
-          <div className="shrink-0 px-2 text-[13px] font-medium text-muted-foreground">Groups</div>
+          <div className="v2-type-kicker shrink-0 px-2">Groups</div>
           <div className="min-w-0 flex-1 overflow-x-auto">
             <div className="flex min-w-max items-center gap-2 pr-1">
               {GROUP_STAGE_GROUP_CODES.map((groupId) => {

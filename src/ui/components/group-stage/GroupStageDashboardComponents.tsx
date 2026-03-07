@@ -58,7 +58,7 @@ export function DashboardToolbar({
       <div className="flex h-full items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="truncate text-base font-semibold tracking-tight text-foreground">Group Stage</div>
-          <div className="truncate text-[11px] text-muted-foreground">Latest snapshot updates publish daily.</div>
+          <div className="v2-type-caption truncate">Latest snapshot updates publish daily.</div>
         </div>
 
         <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-background/50 p-1">
@@ -70,7 +70,7 @@ export function DashboardToolbar({
           </ButtonLink>
         </div>
 
-        <div className="min-w-0 max-w-[34ch] items-center gap-2 text-[11px] text-muted-foreground">
+        <div className="v2-type-caption min-w-0 max-w-[34ch] items-center gap-2">
           <span className="truncate whitespace-nowrap">Saved: {picksLastSavedLabel}</span>
           <span className="h-3 w-px bg-border" aria-hidden="true" />
           <span className="truncate whitespace-nowrap">Latest snapshot: {scoringSnapshotLabel}</span>
@@ -240,7 +240,7 @@ export function GroupPicksDenseTable({
     <SideListPanelV2
       title="Your group predictions"
       subtitle="Drag each group to rank teams 1-4."
-      actions={<div className="text-[13px] text-muted-foreground">{groupsDone}/{groupsTotal} groups complete</div>}
+      actions={<div className="v2-type-meta">{groupsDone}/{groupsTotal} groups complete</div>}
       className="group-stage-v2-leaderboard"
       contentClassName="v2-list-divider space-y-0 p-0"
     >
@@ -274,7 +274,7 @@ export function GroupPicksDenseTable({
               className={cn('px-3 py-2.5', saveStatus === 'error' ? 'ring-1 ring-destructive/40 ring-inset' : undefined)}
             >
               <div className="mb-2.5 flex flex-wrap items-start gap-2 text-[13px]">
-                <div className="min-w-0 text-[12px] text-muted-foreground">
+                <div className="min-w-0 v2-type-caption">
                   {`Published matches complete: ${row.finishedCount}/${row.totalCount}`}
                 </div>
                 <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
@@ -324,9 +324,9 @@ export function GroupPicksDenseTable({
                           name={team?.name ?? teamCode}
                           showName
                           className="min-w-0 text-[14px] leading-tight text-foreground"
-                          primaryClassName="font-semibold tracking-wide"
+                          primaryClassName="v2-track-10 font-semibold"
                         />
-                        <span className="truncate text-[12px] text-muted-foreground">
+                        <span className="truncate v2-type-caption">
                           {slotContextLabel(index)}
                         </span>
                       </div>
@@ -344,7 +344,7 @@ export function GroupPicksDenseTable({
           )
         })}
 
-        {rows.length === 0 ? <div className="px-3 py-3 text-[13px] text-muted-foreground">No groups available.</div> : null}
+        {rows.length === 0 ? <div className="px-3 py-3 v2-type-meta">No groups available.</div> : null}
       </div>
     </SideListPanelV2>
   )
@@ -481,12 +481,12 @@ export function BestThirdPicksCompact({
                   }}
                 >
                   <div className="min-w-0 flex items-center gap-2.5 px-3">
-                    <span className="inline-flex h-7 shrink-0 items-center rounded-md border border-border/45 bg-background/55 px-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                    <span className="v2-track-10 inline-flex h-7 shrink-0 items-center rounded-md border border-border/45 bg-background/55 px-2 text-[11px] font-semibold uppercase text-muted-foreground">
                       Group {tile.groupId}
                     </span>
                     <div className="min-w-0">
                       {showNotReady ? (
-                        <span className="text-[13px] text-muted-foreground">Third-place team pending.</span>
+                        <span className="v2-type-meta">Third-place team pending.</span>
                       ) : (
                         <TeamIdentityInlineV2
                           code={tile.teamCode}

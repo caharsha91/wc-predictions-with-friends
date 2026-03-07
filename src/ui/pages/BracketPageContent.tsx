@@ -491,9 +491,9 @@ function BracketOrientationStrip({
     <SectionCardV2 tone="panel" className="p-3 md:p-4">
       <div className="flex flex-wrap items-start justify-between gap-2.5">
         <div className="min-w-0">
-          <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Current open round</div>
+          <div className="v2-type-kicker">Current open round</div>
           <div className="mt-1 text-sm font-semibold text-foreground">{openRoundLabel}</div>
-          <div className="text-[12px] text-muted-foreground">{openRoundProgressLabel}</div>
+          <div className="v2-type-caption">{openRoundProgressLabel}</div>
         </div>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
           <StatusTagV2 tone={totalMatches > 0 && totalPicked === totalMatches ? 'success' : 'warning'}>
@@ -505,7 +505,7 @@ function BracketOrientationStrip({
           {!bracketEditable ? <StatusTagV2 tone="locked">Locked</StatusTagV2> : null}
         </div>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 v2-type-caption">
         <span>{lockTimingLabel}</span>
         <span aria-hidden="true">·</span>
         <span>Winners flow forward automatically into later rounds.</span>
@@ -619,7 +619,7 @@ function BracketMatchNode({
       data-stage={match.stage}
     >
       <div className="flex items-center justify-between gap-2 overflow-hidden" style={{ height: BRACKET_NODE_METRICS.headerHeight }}>
-        <span className={`truncate text-[11px] font-medium uppercase tracking-[0.1em] ${metadataTextClass}`}>
+        <span className={`v2-track-10 truncate text-[11px] font-medium uppercase ${metadataTextClass}`}>
           {STAGE_SHORT_LABELS[match.stage]}
         </span>
         <span className={`truncate text-[11px] ${metadataTextClass}`}>{formatKickoff(match.match.kickoffUtc)}</span>
@@ -989,7 +989,7 @@ function DesktopVisualBracket({
             className="rounded-xl border border-border/35 bg-background/30 p-2.5"
           >
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-foreground">
+              <div className="v2-type-kicker text-foreground">
                 {STAGE_LABELS[round.stage]}
               </div>
               <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
@@ -1069,7 +1069,7 @@ function DesktopVisualBracket({
                           label={homeLabel}
                           className="max-w-full flex-1"
                         />
-                        <span className="ml-auto shrink-0 text-[11px] uppercase tracking-[0.08em] text-current/85">advances</span>
+                        <span className="v2-track-10 ml-auto shrink-0 text-[11px] uppercase text-current/85">advances</span>
                       </button>
                       <button
                         type="button"
@@ -1091,7 +1091,7 @@ function DesktopVisualBracket({
                           label={awayLabel}
                           className="max-w-full flex-1"
                         />
-                        <span className="ml-auto shrink-0 text-[11px] uppercase tracking-[0.08em] text-current/85">advances</span>
+                        <span className="v2-track-10 ml-auto shrink-0 text-[11px] uppercase text-current/85">advances</span>
                       </button>
                     </div>
                   </div>
@@ -1142,7 +1142,7 @@ function DesktopVisualBracket({
         {layout.labels.map((label) => (
           <div
             key={label.id}
-            className={`pointer-events-none absolute -translate-x-1/2 text-[12px] font-medium uppercase tracking-[0.1em] ${
+            className={`v2-type-kicker pointer-events-none absolute -translate-x-1/2 ${
               isStageActive(label.stage) ? 'text-muted-foreground' : 'text-muted-foreground/52'
             }`}
             style={{ left: label.x + layout.cardWidth / 2, top: 12 }}
@@ -1554,7 +1554,7 @@ export default function BracketPage() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Knockout bracket</div>
+              <div className="v2-type-kicker">Knockout bracket</div>
             </div>
             <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               {openRound ? (
@@ -1589,7 +1589,7 @@ export default function BracketPage() {
         <div className="space-y-3 pb-28">
           <SectionCardV2 tone="panel" className="p-3 md:p-4">
             <div className="space-y-2">
-              <div className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Rounds</div>
+              <div className="v2-type-kicker">Rounds</div>
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {loadedRounds.map((round) => (
                   <button
@@ -1665,7 +1665,7 @@ export default function BracketPage() {
                                 label={resolveTeamDisplayLabel(match.awayTeam)}
                               />
                             </div>
-                            <div className="text-[11px] text-muted-foreground">{formatKickoff(match.match.kickoffUtc)}</div>
+                            <div className="v2-type-caption">{formatKickoff(match.match.kickoffUtc)}</div>
                           </div>
                           <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
                             {match.result !== 'pending' ? (
@@ -1702,7 +1702,7 @@ export default function BracketPage() {
                               label={resolveTeamDisplayLabel(match.homeTeam)}
                               className="max-w-full flex-1"
                             />
-                            <span className="ml-auto shrink-0 text-[11px] uppercase tracking-[0.08em] text-current/85">advances</span>
+                            <span className="v2-track-10 ml-auto shrink-0 text-[11px] uppercase text-current/85">advances</span>
                           </button>
                           <button
                             type="button"
@@ -1724,7 +1724,7 @@ export default function BracketPage() {
                               label={resolveTeamDisplayLabel(match.awayTeam)}
                               className="max-w-full flex-1"
                             />
-                            <span className="ml-auto shrink-0 text-[11px] uppercase tracking-[0.08em] text-current/85">advances</span>
+                            <span className="v2-track-10 ml-auto shrink-0 text-[11px] uppercase text-current/85">advances</span>
                           </button>
                         </div>
                       </div>

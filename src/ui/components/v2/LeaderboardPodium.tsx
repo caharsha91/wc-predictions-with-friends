@@ -52,13 +52,13 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className, 
       aria-label="Leaderboard podium"
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Podium race</div>
-        <span className="rounded-full border border-border/70 bg-background/40 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <div className="v2-type-kicker">Podium race</div>
+        <span className="v2-type-kicker rounded-full border border-border/70 bg-background/40 px-2 py-0.5">
           Top 3
         </span>
       </div>
 
-      {!snapshotAvailable ? <div className="mt-2 text-[13px] text-muted-foreground">Snapshot unavailable</div> : null}
+      {!snapshotAvailable ? <div className="mt-2 v2-type-meta">Snapshot unavailable</div> : null}
 
       <div className="landing-v2-podium-race-grid mt-3 grid grid-cols-3 items-end gap-2 md:gap-3">
         {orderedSlots.map((slot) => (
@@ -70,7 +70,7 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className, 
           >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
-                <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <div className="v2-type-kicker">
                   {rankLabel(slot.rank, slot.row?.displayRank, slot.row?.tieCount)}
                 </div>
               </div>
@@ -95,7 +95,7 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className, 
               <span className="text-4xl font-semibold leading-none text-[color:var(--v2-text-strong)] md:text-[2.6rem]">
                 {slot.row?.points ?? 0}
               </span>
-              <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">pts</span>
+              <span className="v2-type-kicker">pts</span>
             </div>
           </article>
         ))}

@@ -52,7 +52,7 @@ export { isDraw, getWinnerId } from '../lib/matchPickLogic'
 
 function segmentClass(selected: boolean, disabled: boolean): string {
   return cn(
-    'inline-flex h-9 min-w-[3.2rem] flex-1 items-center justify-center rounded-md px-2 text-[12px] font-medium uppercase tracking-[0.1em] transition-colors',
+    'v2-track-10 inline-flex h-9 min-w-[3.2rem] flex-1 items-center justify-center rounded-md px-2 text-[12px] font-medium uppercase transition-colors',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring-strong)] focus-visible:ring-offset-1 focus-visible:ring-offset-background',
     selected
       ? 'bg-[var(--surface-1)] text-foreground shadow-[inset_0_0_0_1px_var(--border-subtle)]'

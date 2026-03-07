@@ -30,8 +30,8 @@ export default function LoginPage() {
     <div className="mx-auto flex min-h-[45vh] w-full max-w-2xl items-center py-6">
       <Card className="w-full rounded-2xl border-border/60 p-6">
         <div className="space-y-4">
-          <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Private league</div>
-          <h1 className="text-xl font-semibold uppercase tracking-[0.12em] text-foreground">Login</h1>
+          <div className="v2-type-kicker v2-track-14">Private league</div>
+          <h1 className="text-xl font-semibold text-foreground">Login</h1>
           {hasFirebase ? (
             <div className="text-sm text-muted-foreground">
               Sign in with Google to access your private league.

@@ -39,7 +39,7 @@ export function CardHeader({ title, subtitle, actions, children }: CardHeaderPro
   return (
     <div className="flex items-start justify-between gap-4 border-b border-border p-4">
       <div className="space-y-1">
-        {title ? <div className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</div> : null}
+        {title ? <div className="v2-type-kicker">{title}</div> : null}
         {subtitle ? <div className="text-base text-foreground">{subtitle}</div> : null}
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}

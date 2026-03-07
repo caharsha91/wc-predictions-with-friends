@@ -247,7 +247,7 @@ export function LeaderboardCardCurated({
                 </span>
               )}
               marker={(
-                <div className="text-right text-[12px] text-muted-foreground">
+                <div className="text-right v2-type-caption">
                   <div className="tabular-nums text-foreground">{row.points} pts</div>
                   {typeof row.deltaPoints === 'number' ? (
                     <div className="tabular-nums">{row.deltaPoints >= 0 ? '+' : ''}{row.deltaPoints}</div>
@@ -275,7 +275,7 @@ export function LeaderboardCardCurated({
         : null}
 
       {rows.length === 0 ? (
-        <RowShellV2 tone="inset" interactive={false} className="text-[13px] text-muted-foreground">
+        <RowShellV2 tone="inset" interactive={false} className="v2-type-meta">
           No leaderboard rows are available in the latest snapshot.
         </RowShellV2>
       ) : null}

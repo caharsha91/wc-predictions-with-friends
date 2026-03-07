@@ -18,8 +18,8 @@ export default function AccessDeniedPage() {
     <div className="mx-auto flex min-h-[45vh] w-full max-w-xl items-center py-6">
       <Card className="w-full rounded-2xl border-border/60 p-6">
         <div className="space-y-3">
-          <div className="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">Invite-only</div>
-          <h1 className="text-lg font-semibold uppercase tracking-[0.12em] text-foreground">
+          <div className="v2-type-kicker v2-track-14">Invite-only</div>
+          <h1 className="text-lg font-semibold text-foreground">
             Access denied
           </h1>
           <div className="text-sm text-muted-foreground">

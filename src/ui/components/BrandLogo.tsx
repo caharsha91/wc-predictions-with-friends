@@ -18,20 +18,20 @@ type BrandLogoProps = {
 const SIZE_STYLES: Record<BrandLogoSize, { mark: string; title: string; subtitle: string; gap: string }> = {
   sm: {
     mark: 'h-8 w-8',
-    title: 'text-xs tracking-[0.16em]',
-    subtitle: 'text-[11px] tracking-[0.14em]',
+    title: 'text-xs v2-track-14',
+    subtitle: 'text-[11px] v2-track-14',
     gap: 'gap-2'
   },
   md: {
     mark: 'h-10 w-10',
-    title: 'text-sm tracking-[0.14em]',
-    subtitle: 'text-xs tracking-[0.14em]',
+    title: 'text-sm v2-track-14',
+    subtitle: 'text-xs v2-track-14',
     gap: 'gap-3'
   },
   lg: {
     mark: 'h-12 w-12',
-    title: 'text-base tracking-[0.12em]',
-    subtitle: 'text-[13px] tracking-[0.14em]',
+    title: 'text-base v2-track-12',
+    subtitle: 'text-[13px] v2-track-14',
     gap: 'gap-3'
   }
 }

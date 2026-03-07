@@ -70,7 +70,7 @@ function SidebarNavSection({
   return (
     <div className="space-y-2" aria-label={title}>
       {compact || hideTitle ? null : (
-        <div className="px-2 text-xs uppercase tracking-[0.16em] text-[var(--sidebar-nav-muted)]">
+        <div className="v2-type-kicker px-2 text-[var(--sidebar-nav-muted)]">
           {title}
         </div>
       )}
@@ -171,7 +171,7 @@ function SidebarAccountMenu({
                   {name}
                 </div>
                 {isDemoMode ? (
-                  <div className="mt-1 inline-flex rounded-full border border-border bg-[var(--surface-muted)] px-2 py-0.5 text-[11px] uppercase tracking-[0.1em] text-foreground">
+                  <div className="v2-type-chip v2-track-10 mt-1 inline-flex rounded-full border border-border bg-[var(--surface-muted)] px-2 py-0.5 uppercase text-foreground">
                     Demo
                   </div>
                 ) : null}
@@ -187,7 +187,7 @@ function SidebarAccountMenu({
         className="account-menu-content min-w-[260px] overflow-visible"
       >
         <div className="account-menu-favorite-section rounded-md p-2">
-          <div className="account-menu-favorite-label mb-2 px-0.5 text-[11px] uppercase tracking-[0.12em] text-[var(--sidebar-nav-muted)]">
+          <div className="account-menu-favorite-label v2-type-kicker mb-2 px-0.5 text-[var(--sidebar-nav-muted)]">
             Favorite team
           </div>
           <FavoriteTeamSelectV2
@@ -292,7 +292,7 @@ async function ensureDemoDefaults(): Promise<void> {
 
 function DemoBanner() {
   return (
-    <div className="flex items-center justify-center gap-2 border-b border-[var(--ticker-border)] [background:var(--ticker-bg)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--demo-banner-text)] backdrop-blur-sm">
+    <div className="v2-type-kicker flex items-center justify-center gap-2 border-b border-[var(--ticker-border)] [background:var(--ticker-bg)] px-4 py-2 text-[var(--demo-banner-text)] backdrop-blur-sm">
       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
       Demo Mode Active
     </div>
@@ -482,7 +482,7 @@ function LayoutFrameContent() {
             {canAccessAdmin ? (
               <div className="space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-4">
                 {sidebarCompact ? null : (
-                  <div className="px-2 text-[11px] uppercase tracking-[0.16em] text-[var(--sidebar-nav-muted)]/85">
+                  <div className="v2-type-kicker px-2 text-[var(--sidebar-nav-muted)]/85">
                     Admin tools
                   </div>
                 )}

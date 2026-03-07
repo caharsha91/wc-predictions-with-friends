@@ -4,7 +4,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border font-semibold shadow-[var(--shadow0)]',
+  'v2-type-chip inline-flex items-center rounded-full border font-semibold shadow-[var(--shadow0)]',
   {
     variants: {
       tone: {
@@ -18,12 +18,12 @@ const badgeVariants = cva(
       },
       size: {
         xs: 'h-[var(--v2-chip-height-sm)] px-[var(--v2-chip-pad-x-sm)] text-[var(--v2-chip-text-sm)]',
-        sm: 'px-2.5 py-1 text-[12px]',
-        md: 'px-3 py-1.5 text-[12px]'
+        sm: 'h-[var(--v2-chip-height-sm)] px-[var(--v2-chip-pad-x-sm)]',
+        md: 'px-3 py-1.5 text-[12px] leading-none'
       },
       case: {
         normal: 'normal-case tracking-normal',
-        upper: 'uppercase tracking-[0.12em]'
+        upper: 'uppercase v2-track-12'
       }
     },
     defaultVariants: {

@@ -459,7 +459,7 @@ export default function AdminUsersPage() {
                 <div className="w-full space-y-2">
                   {formStatus === 'saving' || memberMutationProgress > 0 ? (
                     <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[13px] text-muted-foreground">
+                      <div className="flex items-center justify-between v2-type-meta">
                         <span>{formStatus === 'saving' ? 'Updating player...' : 'Update complete'}</span>
                         <span>{memberMutationProgress >= 100 ? 'Done' : 'In progress'}</span>
                       </div>

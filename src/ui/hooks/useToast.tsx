@@ -168,7 +168,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             onClick={() => dismissToast(toast.id)}
             className={`pointer-events-auto rounded-xl border px-4 py-3 text-left transition-all hover:opacity-90 ${toneClass(toast.tone)}`}
           >
-            <div className="text-[12px] uppercase tracking-[0.12em] text-muted-foreground">{toast.title}</div>
+            <div className="v2-type-kicker">{toast.title}</div>
             {toast.message ? <div className="mt-1 text-sm text-foreground">{toast.message}</div> : null}
             {toast.progress ? (
               <Progress

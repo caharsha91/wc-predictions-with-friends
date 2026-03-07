@@ -1584,7 +1584,7 @@ export default function AdminExportsPage() {
 
           {exportStatus === 'exporting' || exportProgress > 0 ? (
             <div className="space-y-1">
-              <div className="text-[13px] text-muted-foreground">
+              <div className="v2-type-meta">
                 {exportStatus === 'exporting' ? 'Preparing workbook...' : 'Export complete'}
               </div>
               <Progress

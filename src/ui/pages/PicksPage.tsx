@@ -542,7 +542,7 @@ function PicksSupportRail({
     >
       <section className="flex items-start gap-2">
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Remaining picks</div>
+          <div className="v2-type-kicker v2-track-10">Remaining picks</div>
           <div className="mt-1.5 text-[34px] font-semibold leading-none tabular-nums text-foreground">
             {remainingCount}
             <span className="ml-1 text-[15px] font-medium text-muted-foreground">/ {totalCount}</span>
@@ -555,7 +555,7 @@ function PicksSupportRail({
       </section>
 
       <section>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Next lock</div>
+        <div className="v2-type-kicker v2-track-10">Next lock</div>
         {nextLockMatch ? (
           <>
             <div className="mt-1.5 text-[12px] font-medium text-foreground">{formatKickoff(nextLockMatch.match.kickoffUtc)}</div>
@@ -567,18 +567,18 @@ function PicksSupportRail({
             <div className="mt-1 text-[11px] text-muted-foreground">{stageLabel}</div>
           </>
         ) : (
-          <div className="mt-1.5 text-[12px] text-muted-foreground">{nextLockLabel}</div>
+          <div className="mt-1.5 v2-type-caption">{nextLockLabel}</div>
         )}
       </section>
 
       <section>
         <div className="mb-1 flex items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Needs attention</span>
+          <span className="v2-type-kicker v2-track-10">Needs attention</span>
           <StatusTagV2 tone={needsAttentionTone} className="ml-auto">
             {needsAttentionCount === 0 ? 'All clear' : `${needsAttentionCount} open`}
           </StatusTagV2>
         </div>
-        <div className="space-y-1.5 text-[12px] text-muted-foreground">
+        <div className="space-y-1.5 v2-type-caption">
           <div className="flex items-center justify-between gap-2">
             <span>Missing scores</span>
             <span className="font-medium tabular-nums text-foreground">{missingScoresCount}</span>
@@ -595,13 +595,13 @@ function PicksSupportRail({
       </section>
 
       <section>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Scoring legend</div>
-        <div className="mt-1.5 text-[12px] text-muted-foreground">
+        <div className="v2-type-kicker v2-track-10">Scoring legend</div>
+        <div className="mt-1.5 v2-type-caption">
           Exact both <span className="font-medium text-foreground">+{scoring?.group.exactScoreBoth ?? '—'}</span> · one{' '}
           <span className="font-medium text-foreground">+{scoring?.group.exactScoreOne ?? '—'}</span> · result{' '}
           <span className="font-medium text-foreground">+{scoring?.group.result ?? '—'}</span>
         </div>
-        <div className="mt-1 text-[12px] text-muted-foreground">{resolveKnockoutWinnerLegend(scoring)}</div>
+        <div className="mt-1 v2-type-caption">{resolveKnockoutWinnerLegend(scoring)}</div>
       </section>
 
       <p className="text-[12px] leading-[1.4] text-muted-foreground">

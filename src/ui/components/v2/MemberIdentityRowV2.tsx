@@ -33,10 +33,10 @@ export default function MemberIdentityRowV2({
       {showAvatar ? <MemberAvatarV2 name={name} favoriteTeamCode={favoriteTeamCode} size="md" className={cn('h-12 w-[72px]', avatarClassName)} /> : null}
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-1.5">
-          <div className="v2-member-identity-name min-w-0 flex-1 truncate text-[14px] font-semibold">{name}</div>
+          <div className="v2-member-identity-name v2-type-body-sm min-w-0 flex-1 truncate font-semibold">{name}</div>
           {nameBadges ? <div className="flex shrink-0 items-center gap-1">{nameBadges}</div> : null}
         </div>
-        {subtitle ? <div className="v2-member-identity-subline mt-0.5 text-[12px]">{subtitle}</div> : null}
+        {subtitle ? <div className="v2-member-identity-subline v2-type-caption mt-0.5">{subtitle}</div> : null}
         {badges ? <div className="mt-1 flex flex-wrap items-center gap-1">{badges}</div> : null}
       </div>
       {marker ? <div className="shrink-0">{marker}</div> : null}

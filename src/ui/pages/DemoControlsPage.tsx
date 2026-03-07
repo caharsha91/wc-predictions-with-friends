@@ -313,16 +313,16 @@ export default function DemoControlsPage() {
                   <div className="admin-v2-section-label">Current demo session</div>
                   <div className="grid gap-2 md:grid-cols-3">
                     <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
-                      <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Scenario</div>
+                      <div className="v2-type-kicker">Scenario</div>
                       <div className="mt-1 text-sm font-medium text-foreground">{getScenarioLabel(selectedScenario)}</div>
                     </div>
                     <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
-                      <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Demo clock</div>
+                      <div className="v2-type-kicker">Demo clock</div>
                       <div className="mt-1 text-sm font-medium text-foreground">{toLabel(scenarioNow)}</div>
                       <div className="text-xs text-muted-foreground">{toRelativeLabel(scenarioNow)}</div>
                     </div>
                     <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
-                      <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Viewer</div>
+                      <div className="v2-type-kicker">Viewer</div>
                       <div className="mt-1 text-sm font-medium text-foreground">{selectedViewerLabel}</div>
                     </div>
                   </div>
@@ -402,7 +402,7 @@ export default function DemoControlsPage() {
                     >
                       Reload snapshots
                     </Button>
-                    <div className="mt-2 text-[12px] text-muted-foreground">
+                    <div className="mt-2 v2-type-caption">
                       Clears cached demo snapshot keys and reloads this tab. Scenario/viewer settings stay saved.
                     </div>
                   </div>
@@ -415,7 +415,7 @@ export default function DemoControlsPage() {
                     >
                       Clear session
                     </Button>
-                    <div className="mt-2 text-[12px] text-muted-foreground">
+                    <div className="mt-2 v2-type-caption">
                       Clears demo scenario, viewer, and cached session overrides from this browser.
                     </div>
                   </div>
@@ -423,7 +423,7 @@ export default function DemoControlsPage() {
                 <div className="admin-v2-row-meta">Both utilities affect demo testing state only.</div>
                 {sessionProgress > 0 ? (
                   <div className="space-y-1">
-                    <div className="text-[13px] text-muted-foreground">{sessionProgressLabel}</div>
+                    <div className="v2-type-meta">{sessionProgressLabel}</div>
                     <Progress
                       value={sessionProgress}
                       intent={sessionProgressIntent}
