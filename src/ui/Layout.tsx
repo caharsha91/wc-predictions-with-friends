@@ -34,6 +34,7 @@ import {
 } from './lib/demoControls'
 import { clearDemoLocalStorage } from './lib/demoStorage'
 import { resolvePersistableLastRoute } from './lib/lastRoute'
+import { markMobileRootRedirectOptOut } from './lib/mobileRootRedirect'
 import { writeUserProfile } from './lib/profilePersistence'
 import { cn } from './lib/utils'
 import { ADMIN_NAV, DEMO_ADMIN_NAV, DEMO_MAIN_NAV, MAIN_NAV, type NavItem } from './nav'
@@ -382,6 +383,12 @@ function LayoutFrameContent() {
   }
   const mainNavItems = isDemoRoute ? DEMO_MAIN_NAV : MAIN_NAV
   const adminNavItems = isDemoRoute ? DEMO_ADMIN_NAV : ADMIN_NAV
+
+  useEffect(() => {
+    if (!appContentRoute) return
+    if (location.pathname === '/' || location.pathname === '/demo') return
+    markMobileRootRedirectOptOut()
+  }, [appContentRoute, location.pathname])
 
   useEffect(() => {
     queuedRouteRef.current = null

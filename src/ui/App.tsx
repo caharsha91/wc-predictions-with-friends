@@ -13,6 +13,10 @@ import {
   isCompanionPath,
   resolveCompanionFallbackPath
 } from './lib/companionSurface'
+import {
+  readMobileRootRedirectOptOut,
+  shouldAutoRedirectToCompanionFromRoot
+} from './lib/mobileRootRedirect'
 import Layout from './Layout'
 import AccessDeniedPage from './pages/AccessDeniedPage'
 import LoginPage from './pages/LoginPage'
@@ -190,6 +194,18 @@ function CompanionSurfaceGate() {
   return <Outlet />
 }
 
+function MemberRootRoute() {
+  const location = useLocation()
+  const shouldRedirectToCompanion = shouldAutoRedirectToCompanionFromRoot({
+    pathname: location.pathname,
+    companionEnabled: companionFeatureFlags.enabled,
+    optedOut: readMobileRootRedirectOptOut()
+  })
+
+  if (shouldRedirectToCompanion) return <Navigate to="/m" replace />
+  return <RouteSuspense><LandingPage /></RouteSuspense>
+}
+
 export default function App() {
   return (
     <Routes>
@@ -216,7 +232,7 @@ export default function App() {
         <Route path="access-denied" element={<AccessDeniedPage />} />
 
         <Route element={<MemberGate />}>
-          <Route index element={<RouteSuspense><LandingPage /></RouteSuspense>} />
+          <Route index element={<MemberRootRoute />} />
           <Route path="group-stage/:groupId" element={<RouteSuspense><GroupStagePage /></RouteSuspense>} />
           <Route path="group-stage" element={<RouteSuspense><GroupStageEntryPage /></RouteSuspense>} />
           <Route path="match-picks" element={<RouteSuspense><PicksPage /></RouteSuspense>} />

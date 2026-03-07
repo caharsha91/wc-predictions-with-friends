@@ -43,4 +43,28 @@ test('companion route smoke: app includes /m route namespace', async () => {
     true,
     'Companion should deprecate /m/profile to /m'
   )
+
+  assert.equal(
+    source.includes('function MemberRootRoute()'),
+    true,
+    'App should define a guarded member root route'
+  )
+
+  assert.equal(
+    source.includes('<Route index element={<MemberRootRoute />} />'),
+    true,
+    'Root index route should use guarded member root behavior'
+  )
+
+  assert.equal(
+    source.includes('shouldAutoRedirectToCompanionFromRoot({'),
+    true,
+    'Root route should use guarded mobile redirect decision helper'
+  )
+
+  assert.equal(
+    source.includes('<Route path="group-stage/:groupId" element={<RouteSuspense><GroupStagePage /></RouteSuspense>} />'),
+    true,
+    'Non-root web routes should remain explicit web routes (no blanket mobile redirect)'
+  )
 })
