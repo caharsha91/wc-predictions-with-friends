@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { fetchMatches, fetchMembers } from '../../lib/data'
+import { removeByPrefix } from '../../lib/storage'
 import type { Match } from '../../types/matches'
 import type { Member } from '../../types/members'
 import ConfirmationModal from '../components/ConfirmationModal'
@@ -209,12 +210,7 @@ export default function DemoControlsPage() {
     setSessionProgressIntent('momentum')
 
     await new Promise((resolve) => window.setTimeout(resolve, 120))
-    const keysToRemove: string[] = []
-    for (let index = 0; index < window.localStorage.length; index += 1) {
-      const key = window.localStorage.key(index)
-      if (!key || !key.startsWith('wc-cache:demo:')) continue
-      keysToRemove.push(key)
-    }
+    const keysToRemove = removeByPrefix('wc-cache:demo:')
     setSessionProgress(50)
     setSessionProgressLabel(`Clearing ${keysToRemove.length} cached snapshot keys...`)
     updateToast(progressToastId, {
@@ -223,9 +219,6 @@ export default function DemoControlsPage() {
     })
 
     await new Promise((resolve) => window.setTimeout(resolve, 120))
-    for (const key of keysToRemove) {
-      window.localStorage.removeItem(key)
-    }
     setSessionProgress(100)
     setSessionProgressLabel('Reloading page...')
     setSessionProgressIntent('success')

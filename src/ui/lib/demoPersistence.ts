@@ -1,3 +1,11 @@
+import {
+  getParsedStorage,
+  getStoredString,
+  removeStoredKey,
+  setSerializedStorage,
+  setStoredString
+} from '../../lib/storage'
+
 export const DEMO_LAST_ROUTE_STORAGE_KEY = 'demo:lastRoute'
 export const DEMO_RIVAL_USER_IDS_STORAGE_KEY = 'demo:rivalUserIds'
 export const DEMO_FAVORITE_TEAM_CODE_STORAGE_KEY = 'demo:favoriteTeamCodeByViewer'
@@ -8,29 +16,24 @@ function readString(value: string | null): string | null {
 }
 
 export function readDemoLastRoute(): string | null {
-  if (typeof window === 'undefined') return null
-  return readString(window.localStorage.getItem(DEMO_LAST_ROUTE_STORAGE_KEY))
+  return readString(getStoredString(DEMO_LAST_ROUTE_STORAGE_KEY))
 }
 
 export function writeDemoLastRoute(route: string): void {
-  if (typeof window === 'undefined') return
   const normalized = readString(route)
   if (!normalized) {
-    window.localStorage.removeItem(DEMO_LAST_ROUTE_STORAGE_KEY)
+    removeStoredKey(DEMO_LAST_ROUTE_STORAGE_KEY)
     return
   }
-  window.localStorage.setItem(DEMO_LAST_ROUTE_STORAGE_KEY, normalized)
+  setStoredString(DEMO_LAST_ROUTE_STORAGE_KEY, normalized)
 }
 
 export function clearDemoLastRoute(): void {
-  if (typeof window === 'undefined') return
-  window.localStorage.removeItem(DEMO_LAST_ROUTE_STORAGE_KEY)
+  removeStoredKey(DEMO_LAST_ROUTE_STORAGE_KEY)
 }
 
 export function readDemoRivalUserIds(): string[] {
-  if (typeof window === 'undefined') return []
-  const parseRivalIds = (raw: string | null): string[] => {
-    if (!raw) return []
+  const parseRivalIds = (raw: string): string[] | null => {
     try {
       const parsed = JSON.parse(raw) as unknown
       if (!Array.isArray(parsed)) return []
@@ -39,35 +42,32 @@ export function readDemoRivalUserIds(): string[] {
         .filter((value): value is string => Boolean(value))
         .slice(0, 3)
     } catch {
-      return []
+      return null
     }
   }
 
-  const sessionValue = parseRivalIds(window.sessionStorage.getItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY))
+  const sessionValue = getParsedStorage(DEMO_RIVAL_USER_IDS_STORAGE_KEY, parseRivalIds, { area: 'session' }) ?? []
   if (sessionValue.length > 0) return sessionValue
 
-  const localValue = parseRivalIds(window.localStorage.getItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY))
+  const localValue = getParsedStorage(DEMO_RIVAL_USER_IDS_STORAGE_KEY, parseRivalIds) ?? []
   if (localValue.length > 0) {
-    window.sessionStorage.setItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY, JSON.stringify(localValue))
+    setSerializedStorage(DEMO_RIVAL_USER_IDS_STORAGE_KEY, localValue, JSON.stringify, { area: 'session' })
   }
   return localValue
 }
 
 export function writeDemoRivalUserIds(userIds: string[]): void {
-  if (typeof window === 'undefined') return
   const normalized = userIds
     .map((value) => value.trim())
     .filter((value): value is string => Boolean(value))
     .slice(0, 3)
-  const serialized = JSON.stringify(normalized)
-  window.localStorage.setItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY, serialized)
-  window.sessionStorage.setItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY, serialized)
+  setSerializedStorage(DEMO_RIVAL_USER_IDS_STORAGE_KEY, normalized)
+  setSerializedStorage(DEMO_RIVAL_USER_IDS_STORAGE_KEY, normalized, JSON.stringify, { area: 'session' })
 }
 
 export function clearDemoRivalUserIds(): void {
-  if (typeof window === 'undefined') return
-  window.localStorage.removeItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY)
-  window.sessionStorage.removeItem(DEMO_RIVAL_USER_IDS_STORAGE_KEY)
+  removeStoredKey(DEMO_RIVAL_USER_IDS_STORAGE_KEY)
+  removeStoredKey(DEMO_RIVAL_USER_IDS_STORAGE_KEY, { area: 'session' })
 }
 
 type DemoFavoriteTeamMap = Record<string, string | null>
@@ -102,17 +102,14 @@ function parseFavoriteTeamMap(raw: string | null): DemoFavoriteTeamMap {
 }
 
 function readFavoriteTeamMap(): DemoFavoriteTeamMap {
-  if (typeof window === 'undefined') return {}
-  return parseFavoriteTeamMap(window.localStorage.getItem(DEMO_FAVORITE_TEAM_CODE_STORAGE_KEY))
+  return getParsedStorage(DEMO_FAVORITE_TEAM_CODE_STORAGE_KEY, parseFavoriteTeamMap) ?? {}
 }
 
 function writeFavoriteTeamMap(map: DemoFavoriteTeamMap): void {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(DEMO_FAVORITE_TEAM_CODE_STORAGE_KEY, JSON.stringify(map))
+  setSerializedStorage(DEMO_FAVORITE_TEAM_CODE_STORAGE_KEY, map)
 }
 
 export function readDemoFavoriteTeamCode(memberId: string): string | null {
-  if (typeof window === 'undefined') return null
   const key = normalizeViewerKey(memberId)
   if (!key) return null
   const map = readFavoriteTeamMap()
@@ -121,7 +118,6 @@ export function readDemoFavoriteTeamCode(memberId: string): string | null {
 }
 
 export function writeDemoFavoriteTeamCode(memberId: string, favoriteTeamCode: string | null): void {
-  if (typeof window === 'undefined') return
   const key = normalizeViewerKey(memberId)
   if (!key) return
   const map = readFavoriteTeamMap()

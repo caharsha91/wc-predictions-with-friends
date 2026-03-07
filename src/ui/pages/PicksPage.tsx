@@ -42,6 +42,7 @@ import {
   type MatchReadOnlyReason,
   type MatchTimelineItem
 } from '../lib/matchTimeline'
+import { lockedFinalLabel, publishedStateLabel } from '../lib/pageStatusCopy'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { resolveTeamFlagMeta } from '../lib/teamFlag'
 import { downloadWorkbook } from '../lib/exportWorkbook'
@@ -114,7 +115,7 @@ function formatKoWinMethodLabel(value: string | undefined): string {
 }
 
 function readOnlyReasonLabel(reason: MatchReadOnlyReason): string {
-  if (reason === 'global-lock') return 'Locked: Final.'
+  if (reason === 'global-lock') return lockedFinalLabel('FINAL')
   if (reason === 'in-progress') return 'Locked: Kickoff passed for this match.'
   if (reason === 'outside-window') return 'Locked until 72 hours before kickoff.'
   if (reason === 'missing-kickoff') return 'Kickoff unavailable.'
@@ -692,14 +693,14 @@ export default function PicksPage() {
   )
   const picksStateCopy = useMemo(() => {
     if (isMatchPicksFinal || !phaseState.lockFlags.matchPicksEditable) {
-      return 'Locked: Final.'
+      return lockedFinalLabel('FINAL')
     }
     if (upcomingEditableCount > 0) {
       return `Editable until: ${editableWindowLabel}.`
     }
     return 'Locked: No picks are editable right now.'
   }, [editableWindowLabel, isMatchPicksFinal, phaseState.lockFlags.matchPicksEditable, upcomingEditableCount])
-  const picksPublishedCopy = isMatchPicksFinal ? 'Published: Final' : 'Published: Latest snapshot'
+  const picksPublishedCopy = isMatchPicksFinal ? publishedStateLabel('FINAL') : publishedStateLabel(phaseState.tournamentPhase)
 
   const homePath = mode === 'demo' ? '/demo' : '/'
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 
 import { hasFirebase } from '../lib/firebase'
@@ -7,18 +7,19 @@ import { useAuthState } from './hooks/useAuthState'
 import { useCurrentUser } from './hooks/useCurrentUser'
 import Layout from './Layout'
 import AccessDeniedPage from './pages/AccessDeniedPage'
-import AdminConsolePage from './pages/AdminConsolePage'
-import AdminExportsPage from './pages/AdminExportsPage'
-import AdminUsersPage from './pages/AdminUsersPage'
-import BracketPage from './pages/BracketPage'
-import DemoControlsPage from './pages/DemoControlsPage'
-import LeaderboardPage from './pages/LeaderboardPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
-import GroupStageEntryPage from './pages/GroupStageEntryPage'
-import GroupStagePage from './pages/GroupStagePage'
-import LandingPage from './pages/LandingPage'
-import PicksPage from './pages/PicksPage'
+
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const GroupStagePage = lazy(() => import('./pages/GroupStagePage'))
+const GroupStageEntryPage = lazy(() => import('./pages/GroupStageEntryPage'))
+const PicksPage = lazy(() => import('./pages/PicksPage'))
+const BracketPage = lazy(() => import('./pages/BracketPage'))
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'))
+const AdminConsolePage = lazy(() => import('./pages/AdminConsolePage'))
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'))
+const AdminExportsPage = lazy(() => import('./pages/AdminExportsPage'))
+const DemoControlsPage = lazy(() => import('./pages/DemoControlsPage'))
 
 function GateCard({
   kicker,
@@ -49,6 +50,20 @@ function GateCard({
       </Card>
     </div>
   )
+}
+
+function RouteFallback() {
+  return (
+    <GateCard
+      kicker="Private league"
+      title="Loading view"
+      subtitle="Preparing your latest snapshot view..."
+    />
+  )
+}
+
+function RouteSuspense({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
 }
 
 function MemberGate() {
@@ -152,32 +167,32 @@ export default function App() {
         <Route path="access-denied" element={<AccessDeniedPage />} />
 
         <Route element={<MemberGate />}>
-          <Route index element={<LandingPage />} />
-          <Route path="group-stage/:groupId" element={<GroupStagePage />} />
-          <Route path="group-stage" element={<GroupStageEntryPage />} />
-          <Route path="match-picks" element={<PicksPage />} />
-          <Route path="knockout-bracket" element={<BracketPage />} />
-          <Route path="leaderboard" element={<LeaderboardPage />} />
+          <Route index element={<RouteSuspense><LandingPage /></RouteSuspense>} />
+          <Route path="group-stage/:groupId" element={<RouteSuspense><GroupStagePage /></RouteSuspense>} />
+          <Route path="group-stage" element={<RouteSuspense><GroupStageEntryPage /></RouteSuspense>} />
+          <Route path="match-picks" element={<RouteSuspense><PicksPage /></RouteSuspense>} />
+          <Route path="knockout-bracket" element={<RouteSuspense><BracketPage /></RouteSuspense>} />
+          <Route path="leaderboard" element={<RouteSuspense><LeaderboardPage /></RouteSuspense>} />
 
           <Route element={<AdminGate />}>
-            <Route path="admin" element={<AdminConsolePage />} />
-            <Route path="admin/players" element={<AdminUsersPage />} />
-            <Route path="admin/exports" element={<AdminExportsPage />} />
-            <Route path="admin/controls" element={<DemoControlsPage />} />
+            <Route path="admin" element={<RouteSuspense><AdminConsolePage /></RouteSuspense>} />
+            <Route path="admin/players" element={<RouteSuspense><AdminUsersPage /></RouteSuspense>} />
+            <Route path="admin/exports" element={<RouteSuspense><AdminExportsPage /></RouteSuspense>} />
+            <Route path="admin/controls" element={<RouteSuspense><DemoControlsPage /></RouteSuspense>} />
           </Route>
         </Route>
 
         <Route path="demo" element={<DemoAdminGate />}>
-          <Route index element={<LandingPage />} />
-          <Route path="group-stage/:groupId" element={<GroupStagePage />} />
-          <Route path="group-stage" element={<GroupStageEntryPage />} />
-          <Route path="match-picks" element={<PicksPage />} />
-          <Route path="knockout-bracket" element={<BracketPage />} />
-          <Route path="leaderboard" element={<LeaderboardPage />} />
-          <Route path="admin" element={<AdminConsolePage />} />
-          <Route path="admin/players" element={<AdminUsersPage />} />
-          <Route path="admin/exports" element={<AdminExportsPage />} />
-          <Route path="admin/controls" element={<DemoControlsPage />} />
+          <Route index element={<RouteSuspense><LandingPage /></RouteSuspense>} />
+          <Route path="group-stage/:groupId" element={<RouteSuspense><GroupStagePage /></RouteSuspense>} />
+          <Route path="group-stage" element={<RouteSuspense><GroupStageEntryPage /></RouteSuspense>} />
+          <Route path="match-picks" element={<RouteSuspense><PicksPage /></RouteSuspense>} />
+          <Route path="knockout-bracket" element={<RouteSuspense><BracketPage /></RouteSuspense>} />
+          <Route path="leaderboard" element={<RouteSuspense><LeaderboardPage /></RouteSuspense>} />
+          <Route path="admin" element={<RouteSuspense><AdminConsolePage /></RouteSuspense>} />
+          <Route path="admin/players" element={<RouteSuspense><AdminUsersPage /></RouteSuspense>} />
+          <Route path="admin/exports" element={<RouteSuspense><AdminExportsPage /></RouteSuspense>} />
+          <Route path="admin/controls" element={<RouteSuspense><DemoControlsPage /></RouteSuspense>} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

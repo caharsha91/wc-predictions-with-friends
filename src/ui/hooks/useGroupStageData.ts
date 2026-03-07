@@ -18,6 +18,7 @@ import { isMatchCompleted } from '../../lib/matchStatus'
 import { getGroupOutcomesLockTime } from '../../lib/matches'
 import type { GroupPrediction } from '../../types/bracket'
 import type { Match } from '../../types/matches'
+import { errorMessage } from '../lib/errorShape'
 import { useAuthState } from './useAuthState'
 import { refreshCurrentUser, useCurrentUser } from './useCurrentUser'
 import { useDemoScenarioState } from './useDemoScenarioState'
@@ -409,7 +410,7 @@ export function useGroupStageData(matches: Match[]) {
         setSaveStatus('idle')
         setLoadState({ status: 'ready' })
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
+        const message = errorMessage(error, 'Unable to load group-stage picks.')
         if (canceled) return
         setData({
           ...empty,
@@ -550,10 +551,8 @@ export function useGroupStageData(matches: Match[]) {
       return { ok: true }
     } catch (error) {
       if (error instanceof FirebaseError) {
-        console.error('saveGroupStage failed', error.code, error.message)
         if (error.code === 'permission-denied') refreshCurrentUser()
       }
-      else console.error('saveGroupStage failed', error)
       setSaveStatus('error')
       return { ok: false, reason: 'error' }
     }

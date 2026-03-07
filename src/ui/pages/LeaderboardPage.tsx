@@ -31,6 +31,7 @@ import { useToast } from '../hooks/useToast'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
 import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
+import { publishedStateLabel } from '../lib/pageStatusCopy'
 import { fetchRivalDirectory, readUserProfile, type RivalDirectoryEntry } from '../lib/profilePersistence'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
@@ -251,11 +252,6 @@ function rankLabel(rank: number | null, tieCount: number | null): string {
   return `#${rank}`
 }
 
-function tieLabel(tieCount: number | null): string {
-  if (tieCount === null || tieCount <= 1) return ''
-  return `Tied (${tieCount})`
-}
-
 function compareAgainstViewer(viewerPoints: number | null, otherPoints: number | null): RivalComparison {
   if (viewerPoints === null || otherPoints === null) {
     return { relation: 'unranked', pointsGap: null }
@@ -350,10 +346,7 @@ function RivalFocusPanel({
               subtitle={<span>{rankLabel(row.rank, row.tieCount)} • {row.points ?? '-'} pts</span>}
               badges={(
                 <>
-                  {row.tieCount !== null && row.tieCount > 1 ? (
-                    <StatusTagV2 tone="secondary">{tieLabel(row.tieCount)}</StatusTagV2>
-                  ) : null}
-                  {row.kind === 'rival' ? (
+                  {row.kind === 'rival' && row.comparison?.relation !== 'tied' ? (
                     <StatusTagV2 tone={comparisonTone(row.comparison)}>{comparisonLabel(row.comparison)}</StatusTagV2>
                   ) : null}
                   {row.rankDelta !== null ? (
@@ -656,12 +649,25 @@ export default function LeaderboardPage() {
   const rivalOrderByKey = useMemo(() => {
     const order = new Map<string, number>()
     for (let index = 0; index < rivalUserIds.length; index += 1) {
-      const key = normalizeIdentity(rivalUserIds[index])
-      if (!key) continue
-      order.set(key, index + 1)
+      const rivalId = rivalUserIds[index]
+      const rivalIdKey = normalizeIdentity(rivalId)
+      const rivalLookupKey = rivalIdKey.startsWith('id:') ? rivalIdKey.slice(3) : rivalIdKey
+      const rivalDirectoryEntry =
+        rivalDirectoryByIdentity.get(rivalId) ??
+        rivalDirectoryByIdentity.get(rivalIdKey) ??
+        rivalDirectoryByIdentity.get(rivalLookupKey)
+      const identityKeys = buildViewerKeySet([
+        rivalId,
+        rivalDirectoryEntry?.id ?? null,
+        rivalDirectoryEntry?.email ?? null,
+        rivalDirectoryEntry?.displayName ?? null
+      ])
+      for (const key of identityKeys) {
+        order.set(key, index + 1)
+      }
     }
     return order
-  }, [rivalUserIds])
+  }, [rivalDirectoryByIdentity, rivalUserIds])
 
   function resolveRivalSlot(entry: LeaderboardEntry): number | null {
     if (isCurrentUserEntry(entry)) return null
@@ -761,6 +767,7 @@ export default function LeaderboardPage() {
 
       for (const key of resolveLeaderboardIdentityKeys(entry)) {
         map.set(key, { entry, rank, entryKey })
+        map.set(normalizeIdentity(key), { entry, rank, entryKey })
       }
     }
 
@@ -812,11 +819,22 @@ export default function LeaderboardPage() {
       const rawRivalId = rivalId.trim()
       const rivalIdKey = normalizeIdentity(rawRivalId)
       const rivalLookupKey = rivalIdKey.startsWith('id:') ? rivalIdKey.slice(3) : rivalIdKey
-      const lookup = activeRowsByIdentity.get(rivalLookupKey) ?? activeRowsByIdentity.get(rivalIdKey)
       const rivalDirectoryEntry =
         rivalDirectoryByIdentity.get(rawRivalId) ??
         rivalDirectoryByIdentity.get(rivalIdKey) ??
         rivalDirectoryByIdentity.get(rivalLookupKey)
+      const rivalIdentityKeys = buildViewerKeySet([
+        rawRivalId,
+        rivalDirectoryEntry?.id ?? null,
+        rivalDirectoryEntry?.email ?? null,
+        rivalDirectoryEntry?.displayName ?? null
+      ])
+      const lookup =
+        activeRowsByIdentity.get(rivalLookupKey) ??
+        activeRowsByIdentity.get(rivalIdKey) ??
+        [...rivalIdentityKeys]
+          .map((key) => activeRowsByIdentity.get(key))
+          .find((candidate) => Boolean(candidate))
       const rivalDisplayName =
         rivalDirectoryEntry?.displayName?.trim() || lookup?.entry.member.name.trim() || rawRivalId || 'Unknown rival'
       const rivalFavoriteTeamCode = normalizeFavoriteTeamCode(rivalDirectoryEntry?.favoriteTeamCode)
@@ -936,10 +954,7 @@ export default function LeaderboardPage() {
   }))
 
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
-  const leaderboardPublishedCopy =
-    phaseState.tournamentPhase === 'FINAL'
-      ? 'Published: Final'
-      : 'Published: Latest snapshot'
+  const leaderboardPublishedCopy = publishedStateLabel(phaseState.tournamentPhase)
 
   function handleDownloadLeaderboardXlsx() {
     const exportedAt = new Date().toISOString()
@@ -1118,7 +1133,6 @@ export default function LeaderboardPage() {
                           badges={(
                             <>
                               {isTopThree ? <StatusTagV2 tone="success">Top 3</StatusTagV2> : null}
-                              {tieCount > 1 ? <StatusTagV2 tone="secondary">{tieLabel(tieCount)}</StatusTagV2> : null}
                               {shouldShowMomentumPill(movementDelta) ? (
                                 <StatusTagV2 tone={movementTone(movementDelta)}>{movementLabel(movementDelta)}</StatusTagV2>
                               ) : null}
@@ -1175,7 +1189,6 @@ export default function LeaderboardPage() {
                         {isTopThree ? (
                           <StatusTagV2 tone="success">Top 3</StatusTagV2>
                         ) : null}
-                        {tieCount > 1 ? <StatusTagV2 tone="secondary">{tieLabel(tieCount)}</StatusTagV2> : null}
                         {shouldShowMomentumPill(movementDelta) ? (
                           <StatusTagV2 tone={movementTone(movementDelta)}>{movementLabel(movementDelta)}</StatusTagV2>
                         ) : null}
@@ -1250,9 +1263,6 @@ export default function LeaderboardPage() {
                 />
                 <div className="mt-1 flex flex-wrap items-center gap-1">
                   <span className="text-xs text-muted-foreground">{stickyUserRow.totalPoints} pts</span>
-                  {stickyUserTieCount !== null && stickyUserTieCount > 1 ? (
-                    <StatusTagV2 tone="secondary">{tieLabel(stickyUserTieCount)}</StatusTagV2>
-                  ) : null}
                 </div>
               </div>
               <Button size="sm" variant="secondary" className="v2-action-compact" onClick={jumpToCurrentUserRow}>

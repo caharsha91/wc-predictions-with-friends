@@ -41,6 +41,11 @@ function movementLabel(movement: number | undefined): string {
   return movement > 0 ? `up ${movement}` : `down ${Math.abs(movement)}`
 }
 
+function rankLabel(rank: number, tieCount: number): string {
+  if (tieCount > 1) return `T#${rank}`
+  return `#${rank}`
+}
+
 function normalizeIdentity(value: string | null | undefined): string {
   const normalized = value?.trim().toLowerCase()
   return normalized ?? ''
@@ -187,6 +192,13 @@ export function LeaderboardCardCurated({
   const displayRows = shouldUseFixedPreview
     ? fixedPreviewRows
     : curatedRows
+  const tieCountByRank = useMemo(() => {
+    const counts = new Map<number, number>()
+    for (const row of rankedRows) {
+      counts.set(row.rank, (counts.get(row.rank) ?? 0) + 1)
+    }
+    return counts
+  }, [rankedRows])
   const previewPlaceholderCount =
     shouldUseFixedPreview && previewRowCount ? Math.max(0, previewRowCount - displayRows.length) : 0
 
@@ -211,11 +223,12 @@ export function LeaderboardCardCurated({
       {displayRows.map((row) => {
         const rivalSlot = resolveRivalSlot(row, priorityUserIds)
         const rowState = row.isYou ? 'you' : rivalSlot ? 'rival' : 'default'
+        const tieCount = tieCountByRank.get(row.rank) ?? 1
 
         return (
           <RowShellV2 key={`leaderboard-row-wrap-${row.id}`} state={rowState} className="min-h-11 px-2 py-1.5" interactive>
             <MemberIdentityRowV2
-              name={`#${row.rank} ${row.name}`}
+              name={`${rankLabel(row.rank, tieCount)} ${row.name}`}
               favoriteTeamCode={row.favoriteTeamCode ?? null}
               avatarClassName="h-12 w-[72px] shrink-0"
               nameBadges={

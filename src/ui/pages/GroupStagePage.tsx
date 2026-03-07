@@ -52,6 +52,7 @@ import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { useFavoriteTeamPreference } from '../context/FavoriteTeamPreferenceContext'
 import { formatUtcAndLocalDeadline } from '../lib/deadline'
+import { lockedFinalLabel, publishedStateLabel } from '../lib/pageStatusCopy'
 import {
   fetchRivalDirectory,
   readUserProfile,
@@ -1021,12 +1022,14 @@ export default function GroupStagePage() {
 
   const groupStageStateCopy =
     groupsFinal || isFinalResultsMode
-      ? 'Locked: Final.'
+      ? lockedFinalLabel('FINAL')
       : isReadOnly
-        ? 'Locked.'
+        ? lockedFinalLabel(phaseState.tournamentPhase)
         : `Editable until: ${groupLockLabel}.`
 
-  const groupStagePublishedCopy = groupsFinal || isFinalResultsMode ? 'Published: Final' : 'Published: Latest snapshot'
+  const groupStagePublishedCopy = groupsFinal || isFinalResultsMode
+    ? publishedStateLabel('FINAL')
+    : publishedStateLabel(phaseState.tournamentPhase)
 
   const projectedLeaderboardCard = (
     <LeaderboardCardCurated

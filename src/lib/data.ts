@@ -6,6 +6,7 @@ import type { BestThirdQualifiersFile } from '../types/qualifiers'
 import type { LeaderboardFile } from '../types/leaderboard'
 import type { ScoringConfig } from '../types/scoring'
 import type { DataMode } from './dataMode'
+import { getParsedStorage, getStoredString, setSerializedStorage } from './storage'
 
 type CacheEntry<T> = {
   data: T
@@ -46,8 +47,7 @@ function getStorageKey(path: string) {
 }
 
 function readDemoScenarioId(): string {
-  if (typeof window === 'undefined') return 'pre-group'
-  const raw = window.localStorage.getItem(DEMO_SCENARIO_STORAGE_KEY)?.trim() ?? ''
+  const raw = getStoredString(DEMO_SCENARIO_STORAGE_KEY)?.trim() ?? ''
   return DEMO_SCENARIOS.has(raw) ? raw : 'pre-group'
 }
 
@@ -73,11 +73,14 @@ function resolveCacheTtlMs(path: string, mode: DataMode): number {
 function readCachedEntry<T>(cacheKey: string): CacheEntry<T> | null {
   const memory = memoryCache.get(cacheKey) as CacheEntry<T> | undefined
   if (memory) return memory
-  if (typeof window === 'undefined') return null
-  const raw = window.localStorage.getItem(getStorageKey(cacheKey))
-  if (!raw) return null
+  const parsed = getParsedStorage(getStorageKey(cacheKey), (raw) => {
+    const value = JSON.parse(raw) as CacheEntry<T>
+    if (!value || typeof value !== 'object') return null
+    if (!('savedAt' in value)) return null
+    return value
+  })
+  if (!parsed) return null
   try {
-    const parsed = JSON.parse(raw) as CacheEntry<T>
     memoryCache.set(cacheKey, parsed)
     return parsed
   } catch {
@@ -87,8 +90,7 @@ function readCachedEntry<T>(cacheKey: string): CacheEntry<T> | null {
 
 function writeCachedEntry<T>(cacheKey: string, entry: CacheEntry<T>) {
   memoryCache.set(cacheKey, entry as CacheEntry<unknown>)
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(getStorageKey(cacheKey), JSON.stringify(entry))
+  setSerializedStorage(getStorageKey(cacheKey), entry)
 }
 
 function isFresh(entry: CacheEntry<unknown> | null, ttlMs: number) {

@@ -162,15 +162,15 @@ function resolveOpeningKoRound(matches: Match[]): Match[] {
   if (openingByStage.length > 0) return openingByStage
 
   const openingByStageRound = matches.filter((match) => {
-    const fixture = match as unknown as Record<string, unknown>
-    const stage = typeof fixture.stage === 'string' ? fixture.stage : null
-    const round = typeof fixture.round === 'string' ? fixture.round : null
+    const fixture = toFixtureShape(match)
+    const stage = fixture.stage
+    const round = fixture.round
     return stage === 'KO' && round === 'R32'
   })
   if (openingByStageRound.length > 0) return openingByStageRound
 
   const openingByRoundIndex = matches.filter((match) => {
-    const fixture = match as unknown as Record<string, unknown>
+    const fixture = toFixtureShape(match)
     return fixture.knockoutRoundIndex === 0
   })
   if (openingByRoundIndex.length > 0) return openingByRoundIndex
@@ -189,11 +189,37 @@ function hasResolvedTeam(team: { code?: string; name?: string } | null | undefin
 }
 
 function hasNonEmptyTeamId(match: Match, side: 'home' | 'away'): boolean {
-  const fixture = match as unknown as Record<string, unknown>
+  const fixture = toFixtureShape(match)
   const key = side === 'home' ? 'homeTeamId' : 'awayTeamId'
   if (typeof fixture[key] === 'string' && fixture[key].trim().length > 0) return true
   if (side === 'home') return hasResolvedTeam(match.homeTeam)
   return hasResolvedTeam(match.awayTeam)
+}
+
+type FixtureShape = {
+  stage: Match['stage'] | 'KO'
+  round: string | null
+  knockoutRoundIndex: number | null
+  homeTeamId: string | null
+  awayTeamId: string | null
+}
+
+function toFixtureShape(match: Match): FixtureShape {
+  const candidate = match as {
+    stage?: unknown
+    round?: unknown
+    knockoutRoundIndex?: unknown
+    homeTeamId?: unknown
+    awayTeamId?: unknown
+  }
+  const stageRaw = typeof candidate.stage === 'string' ? candidate.stage : ''
+  return {
+    stage: stageRaw === 'KO' ? 'KO' : match.stage,
+    round: typeof candidate.round === 'string' ? candidate.round : null,
+    knockoutRoundIndex: typeof candidate.knockoutRoundIndex === 'number' ? candidate.knockoutRoundIndex : null,
+    homeTeamId: typeof candidate.homeTeamId === 'string' ? candidate.homeTeamId : null,
+    awayTeamId: typeof candidate.awayTeamId === 'string' ? candidate.awayTeamId : null
+  }
 }
 
 export function computeKoDrawConfirmedSignal(matches: Match[]): boolean {

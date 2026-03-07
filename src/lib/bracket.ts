@@ -5,6 +5,7 @@ import type {
   BracketPredictionsFile
 } from '../types/bracket'
 import type { DataMode } from './dataMode'
+import { getParsedStorage, getStoredString, removeStoredKey, setSerializedStorage } from './storage'
 
 const STORAGE_PREFIX = 'wc-bracket'
 const DEMO_SCENARIO_STORAGE_KEY = 'wc-demo-scenario'
@@ -17,8 +18,7 @@ const DEMO_SCENARIOS = new Set([
 ])
 
 function readDemoScenarioId(): string {
-  if (typeof window === 'undefined') return 'pre-group'
-  const raw = window.localStorage.getItem(DEMO_SCENARIO_STORAGE_KEY)?.trim() ?? ''
+  const raw = getStoredString(DEMO_SCENARIO_STORAGE_KEY)?.trim() ?? ''
   return DEMO_SCENARIOS.has(raw) ? raw : 'pre-group'
 }
 
@@ -26,8 +26,7 @@ function getLegacyDemoBracketKey(userId: string): string {
   return `${STORAGE_PREFIX}:demo:${userId}`
 }
 
-function parseBracketPrediction(raw: string | null): BracketPrediction | null {
-  if (!raw) return null
+function parseBracketPrediction(raw: string): BracketPrediction | null {
   try {
     const parsed = JSON.parse(raw) as { prediction?: BracketPrediction }
     return parsed.prediction ?? null
@@ -47,17 +46,16 @@ export function loadLocalBracketPrediction(
   userId: string,
   mode: DataMode = 'default'
 ): BracketPrediction | null {
-  if (typeof window === 'undefined') return null
   const scopedKey = getLocalBracketKey(userId, mode)
-  const scopedPrediction = parseBracketPrediction(window.localStorage.getItem(scopedKey))
+  const scopedPrediction = getParsedStorage(scopedKey, parseBracketPrediction)
   if (scopedPrediction) return scopedPrediction
 
   if (mode === 'demo') {
     const legacyKey = getLegacyDemoBracketKey(userId)
-    const legacyPrediction = parseBracketPrediction(window.localStorage.getItem(legacyKey))
+    const legacyPrediction = getParsedStorage(legacyKey, parseBracketPrediction)
     if (legacyPrediction) {
-      window.localStorage.setItem(scopedKey, JSON.stringify({ prediction: legacyPrediction }))
-      window.localStorage.removeItem(legacyKey)
+      setSerializedStorage(scopedKey, { prediction: legacyPrediction })
+      removeStoredKey(legacyKey)
       return legacyPrediction
     }
   }
@@ -70,11 +68,9 @@ export function saveLocalBracketPrediction(
   prediction: BracketPrediction,
   mode: DataMode = 'default'
 ): void {
-  if (typeof window === 'undefined') return
-  const payload = JSON.stringify({ prediction })
-  window.localStorage.setItem(getLocalBracketKey(userId, mode), payload)
+  setSerializedStorage(getLocalBracketKey(userId, mode), { prediction })
   if (mode === 'demo') {
-    window.localStorage.removeItem(getLegacyDemoBracketKey(userId))
+    removeStoredKey(getLegacyDemoBracketKey(userId))
   }
 }
 

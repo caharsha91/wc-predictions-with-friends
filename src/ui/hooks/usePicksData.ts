@@ -8,6 +8,7 @@ import { firebaseAuth, firebaseDb, getLeagueId, hasFirebase } from '../../lib/fi
 import { getUserPicksFromFile, loadLocalPicks, saveLocalPicks } from '../../lib/picks'
 import type { Match } from '../../types/matches'
 import type { Pick } from '../../types/picks'
+import { errorMessage, normalizeUiError } from '../lib/errorShape'
 import { useAuthState } from './useAuthState'
 import { refreshCurrentUser, useCurrentUser } from './useCurrentUser'
 import { useDemoScenarioState } from './useDemoScenarioState'
@@ -90,7 +91,7 @@ export function usePicksData() {
           lastUpdated: matchesFile.lastUpdated
         })
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
+        const message = errorMessage(error, 'Unable to load picks.')
         if (!canceled) setState({ status: 'error', message })
       }
     }
@@ -127,13 +128,12 @@ export function usePicksData() {
       }
       setSaveStatus('saved')
     } catch (error) {
-      console.error('savePicks failed', error)
       setSaveStatus('error')
       if (error instanceof FirebaseError && error.code === 'permission-denied') {
         refreshCurrentUser()
       }
-      if (error instanceof Error) throw error
-      throw new Error('Unable to save picks.')
+      const uiError = normalizeUiError(error, 'Unable to save picks.')
+      throw new Error(uiError.message)
     }
   }
 

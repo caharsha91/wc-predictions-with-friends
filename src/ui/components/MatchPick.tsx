@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 
 import { cn } from '../lib/utils'
 import { UNKNOWN_FLAG_ASSET_PATH } from '../lib/teamFlag'
+import { clampScore, getWinnerId, isDraw, parseInputScore } from '../lib/matchPickLogic'
 import { Input } from './ui/Input'
 import FlagBadgeV2 from './v2/FlagBadgeV2'
 import RowShellV2 from './v2/RowShellV2'
@@ -47,46 +48,7 @@ const MANUAL_GLOW_STYLE: CSSProperties = {
   boxShadow: 'var(--tone-warning-glow)'
 }
 
-export function isDraw(scoreA: number | undefined, scoreB: number | undefined): boolean {
-  return typeof scoreA === 'number' && typeof scoreB === 'number' && scoreA === scoreB
-}
-
-export function getWinnerId({
-  isKnockout,
-  teamAId,
-  teamBId,
-  scoreA,
-  scoreB,
-  selectedWinnerId
-}: {
-  isKnockout: boolean
-  teamAId: string
-  teamBId: string
-  scoreA: number | undefined
-  scoreB: number | undefined
-  selectedWinnerId?: string
-}): string | undefined {
-  const hasScores = typeof scoreA === 'number' && typeof scoreB === 'number'
-  if (!hasScores) return undefined
-  if (scoreA > scoreB) return teamAId
-  if (scoreB > scoreA) return teamBId
-  if (!isKnockout) return undefined
-  if (selectedWinnerId === teamAId || selectedWinnerId === teamBId) return selectedWinnerId
-  return undefined
-}
-
-function clampScore(value: number): number {
-  if (!Number.isFinite(value)) return 0
-  return Math.max(0, Math.floor(value))
-}
-
-function parseInputScore(raw: string): number | undefined {
-  const trimmed = raw.trim()
-  if (!trimmed) return undefined
-  const parsed = Number(raw)
-  if (!Number.isFinite(parsed)) return undefined
-  return clampScore(parsed)
-}
+export { isDraw, getWinnerId } from '../lib/matchPickLogic'
 
 function segmentClass(selected: boolean, disabled: boolean): string {
   return cn(

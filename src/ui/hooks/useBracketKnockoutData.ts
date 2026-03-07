@@ -15,6 +15,7 @@ import {
 import { firebaseAuth, firebaseDb, getLeagueId, hasFirebase } from '../../lib/firebase'
 import type { Match, MatchWinner } from '../../types/matches'
 import type { KnockoutStage } from '../../types/scoring'
+import { errorMessage } from '../lib/errorShape'
 import { useAuthState } from './useAuthState'
 import { refreshCurrentUser, useCurrentUser } from './useCurrentUser'
 import { useDemoScenarioState } from './useDemoScenarioState'
@@ -152,7 +153,7 @@ export function useBracketKnockoutData() {
           lastUpdated: matchesFile.lastUpdated
         })
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
+        const message = errorMessage(error, 'Unable to load knockout picks.')
         if (!canceled) setLoadState({ status: 'error', message })
       }
     }
@@ -218,7 +219,6 @@ export function useBracketKnockoutData() {
       setSaveStatus('saved')
       return true
     } catch (error) {
-      console.error('saveKnockout failed', error)
       if (error instanceof FirebaseError && error.code === 'permission-denied') {
         refreshCurrentUser()
       }

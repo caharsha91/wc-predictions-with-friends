@@ -31,13 +31,10 @@ function slotByRank(rows: LeaderboardPodiumRow[], rank: 1 | 2 | 3): PodiumSlot {
   return { rank, row: rows.find((row) => row.rank === rank) ?? null }
 }
 
-function rankLabel(slotRank: 1 | 2 | 3, displayRank: number | undefined): string {
-  return `#${displayRank ?? slotRank}`
-}
-
-function tieLabel(tieCount: number | undefined): string {
-  if (!tieCount || tieCount <= 1) return ''
-  return `Tied (${tieCount})`
+function rankLabel(slotRank: 1 | 2 | 3, displayRank: number | undefined, tieCount: number | undefined): string {
+  const resolvedRank = displayRank ?? slotRank
+  if (tieCount && tieCount > 1) return `T#${resolvedRank}`
+  return `#${resolvedRank}`
 }
 
 export default function LeaderboardPodium({ rows, snapshotAvailable, className, showCta = true }: LeaderboardPodiumProps) {
@@ -74,11 +71,8 @@ export default function LeaderboardPodium({ rows, snapshotAvailable, className, 
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  {rankLabel(slot.rank, slot.row?.displayRank)}
+                  {rankLabel(slot.rank, slot.row?.displayRank, slot.row?.tieCount)}
                 </div>
-                {slot.row?.tieCount && slot.row.tieCount > 1 ? (
-                  <StatusTagV2 tone="secondary">{tieLabel(slot.row.tieCount)}</StatusTagV2>
-                ) : null}
               </div>
               <div className="flex items-center gap-1.5">
                 {slot.row ? (
