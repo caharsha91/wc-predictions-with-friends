@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import type { DataMode } from '../../../lib/dataMode'
 import type { LeaderboardEntry } from '../../../types/leaderboard'
@@ -104,17 +104,6 @@ function writeRankSnapshot(mode: DataMode, snapshot: RankSnapshot) {
   window.localStorage.setItem(`${MOMENTUM_SNAPSHOT_KEY}:${mode}`, JSON.stringify(snapshot))
 }
 
-function movementTone(delta: number | null): 'success' | 'danger' | 'secondary' {
-  if (delta === null || delta === 0) return 'secondary'
-  return delta > 0 ? 'success' : 'danger'
-}
-
-function movementLabel(delta: number | null, unit: 'rank' | 'pts'): string {
-  if (delta === null || delta === 0) return unit === 'rank' ? 'Rank =' : 'Pts ='
-  if (unit === 'rank') return delta > 0 ? `Rank +${delta}` : `Rank -${Math.abs(delta)}`
-  return delta > 0 ? `Pts +${delta}` : `Pts ${delta}`
-}
-
 function rankLabel(rank: number, tieCount: number): string {
   if (tieCount > 1) return `T#${rank}`
   return `#${rank}`
@@ -128,21 +117,83 @@ function CompactMessage({ children }: { children: string }) {
   )
 }
 
+function BreakdownIcon({ children }: { children: ReactNode }) {
+  return (
+    <span className="companion-league-breakdown-icon inline-flex h-3.5 w-3.5 items-center justify-center" aria-hidden="true">
+      {children}
+    </span>
+  )
+}
+
+function ExactIcon() {
+  return (
+    <BreakdownIcon>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="8" />
+        <path d="M12 8v8M8 12h8" />
+      </svg>
+    </BreakdownIcon>
+  )
+}
+
+function OutcomeIcon() {
+  return (
+    <BreakdownIcon>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="8" />
+        <path d="m8.5 12 2.4 2.4 4.6-4.8" />
+      </svg>
+    </BreakdownIcon>
+  )
+}
+
+function KnockoutIcon() {
+  return (
+    <BreakdownIcon>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 5v5l3 2 3-2V5" />
+        <path d="M18 5v5l-3 2-3-2V5" />
+        <path d="M12 12v5" />
+        <path d="M9 19h6" />
+      </svg>
+    </BreakdownIcon>
+  )
+}
+
+function BracketPointsIcon() {
+  return (
+    <BreakdownIcon>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 5v14M17 5v14" />
+        <path d="M7 8h4M13 8h4" />
+        <path d="M7 16h4M13 16h4" />
+      </svg>
+    </BreakdownIcon>
+  )
+}
+
 function BreakdownChips({ entry }: { entry: LeaderboardEntry }) {
+  const metrics = [
+    { label: 'Exact', value: entry.exactPoints, icon: <ExactIcon /> },
+    { label: 'Outcome', value: entry.resultPoints, icon: <OutcomeIcon /> },
+    { label: 'Knockout', value: entry.knockoutPoints, icon: <KnockoutIcon /> },
+    { label: 'Bracket', value: entry.bracketPoints, icon: <BracketPointsIcon /> }
+  ]
+
   return (
     <div className="companion-league-breakdown v2-type-caption grid grid-cols-4 gap-1">
-      <div className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums">
-        Ex {entry.exactPoints}
-      </div>
-      <div className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums">
-        Out {entry.resultPoints}
-      </div>
-      <div className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums">
-        KO {entry.knockoutPoints}
-      </div>
-      <div className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums">
-        Br {entry.bracketPoints}
-      </div>
+      {metrics.map((metric) => (
+        <div
+          key={metric.label}
+          className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums"
+          aria-label={`${metric.label} ${metric.value}`}
+        >
+          <div className="flex items-center justify-center gap-1">
+            {metric.icon}
+            <span className="companion-league-breakdown-value">{metric.value}</span>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -192,15 +243,6 @@ function CompactStandingRow({ row, showBreakdown }: { row: RankedRow; showBreakd
             <div className="text-base font-semibold tabular-nums text-foreground">{row.points}</div>
             <div className="v2-type-kicker">pts</div>
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1">
-          <StatusTagV2 tone={movementTone(row.rankDelta)} className="companion-league-move-tag">
-            {movementLabel(row.rankDelta, 'rank')}
-          </StatusTagV2>
-          <StatusTagV2 tone={movementTone(row.pointsDelta)} className="companion-league-move-tag">
-            {movementLabel(row.pointsDelta, 'pts')}
-          </StatusTagV2>
         </div>
 
         {showBreakdown ? <BreakdownChips entry={row.entry} /> : null}

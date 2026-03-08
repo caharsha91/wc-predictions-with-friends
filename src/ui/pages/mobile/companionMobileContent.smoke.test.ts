@@ -37,7 +37,7 @@ test('companion league content uses one unified leaderboard list', async () => {
   assert.equal(source.includes('Top ${TOP_LEADERBOARD_LIMIT} + You + Rivals'), true)
   assert.equal(source.includes('TOP_LEADERBOARD_LIMIT = 10'), true)
   assert.equal(source.includes('showBreakdown={row.isViewer || row.rivalSlot !== null}'), true)
-  assert.equal(source.includes('Ex {entry.exactPoints}'), true)
+  assert.equal(source.includes('companion-league-breakdown-icon'), true)
   assert.equal(source.includes('writeUserProfile('), false)
   assert.equal(source.includes('addRival('), false)
   assert.equal(source.includes('removeRival('), false)

@@ -1286,12 +1286,6 @@
   background: color-mix(in srgb, var(--surface-1) 86%, transparent);
 }
 
-.companion-league-move-tag {
-  min-width: 3.6rem;
-  border-color: color-mix(in srgb, var(--v2-border-medium) 72%, transparent);
-  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
-}
-
 .companion-league-breakdown {
   gap: 0.36rem;
 }
@@ -1300,6 +1294,21 @@
   border-color: color-mix(in srgb, var(--v2-border-medium) 82%, transparent);
   background: color-mix(in srgb, var(--surface-1) 84%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 34%, transparent);
+}
+
+.companion-league-breakdown-icon {
+  color: color-mix(in srgb, var(--foreground) 84%, transparent);
+}
+
+.companion-league-breakdown-icon svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.companion-league-breakdown-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--foreground) 92%, transparent);
 }
 
 .companion-auth-shell {
