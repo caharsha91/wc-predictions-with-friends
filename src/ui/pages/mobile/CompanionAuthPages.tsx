@@ -20,8 +20,8 @@ function MobileAuthShell({
   children: ReactNode
 }) {
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
-      <Card className="w-full rounded-3xl border-border/70 p-6">
+    <div className="companion-auth-shell mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
+      <Card className="companion-auth-card w-full rounded-3xl border-border/70 p-6">
         <div className="space-y-4">
           <div className="v2-type-kicker v2-track-14">Companion</div>
           <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
@@ -66,13 +66,15 @@ export function CompanionLoginPage() {
           <Button type="button" onClick={() => void handleSignIn()}>
             Continue with Google
           </Button>
-          <ButtonLink to="/login" variant="secondary">
-            Use web login
-          </ButtonLink>
         </div>
       ) : (
-        <div className="text-sm text-muted-foreground">
-          Firebase auth is not configured. Sign-in is unavailable in this environment.
+        <div className="flex flex-col gap-2">
+          <Button type="button" disabled>
+            Continue with Google
+          </Button>
+          <div className="text-sm text-muted-foreground">
+            Firebase auth is not configured. Sign-in is unavailable in this environment.
+          </div>
         </div>
       )}
     </MobileAuthShell>
@@ -106,9 +108,7 @@ export function CompanionAccessDeniedPage() {
         <Button type="button" onClick={() => void handleSwitchAccount()}>
           Switch Google account
         </Button>
-        <ButtonLink to="/m/login" variant="secondary">
-          Back to sign in
-        </ButtonLink>
+        <ButtonLink to="/m/login" variant="secondary">Back to sign in</ButtonLink>
       </div>
     </MobileAuthShell>
   )

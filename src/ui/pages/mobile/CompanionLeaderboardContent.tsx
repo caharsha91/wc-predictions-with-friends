@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import type { DataMode } from '../../../lib/dataMode'
 import type { LeaderboardEntry } from '../../../types/leaderboard'
-import MemberIdentityRowV2 from '../../components/v2/MemberIdentityRowV2'
+import MemberAvatarV2 from '../../components/v2/MemberAvatarV2'
 import RowShellV2 from '../../components/v2/RowShellV2'
 import SectionCardV2 from '../../components/v2/SectionCardV2'
 import SnapshotStamp from '../../components/v2/SnapshotStamp'
@@ -14,6 +14,12 @@ import { useRouteDataMode } from '../../hooks/useRouteDataMode'
 import { useViewerId } from '../../hooks/useViewerId'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../../lib/leaderboardContext'
 import { buildLeaderboardPresentation } from '../../lib/leaderboardPresentation'
+import { rankRowsWithTiePriority } from '../../lib/leaderboardTieRanking'
+import {
+  buildRivalComparisonIdentities,
+  buildRivalSlotLookup,
+  resolveCanonicalRivalIds
+} from '../../lib/rivalIdentity'
 import {
   fetchRivalDirectory,
   readUserProfile,
@@ -21,6 +27,7 @@ import {
 } from '../../lib/profilePersistence'
 
 const RIVAL_LIMIT = 3
+const TOP_LEADERBOARD_LIMIT = 10
 const MOMENTUM_SNAPSHOT_KEY = 'wc-companion-leaderboard-snapshot'
 
 type RankSnapshot = {
@@ -54,49 +61,9 @@ function normalizeKey(value: string | null | undefined): string {
 function entryIdentityKey(entry: LeaderboardEntry): string {
   const memberId = normalizeKey(entry.member.id)
   if (memberId) return `id:${memberId}`
+  const memberEmail = normalizeKey(entry.member.email)
+  if (memberEmail) return `email:${memberEmail}`
   return `name:${normalizeKey(entry.member.name)}`
-}
-
-function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] {
-  const viewerKey = normalizeKey(viewerId)
-  const seen = new Set<string>()
-  const result: string[] = []
-
-  for (const rivalId of nextRivals) {
-    const trimmed = rivalId.trim()
-    const key = normalizeKey(trimmed)
-    if (!trimmed || !key || key === viewerKey || seen.has(key)) continue
-    seen.add(key)
-    result.push(trimmed)
-    if (result.length >= RIVAL_LIMIT) break
-  }
-
-  return result
-}
-
-function resolvePersistedRivalIds(
-  profileRivals: string[],
-  viewerId: string,
-  directory: RivalDirectoryEntry[]
-): string[] {
-  const sanitized = sanitizeRivalUserIds(profileRivals, viewerId)
-  const directoryMap = new Map<string, string>()
-
-  for (const rival of directory) {
-    const id = rival.id?.trim()
-    if (!id) continue
-    directoryMap.set(normalizeKey(id), id)
-  }
-
-  const result: string[] = []
-  for (const rivalId of sanitized) {
-    const canonical = directoryMap.get(normalizeKey(rivalId))
-    if (!canonical) continue
-    result.push(canonical)
-    if (result.length >= RIVAL_LIMIT) break
-  }
-
-  return result
 }
 
 function readRankSnapshot(mode: DataMode): RankSnapshot | null {
@@ -154,58 +121,89 @@ function rankLabel(rank: number, tieCount: number): string {
 }
 
 function CompactMessage({ children }: { children: string }) {
-  return <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">{children}</div>
-}
-
-function BreakdownChips({ entry }: { entry: LeaderboardEntry }) {
   return (
-    <div className="v2-type-caption grid grid-cols-2 gap-1">
-      <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Exact {entry.exactPoints}</div>
-      <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Outcome {entry.resultPoints}</div>
-      <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">KO {entry.knockoutPoints}</div>
-      <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Bracket {entry.bracketPoints}</div>
+    <div className="companion-league-message rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
+      {children}
     </div>
   )
 }
 
-function StandingRow({ row }: { row: RankedRow }) {
+function BreakdownChips({ entry }: { entry: LeaderboardEntry }) {
+  return (
+    <div className="companion-league-breakdown v2-type-caption grid grid-cols-4 gap-1">
+      <div className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums">
+        Ex {entry.exactPoints}
+      </div>
+      <div className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums">
+        Out {entry.resultPoints}
+      </div>
+      <div className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums">
+        KO {entry.knockoutPoints}
+      </div>
+      <div className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums">
+        Br {entry.bracketPoints}
+      </div>
+    </div>
+  )
+}
+
+function FeedHeading({ label, right }: { label: string; right?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 pt-1">
+      <div className="v2-type-kicker">{label}</div>
+      {right ? <div className="v2-type-caption">{right}</div> : null}
+    </div>
+  )
+}
+
+function CompactStandingRow({ row, showBreakdown }: { row: RankedRow; showBreakdown: boolean }) {
   return (
     <RowShellV2
-      key={`league-row-${entryIdentityKey(row.entry)}`}
       depth={row.isViewer ? 'prominent' : 'embedded'}
       state={row.isViewer ? 'you' : row.rivalSlot ? 'rival' : 'default'}
-      className="px-3 py-3"
+      className="companion-league-row px-2.5 py-2"
     >
-      <div className="space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-base font-semibold tabular-nums text-foreground">{rankLabel(row.rank, row.tieCount)}</div>
-            <MemberIdentityRowV2
+      <div className="space-y-1.5">
+        <div className="grid grid-cols-[44px_1fr_auto] items-center gap-2">
+          <div className="text-sm font-semibold tabular-nums text-foreground">{rankLabel(row.rank, row.tieCount)}</div>
+          <div className="min-w-0 flex items-center gap-2">
+            <MemberAvatarV2
               name={row.entry.member.name}
               favoriteTeamCode={row.entry.member.favoriteTeamCode ?? null}
-              avatarClassName="h-12 w-[72px]"
-              className="mt-1"
-              nameBadges={
-                row.isViewer ? (
-                  <StatusTagV2 tone="you">You</StatusTagV2>
-                ) : row.rivalSlot ? (
-                  <StatusTagV2 tone="rival">Rival {row.rivalSlot}</StatusTagV2>
-                ) : null
-              }
+              size="sm"
+              className="h-8 w-12 rounded-md"
             />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <div className="truncate text-sm font-semibold text-foreground">{row.entry.member.name}</div>
+                {row.isViewer ? (
+                  <StatusTagV2 tone="you" className="companion-league-role-tag">
+                    You
+                  </StatusTagV2>
+                ) : row.rivalSlot ? (
+                  <StatusTagV2 tone="rival" className="companion-league-role-tag">
+                    Rival {row.rivalSlot}
+                  </StatusTagV2>
+                ) : null}
+              </div>
+            </div>
           </div>
           <div className="text-right">
-            <div className="text-lg font-semibold tabular-nums text-foreground">{row.points}</div>
-            <div className="v2-type-kicker">Total</div>
+            <div className="text-base font-semibold tabular-nums text-foreground">{row.points}</div>
+            <div className="v2-type-kicker">pts</div>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
-          <StatusTagV2 tone={movementTone(row.rankDelta)}>{movementLabel(row.rankDelta, 'rank')}</StatusTagV2>
-          <StatusTagV2 tone={movementTone(row.pointsDelta)}>{movementLabel(row.pointsDelta, 'pts')}</StatusTagV2>
+          <StatusTagV2 tone={movementTone(row.rankDelta)} className="companion-league-move-tag">
+            {movementLabel(row.rankDelta, 'rank')}
+          </StatusTagV2>
+          <StatusTagV2 tone={movementTone(row.pointsDelta)} className="companion-league-move-tag">
+            {movementLabel(row.pointsDelta, 'pts')}
+          </StatusTagV2>
         </div>
 
-        <BreakdownChips entry={row.entry} />
+        {showBreakdown ? <BreakdownChips entry={row.entry} /> : null}
       </div>
     </RowShellV2>
   )
@@ -251,8 +249,7 @@ export default function CompanionLeaderboardContent() {
 
         if (canceled) return
 
-        const persisted = resolvePersistedRivalIds(profile.rivalUserIds, viewerId, directory)
-
+        const persisted = resolveCanonicalRivalIds(profile.rivalUserIds, viewerId, directory)
         setProfileState({
           status: 'ready',
           rivalUserIds: persisted,
@@ -298,96 +295,88 @@ export default function CompanionLeaderboardContent() {
     [currentUser?.email, currentUser?.id, currentUser?.name, viewerId]
   )
 
+  const rivalComparisonIdentities = useMemo(
+    () => buildRivalComparisonIdentities(profileState.rivalUserIds, profileState.rivalDirectory),
+    [profileState.rivalDirectory, profileState.rivalUserIds]
+  )
+
+  const rivalSlotLookup = useMemo(
+    () => buildRivalSlotLookup(profileState.rivalUserIds, profileState.rivalDirectory),
+    [profileState.rivalDirectory, profileState.rivalUserIds]
+  )
+
+  const tieRanked = useMemo(
+    () =>
+      rankRowsWithTiePriority({
+        rows: presentationRows,
+        getPoints: (entry) => entry.totalPoints,
+        getIdentityKeys: (entry) => resolveLeaderboardIdentityKeys(entry),
+        getName: (entry) => entry.member.name,
+        viewerIdentity: viewerId,
+        rivalIdentities: rivalComparisonIdentities
+      }),
+    [presentationRows, rivalComparisonIdentities, viewerId]
+  )
+
+  const sortedRows = tieRanked.sortedRows
+
+  const rankByEntryKey = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const { row, rank } of tieRanked.rankedRows) {
+      map.set(entryIdentityKey(row), rank)
+    }
+    return map
+  }, [tieRanked.rankedRows])
+
+  const tieCountByEntryKey = useMemo(() => {
+    const tieCountByPoints = new Map<number, number>()
+    const tieCountByKey = new Map<string, number>()
+    for (const entry of sortedRows) {
+      tieCountByPoints.set(entry.totalPoints, (tieCountByPoints.get(entry.totalPoints) ?? 0) + 1)
+    }
+    for (const entry of sortedRows) {
+      tieCountByKey.set(entryIdentityKey(entry), tieCountByPoints.get(entry.totalPoints) ?? 1)
+    }
+    return tieCountByKey
+  }, [sortedRows])
+
   const previousSnapshot = useMemo(() => readRankSnapshot(mode), [mode])
 
-  const rivalPriorityMap = useMemo(() => {
-    const map = new Map<string, number>()
-    profileState.rivalUserIds.forEach((id, index) => {
-      const normalized = normalizeKey(id)
-      if (!normalized) return
-      map.set(normalized, index + 1)
-      map.set(`id:${normalized}`, index + 1)
-      map.set(`name:${normalized}`, index + 1)
-      map.set(`email:${normalized}`, index + 1)
-    })
-    return map
-  }, [profileState.rivalUserIds])
-
   const rankedRows = useMemo(() => {
-    const sorted = [...presentationRows].sort((left, right) => {
-      if (right.totalPoints !== left.totalPoints) return right.totalPoints - left.totalPoints
-
-      const leftViewer = resolveLeaderboardIdentityKeys(left).some((key) => viewerKeys.has(normalizeKey(key)))
-      const rightViewer = resolveLeaderboardIdentityKeys(right).some((key) => viewerKeys.has(normalizeKey(key)))
-      if (leftViewer !== rightViewer) return leftViewer ? -1 : 1
-
-      const leftPriority = Math.min(
-        ...resolveLeaderboardIdentityKeys(left)
-          .map((key) => rivalPriorityMap.get(normalizeKey(key)) ?? Number.POSITIVE_INFINITY)
-      )
-      const rightPriority = Math.min(
-        ...resolveLeaderboardIdentityKeys(right)
-          .map((key) => rivalPriorityMap.get(normalizeKey(key)) ?? Number.POSITIVE_INFINITY)
-      )
-      if (leftPriority !== rightPriority) return leftPriority - rightPriority
-
-      return left.member.name.localeCompare(right.member.name)
-    })
-
-    const rows: RankedRow[] = []
-    let previousPoints: number | null = null
-    let currentRank = 0
-
-    for (let index = 0; index < sorted.length; index += 1) {
-      const entry = sorted[index]
+    return sortedRows.map((entry, index) => {
+      const key = entryIdentityKey(entry)
+      const rank = rankByEntryKey.get(key) ?? index + 1
       const points = Number.isFinite(entry.totalPoints) ? entry.totalPoints : 0
-      if (previousPoints === null || points !== previousPoints) {
-        currentRank = index + 1
-        previousPoints = points
-      }
-
-      const identityKey = entryIdentityKey(entry)
-      const previousRank = previousSnapshot?.ranks[identityKey]
-      const previousPointsValue = previousSnapshot?.points[identityKey]
-
-      const identities = resolveLeaderboardIdentityKeys(entry)
-      const isViewer = identities.some((key) => viewerKeys.has(normalizeKey(key)))
+      const previousRank = previousSnapshot?.ranks[key]
+      const previousPointsValue = previousSnapshot?.points[key]
+      const isViewer = resolveLeaderboardIdentityKeys(entry).some((identity) => viewerKeys.has(normalizeKey(identity)))
 
       let rivalSlot: number | null = null
-      for (const key of identities) {
-        const resolved = rivalPriorityMap.get(normalizeKey(key))
-        if (typeof resolved === 'number') {
-          rivalSlot = resolved
+      for (const identity of resolveLeaderboardIdentityKeys(entry)) {
+        const slot = rivalSlotLookup.get(normalizeKey(identity))
+        if (typeof slot === 'number') {
+          rivalSlot = slot
           break
         }
       }
 
-      rows.push({
+      return {
         entry,
-        rank: currentRank,
-        tieCount: 1,
+        rank,
+        tieCount: tieCountByEntryKey.get(key) ?? 1,
         points,
-        rankDelta: typeof previousRank === 'number' ? previousRank - currentRank : null,
-        pointsDelta:
-          typeof previousPointsValue === 'number' ? points - previousPointsValue : null,
+        rankDelta: typeof previousRank === 'number' ? previousRank - rank : null,
+        pointsDelta: typeof previousPointsValue === 'number' ? points - previousPointsValue : null,
         isViewer,
         rivalSlot
-      })
-    }
-
-    const tieCountByRank = new Map<number, number>()
-    for (const row of rows) {
-      tieCountByRank.set(row.rank, (tieCountByRank.get(row.rank) ?? 0) + 1)
-    }
-
-    return rows.map((row) => ({ ...row, tieCount: tieCountByRank.get(row.rank) ?? 1 }))
-  }, [presentationRows, previousSnapshot?.points, previousSnapshot?.ranks, rivalPriorityMap, viewerKeys])
+      } satisfies RankedRow
+    })
+  }, [previousSnapshot?.points, previousSnapshot?.ranks, rankByEntryKey, rivalSlotLookup, sortedRows, tieCountByEntryKey, viewerKeys])
 
   const snapshotTimestamp = snapshot.state.status === 'ready' ? snapshot.state.snapshotTimestamp : null
 
   useEffect(() => {
     if (!snapshotTimestamp || rankedRows.length === 0) return
-
     const ranks: Record<string, number> = {}
     const points: Record<string, number> = {}
 
@@ -407,31 +396,16 @@ export default function CompanionLeaderboardContent() {
   const viewerRow = useMemo(() => rankedRows.find((row) => row.isViewer) ?? null, [rankedRows])
 
   const rivalRows = useMemo(() => {
-    const rows: RankedRow[] = []
+    return rankedRows
+      .filter((row) => row.rivalSlot !== null)
+      .sort((left, right) => (left.rivalSlot ?? 99) - (right.rivalSlot ?? 99))
+  }, [rankedRows])
 
-    for (const rivalId of profileState.rivalUserIds) {
-      const normalized = normalizeKey(rivalId)
-      const row = rankedRows.find((candidate) =>
-        resolveLeaderboardIdentityKeys(candidate.entry).some(
-          (key) => normalizeKey(key) === normalized || normalizeKey(key) === `id:${normalized}`
-        )
-      )
-      if (!row) continue
-      if (!rows.some((candidate) => entryIdentityKey(candidate.entry) === entryIdentityKey(row.entry))) {
-        rows.push(row)
-      }
-    }
-
-    return rows
-  }, [profileState.rivalUserIds, rankedRows])
-
-  const leaderboardRows = useMemo(() => {
-    if (rankedRows.length <= 12) return rankedRows
-
+  const topWindowRows = useMemo(() => {
     const selected: RankedRow[] = []
     const seen = new Set<string>()
 
-    const add = (row: RankedRow | undefined) => {
+    const add = (row: RankedRow | null | undefined) => {
       if (!row) return
       const key = entryIdentityKey(row.entry)
       if (seen.has(key)) return
@@ -439,79 +413,48 @@ export default function CompanionLeaderboardContent() {
       selected.push(row)
     }
 
-    rankedRows.slice(0, 8).forEach(add)
-    add(viewerRow ?? undefined)
+    rankedRows.slice(0, TOP_LEADERBOARD_LIMIT).forEach(add)
+    add(viewerRow)
     rivalRows.forEach(add)
-
-    for (const row of rankedRows) {
-      if (selected.length >= 12) break
-      add(row)
-    }
 
     return selected.sort((left, right) => left.rank - right.rank)
   }, [rankedRows, rivalRows, viewerRow])
 
   return (
-    <>
-      <SectionCardV2 tone="panel" density="none" className="space-y-3 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="v2-type-kicker">You</div>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot: " />
-            <span>{rankedRows.length} ranked</span>
+    <SectionCardV2 tone="panel" density="none" withGlow={false} className="companion-league-panel space-y-3 p-3.5">
+      <div className="companion-league-header flex items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="v2-type-kicker">Updated</div>
+          <div className="text-sm text-muted-foreground">
+            <SnapshotStamp timestamp={snapshotTimestamp} prefix="" />
           </div>
         </div>
-
-        {snapshot.state.status === 'error' ? (
-          <CompactMessage>{snapshot.state.message}</CompactMessage>
-        ) : !viewerRow ? (
-          <CompactMessage>Your row is not available in the latest snapshot.</CompactMessage>
-        ) : (
-          <StandingRow row={viewerRow} />
-        )}
-      </SectionCardV2>
-
-      <SectionCardV2 tone="panel" density="none" className="space-y-3 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="v2-type-kicker">Rivals</div>
-          <StatusTagV2 tone={rivalRows.length > 0 ? 'info' : 'secondary'}>{rivalRows.length}/{RIVAL_LIMIT}</StatusTagV2>
+        <div className="companion-league-header-tags flex items-center gap-1.5">
+          <StatusTagV2 tone="secondary">{`${rankedRows.length} ranked`}</StatusTagV2>
+          <StatusTagV2 tone="rival">{`Rivals ${profileState.rivalUserIds.length}/${RIVAL_LIMIT}`}</StatusTagV2>
+          {snapshot.state.status === 'loading' ? <StatusTagV2 tone="info">Syncing</StatusTagV2> : null}
         </div>
+      </div>
 
-        {profileState.message ? <CompactMessage>{profileState.message}</CompactMessage> : null}
+      {profileState.message ? <CompactMessage>{profileState.message}</CompactMessage> : null}
+      {snapshot.state.status === 'error' ? <CompactMessage>{snapshot.state.message}</CompactMessage> : null}
 
-        {profileState.status === 'loading' ? (
-          <CompactMessage>Loading saved rivals…</CompactMessage>
-        ) : profileState.rivalUserIds.length === 0 ? (
-          <CompactMessage>No saved rivals. Manage rivals on web.</CompactMessage>
-        ) : rivalRows.length === 0 ? (
-          <CompactMessage>Saved rivals are not present in this snapshot.</CompactMessage>
+      <SectionCardV2 tone="inset" density="none" withGlow={false} className="companion-league-inset space-y-2 p-2.5">
+        <FeedHeading label="Leaderboard" right={`Top ${TOP_LEADERBOARD_LIMIT} + You + Rivals`} />
+        {topWindowRows.length === 0 ? (
+          <CompactMessage>No leaderboard rows available.</CompactMessage>
         ) : (
-          <div className="space-y-2">
-            {rivalRows.map((row) => (
-              <StandingRow key={`rival-row-${entryIdentityKey(row.entry)}`} row={row} />
+          <div className="space-y-1.5">
+            {topWindowRows.map((row) => (
+              <CompactStandingRow
+                key={`league-${entryIdentityKey(row.entry)}`}
+                row={row}
+                showBreakdown={row.isViewer || row.rivalSlot !== null}
+              />
             ))}
           </div>
         )}
       </SectionCardV2>
-
-      <SectionCardV2 tone="panel" density="none" className="space-y-3 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="v2-type-kicker">Leaderboard</div>
-          {snapshot.state.status === 'loading' ? <StatusTagV2 tone="info">Loading</StatusTagV2> : null}
-        </div>
-
-        {snapshot.state.status === 'error' ? (
-          <CompactMessage>{snapshot.state.message}</CompactMessage>
-        ) : leaderboardRows.length === 0 ? (
-          <CompactMessage>No standings available.</CompactMessage>
-        ) : (
-          <div className="space-y-2">
-            {leaderboardRows.map((row) => (
-              <StandingRow key={`leaderboard-row-${entryIdentityKey(row.entry)}`} row={row} />
-            ))}
-          </div>
-        )}
-      </SectionCardV2>
-    </>
+    </SectionCardV2>
   )
 }

@@ -159,7 +159,7 @@ export default function CompanionPredictionsContent() {
   }
 
   return (
-    <SectionCardV2 tone="panel" density="none" className="space-y-3 p-4">
+    <SectionCardV2 tone="panel" density="none" withGlow={false} className="space-y-3 p-3.5">
       <div className="flex items-center justify-between gap-2">
         <div className="v2-type-kicker">Match Picks</div>
         <StatusTagV2 tone={quickMatchPending > 0 ? 'warning' : 'success'}>
@@ -174,7 +174,7 @@ export default function CompanionPredictionsContent() {
       ) : quickMatchItems.length === 0 ? (
         <CompactMessage>No editable matches right now.</CompactMessage>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {quickMatchItems.map((item) => {
             const match = item.match
             const workingPick = workingPicksByMatchId.get(match.id)
@@ -183,7 +183,7 @@ export default function CompanionPredictionsContent() {
             const rowError = matchErrors[match.id]
 
             return (
-              <div key={match.id} className="space-y-2 border-b border-border/60 pb-2 last:border-b-0">
+              <div key={match.id} className="companion-pick-item space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
                   <div className="v2-type-caption text-muted-foreground">
                     {match.stage} •{' '}
@@ -196,15 +196,17 @@ export default function CompanionPredictionsContent() {
                   </div>
                   <div className="flex items-center gap-2">
                     {savedMatchId === match.id ? <StatusTagV2 tone="success">Saved</StatusTagV2> : null}
-                    <Button
-                      size="xs"
-                      variant="secondary"
-                      disabled={!dirty || savingMatchId === match.id || !item.editable}
-                      loading={savingMatchId === match.id}
-                      onClick={() => void saveMatchPick(match)}
-                    >
-                      Save
-                    </Button>
+                    {(dirty || savingMatchId === match.id) ? (
+                      <Button
+                        size="xs"
+                        variant="secondary"
+                        disabled={savingMatchId === match.id || !item.editable}
+                        loading={savingMatchId === match.id}
+                        onClick={() => void saveMatchPick(match)}
+                      >
+                        Save
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
 

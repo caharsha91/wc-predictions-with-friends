@@ -1076,6 +1076,251 @@
   color: var(--muted-foreground);
 }
 
+.companion-mobile-shell {
+  background:
+    radial-gradient(110% 56% at 50% 0%, color-mix(in srgb, var(--v2-glow-soft) 38%, transparent), transparent 74%),
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 96%, transparent) 0%, var(--background) 100%);
+}
+
+.companion-mobile-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  margin-inline: auto;
+  display: flex;
+  max-width: 42rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: max(0.65rem, env(safe-area-inset-top)) 1rem 0.7rem;
+  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--background) 78%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-subtle) 72%, transparent);
+}
+
+.companion-mobile-main {
+  padding: 0.4rem 0.9rem calc(var(--bottom-nav-height) + 1.2rem);
+}
+
+.companion-mobile-content {
+  margin-inline: auto;
+  display: grid;
+  max-width: 42rem;
+  gap: 0.65rem;
+}
+
+.companion-mobile-nav {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--shell-sidebar-divider) 66%, transparent);
+}
+
+.companion-page-shell {
+  gap: 0.65rem;
+}
+
+.companion-page-header {
+  display: grid;
+  gap: 0.22rem;
+  padding-inline: 0.15rem;
+}
+
+.companion-page-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.68rem, 7vw, 2rem);
+  line-height: 1.12;
+  font-weight: var(--font-weight-semibold);
+  color: var(--foreground);
+  letter-spacing: 0.01em;
+}
+
+.companion-page-stack {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.companion-panel {
+  border-radius: 1rem;
+  border-color: color-mix(in srgb, var(--border-subtle) 86%, transparent);
+  box-shadow: var(--shadow0);
+}
+
+.companion-metric-tile,
+.companion-status-tile {
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 86%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+  padding: 0.5rem 0.65rem;
+}
+
+.companion-status-copy {
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+  padding: 0.45rem 0.65rem;
+  font-size: var(--text-xs);
+  color: var(--muted-foreground);
+}
+
+.companion-pick-item {
+  border-bottom: 1px solid color-mix(in srgb, var(--v2-border-soft) 76%, transparent);
+  padding-bottom: 0.55rem;
+}
+
+.companion-pick-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.companion-league-panel {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--v2-border-medium) 82%, transparent);
+  background:
+    radial-gradient(134% 132% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 22%, transparent), transparent 68%),
+    linear-gradient(146deg, color-mix(in srgb, var(--card) 92%, transparent) 0%, color-mix(in srgb, var(--muted) 54%, transparent) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 52%, transparent),
+    var(--shadow1);
+}
+
+.companion-league-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(86% 64% at 50% 100%, rgba(var(--secondary-rgb), 0.16), transparent 72%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.companion-league-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.companion-league-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--v2-border-soft) 72%, transparent);
+  padding-bottom: 0.45rem;
+}
+
+.companion-league-header-tags .v2-status-tag {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 78%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+}
+
+.companion-league-message {
+  border-color: color-mix(in srgb, var(--v2-border-soft) 74%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 84%, transparent);
+}
+
+.companion-league-inset {
+  border-color: color-mix(in srgb, var(--v2-border-soft) 78%, transparent);
+  background:
+    radial-gradient(112% 136% at 0% 100%, rgba(var(--secondary-rgb), 0.12), transparent 72%),
+    linear-gradient(138deg, color-mix(in srgb, var(--surface-2) 88%, transparent) 0%, color-mix(in srgb, var(--muted) 42%, transparent) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 48%, transparent),
+    var(--shadow0);
+}
+
+.companion-league-row {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  border-color: color-mix(in srgb, var(--v2-border-medium) 70%, transparent);
+  background:
+    radial-gradient(120% 132% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 22%, transparent), transparent 72%),
+    linear-gradient(140deg, color-mix(in srgb, var(--surface-2) 90%, transparent) 0%, color-mix(in srgb, var(--muted) 38%, transparent) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 34%, transparent),
+    0 8px 20px color-mix(in srgb, var(--background) 66%, transparent);
+}
+
+.companion-league-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--v2-glow-soft) 12%, transparent) 0%,
+    transparent 46%,
+    color-mix(in srgb, var(--v2-glow-soft) 10%, transparent) 100%
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.companion-league-row > * {
+  position: relative;
+  z-index: 1;
+}
+
+.companion-league-row[data-semantic-state='you'] {
+  border-color: color-mix(in srgb, var(--hl-you-border) 86%, var(--v2-border-medium) 14%);
+  background:
+    radial-gradient(122% 136% at 100% 0%, color-mix(in srgb, var(--hl-you-border-soft) 40%, transparent), transparent 70%),
+    linear-gradient(140deg, color-mix(in srgb, var(--hl-you-bg) 90%, var(--surface-2) 10%) 0%, color-mix(in srgb, var(--hl-you-bg) 68%, transparent) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--hl-you-border-soft) 78%, transparent),
+    0 10px 22px color-mix(in srgb, var(--hl-you-border-soft) 20%, transparent);
+}
+
+.companion-league-row[data-semantic-state='rival'] {
+  border-color: color-mix(in srgb, var(--hl-rival-border) 84%, var(--v2-border-medium) 16%);
+  background:
+    radial-gradient(118% 132% at 100% 0%, color-mix(in srgb, var(--hl-rival-border-soft) 36%, transparent), transparent 70%),
+    linear-gradient(142deg, color-mix(in srgb, var(--hl-rival-bg) 88%, var(--surface-2) 12%) 0%, color-mix(in srgb, var(--hl-rival-bg) 64%, transparent) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--hl-rival-border-soft) 74%, transparent),
+    0 8px 18px color-mix(in srgb, var(--hl-rival-border-soft) 16%, transparent);
+}
+
+.companion-league-row .v2-status-tag {
+  min-width: 3.7rem;
+  justify-content: center;
+}
+
+.companion-league-role-tag {
+  min-width: 4rem;
+  border-color: color-mix(in srgb, var(--v2-border-medium) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
+}
+
+.companion-league-move-tag {
+  min-width: 3.6rem;
+  border-color: color-mix(in srgb, var(--v2-border-medium) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+}
+
+.companion-league-breakdown {
+  gap: 0.36rem;
+}
+
+.companion-league-breakdown-chip {
+  border-color: color-mix(in srgb, var(--v2-border-medium) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 84%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 34%, transparent);
+}
+
+.companion-auth-shell {
+  padding-top: max(0.7rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.companion-auth-card {
+  box-shadow: var(--shadow1);
+}
+
+@media (min-width: 640px) {
+  .companion-mobile-main {
+    padding-inline: 1.1rem;
+  }
+
+  .companion-page-stack {
+    gap: 0.7rem;
+  }
+}
+
 .landing-v2-canvas {
   position: relative;
   isolation: isolate;
