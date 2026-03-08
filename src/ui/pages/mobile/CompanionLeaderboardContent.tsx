@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 
 import type { DataMode } from '../../../lib/dataMode'
 import type { LeaderboardEntry } from '../../../types/leaderboard'
-import { Button } from '../../components/ui/Button'
-import { Input } from '../../components/ui/Input'
 import MemberIdentityRowV2 from '../../components/v2/MemberIdentityRowV2'
 import RowShellV2 from '../../components/v2/RowShellV2'
 import SectionCardV2 from '../../components/v2/SectionCardV2'
@@ -19,7 +17,6 @@ import { buildLeaderboardPresentation } from '../../lib/leaderboardPresentation'
 import {
   fetchRivalDirectory,
   readUserProfile,
-  writeUserProfile,
   type RivalDirectoryEntry
 } from '../../lib/profilePersistence'
 
@@ -36,7 +33,6 @@ type ProfileState = {
   status: 'loading' | 'ready' | 'error'
   rivalUserIds: string[]
   rivalDirectory: RivalDirectoryEntry[]
-  saveStatus: 'idle' | 'saving' | 'error'
   message: string | null
 }
 
@@ -78,7 +74,11 @@ function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] 
   return result
 }
 
-function resolvePersistedRivalIds(profileRivals: string[], viewerId: string, directory: RivalDirectoryEntry[]): string[] {
+function resolvePersistedRivalIds(
+  profileRivals: string[],
+  viewerId: string,
+  directory: RivalDirectoryEntry[]
+): string[] {
   const sanitized = sanitizeRivalUserIds(profileRivals, viewerId)
   const directoryMap = new Map<string, string>()
 
@@ -153,18 +153,62 @@ function rankLabel(rank: number, tieCount: number): string {
   return `#${rank}`
 }
 
-function swapRivals(list: string[], sourceIndex: number, targetIndex: number): string[] {
-  if (sourceIndex < 0 || targetIndex < 0) return list
-  if (sourceIndex >= list.length || targetIndex >= list.length) return list
-  if (sourceIndex === targetIndex) return list
-  const next = [...list]
-  const [moved] = next.splice(sourceIndex, 1)
-  next.splice(targetIndex, 0, moved)
-  return next
-}
-
 function CompactMessage({ children }: { children: string }) {
   return <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">{children}</div>
+}
+
+function BreakdownChips({ entry }: { entry: LeaderboardEntry }) {
+  return (
+    <div className="v2-type-caption grid grid-cols-2 gap-1">
+      <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Exact {entry.exactPoints}</div>
+      <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Outcome {entry.resultPoints}</div>
+      <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">KO {entry.knockoutPoints}</div>
+      <div className="rounded-full border border-border/70 bg-background/45 px-2 py-1 tabular-nums">Bracket {entry.bracketPoints}</div>
+    </div>
+  )
+}
+
+function StandingRow({ row }: { row: RankedRow }) {
+  return (
+    <RowShellV2
+      key={`league-row-${entryIdentityKey(row.entry)}`}
+      depth={row.isViewer ? 'prominent' : 'embedded'}
+      state={row.isViewer ? 'you' : row.rivalSlot ? 'rival' : 'default'}
+      className="px-3 py-3"
+    >
+      <div className="space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-base font-semibold tabular-nums text-foreground">{rankLabel(row.rank, row.tieCount)}</div>
+            <MemberIdentityRowV2
+              name={row.entry.member.name}
+              favoriteTeamCode={row.entry.member.favoriteTeamCode ?? null}
+              avatarClassName="h-12 w-[72px]"
+              className="mt-1"
+              nameBadges={
+                row.isViewer ? (
+                  <StatusTagV2 tone="you">You</StatusTagV2>
+                ) : row.rivalSlot ? (
+                  <StatusTagV2 tone="rival">Rival {row.rivalSlot}</StatusTagV2>
+                ) : null
+              }
+            />
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-semibold tabular-nums text-foreground">{row.points}</div>
+            <div className="v2-type-kicker">Total</div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1">
+          <StatusTagV2 tone={movementTone(row.rankDelta)}>{movementLabel(row.rankDelta, 'rank')}</StatusTagV2>
+          <StatusTagV2 tone={movementTone(row.pointsDelta)}>{movementLabel(row.pointsDelta, 'pts')}</StatusTagV2>
+        </div>
+
+        <BreakdownChips entry={row.entry} />
+      </div>
+    </RowShellV2>
+  )
 }
 
 export default function CompanionLeaderboardContent() {
@@ -174,12 +218,10 @@ export default function CompanionLeaderboardContent() {
   const mode = useRouteDataMode()
   const snapshot = usePublishedSnapshot()
 
-  const [rivalQuery, setRivalQuery] = useState('')
   const [profileState, setProfileState] = useState<ProfileState>({
     status: 'loading',
     rivalUserIds: [],
     rivalDirectory: [],
-    saveStatus: 'idle',
     message: null
   })
 
@@ -194,7 +236,6 @@ export default function CompanionLeaderboardContent() {
           status: 'ready',
           rivalUserIds: [],
           rivalDirectory: [],
-          saveStatus: 'idle',
           message: null
         })
         return
@@ -216,7 +257,6 @@ export default function CompanionLeaderboardContent() {
           status: 'ready',
           rivalUserIds: persisted,
           rivalDirectory: directory,
-          saveStatus: 'idle',
           message: null
         })
       } catch (error) {
@@ -225,7 +265,6 @@ export default function CompanionLeaderboardContent() {
           status: 'error',
           rivalUserIds: [],
           rivalDirectory: [],
-          saveStatus: 'error',
           message: error instanceof Error ? error.message : 'Unable to load rivalry data.'
         })
       }
@@ -237,48 +276,6 @@ export default function CompanionLeaderboardContent() {
       canceled = true
     }
   }, [authState.user?.email, memberId, mode, viewerId])
-
-  async function persistRivals(nextRivals: string[]) {
-    if (!memberId) return
-    const normalized = resolvePersistedRivalIds(nextRivals, viewerId, profileState.rivalDirectory)
-
-    setProfileState((current) => ({
-      ...current,
-      rivalUserIds: normalized,
-      saveStatus: 'saving',
-      message: null
-    }))
-
-    try {
-      await writeUserProfile(mode, memberId, { rivalUserIds: normalized }, authState.user?.email ?? null)
-      setProfileState((current) => ({ ...current, saveStatus: 'idle' }))
-    } catch (error) {
-      setProfileState((current) => ({
-        ...current,
-        saveStatus: 'error',
-        message: error instanceof Error ? error.message : 'Unable to save rivals.'
-      }))
-    }
-  }
-
-  function addRival(rivalId: string) {
-    if (profileState.rivalUserIds.some((id) => normalizeKey(id) === normalizeKey(rivalId))) return
-    if (profileState.rivalUserIds.length >= RIVAL_LIMIT) return
-    void persistRivals([...profileState.rivalUserIds, rivalId])
-    setRivalQuery('')
-  }
-
-  function removeRival(rivalId: string) {
-    void persistRivals(profileState.rivalUserIds.filter((id) => normalizeKey(id) !== normalizeKey(rivalId)))
-  }
-
-  function moveRival(rivalId: string, direction: -1 | 1) {
-    const index = profileState.rivalUserIds.findIndex((id) => normalizeKey(id) === normalizeKey(rivalId))
-    if (index < 0) return
-    const target = index + direction
-    if (target < 0 || target >= profileState.rivalUserIds.length) return
-    void persistRivals(swapRivals(profileState.rivalUserIds, index, target))
-  }
 
   const presentationRows = useMemo(() => {
     if (snapshot.state.status !== 'ready') return [] as LeaderboardEntry[]
@@ -409,9 +406,8 @@ export default function CompanionLeaderboardContent() {
 
   const viewerRow = useMemo(() => rankedRows.find((row) => row.isViewer) ?? null, [rankedRows])
 
-  const focusedRows = useMemo(() => {
+  const rivalRows = useMemo(() => {
     const rows: RankedRow[] = []
-    if (viewerRow) rows.push(viewerRow)
 
     for (const rivalId of profileState.rivalUserIds) {
       const normalized = normalizeKey(rivalId)
@@ -421,13 +417,15 @@ export default function CompanionLeaderboardContent() {
         )
       )
       if (!row) continue
-      if (!rows.some((candidate) => entryIdentityKey(candidate.entry) === entryIdentityKey(row.entry))) rows.push(row)
+      if (!rows.some((candidate) => entryIdentityKey(candidate.entry) === entryIdentityKey(row.entry))) {
+        rows.push(row)
+      }
     }
 
     return rows
-  }, [profileState.rivalUserIds, rankedRows, viewerRow])
+  }, [profileState.rivalUserIds, rankedRows])
 
-  const standingsRows = useMemo(() => {
+  const leaderboardRows = useMemo(() => {
     if (rankedRows.length <= 12) return rankedRows
 
     const selected: RankedRow[] = []
@@ -442,7 +440,8 @@ export default function CompanionLeaderboardContent() {
     }
 
     rankedRows.slice(0, 8).forEach(add)
-    focusedRows.forEach(add)
+    add(viewerRow ?? undefined)
+    rivalRows.forEach(add)
 
     for (const row of rankedRows) {
       if (selected.length >= 12) break
@@ -450,132 +449,65 @@ export default function CompanionLeaderboardContent() {
     }
 
     return selected.sort((left, right) => left.rank - right.rank)
-  }, [focusedRows, rankedRows])
-
-  const availableSuggestions = useMemo(() => {
-    const query = rivalQuery.trim().toLowerCase()
-    return profileState.rivalDirectory
-      .filter((entry) => !profileState.rivalUserIds.some((id) => normalizeKey(id) === normalizeKey(entry.id)))
-      .filter((entry) => {
-        if (!query) return true
-        return normalizeKey(entry.id).includes(query) || normalizeKey(entry.displayName).includes(query)
-      })
-      .slice(0, 8)
-  }, [profileState.rivalDirectory, profileState.rivalUserIds, rivalQuery])
+  }, [rankedRows, rivalRows, viewerRow])
 
   return (
     <>
       <SectionCardV2 tone="panel" density="none" className="space-y-3 p-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="v2-type-kicker">Rivals</div>
-          <div className="flex items-center gap-2">
-            <StatusTagV2 tone={profileState.rivalUserIds.length > 0 ? 'info' : 'secondary'}>
-              {profileState.rivalUserIds.length}/{RIVAL_LIMIT}
-            </StatusTagV2>
-            {profileState.saveStatus === 'saving' ? <StatusTagV2 tone="info">Saving</StatusTagV2> : null}
+          <div className="v2-type-kicker">You</div>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot: " />
+            <span>{rankedRows.length} ranked</span>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot: " />
-          <span>{rankedRows.length} ranked</span>
-          {viewerRow ? <span>{rankLabel(viewerRow.rank, viewerRow.tieCount)} • {viewerRow.points} pts</span> : null}
-        </div>
-
-        {profileState.rivalUserIds.length === 0 ? (
-          <CompactMessage>Add rivals for faster league check-ins.</CompactMessage>
+        {snapshot.state.status === 'error' ? (
+          <CompactMessage>{snapshot.state.message}</CompactMessage>
+        ) : !viewerRow ? (
+          <CompactMessage>Your row is not available in the latest snapshot.</CompactMessage>
         ) : (
-          <div className="space-y-2">
-            {profileState.rivalUserIds.map((rivalId, index) => {
-              const rival = profileState.rivalDirectory.find((entry) => normalizeKey(entry.id) === normalizeKey(rivalId))
-              return (
-                <div key={`selected-rival-${rivalId}`} className="flex items-center justify-between gap-2 rounded-lg border border-border px-2 py-1.5">
-                  <div className="min-w-0">
-                    <div className="v2-type-body-sm truncate text-foreground">{rival?.displayName ?? rivalId}</div>
-                    <div className="v2-type-caption text-muted-foreground">Slot {index + 1}</div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="xs" variant="quiet" disabled={index === 0} onClick={() => moveRival(rivalId, -1)}>Up</Button>
-                    <Button size="xs" variant="quiet" disabled={index === profileState.rivalUserIds.length - 1} onClick={() => moveRival(rivalId, 1)}>Down</Button>
-                    <Button size="xs" variant="ghost" onClick={() => removeRival(rivalId)}>Remove</Button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          <StandingRow row={viewerRow} />
         )}
-
-        <Input
-          value={rivalQuery}
-          onChange={(event) => setRivalQuery(event.target.value)}
-          placeholder="Search members"
-          className="h-9"
-        />
-
-        {availableSuggestions.length === 0 ? (
-          <CompactMessage>
-            {profileState.rivalUserIds.length >= RIVAL_LIMIT ? 'Rival limit reached.' : 'No matching members.'}
-          </CompactMessage>
-        ) : (
-          <div className="space-y-1.5">
-            {availableSuggestions.map((entry) => (
-              <div key={`suggestion-${entry.id}`} className="flex items-center justify-between gap-2 rounded-lg border border-border px-2 py-1.5">
-                <div className="min-w-0 v2-type-body-sm truncate text-foreground">{entry.displayName}</div>
-                <Button
-                  size="xs"
-                  variant="secondary"
-                  disabled={profileState.rivalUserIds.length >= RIVAL_LIMIT}
-                  onClick={() => addRival(entry.id)}
-                >
-                  Add
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {profileState.message ? <CompactMessage>{profileState.message}</CompactMessage> : null}
       </SectionCardV2>
 
       <SectionCardV2 tone="panel" density="none" className="space-y-3 p-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="v2-type-kicker">Standings</div>
+          <div className="v2-type-kicker">Rivals</div>
+          <StatusTagV2 tone={rivalRows.length > 0 ? 'info' : 'secondary'}>{rivalRows.length}/{RIVAL_LIMIT}</StatusTagV2>
+        </div>
+
+        {profileState.message ? <CompactMessage>{profileState.message}</CompactMessage> : null}
+
+        {profileState.status === 'loading' ? (
+          <CompactMessage>Loading saved rivals…</CompactMessage>
+        ) : profileState.rivalUserIds.length === 0 ? (
+          <CompactMessage>No saved rivals. Manage rivals on web.</CompactMessage>
+        ) : rivalRows.length === 0 ? (
+          <CompactMessage>Saved rivals are not present in this snapshot.</CompactMessage>
+        ) : (
+          <div className="space-y-2">
+            {rivalRows.map((row) => (
+              <StandingRow key={`rival-row-${entryIdentityKey(row.entry)}`} row={row} />
+            ))}
+          </div>
+        )}
+      </SectionCardV2>
+
+      <SectionCardV2 tone="panel" density="none" className="space-y-3 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="v2-type-kicker">Leaderboard</div>
           {snapshot.state.status === 'loading' ? <StatusTagV2 tone="info">Loading</StatusTagV2> : null}
         </div>
 
         {snapshot.state.status === 'error' ? (
           <CompactMessage>{snapshot.state.message}</CompactMessage>
-        ) : standingsRows.length === 0 ? (
+        ) : leaderboardRows.length === 0 ? (
           <CompactMessage>No standings available.</CompactMessage>
         ) : (
           <div className="space-y-2">
-            {standingsRows.map((row) => (
-              <RowShellV2
-                key={`league-row-${entryIdentityKey(row.entry)}`}
-                depth={row.isViewer ? 'prominent' : 'embedded'}
-                state={row.isViewer ? 'you' : row.rivalSlot ? 'rival' : 'default'}
-                className="px-3 py-2"
-              >
-                <MemberIdentityRowV2
-                  name={`${rankLabel(row.rank, row.tieCount)} ${row.entry.member.name}`}
-                  favoriteTeamCode={row.entry.member.favoriteTeamCode ?? null}
-                  subtitle={<span>{row.entry.exactCount} exacts • {row.entry.picksCount} picks</span>}
-                  nameBadges={
-                    row.isViewer ? (
-                      <StatusTagV2 tone="you">You</StatusTagV2>
-                    ) : row.rivalSlot ? (
-                      <StatusTagV2 tone="rival">Rival {row.rivalSlot}</StatusTagV2>
-                    ) : null
-                  }
-                  badges={(
-                    <>
-                      <StatusTagV2 tone={movementTone(row.rankDelta)}>{movementLabel(row.rankDelta, 'rank')}</StatusTagV2>
-                      <StatusTagV2 tone={movementTone(row.pointsDelta)}>{movementLabel(row.pointsDelta, 'pts')}</StatusTagV2>
-                    </>
-                  )}
-                  marker={<div className="v2-type-body-sm tabular-nums text-foreground">{row.points} pts</div>}
-                />
-              </RowShellV2>
+            {leaderboardRows.map((row) => (
+              <StandingRow key={`leaderboard-row-${entryIdentityKey(row.entry)}`} row={row} />
             ))}
           </div>
         )}

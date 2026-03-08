@@ -15,9 +15,15 @@ test('companion route smoke: app includes /m route namespace', async () => {
   )
 
   assert.equal(
-    source.includes('<Route path="predictions" element={<CompanionPredictionsPage />} />'),
+    source.includes('<Route path="picks" element={<CompanionPicksPage />} />'),
     true,
-    'Companion route should include predictions screen'
+    'Companion route should include picks screen'
+  )
+
+  assert.equal(
+    source.includes('<Route path="predictions" element={<Navigate to="/m" replace />} />'),
+    true,
+    'Companion should deprecate /m/predictions to /m'
   )
 
   assert.equal(

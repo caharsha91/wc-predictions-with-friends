@@ -8,6 +8,7 @@ import PageHeaderV2 from '../../components/v2/PageHeaderV2'
 import PageShellV2 from '../../components/v2/PageShellV2'
 import SectionCardV2 from '../../components/v2/SectionCardV2'
 import SnapshotStamp from '../../components/v2/SnapshotStamp'
+import StatusTagV2 from '../../components/v2/StatusTagV2'
 import { useTournamentPhaseState } from '../../context/TournamentPhaseContext'
 import { useBracketKnockoutData } from '../../hooks/useBracketKnockoutData'
 import { useGroupStageData } from '../../hooks/useGroupStageData'
@@ -67,6 +68,10 @@ function formatKickoff(utcIso: string | null): string {
   }).format(value)
 }
 
+function StatusCopy({ children }: { children: string }) {
+  return <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground">{children}</div>
+}
+
 export function CompanionHomePage() {
   const now = useNow({ tickMs: 60_000 })
   const phaseState = useTournamentPhaseState()
@@ -99,10 +104,9 @@ export function CompanionHomePage() {
     }, 0)
   }, [editableMatches, picksState.picks, viewerId])
 
-  const groupPending = useMemo(() => {
-    if (!phaseState.lockFlags.groupEditable || groupStage.isLocked) return 0
-
+  const groupSummary = useMemo(() => {
     let groupsDone = 0
+
     for (const groupId of groupStage.groupIds) {
       const group = groupStage.data.groups[groupId]
       const teamCodes = groupTeams[groupId] ?? []
@@ -110,14 +114,24 @@ export function CompanionHomePage() {
     }
 
     const bestThirdDone = groupStage.data.bestThirds.filter((code) => Boolean(String(code ?? '').trim())).length
-    return Math.max(0, groupStage.groupIds.length - groupsDone) + Math.max(0, BEST_THIRD_TARGET - bestThirdDone)
-  }, [groupStage.data.bestThirds, groupStage.data.groups, groupStage.groupIds, groupStage.isLocked, groupTeams, phaseState.lockFlags.groupEditable])
+    const pending = Math.max(0, groupStage.groupIds.length - groupsDone) + Math.max(0, BEST_THIRD_TARGET - bestThirdDone)
 
-  const knockoutPending = phaseState.lockFlags.bracketEditable
-    ? Math.max(0, knockoutData.totalMatches - knockoutData.completeMatches)
-    : 0
+    return {
+      groupsDone,
+      groupsTotal: groupStage.groupIds.length,
+      bestThirdDone,
+      pending
+    }
+  }, [groupStage.data.bestThirds, groupStage.data.groups, groupStage.groupIds, groupTeams])
 
-  const totalPending = pendingMatchEdits + groupPending + knockoutPending
+  const drawConfirmed =
+    phaseState.tournamentPhase === 'KO_OPEN' ||
+    phaseState.tournamentPhase === 'KO_LOCKED' ||
+    phaseState.tournamentPhase === 'FINAL'
+
+  const knockoutTotal = knockoutData.totalMatches
+  const knockoutComplete = knockoutData.completeMatches
+
   const nextKickoff = timeline.upcoming.find((item) => item.normalizedStatus === 'scheduled')?.match.kickoffUtc ?? null
   const liveCount = timeline.upcoming.filter((item) => item.normalizedStatus === 'live').length
 
@@ -138,8 +152,8 @@ export function CompanionHomePage() {
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <div className="rounded-xl border border-border bg-background px-3 py-2">
-            <div className="v2-type-kicker text-muted-foreground">Pending</div>
-            <div className="v2-type-body-sm font-semibold text-foreground">{totalPending}</div>
+            <div className="v2-type-kicker text-muted-foreground">Pending picks</div>
+            <div className="v2-type-body-sm font-semibold text-foreground">{pendingMatchEdits}</div>
           </div>
           <div className="rounded-xl border border-border bg-background px-3 py-2">
             <div className="v2-type-kicker text-muted-foreground">Live</div>
@@ -156,21 +170,85 @@ export function CompanionHomePage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <CompanionButtonLink to="/m/predictions" size="sm" variant="primary">
-            {totalPending > 0 ? 'Continue edits' : 'Open predictions'}
+          <CompanionButtonLink to="/m/picks" size="sm" variant="primary">
+            {pendingMatchEdits > 0 ? 'Continue picks' : 'Open picks'}
           </CompanionButtonLink>
           <CompanionButtonLink to="/m/leaderboard" size="sm" variant="secondary">
             Open league
           </CompanionButtonLink>
         </div>
       </SectionCardV2>
+
+      <SectionCardV2 tone="panel" density="none" className="space-y-3 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="v2-type-kicker">Group Stage</div>
+          <StatusTagV2 tone={groupSummary.pending > 0 ? 'warning' : 'success'}>
+            {groupSummary.pending > 0 ? `${groupSummary.pending} pending` : 'Complete'}
+          </StatusTagV2>
+        </div>
+
+        {groupStage.loadState.status === 'loading' ? (
+          <StatusCopy>Syncing group stage status…</StatusCopy>
+        ) : groupStage.loadState.status === 'error' ? (
+          <StatusCopy>{groupStage.loadState.message}</StatusCopy>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="rounded-lg border border-border bg-background px-3 py-2">
+              <div className="text-muted-foreground">Groups</div>
+              <div className="font-semibold text-foreground">{groupSummary.groupsDone}/{groupSummary.groupsTotal}</div>
+            </div>
+            <div className="rounded-lg border border-border bg-background px-3 py-2">
+              <div className="text-muted-foreground">Best 3rd</div>
+              <div className="font-semibold text-foreground">{groupSummary.bestThirdDone}/{BEST_THIRD_TARGET}</div>
+            </div>
+            <div className="rounded-lg border border-border bg-background px-3 py-2">
+              <div className="text-muted-foreground">Status</div>
+              <div className="font-semibold text-foreground">{groupStage.isLocked ? 'Locked' : 'Open'}</div>
+            </div>
+          </div>
+        )}
+
+        <StatusCopy>Group stage actions are available on web.</StatusCopy>
+      </SectionCardV2>
+
+      <SectionCardV2 tone="panel" density="none" className="space-y-3 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="v2-type-kicker">Knockout Bracket</div>
+          <StatusTagV2 tone={!drawConfirmed ? 'warning' : phaseState.lockFlags.bracketEditable ? 'info' : 'locked'}>
+            {!drawConfirmed ? 'Not open' : phaseState.lockFlags.bracketEditable ? 'Open' : 'Locked'}
+          </StatusTagV2>
+        </div>
+
+        {knockoutData.loadState.status === 'loading' ? (
+          <StatusCopy>Syncing knockout bracket status…</StatusCopy>
+        ) : knockoutData.loadState.status === 'error' ? (
+          <StatusCopy>{knockoutData.loadState.message}</StatusCopy>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="rounded-lg border border-border bg-background px-3 py-2">
+              <div className="text-muted-foreground">Picks</div>
+              <div className="font-semibold text-foreground">{knockoutComplete}/{knockoutTotal}</div>
+            </div>
+            <div className="rounded-lg border border-border bg-background px-3 py-2">
+              <div className="text-muted-foreground">Draw</div>
+              <div className="font-semibold text-foreground">{drawConfirmed ? 'Confirmed' : 'Pending'}</div>
+            </div>
+            <div className="rounded-lg border border-border bg-background px-3 py-2">
+              <div className="text-muted-foreground">Phase</div>
+              <div className="font-semibold text-foreground">{phaseState.tournamentPhase}</div>
+            </div>
+          </div>
+        )}
+
+        <StatusCopy>Knockout bracket actions are available on web.</StatusCopy>
+      </SectionCardV2>
     </CompanionPageFrame>
   )
 }
 
-export function CompanionPredictionsPage() {
+export function CompanionPicksPage() {
   return (
-    <CompanionPageFrame kicker="Companion" title="Predictions">
+    <CompanionPageFrame kicker="Companion" title="Picks">
       <CompanionPredictionsContent />
     </CompanionPageFrame>
   )

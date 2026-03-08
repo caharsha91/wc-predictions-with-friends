@@ -40,6 +40,8 @@ import { useRouteDataMode } from '../hooks/useRouteDataMode'
 import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
+import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
+import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
 import { validateLastRoute } from '../lib/lastRoute'
 import {
   lockedFinalLabel,
@@ -84,6 +86,7 @@ type SnapshotRow = {
   name: string
   favoriteTeamCode: string | null
   rank: number | null
+  tieCount: number | null
   points: number | null
   isViewer: boolean
 }
@@ -147,6 +150,20 @@ function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] 
 
 function normalizeKey(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase()
+}
+
+function getEntryIdentityKey(entry: LeaderboardEntry): string {
+  const memberId = normalizeKey(entry.member.id)
+  if (memberId) return `id:${memberId}`
+  const memberEmail = normalizeKey(entry.member.email)
+  if (memberEmail) return `email:${memberEmail}`
+  return `name:${normalizeKey(entry.member.name)}`
+}
+
+function formatRankLabel(rank: number | null, tieCount: number | null): string {
+  if (rank === null) return 'Unranked'
+  if (tieCount !== null && tieCount > 1) return `T#${rank}`
+  return `#${rank}`
 }
 
 function arraysEqual(left: string[], right: string[]): boolean {
@@ -470,17 +487,27 @@ function formatHeaderTime(iso?: string | null): string {
 
 function resolveSnapshotRow(
   id: string,
-  leaderboardById: Map<string, { entry: LeaderboardEntry; rank: number }>,
+  leaderboardById: Map<string, { entry: LeaderboardEntry; rank: number; tieCount: number }>,
   fallbackName: string,
   favoriteTeamCode: string | null,
   isViewer: boolean
 ): SnapshotRow {
-  const match = leaderboardById.get(normalizeKey(id))
+  const normalized = normalizeKey(id)
+  const match =
+    leaderboardById.get(id) ??
+    leaderboardById.get(normalized) ??
+    leaderboardById.get(`id:${normalized}`) ??
+    leaderboardById.get(`name:${normalized}`) ??
+    leaderboardById.get(`email:${normalized}`) ??
+    leaderboardById.get(fallbackName) ??
+    leaderboardById.get(normalizeKey(fallbackName)) ??
+    leaderboardById.get(`name:${normalizeKey(fallbackName)}`)
   return {
     id,
     name: match?.entry.member.name ?? fallbackName,
     favoriteTeamCode,
     rank: match?.rank ?? null,
+    tieCount: match?.tieCount ?? null,
     points: typeof match?.entry.totalPoints === 'number' ? match.entry.totalPoints : null,
     isViewer
   }
@@ -599,17 +626,82 @@ export default function LandingPage() {
     favoriteTeamPreference.favoriteTeamCode ?? currentUser?.favoriteTeamCode
   )
 
-  const leaderboardById = useMemo(() => {
-    const lookup = new Map<string, { entry: LeaderboardEntry; rank: number }>()
-    if (!snapshotReady) return lookup
-    for (let index = 0; index < snapshotReady.leaderboardRows.length; index += 1) {
-      const row = snapshotReady.leaderboardRows[index]
-      const key = normalizeKey(row.member.id)
-      if (!key) continue
-      lookup.set(key, { entry: row, rank: index + 1 })
-    }
-    return lookup
+  const presentedLeaderboardRows = useMemo(() => {
+    if (!snapshotReady) return [] as LeaderboardEntry[]
+    return buildLeaderboardPresentation({
+      snapshotTimestamp: snapshotReady.snapshotTimestamp,
+      groupStageComplete: snapshotReady.groupStageComplete,
+      projectedGroupStagePointsByUser: snapshotReady.projectedGroupStagePointsByUser,
+      leaderboardRows: snapshotReady.leaderboardRows
+    }).rows
   }, [snapshotReady])
+
+  const tieRankedLeaderboardRows = useMemo(
+    () =>
+      rankRowsWithTiePriority({
+        rows: presentedLeaderboardRows,
+        getPoints: (entry) => entry.totalPoints,
+        getIdentityKeys: (entry) => resolveLeaderboardIdentityKeys(entry),
+        getName: (entry) => entry.member.name,
+        viewerIdentity: viewerId,
+        rivalIdentities: rivalUserIds
+      }),
+    [presentedLeaderboardRows, rivalUserIds, viewerId]
+  )
+
+  const snapshotRows = tieRankedLeaderboardRows.sortedRows
+
+  const rankByEntryKey = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const { row, rank } of tieRankedLeaderboardRows.rankedRows) {
+      map.set(getEntryIdentityKey(row), rank)
+    }
+    return map
+  }, [tieRankedLeaderboardRows.rankedRows])
+
+  const tieCountByEntryKey = useMemo(() => {
+    const tieCountByPoints = new Map<number, number>()
+    const tieCountByKey = new Map<string, number>()
+
+    for (const entry of snapshotRows) {
+      tieCountByPoints.set(entry.totalPoints, (tieCountByPoints.get(entry.totalPoints) ?? 0) + 1)
+    }
+    for (const entry of snapshotRows) {
+      tieCountByKey.set(getEntryIdentityKey(entry), tieCountByPoints.get(entry.totalPoints) ?? 1)
+    }
+
+    return tieCountByKey
+  }, [snapshotRows])
+
+  const leaderboardById = useMemo(() => {
+    const lookup = new Map<string, { entry: LeaderboardEntry; rank: number; tieCount: number }>()
+    for (let index = 0; index < snapshotRows.length; index += 1) {
+      const entry = snapshotRows[index]
+      const entryKey = getEntryIdentityKey(entry)
+      const rank = rankByEntryKey.get(entryKey) ?? index + 1
+      const tieCount = tieCountByEntryKey.get(entryKey) ?? 1
+      const identityKeys = resolveLeaderboardIdentityKeys(entry)
+      const idKey = normalizeKey(entry.member.id)
+      const emailKey = normalizeKey(entry.member.email)
+      const nameKey = normalizeKey(entry.member.name)
+
+      const keys = new Set<string>(identityKeys)
+      if (idKey) keys.add(idKey)
+      if (emailKey) keys.add(emailKey)
+      if (nameKey) keys.add(nameKey)
+      if (idKey) keys.add(`id:${idKey}`)
+      if (emailKey) keys.add(`email:${emailKey}`)
+      if (nameKey) keys.add(`name:${nameKey}`)
+
+      for (const key of keys) {
+        if (!key) continue
+        lookup.set(key, { entry, rank, tieCount })
+        lookup.set(normalizeKey(key), { entry, rank, tieCount })
+      }
+    }
+
+    return lookup
+  }, [rankByEntryKey, snapshotRows, tieCountByEntryKey])
 
   const rivalMap = useMemo(() => {
     const map = new Map<string, RivalDirectoryEntry>()
@@ -699,10 +791,10 @@ export default function LandingPage() {
   }, [rivalMap, rivalQuery, rivalUserIds, rivalsState, viewerId, viewerName])
 
   const podiumRows = useMemo(() => {
-    if (!snapshotReady) return []
-    return snapshotReady.leaderboardRows.slice(0, 3).map((entry, index) => {
+    return snapshotRows.slice(0, 3).map((entry, index) => {
       const rank = (index + 1) as 1 | 2 | 3
       const rowId = entry.member.id || `podium-${rank}`
+      const entryKey = getEntryIdentityKey(entry)
       const isViewer = resolveLeaderboardIdentityKeys(entry).some((key) => viewerIdentityKeys.has(normalizeKey(key)))
       const favoriteTeamCode = resolveSnapshotEntryFavoriteTeamCode(entry)
 
@@ -711,13 +803,13 @@ export default function LandingPage() {
         name: entry.member.name,
         points: entry.totalPoints,
         rank,
+        displayRank: rankByEntryKey.get(entryKey) ?? rank,
+        tieCount: tieCountByEntryKey.get(entryKey) ?? 1,
         favoriteTeamCode,
         isViewer
       } satisfies LeaderboardPodiumRow
     })
-  }, [resolveSnapshotEntryFavoriteTeamCode, snapshotReady, viewerIdentityKeys])
-
-  const snapshotRows = snapshotReady?.leaderboardRows ?? []
+  }, [rankByEntryKey, resolveSnapshotEntryFavoriteTeamCode, snapshotRows, tieCountByEntryKey, viewerIdentityKeys])
 
   const trackedStandingsIds = useMemo(
     () =>
@@ -1069,19 +1161,15 @@ export default function LandingPage() {
   const viewerStandingSummary = useMemo(() => {
     if (!snapshotReady || snapshotRows.length === 0) return null
 
-    const rankedRows: Array<{ entry: LeaderboardEntry; rank: number; points: number }> = []
-    let previousPoints: number | null = null
-    let currentRank = 0
-
-    for (let index = 0; index < snapshotRows.length; index += 1) {
-      const entry = snapshotRows[index]
-      const points = Number.isFinite(entry.totalPoints) ? entry.totalPoints : 0
-      if (previousPoints === null || points !== previousPoints) {
-        currentRank = index + 1
-        previousPoints = points
+    const rankedRows = snapshotRows.map((entry, index) => {
+      const entryKey = getEntryIdentityKey(entry)
+      return {
+        entry,
+        rank: rankByEntryKey.get(entryKey) ?? index + 1,
+        points: Number.isFinite(entry.totalPoints) ? entry.totalPoints : 0,
+        tieCount: tieCountByEntryKey.get(entryKey) ?? 1
       }
-      rankedRows.push({ entry, rank: currentRank, points })
-    }
+    })
 
     const viewerIndex = rankedRows.findIndex(({ entry }) =>
       resolveLeaderboardIdentityKeys(entry).some((key) => viewerIdentityKeys.has(normalizeKey(key)))
@@ -1089,7 +1177,7 @@ export default function LandingPage() {
     if (viewerIndex < 0) return null
 
     const viewerRow = rankedRows[viewerIndex]
-    const tiedCount = rankedRows.filter((row) => row.points === viewerRow.points).length
+    const tiedCount = viewerRow.tieCount
 
     let aboveDifferentRank: { rank: number; points: number } | null = null
     for (let index = viewerIndex - 1; index >= 0; index -= 1) {
@@ -1127,12 +1215,15 @@ export default function LandingPage() {
       gapToBelow,
       gapToBelowRank: belowDifferentRank?.rank ?? null
     }
-  }, [snapshotReady, snapshotRows, viewerIdentityKeys])
+  }, [rankByEntryKey, snapshotReady, snapshotRows, tieCountByEntryKey, viewerIdentityKeys])
 
   const viewerStandingLabel = useMemo(() => {
     if (!viewerStandingSummary) return 'Your position will appear after the next published snapshot.'
 
-    const segments = [`You are #${viewerStandingSummary.rank}`, `${viewerStandingSummary.points} pts`]
+    const segments = [
+      `You are ${formatRankLabel(viewerStandingSummary.rank, viewerStandingSummary.tiedCount)}`,
+      `${viewerStandingSummary.points} pts`
+    ]
     if (viewerStandingSummary.tiedCount > 1) {
       const others = viewerStandingSummary.tiedCount - 1
       segments.push(`Tied with ${others} ${others === 1 ? 'player' : 'players'}`)
@@ -1374,7 +1465,7 @@ export default function LandingPage() {
                             <span className="mx-1.5">·</span>
                           </>
                         ) : null}
-                        <span>{row.rank ? `#${row.rank}` : 'Unranked'}</span>
+                        <span>{formatRankLabel(row.rank, row.tieCount)}</span>
                         <span className="mx-1.5">·</span>
                         <span>{row.points ?? '—'} pts</span>
                       </span>

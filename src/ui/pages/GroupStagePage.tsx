@@ -160,6 +160,32 @@ function sanitizeRivalUserIds(nextRivals: string[], viewerId: string): string[] 
   return next
 }
 
+function buildRivalComparisonIdentities(
+  rivalUserIds: string[],
+  rivalDirectoryByIdentity: Map<string, RivalDirectoryEntry>
+): string[] {
+  const seen = new Set<string>()
+  const identities: string[] = []
+
+  for (const rivalId of rivalUserIds) {
+    const rivalKey = normalizeKey(rivalId)
+    const rivalDirectoryEntry =
+      rivalDirectoryByIdentity.get(rivalId) ??
+      rivalDirectoryByIdentity.get(rivalKey) ??
+      rivalDirectoryByIdentity.get(`id:${rivalKey}`)
+
+    const candidates = [rivalId, rivalDirectoryEntry?.id, rivalDirectoryEntry?.displayName, rivalDirectoryEntry?.email]
+    for (const candidate of candidates) {
+      const normalized = normalizeKey(candidate)
+      if (!normalized || seen.has(normalized)) continue
+      seen.add(normalized)
+      identities.push(candidate ?? normalized)
+    }
+  }
+
+  return identities
+}
+
 function getGroupJumpStatus(
   groupId: string,
   groups: Record<string, GroupPrediction>,
@@ -679,6 +705,11 @@ export default function GroupStagePage() {
     return map
   }, [rivalDirectoryEntries])
 
+  const rivalComparisonIdentities = useMemo(
+    () => buildRivalComparisonIdentities(rivalUserIds, rivalDirectoryByIdentity),
+    [rivalDirectoryByIdentity, rivalUserIds]
+  )
+
   const resolveCardRowFavoriteTeamCode = useCallback(
     ({
       rowId,
@@ -762,7 +793,7 @@ export default function GroupStagePage() {
       getIdentityKeys: (row) => [row.id, `id:${row.id}`, row.name, `name:${row.name}`],
       getName: (row) => row.name,
       viewerIdentity: viewerId,
-      rivalIdentities: rivalUserIds
+      rivalIdentities: rivalComparisonIdentities
     })
 
     return ranked.rankedRows.map(({ row, rank }) => ({
@@ -780,11 +811,41 @@ export default function GroupStagePage() {
     frozenLeaderboardRows,
     isFinalResultsMode,
     projectedImpactRows,
+    rivalComparisonIdentities,
     resolveCardRowFavoriteTeamCode,
-    rivalUserIds,
     viewerKeys,
     viewerId
   ])
+
+  const rivalPriorityIdsForCard = useMemo(() => {
+    return rivalUserIds.map((rivalId) => {
+      const rivalKey = normalizeKey(rivalId)
+      const rivalDirectoryEntry =
+        rivalDirectoryByIdentity.get(rivalId) ??
+        rivalDirectoryByIdentity.get(rivalKey) ??
+        rivalDirectoryByIdentity.get(`id:${rivalKey}`)
+      const rivalNameKey = normalizeKey(rivalDirectoryEntry?.displayName)
+      const rivalEmailKey = normalizeKey(rivalDirectoryEntry?.email)
+      const rivalIdKey = normalizeKey(rivalDirectoryEntry?.id)
+
+      const match = leaderboardRowsForCard.find((row) => {
+        const rowIdKey = normalizeKey(row.id)
+        const rowNameKey = normalizeKey(row.name)
+        return (
+          rowIdKey === rivalKey ||
+          rowIdKey === rivalIdKey ||
+          rowIdKey === rivalNameKey ||
+          rowIdKey === rivalEmailKey ||
+          rowNameKey === rivalKey ||
+          rowNameKey === rivalIdKey ||
+          rowNameKey === rivalNameKey ||
+          rowNameKey === rivalEmailKey
+        )
+      })
+
+      return match?.id ?? match?.name ?? rivalDirectoryEntry?.displayName?.trim() ?? rivalId
+    })
+  }, [leaderboardRowsForCard, rivalDirectoryByIdentity, rivalUserIds])
 
   const selectedGroupPrediction = groupStage.data.groups[selectedStandingsGroup] ?? {}
   const selectedGroupTeamCodes = buildGroupTeamCodes(groupTeams[selectedStandingsGroup] ?? [])
@@ -1041,7 +1102,7 @@ export default function GroupStagePage() {
       title={isFinalResultsMode ? 'Final Leaderboard (Group Stage)' : 'Leaderboard Outlook'}
       leaderboardPath={leaderboardPath}
       previewRowCount={isDesktopRailViewport ? DESKTOP_PREVIEW_ROW_COUNT : undefined}
-      priorityUserIds={rivalUserIds}
+      priorityUserIds={rivalPriorityIdsForCard}
     />
   )
 

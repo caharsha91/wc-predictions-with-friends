@@ -183,11 +183,18 @@ function resolvePersistedRivalIds(
   const sanitized = sanitizeRivalUserIds(profileRivalUserIds, viewerId)
   if (mode !== 'default') return sanitized
 
-  const directoryById = new Map<string, string>()
+  const directoryByIdentity = new Map<string, string>()
   for (const entry of directory) {
     const trimmed = entry.id?.trim()
     if (!trimmed) continue
-    directoryById.set(normalizeIdentity(trimmed), trimmed)
+    const displayName = entry.displayName?.trim()
+    const email = entry.email?.trim()
+    const identityCandidates = [trimmed, displayName, email]
+    for (const candidate of identityCandidates) {
+      const normalized = normalizeIdentity(candidate)
+      if (!normalized || directoryByIdentity.has(normalized)) continue
+      directoryByIdentity.set(normalized, trimmed)
+    }
   }
 
   const viewerKey = normalizeIdentity(viewerId)
@@ -195,7 +202,7 @@ function resolvePersistedRivalIds(
   const resolved: string[] = []
 
   for (const rivalId of sanitized) {
-    const canonicalId = directoryById.get(normalizeIdentity(rivalId))
+    const canonicalId = directoryByIdentity.get(normalizeIdentity(rivalId))
     if (!canonicalId) continue
     const canonicalKey = normalizeIdentity(canonicalId)
     if (!canonicalKey || canonicalKey === viewerKey || seen.has(canonicalKey)) continue
@@ -205,6 +212,37 @@ function resolvePersistedRivalIds(
   }
 
   return resolved
+}
+
+function buildRivalComparisonIdentities(rivalUserIds: string[], directoryEntries: RivalDirectoryEntry[]): string[] {
+  const directoryByIdentity = new Map<string, RivalDirectoryEntry>()
+  for (const entry of directoryEntries) {
+    const id = entry.id?.trim()
+    const displayName = entry.displayName?.trim()
+    const email = entry.email?.trim()
+    const candidates = [id, displayName, email]
+    for (const candidate of candidates) {
+      const normalized = normalizeIdentity(candidate)
+      if (!normalized || directoryByIdentity.has(normalized)) continue
+      directoryByIdentity.set(normalized, entry)
+    }
+  }
+
+  const seen = new Set<string>()
+  const identities: string[] = []
+  for (const rivalId of rivalUserIds) {
+    const rivalKey = normalizeIdentity(rivalId)
+    const entry = directoryByIdentity.get(rivalKey)
+    const candidates = [rivalId, entry?.id, entry?.displayName, entry?.email]
+    for (const candidate of candidates) {
+      const normalized = normalizeIdentity(candidate)
+      if (!normalized || seen.has(normalized)) continue
+      seen.add(normalized)
+      identities.push(candidate ?? normalized)
+    }
+  }
+
+  return identities
 }
 
 function socialBadgeTone(kind: SocialBadge['kind']): 'success' | 'warning' | 'secondary' {
@@ -405,7 +443,11 @@ export default function LeaderboardPage() {
       ]),
     [currentUser?.email, currentUser?.id, currentUser?.name, userId]
   )
-  const rivalKeys = useMemo(() => buildViewerKeySet(rivalUserIds), [rivalUserIds])
+  const rivalComparisonIdentities = useMemo(
+    () => buildRivalComparisonIdentities(rivalUserIds, rivalDirectoryEntries),
+    [rivalDirectoryEntries, rivalUserIds]
+  )
+  const rivalKeys = useMemo(() => buildViewerKeySet(rivalComparisonIdentities), [rivalComparisonIdentities])
   const viewerFavoriteTeamCode = useMemo(
     () =>
       normalizeFavoriteTeamCode(
@@ -437,9 +479,9 @@ export default function LeaderboardPage() {
         getIdentityKeys: (entry) => resolveLeaderboardIdentityKeys(entry),
         getName: (entry) => entry.member.name,
         viewerIdentity: userId,
-        rivalIdentities: rivalUserIds
+        rivalIdentities: rivalComparisonIdentities
       }),
-    [activeBaseRows, rivalUserIds, userId]
+    [activeBaseRows, rivalComparisonIdentities, userId]
   )
 
   const activeRows = activeTieRankedRows.sortedRows

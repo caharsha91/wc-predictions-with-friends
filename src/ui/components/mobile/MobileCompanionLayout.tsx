@@ -13,14 +13,14 @@ type CompanionNavItem = {
 
 const COMPANION_NAV: CompanionNavItem[] = [
   { to: '/m', label: 'Home', icon: HomeIcon, end: true },
-  { to: '/m/predictions', label: 'Predictions', icon: ResultsIcon },
+  { to: '/m/picks', label: 'Picks', icon: ResultsIcon },
   { to: '/m/leaderboard', label: 'League', icon: TrophyIcon }
 ]
 
 export default function MobileCompanionLayout() {
   const navItems = COMPANION_NAV.filter((item) => {
     if (item.to === '/m') return companionFeatureFlags.areas.home
-    if (item.to === '/m/predictions') return companionFeatureFlags.areas.predictions
+    if (item.to === '/m/picks') return companionFeatureFlags.areas.picks
     if (item.to === '/m/leaderboard') return companionFeatureFlags.areas.leaderboard
     return true
   })

@@ -1,8 +1,8 @@
-export type CompanionArea = 'home' | 'predictions' | 'leaderboard'
+export type CompanionArea = 'home' | 'picks' | 'leaderboard'
 
 export const COMPANION_ROUTE_CAPABILITIES: Record<string, CompanionArea> = {
   '/m': 'home',
-  '/m/predictions': 'predictions',
+  '/m/picks': 'picks',
   '/m/leaderboard': 'leaderboard'
 }
 
@@ -10,14 +10,14 @@ export const companionFeatureFlags = {
   enabled: true,
   areas: {
     home: true,
-    predictions: true,
+    picks: true,
     leaderboard: true
   }
 } as const
 
 const DENIED_PREFIXES = ['/m/admin', '/m/demo', '/m/group-stage']
-const DEPRECATED_ROUTES = new Set(['/m/matches', '/m/profile'])
-const PREDICTIONS_FALLBACK_PREFIXES = ['/m/match-picks', '/m/knockout-bracket']
+const DEPRECATED_ROUTES = new Set(['/m/matches', '/m/profile', '/m/predictions'])
+const PICKS_FALLBACK_PREFIXES = ['/m/match-picks']
 
 function normalizePathname(pathname: string): string {
   const trimmed = String(pathname ?? '').trim()
@@ -64,11 +64,10 @@ export function isCompanionDeniedPath(pathname: string): boolean {
   if (!isCompanionPath(normalized)) return false
   if (DEPRECATED_ROUTES.has(normalized)) return true
   if (DENIED_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))) return true
-  if (
-    PREDICTIONS_FALLBACK_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
-  ) {
+  if (PICKS_FALLBACK_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))) {
     return true
   }
+  if (normalized === '/m/knockout-bracket') return true
   return false
 }
 
@@ -78,11 +77,8 @@ export function resolveCompanionFallbackPath(pathname: string): string {
   if (DEPRECATED_ROUTES.has(normalized)) return '/m'
   if (isAdminOrDemoPath(normalized)) return '/m'
   if (DENIED_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))) return '/m'
-  if (
-    PREDICTIONS_FALLBACK_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))
-  ) {
-    return '/m/predictions'
-  }
+  if (PICKS_FALLBACK_PREFIXES.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`))) return '/m/picks'
+  if (normalized === '/m/knockout-bracket') return '/m'
   return '/m'
 }
 

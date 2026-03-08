@@ -24,7 +24,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import {
   CompanionHomePage,
   CompanionLeaderboardPage,
-  CompanionPredictionsPage
+  CompanionPicksPage
 } from './pages/mobile/CompanionPages'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
@@ -213,15 +213,16 @@ export default function App() {
         <Route element={<MemberGate />}>
           <Route element={<MobileCompanionLayout />}>
             <Route index element={<CompanionHomePage />} />
-            <Route path="predictions" element={<CompanionPredictionsPage />} />
+            <Route path="picks" element={<CompanionPicksPage />} />
+            <Route path="predictions" element={<Navigate to="/m" replace />} />
             <Route path="leaderboard" element={<CompanionLeaderboardPage />} />
             <Route path="matches" element={<Navigate to="/m" replace />} />
             <Route path="profile" element={<Navigate to="/m" replace />} />
             <Route path="admin/*" element={<Navigate to="/m" replace />} />
             <Route path="demo/*" element={<Navigate to="/m" replace />} />
-            <Route path="group-stage/*" element={<Navigate to="/m/predictions" replace />} />
-            <Route path="match-picks" element={<Navigate to="/m/predictions" replace />} />
-            <Route path="knockout-bracket" element={<Navigate to="/m/predictions" replace />} />
+            <Route path="group-stage/*" element={<Navigate to="/m" replace />} />
+            <Route path="match-picks" element={<Navigate to="/m/picks" replace />} />
+            <Route path="knockout-bracket" element={<Navigate to="/m" replace />} />
             <Route path="*" element={<Navigate to="/m" replace />} />
           </Route>
         </Route>
