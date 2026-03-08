@@ -11,9 +11,11 @@ import {
   isCompanionAreaEnabled,
   isCompanionDeniedPath,
   isCompanionPath,
+  isCompanionPublicPath,
   resolveCompanionFallbackPath
 } from './lib/companionSurface'
 import {
+  isMobileUserAgent,
   readMobileRootRedirectOptOut,
   shouldAutoRedirectToCompanionFromRoot
 } from './lib/mobileRootRedirect'
@@ -26,6 +28,7 @@ import {
   CompanionLeaderboardPage,
   CompanionPicksPage
 } from './pages/mobile/CompanionPages'
+import { CompanionAccessDeniedPage, CompanionLoginPage } from './pages/mobile/CompanionAuthPages'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const GroupStagePage = lazy(() => import('./pages/GroupStagePage'))
@@ -86,6 +89,8 @@ function RouteSuspense({ children }: { children: ReactNode }) {
 function MemberGate() {
   const authState = useAuthState()
   const user = useCurrentUser()
+  const location = useLocation()
+  const shouldUseCompanionAuth = isCompanionPath(location.pathname) || (companionFeatureFlags.enabled && isMobileUserAgent())
 
   if (!hasFirebase) return <Outlet />
   if (authState.status === 'loading') {
@@ -98,14 +103,7 @@ function MemberGate() {
     )
   }
   if (!authState.user) {
-    return (
-      <GateCard
-        kicker="Private league"
-        title="Sign in required"
-        subtitle="Sign in with Google to access this league."
-        note="Open Login and use Sign in with Google to continue."
-      />
-    )
+    return <Navigate to={shouldUseCompanionAuth ? '/m/login' : '/login'} replace />
   }
   if (!user) {
     return (
@@ -116,7 +114,7 @@ function MemberGate() {
       />
     )
   }
-  if (!user.isMember) return <AccessDeniedPage />
+  if (!user.isMember) return <Navigate to={shouldUseCompanionAuth ? '/m/access-denied' : '/access-denied'} replace />
   return <Outlet />
 }
 
@@ -183,6 +181,10 @@ function CompanionSurfaceGate() {
     return <Navigate to="/" replace />
   }
 
+  if (isCompanionPath(location.pathname) && isCompanionPublicPath(location.pathname)) {
+    return <Outlet />
+  }
+
   if (isCompanionPath(location.pathname) && isCompanionDeniedPath(location.pathname)) {
     return <Navigate to={resolveCompanionFallbackPath(location.pathname)} replace />
   }
@@ -210,6 +212,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/m" element={<CompanionSurfaceGate />}>
+        <Route path="login" element={<CompanionLoginPage />} />
+        <Route path="access-denied" element={<CompanionAccessDeniedPage />} />
         <Route element={<MemberGate />}>
           <Route element={<MobileCompanionLayout />}>
             <Route index element={<CompanionHomePage />} />

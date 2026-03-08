@@ -15,6 +15,18 @@ test('companion route smoke: app includes /m route namespace', async () => {
   )
 
   assert.equal(
+    source.includes('<Route path="login" element={<CompanionLoginPage />} />'),
+    true,
+    'Companion route should include a dedicated mobile login screen'
+  )
+
+  assert.equal(
+    source.includes('<Route path="access-denied" element={<CompanionAccessDeniedPage />} />'),
+    true,
+    'Companion route should include a dedicated mobile access-denied screen'
+  )
+
+  assert.equal(
     source.includes('<Route path="picks" element={<CompanionPicksPage />} />'),
     true,
     'Companion route should include picks screen'
@@ -66,6 +78,18 @@ test('companion route smoke: app includes /m route namespace', async () => {
     source.includes('shouldAutoRedirectToCompanionFromRoot({'),
     true,
     'Root route should use guarded mobile redirect decision helper'
+  )
+
+  assert.equal(
+    source.includes("return <Navigate to={shouldUseCompanionAuth ? '/m/login' : '/login'} replace />"),
+    true,
+    'Member gate should send mobile users to dedicated companion login'
+  )
+
+  assert.equal(
+    source.includes("return <Navigate to={shouldUseCompanionAuth ? '/m/access-denied' : '/access-denied'} replace />"),
+    true,
+    'Member gate should send unauthorized mobile users to dedicated companion access-denied page'
   )
 
   assert.equal(

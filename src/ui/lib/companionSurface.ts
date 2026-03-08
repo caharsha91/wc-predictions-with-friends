@@ -18,6 +18,7 @@ export const companionFeatureFlags = {
 const DENIED_PREFIXES = ['/m/admin', '/m/demo', '/m/group-stage']
 const DEPRECATED_ROUTES = new Set(['/m/matches', '/m/profile', '/m/predictions'])
 const PICKS_FALLBACK_PREFIXES = ['/m/match-picks']
+const PUBLIC_ROUTES = new Set(['/m/login', '/m/access-denied'])
 
 function normalizePathname(pathname: string): string {
   const trimmed = String(pathname ?? '').trim()
@@ -41,6 +42,11 @@ export function isCompanionPath(pathname: string): boolean {
 export function resolveCompanionArea(pathname: string): CompanionArea | null {
   const normalized = normalizePathname(pathname)
   return COMPANION_ROUTE_CAPABILITIES[normalized] ?? null
+}
+
+export function isCompanionPublicPath(pathname: string): boolean {
+  const normalized = normalizePathname(pathname)
+  return PUBLIC_ROUTES.has(normalized)
 }
 
 export function isCompanionAreaEnabled(pathname: string): boolean {
@@ -87,6 +93,8 @@ export function resolveCompanionSafePath(pathname: string): string {
 
   // Companion mode is self-contained: never allow links to leave /m routes.
   if (!isCompanionPath(normalized)) return '/m'
+
+  if (isCompanionPublicPath(normalized)) return normalized
 
   if (isCompanionDeniedPath(normalized)) {
     return resolveCompanionFallbackPath(normalized)

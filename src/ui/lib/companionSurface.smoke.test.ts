@@ -6,6 +6,7 @@ import {
   isAdminOrDemoPath,
   isCompanionDeniedPath,
   isCompanionPath,
+  isCompanionPublicPath,
   resolveCompanionArea,
   resolveCompanionFallbackPath,
   resolveCompanionSafePath
@@ -27,6 +28,9 @@ test('companion path helpers classify routes correctly', () => {
   assert.equal(resolveCompanionArea('/m'), 'home')
   assert.equal(resolveCompanionArea('/m/leaderboard'), 'leaderboard')
   assert.equal(resolveCompanionArea('/m/unknown'), null)
+  assert.equal(isCompanionPublicPath('/m/login'), true)
+  assert.equal(isCompanionPublicPath('/m/access-denied'), true)
+  assert.equal(isCompanionPublicPath('/m/picks'), false)
 })
 
 test('companion denied-route helpers resolve expected fallback targets', () => {
@@ -60,4 +64,5 @@ test('companion-safe path resolver prevents admin/demo leakage', () => {
   assert.equal(resolveCompanionSafePath('/leaderboard?view=compact#rivals'), '/m')
   assert.equal(resolveCompanionSafePath('/m/predictions'), '/m')
   assert.equal(resolveCompanionSafePath('/m/picks'), '/m/picks')
+  assert.equal(resolveCompanionSafePath('/m/login'), '/m/login')
 })
