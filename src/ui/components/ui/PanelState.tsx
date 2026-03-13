@@ -1,4 +1,5 @@
 import { cva } from 'class-variance-authority'
+import type { ReactNode } from 'react'
 
 import { cn } from '../../lib/utils'
 
@@ -19,16 +20,17 @@ const panelStateVariants = cva('rounded-xl border p-3 text-sm', {
 
 type PanelStateProps = {
   title?: string
-  message: string
+  message: ReactNode
   tone?: PanelTone
   className?: string
+  messageClassName?: string
 }
 
-export default function PanelState({ title, message, tone = 'empty', className }: PanelStateProps) {
+export default function PanelState({ title, message, tone = 'empty', className, messageClassName }: PanelStateProps) {
   return (
     <div className={cn(panelStateVariants({ tone }), className)}>
       {title ? <div className="font-semibold text-foreground">{title}</div> : null}
-      <div className={title ? 'mt-1' : undefined}>{message}</div>
+      <div className={cn(title ? 'mt-1' : undefined, messageClassName)}>{message}</div>
     </div>
   )
 }

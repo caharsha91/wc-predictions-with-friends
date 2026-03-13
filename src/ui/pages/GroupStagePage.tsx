@@ -52,10 +52,9 @@ import { useViewerId } from '../hooks/useViewerId'
 import { useFavoriteTeamPreference } from '../context/FavoriteTeamPreferenceContext'
 import { formatUtcAndLocalDeadline } from '../lib/deadline'
 import {
-  editableUntilLabel,
-  lockedFinalLabel,
-  publishedStateLabel,
-  SNAPSHOT_METADATA_PREFIX
+  lockedLabel,
+  openUntilLabel,
+  resultsFinalLabel
 } from '../lib/pageStatusCopy'
 import {
   fetchRivalDirectory,
@@ -1086,14 +1085,10 @@ export default function GroupStagePage() {
 
   const groupStageStateCopy =
     groupsFinal || isFinalResultsMode
-      ? lockedFinalLabel('FINAL')
+      ? resultsFinalLabel()
       : isReadOnly
-        ? lockedFinalLabel(phaseState.tournamentPhase)
-        : editableUntilLabel(groupLockLabel)
-
-  const groupStagePublishedCopy = groupsFinal || isFinalResultsMode
-    ? publishedStateLabel('FINAL')
-    : publishedStateLabel(phaseState.tournamentPhase)
+        ? lockedLabel({ reason: 'group-lock' })
+        : openUntilLabel(groupLockLabel)
 
   const projectedLeaderboardCard = (
     <LeaderboardCardCurated
@@ -1129,9 +1124,8 @@ export default function GroupStagePage() {
         )}
         metadataClassName="w-full"
         metadataItems={[
-          <SnapshotStamp key="snapshot" timestamp={scoringSnapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
-          <span key="state">{groupStageStateCopy}</span>,
-          <span key="published">{groupStagePublishedCopy}</span>
+          <SnapshotStamp key="snapshot" timestamp={scoringSnapshotTimestamp} />,
+          <span key="state">{groupStageStateCopy}</span>
         ]}
       />
 

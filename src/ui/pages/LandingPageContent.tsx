@@ -43,11 +43,7 @@ import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leader
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
 import { validateLastRoute } from '../lib/lastRoute'
-import {
-  lockedFinalLabel,
-  publishedStateLabel,
-  SNAPSHOT_METADATA_PREFIX
-} from '../lib/pageStatusCopy'
+import { lockedFinalLabel } from '../lib/pageStatusCopy'
 import {
   fetchRivalDirectory,
   readUserProfile,
@@ -1612,9 +1608,8 @@ export default function LandingPage() {
           </div>
         )}
         metadataItems={[
-          <span key="saved">{`Saved: ${picksLastSavedLabel}`}</span>,
-          <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
-          <span key="published">{publishedStateLabel(phaseState.tournamentPhase)}</span>
+          <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} />,
+          <span key="saved">{`Your picks are saved (${picksLastSavedLabel})`}</span>
         ]}
       />
 

@@ -47,8 +47,9 @@ import {
 } from '../lib/matchTimeline'
 import {
   lockedFinalLabel,
-  publishedStateLabel,
-  SNAPSHOT_METADATA_PREFIX
+  noPicksOpenLabel,
+  openUntilLabel,
+  resultsFinalLabel
 } from '../lib/pageStatusCopy'
 import { resolveSemanticState } from '../lib/semanticState'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
@@ -763,14 +764,13 @@ export default function PicksPage() {
   )
   const picksStateCopy = useMemo(() => {
     if (isMatchPicksFinal || !phaseState.lockFlags.matchPicksEditable) {
-      return lockedFinalLabel('FINAL')
+      return resultsFinalLabel()
     }
     if (upcomingEditableCount > 0) {
-      return `Editable until: ${editableWindowLabel}.`
+      return openUntilLabel(editableWindowLabel)
     }
-    return 'Locked: No picks are editable right now.'
+    return noPicksOpenLabel()
   }, [editableWindowLabel, isMatchPicksFinal, phaseState.lockFlags.matchPicksEditable, upcomingEditableCount])
-  const picksPublishedCopy = isMatchPicksFinal ? publishedStateLabel('FINAL') : publishedStateLabel(phaseState.tournamentPhase)
 
   const homePath = mode === 'demo' ? '/demo' : '/'
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
@@ -1074,9 +1074,8 @@ export default function PicksPage() {
           </>
         )}
         metadataItems={[
-          <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
-          <span key="state">{picksStateCopy}</span>,
-          <span key="published">{picksPublishedCopy}</span>
+          <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} />,
+          <span key="state">{picksStateCopy}</span>
         ]}
       />
 

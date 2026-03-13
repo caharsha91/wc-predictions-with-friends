@@ -3,13 +3,21 @@ import { SNAPSHOT_UNAVAILABLE_LABEL, formatSnapshotTimestamp } from '../../lib/s
 
 type SnapshotStampProps = {
   timestamp?: string | null
+  label?: string
   prefix?: string
   className?: string
 }
 
-export default function SnapshotStamp({ timestamp, prefix, className }: SnapshotStampProps) {
-  const label = formatSnapshotTimestamp(timestamp)
-  const text = prefix && label !== SNAPSHOT_UNAVAILABLE_LABEL ? `${prefix}${label}` : label
+export default function SnapshotStamp({ timestamp, label = 'Updated', prefix, className }: SnapshotStampProps) {
+  const timestampLabel = formatSnapshotTimestamp(timestamp)
+  const hasSnapshot = timestampLabel !== SNAPSHOT_UNAVAILABLE_LABEL
+  const text = !hasSnapshot
+    ? timestampLabel
+    : typeof prefix === 'string'
+      ? `${prefix}${timestampLabel}`
+      : label
+        ? `${label} ${timestampLabel}`
+        : timestampLabel
 
   return (
     <span className={cn('v2-type-meta', className)} data-v2-last-updated="true">

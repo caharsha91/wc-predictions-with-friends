@@ -30,7 +30,7 @@ import { useToast } from '../hooks/useToast'
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leaderboardContext'
 import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
-import { publishedStateLabel, SNAPSHOT_METADATA_PREFIX } from '../lib/pageStatusCopy'
+import { resultsFinalLabel } from '../lib/pageStatusCopy'
 import { fetchRivalDirectory, readUserProfile, type RivalDirectoryEntry } from '../lib/profilePersistence'
 import { buildSocialBadgeMap, type SocialBadge } from '../lib/socialBadges'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
@@ -1019,7 +1019,7 @@ export default function LeaderboardPage() {
   }))
 
   const showExportMenu = isDesktopViewport && phaseState.lockFlags.exportsVisible
-  const leaderboardPublishedCopy = publishedStateLabel(phaseState.tournamentPhase)
+  const leaderboardStateCopy = phaseState.tournamentPhase === 'FINAL' ? resultsFinalLabel() : 'Current standings'
 
   function handleDownloadLeaderboardXlsx() {
     const exportedAt = new Date().toISOString()
@@ -1091,7 +1091,7 @@ export default function LeaderboardPage() {
         className="landing-v2-hero"
         kicker="Standings"
         title="Leaderboard"
-        subtitle="See where you stand and keep rival banter close from the latest snapshot."
+        subtitle="See where you stand and keep rival banter close."
         actions={
           showExportMenu ? (
             <ExportMenuV2
@@ -1101,8 +1101,8 @@ export default function LeaderboardPage() {
           ) : undefined
         }
         metadataItems={[
-          <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
-          <span key="published">{leaderboardPublishedCopy}</span>
+          <SnapshotStamp key="snapshot" timestamp={snapshotTimestamp} />,
+          <span key="state">{leaderboardStateCopy}</span>
         ]}
       />
 

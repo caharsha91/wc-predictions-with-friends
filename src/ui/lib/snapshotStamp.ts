@@ -13,3 +13,9 @@ export function formatSnapshotTimestamp(iso?: string | null): string {
     minute: '2-digit'
   }).format(new Date(timestamp))
 }
+
+export function formatUpdatedTimestamp(iso?: string | null): string {
+  const label = formatSnapshotTimestamp(iso)
+  if (label === SNAPSHOT_UNAVAILABLE_LABEL) return label
+  return `Updated ${label}`
+}

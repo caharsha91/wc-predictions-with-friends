@@ -33,10 +33,9 @@ import { useToast } from '../hooks/useToast'
 import { useViewerId } from '../hooks/useViewerId'
 import { cn } from '../lib/utils'
 import {
-  editableUntilLabel,
-  lockedAtLabel,
-  publishedStateLabel,
-  SNAPSHOT_METADATA_PREFIX
+  lockedLabel,
+  openUntilLabel,
+  opensAfterLabel
 } from '../lib/pageStatusCopy'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { downloadWorkbook } from '../lib/exportWorkbook'
@@ -1410,8 +1409,6 @@ export default function BracketPage() {
   }
 
   if (!drawConfirmed) {
-    const preDrawPublishedCopy = publishedStateLabel(phaseState.tournamentPhase)
-
     return (
       <PageShellV2 className="landing-v2-canvas">
         <PageHeaderV2
@@ -1419,7 +1416,7 @@ export default function BracketPage() {
           className="landing-v2-hero"
           kicker="Knockout"
           title="Knockout Bracket"
-          subtitle="The knockout bracket opens after the round-of-32 draw is published."
+          subtitle="The knockout bracket opens after the round-of-32 draw is confirmed."
           actions={(
             <>
               <ButtonLink to={homePath} size="sm" variant="secondary">
@@ -1428,9 +1425,8 @@ export default function BracketPage() {
             </>
           )}
           metadataItems={[
-            <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
-            <span key="state">Locked: Waiting for published knockout matchups.</span>,
-            <span key="published">{preDrawPublishedCopy}</span>
+            <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} />,
+            <span key="state">{opensAfterLabel('the draw is confirmed')}</span>
           ]}
         />
 
@@ -1438,7 +1434,7 @@ export default function BracketPage() {
           <div className="space-y-2">
             <div className="text-sm font-semibold text-foreground">Bracket not available yet</div>
             <div className="text-sm text-muted-foreground">
-              Your winners-only bracket unlocks once the draw is published.
+              Your winners-only bracket unlocks once the draw is confirmed.
             </div>
           </div>
         </SectionCardV2>
@@ -1447,13 +1443,10 @@ export default function BracketPage() {
   }
 
   const bracketStateCopy = bracketEditable
-    ? firstKnockoutKickoffLabel
-      ? editableUntilLabel(firstKnockoutKickoffLabel)
-      : 'Editable until: first knockout kickoff.'
+    ? openUntilLabel(firstKnockoutKickoffLabel ?? 'first knockout kickoff')
     : firstKnockoutKickoffLabel
-      ? lockedAtLabel(firstKnockoutKickoffLabel)
-      : 'Locked: Bracket edits close at first knockout kickoff.'
-  const bracketPublishedCopy = publishedStateLabel(phaseState.tournamentPhase)
+      ? lockedLabel({ time: firstKnockoutKickoffLabel })
+      : lockedLabel({ reason: 'round' })
   const orientationLockLabel = bracketEditable
     ? firstKnockoutKickoffLabel
       ? `Edits close at ${firstKnockoutKickoffLabel}.`
@@ -1487,9 +1480,8 @@ export default function BracketPage() {
           </>
         )}
         metadataItems={[
-          <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} prefix={SNAPSHOT_METADATA_PREFIX} />,
-          <span key="state">{bracketStateCopy}</span>,
-          <span key="published">{bracketPublishedCopy}</span>
+          <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} />,
+          <span key="state">{bracketStateCopy}</span>
         ]}
       />
 
