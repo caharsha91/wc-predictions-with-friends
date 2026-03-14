@@ -100,7 +100,7 @@ function resolveDeadlineFallbackPhase({
   return 'PRE_GROUP'
 }
 
-function resolveLockFlags(phase: TournamentPhase): LockFlags {
+export function resolveLockFlags(phase: TournamentPhase): LockFlags {
   const groupLocked = phase === 'GROUP_LOCKED' || phase === 'KO_OPEN' || phase === 'KO_LOCKED' || phase === 'FINAL'
   const knockoutLocked = phase !== 'KO_OPEN'
   const picksHidden = phase === 'PRE_GROUP' || phase === 'GROUP_OPEN'

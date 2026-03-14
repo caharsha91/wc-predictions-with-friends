@@ -1664,6 +1664,53 @@
   align-items: flex-end;
 }
 
+.admin-v2-export-header-copy {
+  flex: 1 1 46rem;
+  min-width: 0;
+}
+
+.admin-v2-export-header-copy .admin-v2-workbench-subtitle {
+  max-width: none;
+}
+
+.admin-v2-export-summary .admin-v2-workbench-subtitle {
+  max-width: none;
+}
+
+.admin-v2-export-controls {
+  align-items: end;
+}
+
+.admin-v2-export-action {
+  justify-content: flex-end;
+}
+
+.admin-v2-export-action .admin-v2-action {
+  min-width: 10.5rem;
+}
+
+.admin-v2-export-meta-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-v2-export-meta-item {
+  border-radius: var(--v2-control-radius);
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 82%, transparent);
+  background: color-mix(in srgb, var(--background) 58%, transparent);
+  padding: 0.78rem 0.85rem;
+}
+
+.admin-v2-export-meta-item strong {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  font-weight: var(--font-weight-semibold);
+  color: var(--v2-text-strong);
+  overflow-wrap: anywhere;
+}
+
 .admin-v2-summary-stack {
   display: flex;
   flex-direction: column;
@@ -1735,6 +1782,262 @@
       color-mix(in srgb, var(--muted) 24%, transparent) 100%
     );
   padding: 0.65rem 0.8rem;
+}
+
+.admin-v2-demo-step-card {
+  position: relative;
+}
+
+.admin-v2-demo-header-copy {
+  flex: 1 1 46rem;
+  min-width: 0;
+}
+
+.admin-v2-demo-header-copy .admin-v2-workbench-subtitle {
+  max-width: none;
+}
+
+.admin-v2-demo-menu {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.admin-v2-demo-menu-section {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.25rem;
+}
+
+.admin-v2-demo-menu-field .v2-type-helper {
+  color: var(--v2-text-muted);
+}
+
+.admin-v2-demo-menu-item {
+  align-items: flex-start;
+}
+
+.admin-v2-demo-journey {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-v2-demo-step {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: start;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+  border-radius: var(--v2-control-radius-lg);
+  background:
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--background) 80%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 18%, transparent) 100%
+    );
+  padding: 0.95rem 1rem;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-v2-demo-step:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--v2-border-medium) 74%, var(--v2-glow-soft) 26%);
+}
+
+.admin-v2-demo-step:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ring) 72%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--ring) 20%, transparent);
+}
+
+.admin-v2-demo-step[data-selected='true'] {
+  border-color: color-mix(in srgb, var(--hl-selection-border) 72%, var(--v2-border-medium) 28%);
+  background:
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--hl-selection-bg) 36%, var(--background) 64%) 0%,
+      color-mix(in srgb, var(--muted) 26%, transparent) 100%
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--hl-selection-border) 26%, transparent),
+    var(--shadow1);
+}
+
+.admin-v2-demo-step[data-live='true']:not([data-selected='true']) {
+  border-color: color-mix(in srgb, var(--hl-success-border) 64%, var(--v2-border-soft) 36%);
+  background:
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--hl-success-bg) 18%, var(--background) 82%) 0%,
+      color-mix(in srgb, var(--muted) 18%, transparent) 100%
+    );
+}
+
+.admin-v2-demo-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--v2-border-medium) 70%, transparent);
+  background: color-mix(in srgb, var(--background) 68%, transparent);
+  font-size: 0.86rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--v2-text-strong);
+}
+
+.admin-v2-demo-step[data-selected='true'] .admin-v2-demo-step-index {
+  border-color: color-mix(in srgb, var(--hl-selection-border) 76%, transparent);
+  background: color-mix(in srgb, var(--hl-selection-bg) 78%, transparent);
+  color: color-mix(in srgb, var(--hl-selection-fg) 88%, transparent);
+}
+
+.admin-v2-demo-step[data-live='true']:not([data-selected='true']) .admin-v2-demo-step-index {
+  border-color: color-mix(in srgb, var(--hl-success-border) 76%, transparent);
+  background: color-mix(in srgb, var(--hl-success-bg) 76%, transparent);
+  color: color-mix(in srgb, var(--hl-success-fg) 88%, transparent);
+}
+
+.admin-v2-demo-step-copy {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.admin-v2-demo-step-title {
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  font-weight: var(--font-weight-semibold);
+  color: var(--v2-text-strong);
+}
+
+.admin-v2-demo-step-caption {
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--v2-meta-text);
+}
+
+.admin-v2-demo-step-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 82%, transparent);
+  background: color-mix(in srgb, var(--background) 62%, transparent);
+  padding-inline: 0.58rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--v2-text-muted);
+  white-space: nowrap;
+}
+
+.admin-v2-demo-step-pill[data-tone='info'] {
+  border-color: color-mix(in srgb, var(--hl-selection-border) 74%, transparent);
+  background: color-mix(in srgb, var(--hl-selection-bg) 76%, transparent);
+  color: color-mix(in srgb, var(--hl-selection-fg) 88%, transparent);
+}
+
+.admin-v2-demo-step-pill[data-tone='success'] {
+  border-color: color-mix(in srgb, var(--hl-success-border) 70%, transparent);
+  background: color-mix(in srgb, var(--hl-success-bg) 72%, transparent);
+  color: color-mix(in srgb, var(--hl-success-fg) 84%, transparent);
+}
+
+.admin-v2-demo-preview {
+  display: grid;
+  gap: 1rem;
+  border-radius: var(--v2-control-radius-lg);
+  border: 1px solid color-mix(in srgb, var(--v2-border-medium) 74%, transparent);
+  background:
+    linear-gradient(
+      144deg,
+      color-mix(in srgb, var(--background) 82%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 22%, transparent) 100%
+    );
+  padding: 1rem;
+}
+
+.admin-v2-demo-preview-title {
+  max-width: none;
+  text-wrap: pretty;
+}
+
+.admin-v2-demo-preview-copy {
+  flex: 1 1 34rem;
+  min-width: 0;
+}
+
+.admin-v2-demo-preview-copy .admin-v2-workbench-subtitle {
+  max-width: none;
+}
+
+.admin-v2-demo-meta-strip {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-v2-demo-meta-item {
+  border-radius: var(--v2-control-radius);
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 82%, transparent);
+  background: color-mix(in srgb, var(--background) 58%, transparent);
+  padding: 0.78rem 0.85rem;
+}
+
+.admin-v2-demo-meta-item strong {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  font-weight: var(--font-weight-semibold);
+  color: var(--v2-text-strong);
+}
+
+.admin-v2-demo-capability-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-v2-demo-capability-item {
+  border-radius: var(--v2-control-radius);
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 82%, transparent);
+  background: color-mix(in srgb, var(--background) 58%, transparent);
+  padding: 0.75rem 0.8rem;
+}
+
+.admin-v2-demo-capability-item[data-tone='success'] {
+  border-color: color-mix(in srgb, var(--hl-success-border) 68%, transparent);
+  background: color-mix(in srgb, var(--hl-success-bg) 26%, var(--background) 74%);
+}
+
+.admin-v2-demo-capability-item[data-tone='warning'] {
+  border-color: color-mix(in srgb, var(--hl-warning-border) 68%, transparent);
+  background: color-mix(in srgb, var(--hl-warning-bg) 24%, var(--background) 76%);
+}
+
+.admin-v2-demo-capability-item[data-tone='info'] {
+  border-color: color-mix(in srgb, var(--hl-selection-border) 64%, transparent);
+  background: color-mix(in srgb, var(--hl-selection-bg) 24%, var(--background) 76%);
+}
+
+.admin-v2-demo-preview-actions {
+  align-items: end;
 }
 
 .admin-v2-config-block {
@@ -2049,7 +2352,57 @@
   padding-inline: 0.95rem;
 }
 
+@media (min-width: 768px) {
+  .admin-v2-export-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-v2-export-controls .admin-v2-export-action {
+    grid-column: 1 / -1;
+  }
+
+  .admin-v2-export-controls .admin-v2-export-action .admin-v2-action {
+    width: auto;
+  }
+
+  .admin-v2-export-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-v2-demo-meta-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-v2-demo-capability-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 1024px) {
+  .admin-v2-export-controls[data-audit='false'] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+
+  .admin-v2-export-controls[data-audit='false'] .admin-v2-export-action {
+    grid-column: auto;
+  }
+
+  .admin-v2-export-controls[data-audit='true'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-v2-export-controls[data-audit='true'] .admin-v2-export-action {
+    grid-column: 1 / -1;
+  }
+
+  .admin-v2-demo-journey {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .admin-v2-demo-step {
+    min-height: 7.25rem;
+  }
+
   .admin-v2-controls {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -2081,6 +2434,16 @@
 
   .admin-v2-session-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1400px) {
+  .admin-v2-export-controls[data-audit='true'] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+
+  .admin-v2-export-controls[data-audit='true'] .admin-v2-export-action {
+    grid-column: auto;
   }
 }
 

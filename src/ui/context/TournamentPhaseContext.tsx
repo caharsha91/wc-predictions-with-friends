@@ -5,7 +5,7 @@ import type { DataMode } from '../../lib/dataMode'
 import { resolveTournamentDeadlines, type TournamentDeadlines } from '../../lib/tournamentDeadlines'
 import { useDemoScenarioState } from '../hooks/useDemoScenarioState'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
-import { readDemoNowOverride, readDemoPhaseOverride } from '../lib/demoControls'
+import { readDemoNowOverride, readDemoPhaseOverride, resolveDemoScenarioPhase } from '../lib/demoControls'
 import {
   computeKoDrawConfirmedSignal,
   computeTournamentPhase,
@@ -34,15 +34,6 @@ type TournamentPhaseContextValue = {
 }
 
 const TournamentPhaseContext = createContext<TournamentPhaseContextValue>({ state: DEFAULT_PHASE_STATE })
-
-function resolveSelectedDemoPhase(scenario: string | null): TournamentPhase | null {
-  if (scenario === 'pre-group') return 'PRE_GROUP'
-  if (scenario === 'mid-group') return 'GROUP_OPEN'
-  if (scenario === 'end-group-draw-confirmed') return 'KO_OPEN'
-  if (scenario === 'mid-knockout') return 'KO_LOCKED'
-  if (scenario === 'world-cup-final-pending') return 'KO_LOCKED'
-  return null
-}
 
 function toPhaseEngineMode(mode: DataMode): 'prod' | 'demo' {
   return mode === 'demo' ? 'demo' : 'prod'
@@ -114,7 +105,7 @@ export function TournamentPhaseProvider({ children }: { children: ReactNode }) {
     }
   }, [mode, demoScenario])
 
-  const selectedDemoPhase = mode === 'demo' ? resolveSelectedDemoPhase(demoScenario) : null
+  const selectedDemoPhase = mode === 'demo' ? (resolveDemoScenarioPhase(demoScenario) as TournamentPhase | null) : null
   const demoOverride = mode === 'demo' ? readDemoPhaseOverride() : null
 
   const state = useMemo(

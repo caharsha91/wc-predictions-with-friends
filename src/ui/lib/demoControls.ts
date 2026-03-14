@@ -26,6 +26,15 @@ export const DEMO_NOW_OVERRIDE_STORAGE_KEY = 'wc-demo-now-override'
 export const DEMO_PHASE_OVERRIDE_STORAGE_KEY = 'wc-demo-phase-override'
 export const DEMO_VIEWER_ID_STORAGE_KEY = 'wc-demo-viewer-id'
 
+export function resolveDemoScenarioPhase(scenario: DemoScenarioId | string | null): DemoTournamentPhase | null {
+  if (scenario === 'pre-group') return 'PRE_GROUP'
+  if (scenario === 'mid-group') return 'GROUP_OPEN'
+  if (scenario === 'end-group-draw-confirmed') return 'KO_OPEN'
+  if (scenario === 'mid-knockout') return 'KO_LOCKED'
+  if (scenario === 'world-cup-final-pending') return 'KO_LOCKED'
+  return null
+}
+
 export function readDemoScenario(): DemoScenarioId {
   if (typeof window === 'undefined') return 'pre-group'
   const raw = window.localStorage.getItem(DEMO_SCENARIO_STORAGE_KEY)

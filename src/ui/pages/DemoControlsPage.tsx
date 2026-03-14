@@ -5,11 +5,18 @@ import { removeByPrefix } from '../../lib/storage'
 import type { Match } from '../../types/matches'
 import type { Member } from '../../types/members'
 import ConfirmationModal from '../components/ConfirmationModal'
+import { CalendarIcon, CloseIcon, SettingsIcon, UsersIcon } from '../components/Icons'
 import { Alert } from '../components/ui/Alert'
 import { Button } from '../components/ui/Button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '../components/ui/DropdownMenu'
 import { SelectField } from '../components/ui/Field'
 import Progress from '../components/ui/Progress'
-import { CalendarIcon, CloseIcon, SettingsIcon, UsersIcon } from '../components/Icons'
 import AdminWorkspaceShellV2 from '../components/v2/AdminWorkspaceShellV2'
 import SectionCardV2 from '../components/v2/SectionCardV2'
 import { useRouteDataMode } from '../hooks/useRouteDataMode'
@@ -20,11 +27,13 @@ import {
   clearDemoViewerId,
   readDemoScenario,
   readDemoViewerId,
+  resolveDemoScenarioPhase,
   writeDemoNowOverride,
   writeDemoScenario,
   writeDemoViewerId
 } from '../lib/demoControls'
 import { clearDemoLocalStorage, emitDemoScenarioChanged } from '../lib/demoStorage'
+import { resolveLockFlags, type LockFlags, type TournamentPhase } from '../lib/tournamentPhase'
 import { useToast } from '../hooks/useToast'
 
 type LoadState =
@@ -33,6 +42,54 @@ type LoadState =
   | { status: 'ready'; matches: Match[]; members: Member[] }
 
 type ConfirmAction = 'reload-snapshots' | 'clear-session'
+
+type CapabilityTone = 'info' | 'success' | 'warning'
+
+type ScenarioCapability = {
+  label: string
+  value: string
+  tone: CapabilityTone
+}
+
+const SCENARIO_COPY: Record<
+  DemoScenarioId,
+  {
+    caption: string
+    phaseLabel: string
+    summary: string
+  }
+> = {
+  'pre-group': {
+    caption: 'Groups not started',
+    phaseLabel: 'Pre-group setup',
+    summary:
+      'Preview the calm before kickoff. Group rankings are still editable, the knockout bracket is not open yet, and exports stay hidden until the tournament locks further.'
+  },
+  'mid-group': {
+    caption: 'Group stage live',
+    phaseLabel: 'Group stage open',
+    summary:
+      'Simulate the live group window where ranking decisions are still in play, match picks are locking on rolling kickoff times, and the knockout bracket remains closed.'
+  },
+  'end-group-draw-confirmed': {
+    caption: 'Draw confirmed',
+    phaseLabel: 'Knockout unlocked',
+    summary:
+      'Use this checkpoint once groups are settled and the draw is confirmed. Group rankings are locked, exports are available, and the bracket window is open for winner picks.'
+  },
+  'mid-knockout': {
+    caption: 'Knockout underway',
+    phaseLabel: 'Knockout locked',
+    summary:
+      'Jump into the elimination rounds after kickoff. Group rankings are locked, exports remain available, and the bracket window has already closed.'
+  },
+  'world-cup-final-pending': {
+    caption: 'Final on deck',
+    phaseLabel: 'Late knockout window',
+    summary:
+      'Preview the run-in just before the final. The tournament is deep into knockout play, the bracket is locked, and the session reflects a late-stage operations view.'
+  }
+}
 
 function toLabel(value: Date | null): string {
   if (!value) return 'Unavailable'
@@ -107,12 +164,58 @@ function getScenarioLabel(scenario: DemoScenarioId): string {
   return DEMO_SCENARIO_OPTIONS.find((option) => option.id === scenario)?.label ?? scenario
 }
 
+function resolveScenarioPhase(scenario: DemoScenarioId): TournamentPhase {
+  return (resolveDemoScenarioPhase(scenario) as TournamentPhase | null) ?? 'PRE_GROUP'
+}
+
+function buildScenarioCapabilities(phase: TournamentPhase, lockFlags: LockFlags): ScenarioCapability[] {
+  return [
+    {
+      label: 'Group stage',
+      value: lockFlags.groupEditable ? 'Ranking open' : 'Ranking locked',
+      tone: lockFlags.groupEditable ? 'success' : 'warning'
+    },
+    {
+      label: 'Match picks',
+      value:
+        phase === 'PRE_GROUP'
+          ? 'Opening window ahead'
+          : phase === 'GROUP_OPEN'
+            ? 'Rolling locks live'
+            : phase === 'KO_OPEN'
+              ? 'Groups closed, results live'
+              : phase === 'KO_LOCKED'
+                ? 'Knockout underway'
+                : 'Finalized',
+      tone: phase === 'FINAL' ? 'warning' : 'info'
+    },
+    {
+      label: 'Bracket',
+      value:
+        lockFlags.bracketEditable
+          ? 'Open for picks'
+          : phase === 'PRE_GROUP' || phase === 'GROUP_OPEN'
+            ? 'Waiting for draw'
+            : 'Locked after kickoff',
+      tone: lockFlags.bracketEditable ? 'success' : phase === 'PRE_GROUP' || phase === 'GROUP_OPEN' ? 'info' : 'warning'
+    },
+    {
+      label: 'Exports',
+      value: lockFlags.exportsVisible ? 'Available' : 'Hidden until lock',
+      tone: lockFlags.exportsVisible ? 'success' : 'info'
+    }
+  ]
+}
+
 export default function DemoControlsPage() {
   // QA-SMOKE: route=/admin/controls and /demo/admin/controls ; checklist-id=smoke-demo-controls
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [selectedScenario, setSelectedScenario] = useState<DemoScenarioId>(() => readDemoScenario())
+  const [appliedScenario, setAppliedScenario] = useState<DemoScenarioId>(() => readDemoScenario())
   const [selectedViewerId, setSelectedViewerId] = useState<string>(() => readDemoViewerId() ?? '')
+  const [appliedViewerId, setAppliedViewerId] = useState<string>(() => readDemoViewerId() ?? '')
   const [pendingAction, setPendingAction] = useState<ConfirmAction | null>(null)
+  const [quickMenuOpen, setQuickMenuOpen] = useState(false)
   const [isActionRunning, setIsActionRunning] = useState(false)
   const [sessionProgress, setSessionProgress] = useState(0)
   const [sessionProgressLabel, setSessionProgressLabel] = useState<string>('Idle')
@@ -133,7 +236,8 @@ export default function DemoControlsPage() {
         if (canceled) return
         const members = membersFile.members
         setState({ status: 'ready', matches: matchesFile.matches, members })
-        setSelectedViewerId((current) => (current || members[0]?.id || ''))
+        setSelectedViewerId((current) => current || members[0]?.id || '')
+        setAppliedViewerId((current) => current || members[0]?.id || '')
       } catch (error) {
         const messageText = error instanceof Error ? error.message : 'Unable to load demo controls data.'
         if (!canceled) setState({ status: 'error', message: messageText })
@@ -145,24 +249,35 @@ export default function DemoControlsPage() {
     }
   }, [])
 
-  const scenarioNow = useMemo(() => {
+  const selectedScenarioNow = useMemo(() => {
     if (state.status !== 'ready') return null
     return resolveScenarioNow(state.matches, selectedScenario)
   }, [selectedScenario, state])
-  const selectedViewerLabel = useMemo(() => {
+  const appliedScenarioNow = useMemo(() => {
+    if (state.status !== 'ready') return null
+    return resolveScenarioNow(state.matches, appliedScenario)
+  }, [appliedScenario, state])
+  const appliedViewerLabel = useMemo(() => {
     if (state.status !== 'ready') return 'Viewer unavailable'
-    const selectedViewer = state.members.find((member) => member.id === selectedViewerId)
-    return selectedViewer ? `${selectedViewer.name} (${selectedViewer.id})` : 'Viewer not selected'
-  }, [selectedViewerId, state])
+    const appliedViewer = state.members.find((member) => member.id === appliedViewerId)
+    return appliedViewer ? `${appliedViewer.name} (${appliedViewer.id})` : 'Viewer not selected'
+  }, [appliedViewerId, state])
+  const selectedScenarioPhase = useMemo(() => resolveScenarioPhase(selectedScenario), [selectedScenario])
+  const selectedScenarioCapabilities = useMemo(
+    () => buildScenarioCapabilities(selectedScenarioPhase, resolveLockFlags(selectedScenarioPhase)),
+    [selectedScenarioPhase]
+  )
+  const scenarioSelectionDirty = selectedScenario !== appliedScenario
+  const viewerSelectionDirty = selectedViewerId !== appliedViewerId
   const headerMetadata = (
     <>
       <span>{routeModeLabel}</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
-      <span>{getScenarioLabel(selectedScenario)}</span>
+      <span>{getScenarioLabel(appliedScenario)}</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
-      <span>{toLabel(scenarioNow)}</span>
+      <span>{toLabel(appliedScenarioNow)}</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
-      <span>{selectedViewerLabel}</span>
+      <span>{appliedViewerLabel}</span>
     </>
   )
 
@@ -172,12 +287,13 @@ export default function DemoControlsPage() {
   }
 
   function applyScenario() {
-    if (!scenarioNow) return
-    const previousScenario = readDemoScenario()
+    if (!selectedScenarioNow) return
+    const previousScenario = appliedScenario
     writeDemoScenario(selectedScenario)
-    writeDemoNowOverride(scenarioNow.toISOString())
+    writeDemoNowOverride(selectedScenarioNow.toISOString())
     emitDemoScenarioChanged(previousScenario, selectedScenario)
     emitControlsChanged()
+    setAppliedScenario(selectedScenario)
     showToast({
       tone: 'success',
       title: 'Scenario updated',
@@ -189,6 +305,7 @@ export default function DemoControlsPage() {
     if (!selectedViewerId) return
     writeDemoViewerId(selectedViewerId)
     emitControlsChanged()
+    setAppliedViewerId(selectedViewerId)
     const viewerLabel =
       state.status === 'ready'
         ? state.members.find((member) => member.id === selectedViewerId)?.name ?? selectedViewerId
@@ -240,6 +357,13 @@ export default function DemoControlsPage() {
     clearDemoViewerId()
     clearDemoLocalStorage()
     emitControlsChanged()
+    setSelectedScenario('pre-group')
+    setAppliedScenario('pre-group')
+    if (state.status === 'ready') {
+      const defaultViewerId = state.members[0]?.id ?? ''
+      setSelectedViewerId(defaultViewerId)
+      setAppliedViewerId(defaultViewerId)
+    }
     setSessionProgress(100)
     setSessionProgressLabel('Session cleared')
     setSessionProgressIntent('success')
@@ -267,7 +391,8 @@ export default function DemoControlsPage() {
     if (pendingAction === 'reload-snapshots') {
       return {
         title: 'Reload demo snapshots',
-        description: 'This clears cached demo snapshot keys and reloads this tab. Scenario and viewer settings stay saved. Live data is not affected.',
+        description:
+          'This clears cached demo snapshot keys and reloads this tab. Scenario and viewer settings stay saved. Live data is not affected.',
         confirmLabel: 'Reload snapshots'
       }
     }
@@ -303,124 +428,181 @@ export default function DemoControlsPage() {
 
         {state.status === 'ready' ? (
           <div className="v2-section-flat admin-v2-redesign-stack">
-            <SectionCardV2 tone="panel" density="none" className="admin-v2-surface admin-v2-session-panel p-3.5 md:p-4">
-              <div className="space-y-2.5">
-                <div className="admin-v2-section-label">Current demo session</div>
-                <div className="admin-v2-session-grid">
-                  <div className="admin-v2-session-item">
-                    <div className="v2-type-kicker">Demo clock</div>
-                    <div className="v2-type-body-sm mt-1 font-medium text-foreground">{toLabel(scenarioNow)}</div>
-                    <div className="v2-type-caption">{toRelativeLabel(scenarioNow)}</div>
+            <SectionCardV2 tone="panel" density="none" className="admin-v2-surface admin-v2-command-flow admin-v2-demo-step-card p-3.5 md:p-4">
+              <div className="space-y-4 admin-v2-command-stack">
+                <div className="admin-v2-workbench-head">
+                  <div className="admin-v2-demo-header-copy space-y-1">
+                    <div className="admin-v2-section-label">World Cup state</div>
+                    <h2 className="admin-v2-workbench-title">Choose a tournament checkpoint</h2>
+                    <p className="admin-v2-workbench-subtitle">Select a demo state, review what changes there, then apply it to this browser session.</p>
                   </div>
-                  <div className="admin-v2-session-item">
-                    <div className="v2-type-kicker">Viewer</div>
-                    <div className="v2-type-body-sm mt-1 font-medium text-foreground">{selectedViewerLabel}</div>
-                  </div>
-                  <div className="admin-v2-session-item">
-                    <div className="v2-type-kicker">Scope</div>
-                    <div className="v2-type-body-sm mt-1 font-medium text-foreground">Browser-only demo state</div>
-                    <div className="v2-type-caption">Live league data is untouched</div>
-                  </div>
+                  <DropdownMenu open={quickMenuOpen} onOpenChange={setQuickMenuOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" variant="secondary">
+                        Quick menu
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" sideOffset={8} className="admin-v2-demo-menu w-[320px]">
+                      <div className="admin-v2-demo-menu-section">
+                        <div className="v2-type-kicker">Viewer</div>
+                        <SelectField
+                          label="Viewer"
+                          value={selectedViewerId}
+                          onChange={(event) => setSelectedViewerId(event.target.value)}
+                          className="admin-v2-demo-menu-field"
+                          helperText={
+                            viewerSelectionDirty
+                              ? `Live now: ${appliedViewerLabel}`
+                              : 'Already live in this browser'
+                          }
+                        >
+                          {state.members.map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {member.name} ({member.id})
+                            </option>
+                          ))}
+                        </SelectField>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            applyViewer()
+                            setQuickMenuOpen(false)
+                          }}
+                          disabled={!selectedViewerId}
+                          icon={<UsersIcon size={15} />}
+                          className="w-full"
+                        >
+                          Switch viewer
+                        </Button>
+                      </div>
+                      <DropdownMenuSeparator />
+                      <div className="admin-v2-demo-menu-section">
+                        <DropdownMenuItem
+                          className="admin-v2-demo-menu-item"
+                          onSelect={() => {
+                            setQuickMenuOpen(false)
+                            setPendingAction('reload-snapshots')
+                          }}
+                        >
+                          <div className="flex items-start gap-2">
+                            <SettingsIcon size={15} className="mt-0.5 shrink-0" />
+                            <div className="flex flex-col items-start gap-0.5">
+                              <span className="text-sm font-semibold text-foreground">Reload snapshots</span>
+                              <span className="v2-type-caption">Clears cached demo snapshots and reloads this tab.</span>
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="admin-v2-demo-menu-item text-destructive hover:text-destructive focus-visible:text-destructive"
+                          onSelect={() => {
+                            setQuickMenuOpen(false)
+                            setPendingAction('clear-session')
+                          }}
+                        >
+                          <div className="flex items-start gap-2">
+                            <CloseIcon size={15} className="mt-0.5 shrink-0" />
+                            <div className="flex flex-col items-start gap-0.5">
+                              <span className="text-sm font-semibold">Clear session</span>
+                              <span className="v2-type-caption">Resets demo scenario, viewer, and cached overrides in this browser.</span>
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-              </div>
-            </SectionCardV2>
 
-            <SectionCardV2 tone="panel" density="none" className="admin-v2-surface admin-v2-command-flow p-3.5 md:p-4">
-              <div className="space-y-3 admin-v2-command-stack">
-                <div className="admin-v2-config-block">
-                  <div className="admin-v2-section-label">Scenario</div>
-                  <div className="admin-v2-controls admin-v2-action-row">
-                    <SelectField
-                      label="Scenario"
-                      labelHidden
-                      value={selectedScenario}
-                      onChange={(event) => setSelectedScenario(event.target.value as DemoScenarioId)}
-                      className="admin-v2-control-field"
-                    >
-                      {DEMO_SCENARIO_OPTIONS.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </SelectField>
+                <div className="admin-v2-demo-journey" aria-label="World Cup state journey">
+                  {DEMO_SCENARIO_OPTIONS.map((option, index) => {
+                    const isSelected = option.id === selectedScenario
+                    const isApplied = option.id === appliedScenario
+                    const stepPill = isSelected
+                      ? isApplied
+                        ? { label: 'Live now', tone: 'success' as const }
+                        : { label: 'Selected', tone: 'info' as const }
+                      : isApplied
+                        ? { label: 'Live now', tone: 'success' as const }
+                        : null
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className="admin-v2-demo-step"
+                        data-selected={isSelected || undefined}
+                        data-live={isApplied || undefined}
+                        aria-pressed={isSelected}
+                        onClick={() => setSelectedScenario(option.id)}
+                      >
+                        <span className="admin-v2-demo-step-index" aria-hidden="true">
+                          {index + 1}
+                        </span>
+                        <span className="admin-v2-demo-step-copy">
+                          <span className="admin-v2-demo-step-title">{option.label}</span>
+                          <span className="admin-v2-demo-step-caption">{SCENARIO_COPY[option.id].caption}</span>
+                        </span>
+                        {stepPill ? (
+                          <span className="admin-v2-demo-step-pill" data-tone={stepPill.tone}>
+                            {stepPill.label}
+                          </span>
+                        ) : null}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="admin-v2-demo-preview">
+                  <div className="admin-v2-workbench-head">
+                    <div className="admin-v2-demo-preview-copy space-y-1">
+                      <h3 className="admin-v2-workbench-title admin-v2-demo-preview-title">{getScenarioLabel(selectedScenario)}</h3>
+                      <p className="admin-v2-workbench-subtitle">{SCENARIO_COPY[selectedScenario].summary}</p>
+                    </div>
+                    <div className="admin-v2-chip-row">
+                      <span className="admin-v2-status-chip" data-tone="info">
+                        {SCENARIO_COPY[selectedScenario].phaseLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="admin-v2-demo-meta-strip">
+                    <div className="admin-v2-demo-meta-item">
+                      <span className="v2-type-caption">Preview clock</span>
+                      <strong>{toLabel(selectedScenarioNow)}</strong>
+                    </div>
+                    <div className="admin-v2-demo-meta-item">
+                      <span className="v2-type-caption">Relative timing</span>
+                      <strong>{toRelativeLabel(selectedScenarioNow)}</strong>
+                    </div>
+                    <div className="admin-v2-demo-meta-item">
+                      <span className="v2-type-caption">Live session</span>
+                      <strong>{scenarioSelectionDirty ? getScenarioLabel(appliedScenario) : 'Matches selection'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="admin-v2-demo-capability-grid">
+                    {selectedScenarioCapabilities.map((capability) => (
+                      <div key={capability.label} className="admin-v2-demo-capability-item" data-tone={capability.tone}>
+                        <div className="v2-type-kicker">{capability.label}</div>
+                        <div className="v2-type-body-sm mt-1 font-medium text-foreground">{capability.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="admin-v2-controls admin-v2-action-row admin-v2-demo-preview-actions">
+                    <div className="admin-v2-row-meta">
+                      {scenarioSelectionDirty
+                        ? `Current session stays on ${getScenarioLabel(appliedScenario)} until you apply this state. Live league data stays untouched.`
+                        : 'Live league data stays untouched.'}
+                    </div>
                     <Button
                       onClick={applyScenario}
-                      disabled={!scenarioNow}
+                      disabled={!selectedScenarioNow}
                       icon={<CalendarIcon size={15} />}
                       className="admin-v2-action"
                     >
                       Apply scenario
                     </Button>
                   </div>
-                  <div className="admin-v2-row-meta">
-                    Sets this browser to a demo scenario and time. Live league data stays untouched.
-                  </div>
-                </div>
-
-                <div className="admin-v2-divider" />
-
-                <div className="admin-v2-config-block">
-                  <div className="admin-v2-section-label">Viewer (optional)</div>
-                  <div className="admin-v2-controls admin-v2-action-row">
-                    <SelectField
-                      label="Viewer"
-                      labelHidden
-                      value={selectedViewerId}
-                      onChange={(event) => setSelectedViewerId(event.target.value)}
-                      className="admin-v2-control-field"
-                    >
-                      {state.members.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.name} ({member.id})
-                        </option>
-                      ))}
-                    </SelectField>
-                    <Button
-                      variant="secondary"
-                      onClick={applyViewer}
-                      disabled={!selectedViewerId}
-                      icon={<UsersIcon size={15} />}
-                      className="admin-v2-action"
-                    >
-                      Switch viewer
-                    </Button>
-                  </div>
-                  <div className="admin-v2-row-meta">Changes who appears as You across demo picks, bracket, and leaderboard views in this browser only.</div>
-                </div>
-
-                <div className="admin-v2-divider" />
-
-                <div className="admin-v2-config-block">
-                  <div className="admin-v2-section-label">Utilities</div>
-                  <div className="admin-v2-utility-list">
-                    <div className="admin-v2-utility-row">
-                      <Button
-                        variant="secondary"
-                        onClick={() => setPendingAction('reload-snapshots')}
-                        icon={<SettingsIcon size={15} />}
-                        className="admin-v2-action admin-v2-utility-button justify-start"
-                      >
-                        Reload snapshots
-                      </Button>
-                      <div className="v2-type-caption admin-v2-utility-note">
-                        Clears cached demo snapshot keys and reloads this tab. Scenario/viewer settings stay saved.
-                      </div>
-                    </div>
-                    <div className="admin-v2-utility-row">
-                      <Button
-                        variant="secondary"
-                        onClick={() => setPendingAction('clear-session')}
-                        icon={<CloseIcon size={15} />}
-                        className="admin-v2-action admin-v2-danger admin-v2-utility-button justify-start"
-                      >
-                        Clear session
-                      </Button>
-                      <div className="v2-type-caption admin-v2-utility-note">
-                        Clears demo scenario, viewer, and cached session overrides from this browser only.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="admin-v2-row-meta">Both utilities affect demo testing state only.</div>
                   {sessionProgress > 0 ? (
                     <div className="space-y-1 admin-v2-progress-anchor">
                       <div className="v2-type-meta">{sessionProgressLabel}</div>

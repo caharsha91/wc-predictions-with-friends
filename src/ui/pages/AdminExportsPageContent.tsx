@@ -111,25 +111,25 @@ const EXPORT_PRESETS: ExportPreset[] = [
   {
     id: 'USER_PICKS_WORKBOOK',
     label: 'User Picks',
-    description: 'User required',
+    description: "One member's picks, outcomes, bracket, and results.",
     requires: 'user'
   },
   {
     id: 'MATCHDAY_PICKS_WORKBOOK',
     label: 'Matchday Picks',
-    description: 'Matchday required',
+    description: 'All submitted picks for a selected matchday.',
     requires: 'matchday'
   },
   {
     id: 'MATCHDAY_LEADERBOARD_SNAPSHOT',
-    label: 'Leaderboard',
-    description: 'Matchday required',
+    label: 'Leaderboard Snapshot',
+    description: 'Leaderboard standings snapshot for a selected matchday.',
     requires: 'matchday'
   },
   {
     id: 'FULL_AUDIT_PACK',
-    label: 'Audit Pack',
-    description: 'User + Matchday',
+    label: 'Full Audit Pack',
+    description: 'Member workbook plus matchday picks and leaderboard snapshots.',
     requires: 'both'
   }
 ]
@@ -1210,9 +1210,13 @@ export default function AdminExportsPage() {
   const isAuditPreset = selectedPreset.id === 'FULL_AUDIT_PACK'
   const exportDisabledReason = !canExport ? exportGateMessage : noDataHint
   const isExportActionDisabled = exportStatus === 'exporting' || Boolean(exportDisabledReason)
-  const exportControlsDesktopClass = isAuditPreset
-    ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]'
-    : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
+  const exportSetupTitle = 'Choose workbook and filters'
+  const exportSetupSubtitle =
+    selectedPreset.requires === 'user'
+      ? 'Select a member, then export.'
+      : selectedPreset.requires === 'matchday'
+        ? 'Select a matchday snapshot, then export.'
+        : 'Select a member and matchday to export the full audit pack.'
   const availabilityText = canExport ? 'Exports enabled' : exportGateMessage ?? 'Exports unavailable.'
   const modeContextText = isDemoMode ? 'Demo mode (live data untouched)' : 'Live admin mode'
   const pageSubtitle = isDemoMode
@@ -1499,10 +1503,10 @@ export default function AdminExportsPage() {
         <SectionCardV2 tone="panel" density="none" className="admin-v2-surface admin-v2-command-flow p-3.5 md:p-4">
           <div className="space-y-3.5 admin-v2-command-stack">
             <div className="admin-v2-workbench-head">
-              <div className="space-y-1">
-                <div className="admin-v2-section-label">Export setup</div>
-                <h2 className="admin-v2-workbench-title">Build workbook</h2>
-                <p className="admin-v2-workbench-subtitle">{selectedPreset.description}</p>
+              <div className="admin-v2-export-header-copy space-y-1">
+                <div className="admin-v2-section-label">Export workflow</div>
+                <h2 className="admin-v2-workbench-title">{exportSetupTitle}</h2>
+                <p className="admin-v2-workbench-subtitle">{exportSetupSubtitle}</p>
               </div>
               <div className="admin-v2-chip-row">
                 <span className="admin-v2-status-chip" data-tone={isDemoMode ? 'warning' : 'info'}>
@@ -1514,7 +1518,7 @@ export default function AdminExportsPage() {
               </div>
             </div>
 
-            <div className={`admin-v2-controls admin-v2-workbench-controls grid gap-3 ${exportControlsDesktopClass}`}>
+            <div className="admin-v2-controls admin-v2-workbench-controls admin-v2-export-controls grid gap-3" data-audit={isAuditPreset ? 'true' : 'false'}>
               <SelectField
                 label="Preset"
                 value={selectedPresetId}
@@ -1558,7 +1562,7 @@ export default function AdminExportsPage() {
                 </SelectField>
               ) : null}
 
-              <div className="admin-v2-primary-action">
+              <div className="admin-v2-primary-action admin-v2-export-action">
                 <Button
                   size="md"
                   className="admin-v2-action v2-action-prominent lg:min-w-[180px]"
@@ -1591,8 +1595,13 @@ export default function AdminExportsPage() {
 
             <div className="admin-v2-divider" />
 
-            <div className="space-y-3 admin-v2-summary-stack">
-              <div className="admin-v2-section-label">Workbook contents</div>
+            <div className="space-y-3 admin-v2-export-summary">
+              <div className="admin-v2-workbench-head">
+                <div className="space-y-1">
+                  <div className="admin-v2-section-label">Workbook preview</div>
+                  <p className="admin-v2-workbench-subtitle">{selectedPreset.description}</p>
+                </div>
+              </div>
               {includedSheets.length > 0 ? (
                 <div className="admin-v2-chip-grid">
                   {includedSheets.map((sheet) => (
@@ -1604,21 +1613,21 @@ export default function AdminExportsPage() {
               ) : (
                 <div className="admin-v2-row-meta">No sheets selected.</div>
               )}
-              <div className="admin-v2-summary-list">
-                <div className="admin-v2-summary-item">
-                  <span>Preset</span>
+              <div className="admin-v2-export-meta-grid">
+                <div className="admin-v2-export-meta-item">
+                  <span className="v2-type-caption">Preset</span>
                   <strong>{selectedPreset.label}</strong>
                 </div>
-                <div className="admin-v2-summary-item">
-                  <span>Member</span>
+                <div className="admin-v2-export-meta-item">
+                  <span className="v2-type-caption">Member</span>
                   <strong>{requiresUser ? (selectedUser?.name ?? 'Select member') : 'Not required'}</strong>
                 </div>
-                <div className="admin-v2-summary-item">
-                  <span>Matchday</span>
+                <div className="admin-v2-export-meta-item">
+                  <span className="v2-type-caption">Matchday</span>
                   <strong>{requiresMatchday ? (selectedMatchday || 'Select matchday') : 'Not required'}</strong>
                 </div>
-                <div className="admin-v2-summary-item">
-                  <span>Snapshot</span>
+                <div className="admin-v2-export-meta-item">
+                  <span className="v2-type-caption">Snapshot</span>
                   <strong>{formatDateTime(state.bundle.offlineLastUpdated)}</strong>
                 </div>
               </div>
