@@ -34,8 +34,7 @@ import { useViewerId } from '../hooks/useViewerId'
 import { cn } from '../lib/utils'
 import {
   lockedLabel,
-  openUntilLabel,
-  opensAfterLabel
+  openUntilLabel
 } from '../lib/pageStatusCopy'
 import { formatSnapshotTimestamp } from '../lib/snapshotStamp'
 import { downloadWorkbook } from '../lib/exportWorkbook'
@@ -328,22 +327,32 @@ function deriveTeamsForMatch(
   }
 }
 
+function roundRemainingLabel(remaining: number): string {
+  return `${remaining} left`
+}
+
+function roundProgressLabel(round: RoundModel): string {
+  const remaining = Math.max(0, round.total - round.picked)
+  if (remaining === 0) return 'Round complete'
+  return roundRemainingLabel(remaining)
+}
+
 function roundHelperCopy(round: RoundModel, nextRound: RoundModel | null, bracketEditable: boolean): string {
-  if (!bracketEditable) return 'Locked. Bracket edits close at first knockout kickoff.'
+  if (!bracketEditable) return 'Review your bracket. Edits are closed for this snapshot.'
 
   const remaining = Math.max(0, round.total - round.picked)
   if (remaining > 0) {
-    return `${remaining} ${remaining === 1 ? 'pick left' : 'picks left'} in this round. Winners flow forward automatically.`
+    return `${roundRemainingLabel(remaining)} in this round. Winners flow forward automatically.`
   }
 
   if (nextRound) return `Round complete. Continue to ${STAGE_LABELS[nextRound.stage]}.`
-  return 'All rounds are complete. Review your full bracket.'
+  return 'Round complete. Review bracket.'
 }
 
 function primaryCtaLabel(round: RoundModel, nextRound: RoundModel | null): string {
   if (!round.complete && nextRound) return `Continue to ${STAGE_SHORT_LABELS[nextRound.stage]}`
   if (nextRound) return `Continue to ${STAGE_SHORT_LABELS[nextRound.stage]}`
-  return 'Review Bracket'
+  return 'Review bracket'
 }
 
 function splitMatches(matches: ResolvedMatch[]): { left: ResolvedMatch[]; right: ResolvedMatch[] } {
@@ -470,19 +479,15 @@ function BracketOrientationStrip({
   openRound,
   totalPicked,
   totalMatches,
-  lockTimingLabel,
-  bracketEditable,
-  hasAwaitingMatchups
+  lockTimingLabel
 }: {
   activeRound: RoundModel
   openRound: RoundModel | null
   totalPicked: number
   totalMatches: number
   lockTimingLabel: string
-  bracketEditable: boolean
-  hasAwaitingMatchups: boolean
 }) {
-  const openRoundLabel = openRound ? STAGE_LABELS[openRound.stage] : bracketEditable ? 'All rounds complete' : 'Locked'
+  const openRoundLabel = openRound ? STAGE_LABELS[openRound.stage] : 'Review bracket'
   const openRoundProgressLabel = openRound
     ? `${openRound.picked} of ${openRound.total} picks set`
     : totalMatches > 0
@@ -494,7 +499,7 @@ function BracketOrientationStrip({
       <div className="flex flex-wrap items-start justify-between gap-2.5">
         <div className="min-w-0">
           <div className="v2-type-kicker">Current open round</div>
-          <div className="mt-1 text-sm font-semibold text-foreground">{openRoundLabel}</div>
+          <div className="v2-type-body-sm mt-1 font-semibold text-foreground">{openRoundLabel}</div>
           <div className="v2-type-caption">{openRoundProgressLabel}</div>
         </div>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
@@ -504,18 +509,12 @@ function BracketOrientationStrip({
           <StatusTagV2 tone={activeRound.stage === openRound?.stage ? 'info' : 'secondary'}>
             Viewing {STAGE_SHORT_LABELS[activeRound.stage]}
           </StatusTagV2>
-          {!bracketEditable ? <StatusTagV2 tone="locked">Locked</StatusTagV2> : null}
         </div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 v2-type-caption">
         <span>{lockTimingLabel}</span>
         <span aria-hidden="true">·</span>
         <span>Winners flow forward automatically into later rounds.</span>
-        {hasAwaitingMatchups ? (
-          <StatusTagV2 tone="secondary" className="ml-auto">
-            Awaiting later matchups
-          </StatusTagV2>
-        ) : null}
       </div>
     </SectionCardV2>
   )
@@ -663,7 +662,7 @@ function BracketMatchNode({
         ) : null}
         {awaitingMatchup ? (
           <StatusTagV2 tone="secondary" className={`h-4 shrink-0 px-1.5 ${isActiveRound ? '' : 'opacity-75'}`}>
-            Awaiting matchup
+            Matchup not set yet
           </StatusTagV2>
         ) : null}
         {showOpenPickTag ? (
@@ -929,7 +928,7 @@ function DesktopVisualBracket({
 
   if (layout.nodes.length === 0) {
     return (
-      <div ref={viewportRef} className="rounded-xl border border-dashed border-border/35 p-4 text-sm text-muted-foreground">
+      <div ref={viewportRef} className="v2-type-body-sm rounded-xl border border-dashed border-border/35 p-4 text-muted-foreground">
         No bracket fixtures are available in the latest snapshot.
       </div>
     )
@@ -949,7 +948,7 @@ function DesktopVisualBracket({
   if (shouldUseCompactFallback) {
     return (
       <div ref={viewportRef} className="space-y-2">
-        <div className="rounded-lg border border-border/35 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
+        <div className="v2-type-caption rounded-lg border border-border/35 bg-background/40 px-3 py-2 text-muted-foreground">
           Compact bracket view enabled for readability on this viewport.
         </div>
         {rounds.map((round) => (
@@ -990,7 +989,7 @@ function DesktopVisualBracket({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
+                        <div className="v2-type-body-sm flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
                           <TeamIdentityInlineV2
                             code={match.homeTeam.code}
                             name={match.homeTeam.name}
@@ -1012,7 +1011,7 @@ function DesktopVisualBracket({
                         {interactionState.kind === 'tag' ? (
                           <StatusTagV2 tone={interactionState.tone}>{interactionState.label}</StatusTagV2>
                         ) : null}
-                        {awaitingMatchup ? <StatusTagV2 tone="secondary">Awaiting matchup</StatusTagV2> : null}
+                        {awaitingMatchup ? <StatusTagV2 tone="secondary">Matchup not set yet</StatusTagV2> : null}
                         {!awaitingMatchup && round.editable && !match.pickedWinner && interactionState.kind === 'none' ? (
                           <StatusTagV2 tone="info">Pick winner</StatusTagV2>
                         ) : null}
@@ -1268,11 +1267,6 @@ export default function BracketPage() {
     return loadedRounds.find((round) => !round.complete) ?? null
   }, [bracketEditable, loadedRounds])
 
-  const hasAwaitingMatchups = useMemo(
-    () => loadedRounds.some((round) => round.matches.some((match) => isAwaitingMatchup(match))),
-    [loadedRounds]
-  )
-
   const firstKnockoutKickoffUtc = useMemo(() => {
     if (!readyBracketState) return null
     const kickoffValues = bracket.stageOrder.flatMap((stage) =>
@@ -1286,8 +1280,6 @@ export default function BracketPage() {
   }, [bracket.stageOrder, readyBracketState])
 
   const firstKnockoutKickoffLabel = firstKnockoutKickoffUtc ? formatKickoff(firstKnockoutKickoffUtc) : null
-
-  const remainingPicks = activeRound ? Math.max(0, activeRound.total - activeRound.picked) : 0
 
   async function handlePick(match: ResolvedMatch, winner: MatchWinner) {
     if (bracketBusySaving) return
@@ -1416,7 +1408,7 @@ export default function BracketPage() {
           className="landing-v2-hero"
           kicker="Knockout"
           title="Knockout Bracket"
-          subtitle="The knockout bracket opens after the round-of-32 draw is confirmed."
+          subtitle="Pick winners round by round once knockout matchups are set."
           actions={(
             <>
               <ButtonLink to={homePath} size="sm" variant="secondary">
@@ -1426,15 +1418,15 @@ export default function BracketPage() {
           )}
           metadataItems={[
             <SnapshotStamp key="snapshot" timestamp={snapshotReady?.snapshotTimestamp} />,
-            <span key="state">{opensAfterLabel('the draw is confirmed')}</span>
+            <span key="state">Bracket opens once the draw is confirmed</span>
           ]}
         />
 
         <SectionCardV2 tone="panel" className="p-4 md:p-5">
           <div className="space-y-2">
-            <div className="text-sm font-semibold text-foreground">Bracket not available yet</div>
-            <div className="text-sm text-muted-foreground">
-              Your winners-only bracket unlocks once the draw is confirmed.
+            <div className="v2-type-body-sm font-semibold text-foreground">Draw pending</div>
+            <div className="v2-type-body-sm text-muted-foreground">
+              We’ll unlock your winner picks as soon as knockout matchups are confirmed.
             </div>
           </div>
         </SectionCardV2>
@@ -1452,8 +1444,8 @@ export default function BracketPage() {
       ? `Edits close at ${firstKnockoutKickoffLabel}.`
       : 'Edits close at first knockout kickoff.'
     : firstKnockoutKickoffLabel
-      ? `Locked since ${firstKnockoutKickoffLabel}.`
-      : 'Locked for this snapshot.'
+      ? `Edits closed at ${firstKnockoutKickoffLabel}.`
+      : 'Edits closed for this snapshot.'
   const bracketCanvasStyle: CSSProperties | undefined = isDesktopRailViewport
     ? { width: 'max-content', minWidth: '100%' }
     : undefined
@@ -1488,8 +1480,8 @@ export default function BracketPage() {
       {loadedRounds.length === 0 || !activeRound ? (
         <SectionCardV2 tone="panel" className="p-4 md:p-5">
           <div className="space-y-2">
-            <div className="text-sm font-semibold text-foreground">No knockout fixtures available</div>
-            <div className="text-sm text-muted-foreground">
+            <div className="v2-type-body-sm font-semibold text-foreground">No knockout fixtures available</div>
+            <div className="v2-type-body-sm text-muted-foreground">
               The latest snapshot does not include knockout rounds yet.
             </div>
           </div>
@@ -1502,8 +1494,6 @@ export default function BracketPage() {
             totalPicked={bracket.completeMatches}
             totalMatches={bracket.totalMatches}
             lockTimingLabel={orientationLockLabel}
-            bracketEditable={bracketEditable}
-            hasAwaitingMatchups={hasAwaitingMatchups}
           />
           {isDesktopRailViewport ? (
         <div className="space-y-3">
@@ -1518,10 +1508,10 @@ export default function BracketPage() {
                 </StatusTagV2>
               ) : null}
               <StatusTagV2 tone={activeRound.complete ? 'success' : 'warning'}>
-                {STAGE_SHORT_LABELS[activeRound.stage]} {activeRound.picked}/{activeRound.total}
+                {STAGE_SHORT_LABELS[activeRound.stage]} {roundProgressLabel(activeRound)}
               </StatusTagV2>
               {!bracketEditable ? (
-                <Badge tone="locked">Locked</Badge>
+                <InlineStateHintV2>Review only</InlineStateHintV2>
               ) : (
                 <InlineStateHintV2>Round-by-round picks</InlineStateHintV2>
               )}
@@ -1572,18 +1562,18 @@ export default function BracketPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 className="v2-heading-h2 text-foreground">{STAGE_LABELS[activeRound.stage]}</h2>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="v2-type-body-sm text-muted-foreground">
                     {activeRound.picked} of {activeRound.total} picked
                   </div>
                 </div>
                 <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                   <Badge tone={activeRound.complete ? 'success' : 'warning'}>
-                    {activeRound.complete ? 'Round complete' : `${remainingPicks} remaining`}
+                    {roundProgressLabel(activeRound)}
                   </Badge>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border/34 bg-background/40 px-3 py-2 text-xs text-muted-foreground">
+              <div className="v2-type-caption rounded-lg border border-border/34 bg-background/40 px-3 py-2 text-muted-foreground">
                 {roundHelperCopy(activeRound, nextRound, bracketEditable)}
               </div>
 
@@ -1609,7 +1599,7 @@ export default function BracketPage() {
                       <div className="space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
+                            <div className="v2-type-body-sm flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
                               <TeamIdentityInlineV2
                                 code={match.homeTeam.code}
                                 name={match.homeTeam.name}
@@ -1631,7 +1621,7 @@ export default function BracketPage() {
                             {interactionState.kind === 'tag' ? (
                               <StatusTagV2 tone={interactionState.tone}>{interactionState.label}</StatusTagV2>
                             ) : null}
-                            {awaitingMatchup ? <StatusTagV2 tone="secondary">Awaiting matchup</StatusTagV2> : null}
+                            {awaitingMatchup ? <StatusTagV2 tone="secondary">Matchup not set yet</StatusTagV2> : null}
                             {!awaitingMatchup && activeRound.editable && !match.pickedWinner && interactionState.kind === 'none' ? (
                               <StatusTagV2 tone="info">Pick winner</StatusTagV2>
                             ) : null}

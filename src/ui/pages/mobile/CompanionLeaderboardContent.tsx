@@ -482,9 +482,9 @@ export default function CompanionLeaderboardContent() {
       {snapshot.state.status === 'error' ? <CompactMessage>{snapshot.state.message}</CompactMessage> : null}
 
       <SectionCardV2 tone="inset" density="none" withGlow={false} className="companion-league-inset space-y-2 p-2.5">
-        <FeedHeading label="Leaderboard" right={`Top ${TOP_LEADERBOARD_LIMIT} + You + Rivals`} />
+        <FeedHeading label="Leaderboard" right={`Top ${TOP_LEADERBOARD_LIMIT} + your row + rivals`} />
         {topWindowRows.length === 0 ? (
-          <CompactMessage>No leaderboard rows available.</CompactMessage>
+          <CompactMessage>No standings yet. They will appear after the next update.</CompactMessage>
         ) : (
           <div className="space-y-1.5">
             {topWindowRows.map((row) => (

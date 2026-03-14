@@ -222,7 +222,7 @@ export default function GroupStagePage() {
   const picksState = usePicksData()
   const publishedSnapshot = usePublishedSnapshot()
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : EMPTY_MATCHES
-  const groupStage = useGroupStageData(matches)
+  const groupStage = useGroupStageData(matches, mode === 'demo' ? { nowOverride: now } : undefined)
   const [groupQualifierPoints, setGroupQualifierPoints] = useState(DEFAULT_GROUP_QUALIFIER_POINTS)
   const [selectedStandingsGroup, setSelectedStandingsGroup] = useState<string>('A')
   const [savingRowGroupId, setSavingRowGroupId] = useState<string | null>(null)
@@ -594,9 +594,9 @@ export default function GroupStagePage() {
     selectedBestThirdGroups
   ])
 
-  const bestThirdMeterLabel = `Third-place qualifiers: ${selectedBestThirdCount} / ${BEST_THIRD_SLOTS} selected`
+  const bestThirdMeterLabel = `Pick ${BEST_THIRD_SLOTS} best third-place teams`
   const bestThirdHintLabel =
-    selectedBestThirdCount < BEST_THIRD_SLOTS ? `${BEST_THIRD_SLOTS - selectedBestThirdCount} to pick` : 'All set'
+    `${selectedBestThirdCount}/${BEST_THIRD_SLOTS} selected`
 
   const selectedThirdCodeByGroup = useMemo(() => {
     const next: Record<string, string> = {}
@@ -962,8 +962,8 @@ export default function GroupStagePage() {
 
   const groupPicksAlert =
     groupStage.saveStatus === 'locked' ? (
-      <Alert tone="warning" title="Locked">
-        Group Stage picks are locked after {groupLockLabel}.
+      <Alert tone="warning" title="Group stage locked">
+        Group stage picks lock at {groupLockLabel}.
       </Alert>
     ) : null
 
@@ -1028,8 +1028,8 @@ export default function GroupStagePage() {
 
   const standingsPanel = (
     <SideListPanelV2
-      title="Published standings"
-      subtitle="See how your group calls compare."
+      title="How your calls compare"
+      subtitle="Published standings and your predicted top two."
       className="group-stage-v2-leaderboard min-h-0"
       actions={(
         <Badge tone="secondary" className="h-7 rounded-full px-2 normal-case tracking-normal">
@@ -1108,7 +1108,7 @@ export default function GroupStagePage() {
         className="group-stage-v2-hero"
         kicker="Your move"
         title="Group Stage"
-        subtitle="Set your group rankings and best-third qualifiers. Latest snapshot updates publish daily."
+        subtitle={`Rank teams 1-4 in each group, then pick ${BEST_THIRD_SLOTS} best third-place teams.`}
         actions={(
           <>
             <ButtonLink to={homePath} size="sm" variant="secondary">

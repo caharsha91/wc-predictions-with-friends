@@ -48,6 +48,10 @@ type GroupRankingSaveResult =
   | { ok: true; changed: boolean; bestThirds: string[] }
   | { ok: false; reason: 'locked' | 'error' }
 
+type GroupStageClockOptions = {
+  nowOverride?: Date
+}
+
 function buildGroupIds(matches: Match[]): string[] {
   const ids = new Set<string>()
   for (const match of matches) {
@@ -244,7 +248,7 @@ function saveLocalGroupStage(userId: string, data: GroupStageData, mode: 'defaul
   }, mode)
 }
 
-export function useGroupStageData(matches: Match[]) {
+export function useGroupStageData(matches: Match[], options?: GroupStageClockOptions) {
   const authState = useAuthState()
   const currentUser = useCurrentUser()
   const mode = useRouteDataMode()
@@ -287,7 +291,13 @@ export function useGroupStageData(matches: Match[]) {
     !!authState.user &&
     currentUser?.isMember === true
   const isLiveMode = !isDemoMode && hasFirebase
-  const isTimeLocked = groupLockTime ? Date.now() >= groupLockTime.getTime() : false
+  const nowOverrideMs = options?.nowOverride?.getTime()
+  // Demo uses scenario time overrides; live mode intentionally keeps wall-clock lock behavior.
+  const effectiveNowMs =
+    isDemoMode && typeof nowOverrideMs === 'number' && Number.isFinite(nowOverrideMs)
+      ? nowOverrideMs
+      : Date.now()
+  const isTimeLocked = groupLockTime ? effectiveNowMs >= groupLockTime.getTime() : false
   const isLocked = forcedLocked || isTimeLocked
 
   async function resolveCanonicalUserId(fallbackUserId: string): Promise<string> {

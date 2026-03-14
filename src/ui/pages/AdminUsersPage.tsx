@@ -85,7 +85,7 @@ export default function AdminUsersPage() {
 
   const firestoreEnabled = hasFirebase && !!firebaseDb && !isDemoMode
   const canManageMembers = firestoreEnabled
-  const modeLabel = isDemoMode ? 'Demo testing data' : 'Live roster data'
+  const modeLabel = isDemoMode ? 'Demo mode (live data untouched)' : 'Live roster data'
 
   useEffect(() => {
     let canceled = false
@@ -157,7 +157,7 @@ export default function AdminUsersPage() {
     if (!firestoreEnabled || !firebaseDb) {
       showToast({
         title: 'Save failed',
-        message: 'This environment is read-only. Roster updates are disabled.',
+        message: 'This environment is read-only. Live roster updates are disabled here.',
         tone: 'danger'
       })
       return
@@ -226,8 +226,8 @@ export default function AdminUsersPage() {
       setFormStatus('idle')
       setMemberMutationProgress(100)
       showToast({
-        title: 'Player saved',
-        message: editing ? '1 player updated.' : '1 player added.',
+        title: 'Roster saved',
+        message: editing ? '1 roster member updated.' : '1 roster member added.',
         tone: 'success'
       })
       setEditorOpen(false)
@@ -258,7 +258,7 @@ export default function AdminUsersPage() {
     <>
       <span>{modeLabel}</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
-      <span>{entries.length} players</span>
+      <span>{entries.length} members</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
       <span>{adminCount} admin</span>
       <span className="h-3 w-px bg-border" aria-hidden="true" />
@@ -268,8 +268,8 @@ export default function AdminUsersPage() {
 
   return (
     <AdminWorkspaceShellV2
-      title="Players"
-      subtitle={isDemoMode ? 'Review demo roster snapshot state for testing.' : 'Manage league roster access and admin permissions.'}
+      title="Roster"
+      subtitle={isDemoMode ? 'Review demo roster snapshots for testing. Live roster data stays untouched.' : 'Manage invite-only league access and admin roles.'}
       metadata={headerMetadata}
       kicker={isDemoMode ? 'Admin Demo' : 'Admin'}
       actions={(
@@ -280,20 +280,20 @@ export default function AdminUsersPage() {
           onClick={startCreate}
           disabled={!canManageMembers}
         >
-          + Add Player
+          + Add member
         </Button>
       )}
     >
       <div className="space-y-4">
         {isDemoMode ? (
           <Alert tone="warning" title="Demo testing mode" className="admin-v2-inline-alert">
-            Demo roster is snapshot-only for testing. Add/edit actions are intentionally disabled here.
+            Demo roster is snapshot-only in this browser. Add/edit actions are disabled and live league data is not affected.
           </Alert>
         ) : null}
 
         {!canManageMembers && !isDemoMode ? (
           <Alert tone="warning" title="Read-only roster view" className="admin-v2-inline-alert">
-            Live roster updates are unavailable in this environment.
+            Live roster updates are unavailable in this environment. No live writes will be made.
           </Alert>
         ) : null}
         {state.status === 'error' ? (
@@ -305,9 +305,9 @@ export default function AdminUsersPage() {
         <SectionCardV2 tone="panel" density="none" className="v2-surface-soft p-3.5 md:p-4">
           <div className="space-y-3">
             <div className="players-v2-search-wrap">
-              <div className="admin-v2-section-label">Search players</div>
+              <div className="admin-v2-section-label">Search roster</div>
               <label className="sr-only" htmlFor="players-search">
-                Search players
+                Search roster
               </label>
               <input
                 id="players-search"
@@ -328,12 +328,12 @@ export default function AdminUsersPage() {
             </div>
 
             <div className="players-v2-list">
-              {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading players...</div> : null}
+              {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading roster members...</div> : null}
               {state.status === 'ready' && entries.length === 0 ? (
-                <div className="text-sm text-muted-foreground">No players found in the roster.</div>
+                <div className="text-sm text-muted-foreground">No roster members found.</div>
               ) : null}
               {state.status === 'ready' && entries.length > 0 && filteredEntries.length === 0 ? (
-                <div className="text-sm text-muted-foreground">No players match this search.</div>
+                <div className="text-sm text-muted-foreground">No roster members match this search.</div>
               ) : null}
 
               {state.status === 'ready' && filteredEntries.length > 0 ? (
@@ -387,13 +387,13 @@ export default function AdminUsersPage() {
         <Sheet open={editorOpen} onOpenChange={setEditorOpen}>
           <SheetContent side="right" className="admin-v2-sheet-content w-[96vw] max-w-lg">
             <SheetHeader className="admin-v2-sheet-header">
-              <SheetTitle>{editing ? 'Edit Player' : 'Add Player'}</SheetTitle>
+              <SheetTitle>{editing ? 'Edit member' : 'Add member'}</SheetTitle>
               <SheetDescription>
                 {isDemoMode
-                  ? 'Demo mode preview only. Editing is disabled in testing mode.'
+                  ? 'Demo mode preview only. Editing is disabled and live roster data is untouched.'
                   : editing
-                    ? 'Update player details and admin permissions for the live roster.'
-                    : 'Add a player to the invite-only live league roster.'}
+                    ? 'Update member details and admin roles for the live roster.'
+                    : 'Add a member to the invite-only live league roster.'}
               </SheetDescription>
             </SheetHeader>
 
@@ -454,14 +454,14 @@ export default function AdminUsersPage() {
                   {formStatus === 'saving' || memberMutationProgress > 0 ? (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between v2-type-meta">
-                        <span>{formStatus === 'saving' ? 'Updating player...' : 'Update complete'}</span>
+                        <span>{formStatus === 'saving' ? 'Updating roster member...' : 'Update complete'}</span>
                         <span>{memberMutationProgress >= 100 ? 'Done' : 'In progress'}</span>
                       </div>
                       <Progress
                         value={memberMutationProgress}
                         intent={formStatus === 'saving' ? 'momentum' : 'success'}
                         size="sm"
-                        aria-label="Player update progress"
+                        aria-label="Roster update progress"
                       />
                     </div>
                   ) : null}
@@ -476,7 +476,7 @@ export default function AdminUsersPage() {
                       Cancel
                     </Button>
                     <Button type="submit" size="sm" disabled={!canManageMembers || formStatus === 'saving'}>
-                      {editing ? 'Save player' : 'Add player'}
+                      {editing ? 'Save member' : 'Add member'}
                     </Button>
                   </div>
                 </div>

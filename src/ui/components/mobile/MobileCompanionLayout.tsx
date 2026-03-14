@@ -63,8 +63,8 @@ export default function MobileCompanionLayout() {
 
   const actionItems: CompanionActionItem[] = [
     {
-      key: 'you',
-      label: 'You',
+      key: 'account',
+      label: 'Account',
       icon: UsersIcon,
       action: () => setLogoutDialogOpen(true)
     }
@@ -133,7 +133,7 @@ export default function MobileCompanionLayout() {
       <Sheet open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
         <SheetContent side="bottom" className="mx-auto w-full max-w-xl rounded-t-2xl">
           <SheetHeader className="space-y-1.5 px-4 py-4">
-            <div className="v2-type-kicker">You</div>
+            <div className="v2-type-kicker">Account</div>
             <h2 className="text-lg font-semibold text-foreground">Log out</h2>
             <p className="text-sm text-muted-foreground">
               {authState.user?.email ? `Sign out ${authState.user.email}?` : 'Sign out of your companion session?'}

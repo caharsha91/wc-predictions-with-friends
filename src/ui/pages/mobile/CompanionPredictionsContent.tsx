@@ -163,7 +163,7 @@ export default function CompanionPredictionsContent() {
       <div className="flex items-center justify-between gap-2">
         <div className="v2-type-kicker">Match Picks</div>
         <StatusTagV2 tone={quickMatchPending > 0 ? 'warning' : 'success'}>
-          {quickMatchPending > 0 ? `${quickMatchPending} pending` : 'Up to date'}
+          {quickMatchPending > 0 ? `${quickMatchPending} left` : 'All set'}
         </StatusTagV2>
       </div>
 
@@ -172,7 +172,7 @@ export default function CompanionPredictionsContent() {
       ) : picksState.state.status === 'error' ? (
         <CompactMessage>{picksState.state.message}</CompactMessage>
       ) : quickMatchItems.length === 0 ? (
-        <CompactMessage>No editable matches right now.</CompactMessage>
+        <CompactMessage>No picks open right now.</CompactMessage>
       ) : (
         <div className="space-y-2.5">
           {quickMatchItems.map((item) => {

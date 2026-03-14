@@ -259,10 +259,8 @@ function movementTone(delta: number | null): 'success' | 'danger' | 'secondary' 
 }
 
 function movementLabel(delta: number | null): string {
-  if (delta === null) return 'Momentum -'
-  if (delta > 0) return `Momentum +${delta}`
-  if (delta < 0) return `Momentum -${Math.abs(delta)}`
-  return 'Momentum ='
+  if (delta === null || delta === 0) return 'No move'
+  return delta > 0 ? `Up ${delta}` : `Down ${Math.abs(delta)}`
 }
 
 function roleBadgeLabel({ isYou, rivalSlot }: { isYou: boolean; rivalSlot: number | null | undefined }): string {
@@ -271,17 +269,13 @@ function roleBadgeLabel({ isYou, rivalSlot }: { isYou: boolean; rivalSlot: numbe
 }
 
 function rankDeltaLabel(delta: number | null): string {
-  if (delta === null) return 'Rank -'
-  if (delta > 0) return `Rank +${delta}`
-  if (delta < 0) return `Rank -${Math.abs(delta)}`
-  return 'Rank ='
+  if (delta === null || delta === 0) return 'Rank unchanged'
+  return delta > 0 ? `Up ${delta} place${delta === 1 ? '' : 's'}` : `Down ${Math.abs(delta)} place${Math.abs(delta) === 1 ? '' : 's'}`
 }
 
 function pointsDeltaLabel(delta: number | null): string {
-  if (delta === null) return 'Pts -'
-  if (delta > 0) return `Pts +${delta}`
-  if (delta < 0) return `Pts ${delta}`
-  return 'Pts ='
+  if (delta === null || delta === 0) return 'Points unchanged'
+  return `${delta > 0 ? '+' : ''}${delta} pts`
 }
 
 function rankLabel(rank: number | null, tieCount: number | null): string {
@@ -312,15 +306,15 @@ function comparisonTone(comparison: RivalComparison | null): 'success' | 'danger
 }
 
 function comparisonLabel(comparison: RivalComparison | null): string {
-  if (!comparison || comparison.relation === 'unranked') return 'Not ranked in latest snapshot'
+  if (!comparison || comparison.relation === 'unranked') return 'Not ranked yet'
   if (comparison.relation === 'tied') return 'Level with you'
   if (comparison.relation === 'ahead') {
     return comparison.pointsGap && comparison.pointsGap > 0
-      ? `Ahead of you by ${comparison.pointsGap} pts`
+      ? `${comparison.pointsGap} pts ahead`
       : 'Ahead of you'
   }
   return comparison.pointsGap && comparison.pointsGap > 0
-    ? `Behind you by ${comparison.pointsGap} pts`
+    ? `${comparison.pointsGap} pts behind`
     : 'Behind you'
 }
 
@@ -352,8 +346,8 @@ function RivalFocusPanel({
   return (
     <SideListPanelV2
       title="Rival watch"
-      subtitle="Track up to 3 selected rivals."
-      meta={`${selectedCount}/3 selected`}
+      subtitle="Follow up to 3 rivals and see who is gaining ground."
+      meta={`${selectedCount}/3 rivals`}
       className="landing-v2-standings-panel"
       contentClassName="space-y-2"
       footer={
@@ -386,10 +380,10 @@ function RivalFocusPanel({
                   {row.kind === 'rival' && row.comparison?.relation !== 'tied' ? (
                     <StatusTagV2 tone={comparisonTone(row.comparison)}>{comparisonLabel(row.comparison)}</StatusTagV2>
                   ) : null}
-                  {row.rankDelta !== null ? (
+                  {row.rankDelta !== null && row.rankDelta !== 0 ? (
                     <StatusTagV2 tone={movementTone(row.rankDelta)}>{rankDeltaLabel(row.rankDelta)}</StatusTagV2>
                   ) : null}
-                  {row.pointsDelta !== null ? (
+                  {row.pointsDelta !== null && row.pointsDelta !== 0 ? (
                     <StatusTagV2 tone={movementTone(row.pointsDelta)}>{pointsDeltaLabel(row.pointsDelta)}</StatusTagV2>
                   ) : null}
                 </>
@@ -401,9 +395,9 @@ function RivalFocusPanel({
 
       {rivalRows.length === 0 ? (
         <PanelState
-          className="mt-2 text-xs"
+          className="v2-type-caption mt-2"
           tone="empty"
-          message="No rivals selected yet. Add rivals in Play Center to track head-to-head movement here."
+          message="No rivals yet. Add up to 3 rivals in Play Center to start rival watch."
         />
       ) : null}
     </SideListPanelV2>
@@ -1090,8 +1084,8 @@ export default function LeaderboardPage() {
         variant="hero"
         className="landing-v2-hero"
         kicker="Standings"
-        title="Leaderboard"
-        subtitle="See where you stand and keep rival banter close."
+        title="League"
+        subtitle="See where you stand and keep rival watch close."
         actions={
           showExportMenu ? (
             <ExportMenuV2
@@ -1176,7 +1170,7 @@ export default function LeaderboardPage() {
                     className="rounded-xl px-3 py-3 focus-within:ring-2 focus-within:ring-ring"
                   >
                     <div className="hidden grid-cols-[72px_minmax(260px,1fr)_110px_72px_72px_72px_72px] items-center gap-2 md:grid">
-                      <div className="text-base font-semibold tabular-nums text-foreground">{rankLabel(rank, tieCount)}</div>
+                      <div className="v2-type-body-md font-semibold tabular-nums text-foreground">{rankLabel(rank, tieCount)}</div>
 
                       <div className="min-w-0">
                         <MemberIdentityRowV2
@@ -1213,17 +1207,17 @@ export default function LeaderboardPage() {
                         />
                       </div>
 
-                      <div className="text-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
-                      <div className="tabular-nums text-sm font-medium text-foreground">{entry.exactPoints}</div>
-                      <div className="tabular-nums text-sm font-medium text-foreground">{entry.resultPoints}</div>
-                      <div className="tabular-nums text-sm font-medium text-foreground">{entry.knockoutPoints}</div>
-                      <div className="tabular-nums text-sm font-medium text-foreground">{entry.bracketPoints}</div>
+                      <div className="v2-type-body-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
+                      <div className="v2-type-body-sm font-medium tabular-nums text-foreground">{entry.exactPoints}</div>
+                      <div className="v2-type-body-sm font-medium tabular-nums text-foreground">{entry.resultPoints}</div>
+                      <div className="v2-type-body-sm font-medium tabular-nums text-foreground">{entry.knockoutPoints}</div>
+                      <div className="v2-type-body-sm font-medium tabular-nums text-foreground">{entry.bracketPoints}</div>
                     </div>
 
                     <div className="space-y-2 md:hidden">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="text-base font-semibold tabular-nums text-foreground">{rankLabel(rank, tieCount)}</div>
+                          <div className="v2-type-body-md font-semibold tabular-nums text-foreground">{rankLabel(rank, tieCount)}</div>
                           <MemberIdentityRowV2
                             name={entry.member.name}
                             favoriteTeamCode={favoriteTeamCode}
@@ -1243,7 +1237,7 @@ export default function LeaderboardPage() {
                           />
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
+                          <div className="v2-type-body-lg font-semibold tabular-nums text-foreground">{entry.totalPoints}</div>
                           <div className="v2-type-kicker">Total</div>
                         </div>
                       </div>
@@ -1322,7 +1316,7 @@ export default function LeaderboardPage() {
                   className="mt-1"
                 />
                 <div className="mt-1 flex flex-wrap items-center gap-1">
-                  <span className="text-xs text-muted-foreground">{stickyUserRow.totalPoints} pts</span>
+                  <span className="v2-type-caption text-muted-foreground">{stickyUserRow.totalPoints} pts</span>
                 </div>
               </div>
               <Button size="sm" variant="secondary" className="v2-action-compact" onClick={jumpToCurrentUserRow}>

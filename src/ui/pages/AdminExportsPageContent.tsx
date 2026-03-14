@@ -1110,9 +1110,9 @@ export default function AdminExportsPage() {
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting'>('idle')
   const [exportProgress, setExportProgress] = useState(0)
   const exportGateMessage = !isDesktopViewport
-    ? 'Exports are available on desktop only.'
+    ? 'Exports are available on desktop only. This does not change live league data.'
     : !phaseState.lockFlags.exportsVisible
-      ? 'Exports unlock after tournament lock windows are reached.'
+      ? 'Exports unlock after tournament lock windows are reached. Live scoring remains unchanged.'
       : null
   const canExport = exportGateMessage === null
 
@@ -1213,7 +1213,10 @@ export default function AdminExportsPage() {
     ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]'
     : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
   const availabilityText = canExport ? 'Exports enabled' : exportGateMessage ?? 'Exports unavailable.'
-  const modeContextText = isDemoMode ? 'Demo testing mode' : 'Live admin mode'
+  const modeContextText = isDemoMode ? 'Demo mode (live data untouched)' : 'Live admin mode'
+  const pageSubtitle = isDemoMode
+    ? 'Generate demo workbooks for testing. Live league data stays untouched.'
+    : 'Generate tournament workbooks for league operations.'
   const headerMetadata = (
     <>
       {state.status === 'ready' ? (
@@ -1461,7 +1464,7 @@ export default function AdminExportsPage() {
     return (
       <AdminWorkspaceShellV2
         title="Exports"
-        subtitle={isDemoMode ? 'Generate demo snapshot workbooks for testing.' : 'Generate tournament workbooks for league operations.'}
+        subtitle={pageSubtitle}
         metadata={headerMetadata}
         kicker={isDemoMode ? 'Admin Demo' : 'Admin'}
       >
@@ -1477,7 +1480,7 @@ export default function AdminExportsPage() {
     return (
       <AdminWorkspaceShellV2
         title="Exports"
-        subtitle={isDemoMode ? 'Generate demo snapshot workbooks for testing.' : 'Generate tournament workbooks for league operations.'}
+        subtitle={pageSubtitle}
         metadata={headerMetadata}
         kicker={isDemoMode ? 'Admin Demo' : 'Admin'}
       >
@@ -1491,7 +1494,7 @@ export default function AdminExportsPage() {
   return (
     <AdminWorkspaceShellV2
       title="Exports"
-      subtitle={isDemoMode ? 'Generate demo snapshot workbooks for testing.' : 'Generate tournament workbooks for league operations.'}
+      subtitle={pageSubtitle}
       metadata={headerMetadata}
       kicker={isDemoMode ? 'Admin Demo' : 'Admin'}
     >
@@ -1499,7 +1502,7 @@ export default function AdminExportsPage() {
         <div className="space-y-3.5">
           {isDemoMode ? (
             <Alert tone="warning" title="Demo testing export context" className="admin-v2-inline-alert v2-type-meta py-2.5">
-              Demo exports use test snapshot data only and do not change live league data.
+              Demo exports use test snapshots only in this browser context. Live league data is not affected.
             </Alert>
           ) : null}
 
@@ -1569,7 +1572,7 @@ export default function AdminExportsPage() {
           {exportDisabledReason ? (
             <Alert
               tone="warning"
-              title={!canExport ? 'Export unavailable in current admin state' : 'Export blocked for current selection'}
+              title={!canExport ? 'Export unavailable in current mode' : 'Export blocked for current selection'}
               className="admin-v2-inline-alert v2-type-meta py-2.5"
             >
               {exportDisabledReason}

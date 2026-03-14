@@ -119,7 +119,7 @@ export default function DemoControlsPage() {
   const [sessionProgressIntent, setSessionProgressIntent] = useState<'default' | 'momentum' | 'warning' | 'success'>('default')
   const { showToast, updateToast } = useToast()
   const mode = useRouteDataMode()
-  const routeModeLabel = mode === 'demo' ? 'Demo route active' : 'Admin demo controls'
+  const routeModeLabel = mode === 'demo' ? 'Demo route active (live data untouched)' : 'Live route editing demo session'
 
   useEffect(() => {
     let canceled = false
@@ -266,14 +266,14 @@ export default function DemoControlsPage() {
     if (!pendingAction) return null
     if (pendingAction === 'reload-snapshots') {
       return {
-        title: 'Reload demo snapshots?',
-        description: 'This clears cached demo snapshot keys and reloads this tab. Scenario/viewer settings stay saved.',
+        title: 'Reload demo snapshots',
+        description: 'This clears cached demo snapshot keys and reloads this tab. Scenario and viewer settings stay saved. Live data is not affected.',
         confirmLabel: 'Reload snapshots'
       }
     }
     if (pendingAction === 'clear-session') {
       return {
-        title: 'Clear demo session?',
+        title: 'Clear demo session',
         description: 'This clears demo scenario/viewer/cache settings in this browser only. Live league data is not affected.',
         confirmLabel: 'Clear session'
       }
@@ -284,13 +284,13 @@ export default function DemoControlsPage() {
   return (
     <AdminWorkspaceShellV2
       title="Demo Controls"
-      subtitle="Configure scenario, viewer, and cached session behavior for demo testing."
+      subtitle="Set this browser to a demo scenario, clock, and viewer. Live league data stays untouched."
       metadata={headerMetadata}
       kicker="Admin Demo"
     >
       <div className="space-y-4">
-        <Alert tone="warning" title="Testing-only controls" className="admin-v2-inline-alert">
-          These controls affect demo state in this browser session and never modify live league data.
+        <Alert tone="warning" title="Browser-only demo controls" className="admin-v2-inline-alert">
+          These controls affect demo state in this browser session only and never modify live league data.
         </Alert>
 
         {state.status === 'loading' ? (
@@ -354,7 +354,7 @@ export default function DemoControlsPage() {
                   </Button>
                 </div>
                 <div className="admin-v2-row-meta">
-                  Applies scenario + demo clock override across demo pages in this browser.
+                  Sets this browser to a demo scenario and time. Live league data stays untouched.
                 </div>
               </div>
 
@@ -385,7 +385,7 @@ export default function DemoControlsPage() {
                     Switch viewer
                   </Button>
                 </div>
-                <div className="admin-v2-row-meta">Changes who appears as You across demo picks, bracket, and leaderboard views.</div>
+                <div className="admin-v2-row-meta">Changes who appears as You across demo picks, bracket, and leaderboard views in this browser only.</div>
               </div>
 
               <div className="admin-v2-divider" />
@@ -416,7 +416,7 @@ export default function DemoControlsPage() {
                       Clear session
                     </Button>
                     <div className="mt-2 v2-type-caption">
-                      Clears demo scenario, viewer, and cached session overrides from this browser.
+                      Clears demo scenario, viewer, and cached session overrides from this browser only.
                     </div>
                   </div>
                 </div>

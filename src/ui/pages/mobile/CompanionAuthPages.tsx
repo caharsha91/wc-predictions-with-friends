@@ -59,7 +59,7 @@ export function CompanionLoginPage() {
   return (
     <MobileAuthShell
       title="Sign in"
-      subtitle="Sign in with Google to open your private league companion."
+      subtitle="Sign in with Google to open your invite-only league companion."
     >
       {hasFirebase ? (
         <div className="flex flex-col gap-2">
@@ -101,8 +101,8 @@ export function CompanionAccessDeniedPage() {
 
   return (
     <MobileAuthShell
-      title="Access denied"
-      subtitle="This league is invite-only. Ask an admin to add your Google account email."
+      title="Invite required"
+      subtitle="This league is invite-only. Ask a league admin to add your Google account email."
     >
       <div className="flex flex-col gap-2">
         <Button type="button" onClick={() => void handleSwitchAccount()}>

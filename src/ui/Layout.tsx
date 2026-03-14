@@ -493,11 +493,11 @@ function LayoutFrameContent() {
               <div className="space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-4">
                 {sidebarCompact ? null : (
                   <div className="v2-type-kicker px-2 text-[var(--sidebar-nav-muted)]/85">
-                    Admin tools
+                    League admin tools
                   </div>
                 )}
                 <SidebarNavSection
-                  title="Admin"
+                  title="League Admin"
                   items={adminNavItems}
                   compact={sidebarCompact}
                   hideTitle

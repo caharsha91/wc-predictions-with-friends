@@ -4,7 +4,6 @@ import type { GroupPrediction } from '../../../types/bracket'
 import type { BestThirdStatus, GroupPlacementStatus } from '../../../lib/groupStageSnapshot'
 import type { Team } from '../../../types/matches'
 import { cn } from '../../lib/utils'
-import { SNAPSHOT_METADATA_PREFIX } from '../../lib/pageStatusCopy'
 import { Button, ButtonLink } from '../ui/Button'
 import InlineStateHintV2 from '../v2/InlineStateHintV2'
 import RowShellV2 from '../v2/RowShellV2'
@@ -58,8 +57,8 @@ export function DashboardToolbar({
     <V2Card tone="panel" className="rounded-xl px-4 py-2">
       <div className="flex h-full items-center gap-3">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-base font-semibold tracking-tight text-foreground">Group Stage</div>
-          <div className="v2-type-caption truncate">Latest snapshot updates publish daily.</div>
+          <div className="v2-type-body-md truncate font-semibold tracking-tight text-foreground">Group Stage</div>
+          <div className="v2-type-caption truncate">Rank each group and pick best third-place teams.</div>
         </div>
 
         <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-background/50 p-1">
@@ -74,7 +73,7 @@ export function DashboardToolbar({
         <div className="v2-type-caption min-w-0 max-w-[34ch] items-center gap-2">
           <span className="truncate whitespace-nowrap">Saved: {picksLastSavedLabel}</span>
           <span className="h-3 w-px bg-border" aria-hidden="true" />
-          <span className="truncate whitespace-nowrap">{SNAPSHOT_METADATA_PREFIX}{scoringSnapshotLabel}</span>
+          <span className="truncate whitespace-nowrap">Updated {scoringSnapshotLabel}</span>
         </div>
       </div>
     </V2Card>
@@ -142,31 +141,18 @@ function resolveRowDelta({
   return potential
 }
 
-function resolveDeltaTag(row: GroupStageDenseRow, delta: number): { tone: 'success' | 'secondary'; label: string } {
+function resolveDeltaTag(row: GroupStageDenseRow, delta: number): string {
   if (row.complete) {
-    return {
-      tone: delta > 0 ? 'success' : 'secondary',
-      label: `Scored +${delta}`
-    }
+    return `Scored +${delta}`
   }
 
-  return {
-    tone: 'secondary',
-    label: `Max +${delta}`
-  }
+  return `Max +${delta}`
 }
 
 function placementStatusText(status: GroupPlacementStatus): string | null {
   if (status === 'correct') return 'Correct'
   if (status === 'incorrect') return 'Incorrect'
   if (status === 'locked') return 'Locked'
-  return null
-}
-
-function placementStatusTone(status: GroupPlacementStatus): 'success' | 'danger' | 'locked' | null {
-  if (status === 'correct') return 'success'
-  if (status === 'incorrect') return 'danger'
-  if (status === 'locked') return 'locked'
   return null
 }
 
@@ -303,15 +289,11 @@ export function GroupPicksDenseTable({
             >
               <div className="v2-type-meta mb-2.5 flex flex-wrap items-start gap-2">
                 <div className="min-w-0 v2-type-caption">
-                  {`Published matches complete: ${row.finishedCount}/${row.totalCount}`}
+                  {`${row.finishedCount} of ${row.totalCount} matches final`}
                 </div>
                 <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-                  <StatusTagV2 tone={row.rankingComplete ? 'success' : 'warning'}>
-                    {row.rankingComplete ? 'All set' : 'Incomplete'}
-                  </StatusTagV2>
-                  <StatusTagV2 tone={deltaTag.tone}>
-                    {deltaTag.label}
-                  </StatusTagV2>
+                  <span className="v2-type-meta">{row.rankingComplete ? 'Ranking set' : 'Finish ranking'}</span>
+                  <span className="v2-type-meta">{row.complete ? deltaTag : `Can score up to +${rowDelta}`}</span>
                   {interactionTag ? (
                     <StatusTagV2 tone={interactionTag.tone}>{interactionTag.label}</StatusTagV2>
                   ) : interactionHintLabel ? (
@@ -327,7 +309,6 @@ export function GroupPicksDenseTable({
                   const placementStatus =
                     index === 0 ? row.firstResult : index === 1 ? row.secondResult : 'pending'
                   const placementTagText = placementStatusText(placementStatus)
-                  const placementTagTone = placementStatusTone(placementStatus)
                   const rowState = isDragOver || rowIsEditing
                     ? 'selection'
                     : placementRowState(index, placementStatus, isReadOnly)
@@ -368,8 +349,8 @@ export function GroupPicksDenseTable({
                       </div>
 
                       <div className="flex shrink-0 items-center gap-2">
-                        {placementTagText && placementTagTone ? (
-                          <StatusTagV2 tone={placementTagTone}>{placementTagText}</StatusTagV2>
+                        {placementTagText ? (
+                          <span className="v2-type-meta">{placementTagText}</span>
                         ) : null}
                         <span className="v2-type-meta font-mono leading-none" aria-hidden="true">
                           ::
@@ -475,7 +456,7 @@ export function BestThirdPicksCompact({
             variant="ghost"
             className="h-8 w-8 rounded-md px-0"
             onClick={() => setCollapsed((current) => !current)}
-            aria-label={collapsed ? 'Expand best third picks' : 'Collapse best third picks'}
+            aria-label={collapsed ? 'Expand best-third picks' : 'Collapse best-third picks'}
           >
             {collapsed ? 'v' : '^'}
           </Button>

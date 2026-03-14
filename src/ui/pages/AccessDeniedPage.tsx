@@ -20,13 +20,13 @@ export default function AccessDeniedPage() {
         <div className="space-y-3">
           <div className="v2-type-kicker v2-track-14">Invite-only</div>
           <h1 className="text-lg font-semibold text-foreground">
-            Access denied
+            Invite required
           </h1>
           <div className="text-sm text-muted-foreground">
-            This league is invite-only. Ask an admin to add your email. Redirecting home...
+            This league is invite-only. Ask a league admin to add your email. Taking you back to Play Center.
           </div>
           <ButtonLink to="/" variant="secondary">
-            Go to home
+            Back to Play Center
           </ButtonLink>
         </div>
       </Card>

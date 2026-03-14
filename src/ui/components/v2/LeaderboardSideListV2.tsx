@@ -1,6 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
 
-import { SNAPSHOT_METADATA_PREFIX } from '../../lib/pageStatusCopy'
 import { resolveSemanticState } from '../../lib/semanticState'
 import { SNAPSHOT_UNAVAILABLE_LABEL } from '../../lib/snapshotStamp'
 import { ButtonLink } from '../ui/Button'
@@ -39,8 +38,8 @@ export function RightRailSticky({ children }: RightRailStickyProps) {
 }
 
 function movementLabel(movement: number | undefined): string {
-  if (typeof movement !== 'number' || movement === 0) return '-'
-  return movement > 0 ? `up ${movement}` : `down ${Math.abs(movement)}`
+  if (typeof movement !== 'number' || movement === 0) return 'No move'
+  return movement > 0 ? `Up ${movement}` : `Down ${Math.abs(movement)}`
 }
 
 function rankLabel(rank: number, tieCount: number): string {
@@ -212,7 +211,7 @@ export function LeaderboardCardCurated({
           ? undefined
           : snapshotLabel === SNAPSHOT_UNAVAILABLE_LABEL
             ? SNAPSHOT_UNAVAILABLE_LABEL
-            : `${SNAPSHOT_METADATA_PREFIX}${snapshotLabel}`
+            : `Updated ${snapshotLabel}`
       }
       className="group-stage-v2-leaderboard"
       contentClassName="v2-list-divider space-y-0"
@@ -290,7 +289,7 @@ export function LeaderboardCardCurated({
 
       {rows.length === 0 ? (
         <RowShellV2 depth="embedded" tone="inset" interactive={false} className="v2-type-meta">
-          No leaderboard rows are available in the latest snapshot.
+          No leaderboard rows available yet.
         </RowShellV2>
       ) : null}
     </SideListPanelV2>

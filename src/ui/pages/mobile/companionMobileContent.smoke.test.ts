@@ -15,8 +15,8 @@ test('companion home includes profile editors and status-only Group Stage/Knocko
   assert.equal(source.includes('writeUserProfile('), true)
   assert.equal(source.includes('Group Stage'), true)
   assert.equal(source.includes('Knockout Bracket'), true)
-  assert.equal(source.includes('Group stage actions are available on web.'), true)
-  assert.equal(source.includes('Knockout bracket actions are available on web.'), true)
+  assert.equal(source.includes('Set group rankings on web. Use companion for quick picks and standings.'), true)
+  assert.equal(source.includes('Set knockout winners on web. Use companion for quick picks and standings.'), true)
 })
 
 test('companion picks content is match-picks only', async () => {
@@ -34,7 +34,7 @@ test('companion league content uses one unified leaderboard list', async () => {
 
   assert.equal(source.includes('Updated'), true)
   assert.equal(source.includes('<FeedHeading label="Leaderboard"'), true)
-  assert.equal(source.includes('Top ${TOP_LEADERBOARD_LIMIT} + You + Rivals'), true)
+  assert.equal(source.includes('Top ${TOP_LEADERBOARD_LIMIT} + your row + rivals'), true)
   assert.equal(source.includes('TOP_LEADERBOARD_LIMIT = 10'), true)
   assert.equal(source.includes('showBreakdown={row.isViewer || row.rivalSlot !== null}'), true)
   assert.equal(source.includes('companion-league-breakdown-icon'), true)
@@ -58,7 +58,8 @@ test('companion shell exposes mobile logout control in layout', async () => {
     'utf8'
   )
 
-  assert.equal(source.includes("label: 'You'"), true)
+  assert.equal(source.includes("label: 'Account'"), true)
+  assert.equal(source.includes("label: 'You'"), false)
   assert.equal(source.includes('grid-cols-4'), true)
   assert.equal(source.includes('setLogoutDialogOpen(true)'), true)
   assert.equal(source.includes('Log out'), true)

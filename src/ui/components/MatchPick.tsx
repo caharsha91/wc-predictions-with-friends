@@ -360,7 +360,7 @@ export default function MatchPick({
       </div>
 
       {isKnockout && hasScores && knockoutDraw && (!winnerId || !hasKnockoutMethod) ? (
-        <p className="v2-type-caption mt-1">Draw picked. Choose eventual winner and AET/PEN.</p>
+        <p className="v2-type-caption mt-1">Knockout draw selected. Choose the winner and finish (AET or PEN).</p>
       ) : null}
     </RowShellV2>
   )

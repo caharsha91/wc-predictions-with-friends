@@ -46,9 +46,10 @@ import {
   type MatchTimelineItem
 } from '../lib/matchTimeline'
 import {
-  lockedFinalLabel,
+  lockedLabel,
   noPicksOpenLabel,
   openUntilLabel,
+  opensAfterLabel,
   resultsFinalLabel
 } from '../lib/pageStatusCopy'
 import { resolveSemanticState } from '../lib/semanticState'
@@ -124,11 +125,11 @@ function formatKoWinMethodLabel(value: string | undefined): string {
 }
 
 function readOnlyReasonLabel(reason: MatchReadOnlyReason): string {
-  if (reason === 'global-lock') return lockedFinalLabel('FINAL')
-  if (reason === 'in-progress') return 'Locked: Kickoff passed for this match.'
-  if (reason === 'outside-window') return 'Locked until 72 hours before kickoff.'
-  if (reason === 'missing-kickoff') return 'Kickoff unavailable.'
-  return 'Locked.'
+  if (reason === 'global-lock') return resultsFinalLabel()
+  if (reason === 'in-progress') return lockedLabel({ reason: 'kickoff' })
+  if (reason === 'outside-window') return opensAfterLabel('the 72-hour window')
+  if (reason === 'missing-kickoff') return 'Kickoff time unavailable'
+  return lockedLabel({ reason: 'round' })
 }
 
 function formatWindowDeadline(utcIso: string | null): string {
@@ -380,9 +381,7 @@ function MatchRow({
   const scoreB = parsedAway
   const readOnlyLabel = readOnlyReasonLabel(item.readOnlyReason)
   const draftPredictionResult = getDraftPredictionResult(match, draft)
-  const interactionTag = !item.editable
-    ? { tone: 'locked' as const, label: 'Locked' }
-    : isSaving
+  const interactionTag = isSaving
       ? { tone: 'warning' as const, label: 'Saving pick...' }
       : isSaved
         ? { tone: 'success' as const, label: 'Pick saved' }
@@ -535,7 +534,7 @@ function ResultRow({ item, pick, scoring }: ResultRowProps) {
 
 function ResultsTable({ items, picksByMatchId, scoring, emptyMessage }: ResultsTableProps) {
   if (items.length === 0) {
-    return <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">{emptyMessage}</div>
+    return <div className="v2-type-body-sm rounded-xl border border-dashed border-border/70 p-3 text-muted-foreground">{emptyMessage}</div>
   }
 
   return (
@@ -607,13 +606,13 @@ function PicksSupportRail({
 
   return (
     <SideListPanelV2
-      title="Pick window"
-      subtitle="Set your remaining picks before the next lock."
+      title="What’s left"
+      subtitle="Set your picks before the next lock."
       contentClassName="v2-list-divider space-y-0 p-3"
     >
       <section className="flex items-start gap-2">
         <div className="min-w-0">
-          <div className="v2-type-kicker v2-track-10">Remaining picks</div>
+          <div className="v2-type-kicker v2-track-10">Picks left</div>
           <div className="mt-1.5 text-4xl font-semibold leading-none tabular-nums text-foreground">
             {remainingCount}
             <span className="v2-type-body-md ml-1 font-medium text-muted-foreground">/ {totalCount}</span>
@@ -644,7 +643,7 @@ function PicksSupportRail({
 
       <section>
         <div className="mb-1 flex items-center gap-2">
-          <span className="v2-type-kicker v2-track-10">Needs attention</span>
+          <span className="v2-type-kicker v2-track-10">Still to fix</span>
           <StatusTagV2 tone={needsAttentionTone} className="ml-auto">
             {needsAttentionCount === 0 ? 'All clear' : `${needsAttentionCount} open`}
           </StatusTagV2>
@@ -655,7 +654,7 @@ function PicksSupportRail({
             <span className="font-medium tabular-nums text-foreground">{missingScoresCount}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <span>Draw picks missing winner + AET/PEN</span>
+            <span>Knockout draws missing winner and finish</span>
             <span className="font-medium tabular-nums text-foreground">{drawExtrasMissingCount}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
@@ -676,7 +675,7 @@ function PicksSupportRail({
       </section>
 
       <p className="v2-type-caption leading-[1.4] text-muted-foreground">
-        If you call a knockout draw, choose the eventual winner and AET/PEN. Non-draw picks ignore AET/PEN.
+        If you pick a knockout draw, choose the winner and finish (AET or pens). Non-draw picks ignore finish method.
       </p>
     </SideListPanelV2>
   )
@@ -1094,8 +1093,8 @@ export default function PicksPage() {
       {!timelineModel.hasFixtures ? (
         <SectionCardV2 tone="panel" className="p-4 md:p-5">
           <div className="space-y-2">
-            <div className="text-sm font-semibold text-foreground">No matches available</div>
-            <div className="text-sm text-muted-foreground">
+            <div className="v2-type-body-sm font-semibold text-foreground">No matches available</div>
+            <div className="v2-type-body-sm text-muted-foreground">
               No upcoming or historical kickoff timestamps were found in this dataset.
             </div>
           </div>
@@ -1105,14 +1104,14 @@ export default function PicksPage() {
           <div className="space-y-3">
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="v2-heading-h2 text-foreground">UP NEXT</h2>
+                <h2 className="v2-heading-h2 text-foreground">Up next</h2>
                 <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                   <StatusTagV2 tone="info">{String(upcomingVisibleCount)}</StatusTagV2>
                 </div>
               </div>
 
               {upcomingMatches.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+                <div className="v2-type-body-sm rounded-xl border border-dashed border-border/70 p-3 text-muted-foreground">
                   No upcoming matches are editable right now.
                 </div>
               ) : (
@@ -1146,7 +1145,7 @@ export default function PicksPage() {
 
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="v2-heading-h2 text-foreground">RECENT RESULTS</h2>
+                <h2 className="v2-heading-h2 text-foreground">Recent results</h2>
                 <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                   <StatusTagV2 tone="secondary">{String(recentResultsDisplay.length)}</StatusTagV2>
                 </div>
@@ -1161,7 +1160,7 @@ export default function PicksPage() {
 
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="v2-heading-h2 text-foreground">FIXTURES</h2>
+                <h2 className="v2-heading-h2 text-foreground">Fixtures</h2>
                 <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                   <StatusTagV2 tone="secondary">{String(laterMatches.length)}</StatusTagV2>
                   <Button size="sm" variant="secondary" onClick={() => setLaterExpanded((current) => !current)}>
@@ -1171,7 +1170,7 @@ export default function PicksPage() {
               </div>
               {laterExpanded ? (
                 laterMatches.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+                  <div className="v2-type-body-sm rounded-xl border border-dashed border-border/70 p-3 text-muted-foreground">
                     No fixtures to show.
                   </div>
                 ) : (
@@ -1202,7 +1201,7 @@ export default function PicksPage() {
                   </div>
                 )
               ) : (
-                <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+                <div className="v2-type-body-sm rounded-xl border border-dashed border-border/70 p-3 text-muted-foreground">
                   Show fixtures to browse upcoming matches.
                 </div>
               )}
@@ -1210,7 +1209,7 @@ export default function PicksPage() {
 
             <SectionCardV2 tone="panel" density="none" className="rounded-xl p-3 md:p-4">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="v2-heading-h2 text-foreground">ARCHIVE</h2>
+                <h2 className="v2-heading-h2 text-foreground">Archive</h2>
                 <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                   <StatusTagV2 tone="secondary">{String(archiveResultsDisplay.length)}</StatusTagV2>
                   <Button size="sm" variant="secondary" onClick={() => setArchiveExpanded((current) => !current)}>
@@ -1226,7 +1225,7 @@ export default function PicksPage() {
                   emptyMessage="No archive results to show."
                 />
               ) : (
-                <div className="rounded-xl border border-dashed border-border/70 p-3 text-sm text-muted-foreground">
+                <div className="v2-type-body-sm rounded-xl border border-dashed border-border/70 p-3 text-muted-foreground">
                   Show archive to review older results.
                 </div>
               )}
@@ -1265,7 +1264,7 @@ export default function PicksPage() {
             <SheetContent side="bottom" className="league-peek-sheet-content max-h-[80dvh] rounded-t-2xl p-0">
               <SheetHeader>
                 <SheetTitle>Pick guide</SheetTitle>
-                <SheetDescription>Remaining picks, next lock, and what still needs attention.</SheetDescription>
+                <SheetDescription>What’s left, the next lock, and still-to-fix checks.</SheetDescription>
               </SheetHeader>
               <div className="p-3">
                 <PicksSupportRail

@@ -31,14 +31,14 @@ export default function LoginPage() {
       <Card className="w-full rounded-2xl border-border/60 p-6">
         <div className="space-y-4">
           <div className="v2-type-kicker v2-track-14">Private league</div>
-          <h1 className="text-xl font-semibold text-foreground">Login</h1>
+          <h1 className="text-xl font-semibold text-foreground">Sign in</h1>
           {hasFirebase ? (
             <div className="text-sm text-muted-foreground">
-              Sign in with Google to access your private league.
+              Sign in with Google to join your invite-only league.
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">
-              Firebase auth is not configured. The app is currently read-only in browser mode.
+              Firebase auth is not configured. Sign-in is unavailable in this browser environment.
             </div>
           )}
           <div className="flex flex-wrap gap-2">
@@ -48,7 +48,7 @@ export default function LoginPage() {
               </Button>
             ) : null}
             <ButtonLink to="/" variant="secondary">
-              Go to picks
+              Back to Play Center
             </ButtonLink>
           </div>
         </div>

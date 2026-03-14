@@ -16,7 +16,7 @@ export default function ConfirmationModal({
   isOpen,
   title,
   description,
-  confirmLabel = 'Confirm',
+  confirmLabel = 'Continue',
   cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
@@ -49,7 +49,7 @@ export default function ConfirmationModal({
               isDestructive ? 'admin-v2-modal-confirm-danger' : 'admin-v2-modal-confirm-default'
             }`}
           >
-            {isLoading ? 'Processing...' : confirmLabel}
+            {isLoading ? 'Working...' : confirmLabel}
           </button>
         </div>
       </div>

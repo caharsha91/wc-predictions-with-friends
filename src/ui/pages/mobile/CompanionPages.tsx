@@ -91,13 +91,13 @@ function CompanionPageFrame({
   children
 }: {
   title: string
-  kicker: string
+  kicker?: string
   children: ReactNode
 }) {
   return (
     <PageShellV2 className="space-y-3">
       <header className="space-y-1 px-0.5">
-        <div className="v2-type-kicker">{kicker}</div>
+        {kicker ? <div className="v2-type-kicker">{kicker}</div> : null}
         <h1 className="v2-type-title-section text-foreground">{title}</h1>
       </header>
       {children}
@@ -659,6 +659,7 @@ export function CompanionHomePage() {
   const currentUser = useCurrentUser()
   const { showToast } = useToast()
   const mode = useRouteDataMode()
+  const isDemoMode = mode === 'demo'
   const now = useNow({ tickMs: 60_000 })
   const phaseState = useTournamentPhaseState()
   const viewerId = useViewerId()
@@ -679,7 +680,7 @@ export function CompanionHomePage() {
   const [rivalsSaving, setRivalsSaving] = useState(false)
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
-  const groupStage = useGroupStageData(matches)
+  const groupStage = useGroupStageData(matches, isDemoMode ? { nowOverride: now } : undefined)
   const groupTeams = useMemo(() => buildGroupTeams(matches), [matches])
   const memberId = (currentUser?.id ?? viewerId).trim()
 
@@ -951,7 +952,7 @@ export function CompanionHomePage() {
   }
 
   return (
-    <CompanionPageFrame kicker="Companion" title="Home">
+    <CompanionPageFrame title="Home">
       <SectionCardV2 tone="panel" density="none" withGlow={false} className="space-y-3 p-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
           <SnapshotStamp timestamp={snapshotTimestamp} prefix="Snapshot: " />
@@ -1027,7 +1028,7 @@ export function CompanionHomePage() {
         <div className="flex items-center justify-between gap-2">
           <div className="v2-type-kicker">Rivals</div>
           <div className="flex items-center gap-2">
-            <span className="v2-type-caption">{`Tracking ${profileState.rivalUserIds.length}/${RIVAL_LIMIT}`}</span>
+            <span className="v2-type-caption">{`Following ${profileState.rivalUserIds.length}/${RIVAL_LIMIT} rivals`}</span>
             <Button size="xs" variant="quiet" onClick={() => setRivalsSheetOpen(true)}>Edit</Button>
           </div>
         </div>
@@ -1100,7 +1101,7 @@ export function CompanionHomePage() {
           </div>
         )}
 
-        <StatusCopy>Group stage actions are available on web.</StatusCopy>
+        <StatusCopy>Set group rankings on web. Use companion for quick picks and standings.</StatusCopy>
       </SectionCardV2>
 
       <SectionCardV2 tone="panel" density="none" withGlow={false} className="space-y-3 p-3.5">
@@ -1132,7 +1133,7 @@ export function CompanionHomePage() {
           </div>
         )}
 
-        <StatusCopy>Knockout bracket actions are available on web.</StatusCopy>
+        <StatusCopy>Set knockout winners on web. Use companion for quick picks and standings.</StatusCopy>
       </SectionCardV2>
 
       <FavoriteTeamSheet
@@ -1159,7 +1160,7 @@ export function CompanionHomePage() {
 
 export function CompanionPicksPage() {
   return (
-    <CompanionPageFrame kicker="Companion" title="Picks">
+    <CompanionPageFrame title="Picks">
       <CompanionPredictionsContent />
     </CompanionPageFrame>
   )
@@ -1167,7 +1168,7 @@ export function CompanionPicksPage() {
 
 export function CompanionLeaderboardPage() {
   return (
-    <CompanionPageFrame kicker="Companion" title="League">
+    <CompanionPageFrame title="League">
       <CompanionLeaderboardContent />
     </CompanionPageFrame>
   )

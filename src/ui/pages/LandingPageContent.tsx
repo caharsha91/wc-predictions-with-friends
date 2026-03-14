@@ -551,7 +551,7 @@ export default function LandingPage() {
 
   const matches = picksState.state.status === 'ready' ? picksState.state.matches : []
   const groupTeams = useMemo(() => buildGroupTeams(matches), [matches])
-  const groupStage = useGroupStageData(matches)
+  const groupStage = useGroupStageData(matches, isDemoMode ? { nowOverride: now } : undefined)
   const knockoutData = useBracketKnockoutData()
 
   useEffect(() => {
