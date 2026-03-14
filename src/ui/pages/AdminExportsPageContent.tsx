@@ -32,6 +32,7 @@ import { SelectField } from '../components/ui/Field'
 import Progress from '../components/ui/Progress'
 import Skeleton from '../components/ui/Skeleton'
 import AdminWorkspaceShellV2 from '../components/v2/AdminWorkspaceShellV2'
+import SectionCardV2 from '../components/v2/SectionCardV2'
 import SnapshotStamp from '../components/v2/SnapshotStamp'
 import { useTournamentPhaseState } from '../context/TournamentPhaseContext'
 import { useMediaQuery } from '../hooks/useMediaQuery'
@@ -1230,11 +1231,7 @@ export default function AdminExportsPage() {
       <span>{availabilityText}</span>
     </>
   )
-  const includedSheetsText = useMemo(() => {
-    const sheets = PRESET_SHEETS[selectedPresetId] ?? []
-    if (sheets.length === 0) return 'No sheets'
-    return sheets.map(formatSheetDisplayLabel).join(' • ')
-  }, [selectedPresetId])
+  const includedSheets = useMemo(() => PRESET_SHEETS[selectedPresetId] ?? [], [selectedPresetId])
 
   function resolveSelectedUserData(user: UserOption) {
     const candidateIds = dedupeIds([user.id, user.email, ...user.candidateIds])
@@ -1498,107 +1495,136 @@ export default function AdminExportsPage() {
       metadata={headerMetadata}
       kicker={isDemoMode ? 'Admin Demo' : 'Admin'}
     >
-      <div className="v2-section-flat">
-        <div className="space-y-3.5">
-          {isDemoMode ? (
-            <Alert tone="warning" title="Demo testing export context" className="admin-v2-inline-alert v2-type-meta py-2.5">
-              Demo exports use test snapshots only in this browser context. Live league data is not affected.
-            </Alert>
-          ) : null}
-
-          <div className="admin-v2-section-label">Export</div>
-
-          <div className={`admin-v2-controls grid gap-3 ${exportControlsDesktopClass}`}>
-            <SelectField
-              label="Export preset"
-              value={selectedPresetId}
-              onChange={(event) => setSelectedPresetId(event.target.value as ExportPresetId)}
-              labelHidden
-            >
-              {EXPORT_PRESETS.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.label}
-                </option>
-              ))}
-            </SelectField>
-
-            {requiresUser ? (
-              <SelectField
-                label="User"
-                value={selectedUserId}
-                onChange={(event) => setSelectedUserId(event.target.value)}
-                labelHidden
-              >
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} ({user.email ?? user.id})
-                  </option>
-                ))}
-              </SelectField>
-            ) : null}
-
-            {requiresMatchday ? (
-              <SelectField
-                label="Matchday"
-                value={selectedMatchday}
-                onChange={(event) => setSelectedMatchday(event.target.value)}
-                labelHidden
-              >
-                {matchdays.map((matchday) => (
-                  <option key={matchday} value={matchday}>
-                    {matchday}
-                  </option>
-                ))}
-              </SelectField>
-            ) : null}
-
-            <div className="flex items-end">
-              <Button
-                size="md"
-                className="admin-v2-action v2-action-prominent lg:min-w-[180px]"
-                loading={exportStatus === 'exporting'}
-                disabled={isExportActionDisabled}
-                onClick={() => void runExport(selectedPresetId)}
-              >
-                {exportStatus === 'exporting' ? 'Preparing...' : 'Export'}
-              </Button>
-            </div>
-          </div>
-
-          <div className="admin-v2-row-meta">
-            {exportDisabledReason ? `Export disabled: ${exportDisabledReason}` : 'Export enabled for current selection.'}
-          </div>
-
-          {exportDisabledReason ? (
-            <Alert
-              tone="warning"
-              title={!canExport ? 'Export unavailable in current mode' : 'Export blocked for current selection'}
-              className="admin-v2-inline-alert v2-type-meta py-2.5"
-            >
-              {exportDisabledReason}
-            </Alert>
-          ) : null}
-
-          <div className="admin-v2-divider" />
-
-          <div className="v2-type-body-md leading-snug text-foreground">
-            <span className="text-muted-foreground">Included:</span> {includedSheetsText}
-          </div>
-
-          {exportStatus === 'exporting' || exportProgress > 0 ? (
-            <div className="space-y-1">
-              <div className="v2-type-meta">
-                {exportStatus === 'exporting' ? 'Preparing workbook...' : 'Export complete'}
+      <div className="v2-section-flat admin-v2-redesign-stack">
+        <SectionCardV2 tone="panel" density="none" className="admin-v2-surface admin-v2-command-flow p-3.5 md:p-4">
+          <div className="space-y-3.5 admin-v2-command-stack">
+            <div className="admin-v2-workbench-head">
+              <div className="space-y-1">
+                <div className="admin-v2-section-label">Export setup</div>
+                <h2 className="admin-v2-workbench-title">Build workbook</h2>
+                <p className="admin-v2-workbench-subtitle">{selectedPreset.description}</p>
               </div>
-              <Progress
-                value={exportProgress}
-                intent={exportStatus === 'exporting' ? 'momentum' : 'success'}
-                size="sm"
-                aria-label="Export batch progress"
-              />
+              <div className="admin-v2-chip-row">
+                <span className="admin-v2-status-chip" data-tone={isDemoMode ? 'warning' : 'info'}>
+                  {isDemoMode ? 'Demo source' : 'Live source'}
+                </span>
+                <span className="admin-v2-status-chip" data-tone={canExport ? 'success' : 'warning'}>
+                  {canExport ? 'Export ready' : 'Export locked'}
+                </span>
+              </div>
             </div>
-          ) : null}
-        </div>
+
+            <div className={`admin-v2-controls admin-v2-workbench-controls grid gap-3 ${exportControlsDesktopClass}`}>
+              <SelectField
+                label="Preset"
+                value={selectedPresetId}
+                onChange={(event) => setSelectedPresetId(event.target.value as ExportPresetId)}
+                className="admin-v2-control-field"
+              >
+                {EXPORT_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </option>
+                ))}
+              </SelectField>
+
+              {requiresUser ? (
+                <SelectField
+                  label="Member"
+                  value={selectedUserId}
+                  onChange={(event) => setSelectedUserId(event.target.value)}
+                  className="admin-v2-control-field"
+                >
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} ({user.email ?? user.id})
+                    </option>
+                  ))}
+                </SelectField>
+              ) : null}
+
+              {requiresMatchday ? (
+                <SelectField
+                  label="Matchday"
+                  value={selectedMatchday}
+                  onChange={(event) => setSelectedMatchday(event.target.value)}
+                  className="admin-v2-control-field"
+                >
+                  {matchdays.map((matchday) => (
+                    <option key={matchday} value={matchday}>
+                      {matchday}
+                    </option>
+                  ))}
+                </SelectField>
+              ) : null}
+
+              <div className="admin-v2-primary-action">
+                <Button
+                  size="md"
+                  className="admin-v2-action v2-action-prominent lg:min-w-[180px]"
+                  loading={exportStatus === 'exporting'}
+                  disabled={isExportActionDisabled}
+                  onClick={() => void runExport(selectedPresetId)}
+                >
+                  {exportStatus === 'exporting' ? 'Preparing...' : 'Export'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="admin-v2-row-meta">
+              {exportDisabledReason ? `Export disabled: ${exportDisabledReason}` : 'Export enabled for current selection.'}
+            </div>
+
+            {exportStatus === 'exporting' || exportProgress > 0 ? (
+              <div className="space-y-1">
+                <div className="v2-type-meta">
+                  {exportStatus === 'exporting' ? 'Preparing workbook...' : 'Export complete'}
+                </div>
+                <Progress
+                  value={exportProgress}
+                  intent={exportStatus === 'exporting' ? 'momentum' : 'success'}
+                  size="sm"
+                  aria-label="Export batch progress"
+                />
+              </div>
+            ) : null}
+
+            <div className="admin-v2-divider" />
+
+            <div className="space-y-3 admin-v2-summary-stack">
+              <div className="admin-v2-section-label">Workbook contents</div>
+              {includedSheets.length > 0 ? (
+                <div className="admin-v2-chip-grid">
+                  {includedSheets.map((sheet) => (
+                    <span key={sheet} className="admin-v2-sheet-chip">
+                      {formatSheetDisplayLabel(sheet)}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="admin-v2-row-meta">No sheets selected.</div>
+              )}
+              <div className="admin-v2-summary-list">
+                <div className="admin-v2-summary-item">
+                  <span>Preset</span>
+                  <strong>{selectedPreset.label}</strong>
+                </div>
+                <div className="admin-v2-summary-item">
+                  <span>Member</span>
+                  <strong>{requiresUser ? (selectedUser?.name ?? 'Select member') : 'Not required'}</strong>
+                </div>
+                <div className="admin-v2-summary-item">
+                  <span>Matchday</span>
+                  <strong>{requiresMatchday ? (selectedMatchday || 'Select matchday') : 'Not required'}</strong>
+                </div>
+                <div className="admin-v2-summary-item">
+                  <span>Snapshot</span>
+                  <strong>{formatDateTime(state.bundle.offlineLastUpdated)}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </SectionCardV2>
       </div>
     </AdminWorkspaceShellV2>
   )

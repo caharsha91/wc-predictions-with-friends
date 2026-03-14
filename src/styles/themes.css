@@ -6,7 +6,7 @@
 
   --fg0: #10233F;
   --fg1: #2D466A;
-  --fg2: #5E7290;
+  --fg2: #4E6587;
   --fg-inverse: #FFFFFF;
 
   --fg0-rgb: 16, 35, 63;
@@ -51,12 +51,12 @@
   --hero-surface: linear-gradient(136deg, #F8FBFF 0%, #EEF4FF 58%, #EEEAFF 100%);
   --hero-overlay-surface: linear-gradient(180deg, rgba(36, 87, 245, 0.14), rgba(190, 173, 255, 0.08) 46%, transparent 78%);
   --hero-fg: #10233F;
-  --hero-fg-muted: rgba(94, 114, 144, 0.95);
+  --hero-fg-muted: rgba(78, 101, 135, 0.96);
   --page-header-surface: #F4F8FF;
   --page-header-border-color: rgba(201, 215, 234, 0.92);
   --page-header-foreground: #10233F;
-  --page-header-kicker-foreground: rgba(94, 114, 144, 0.96);
-  --page-header-muted-foreground: rgba(94, 114, 144, 0.92);
+  --page-header-kicker-foreground: rgba(78, 101, 135, 0.96);
+  --page-header-muted-foreground: rgba(78, 101, 135, 0.93);
 
   --cta-primary-bg: #2457F5;
   --cta-primary-hover-bg: #1846D8;
@@ -119,8 +119,8 @@
   --v2-chip-height-sm: 1.35rem;
   --v2-chip-pad-x-sm: 0.5rem;
   --v2-chip-text-sm: 11px;
-  --v2-kicker-text: rgba(94, 114, 144, 0.96);
-  --v2-meta-text: rgba(94, 114, 144, 0.92);
+  --v2-kicker-text: rgba(78, 101, 135, 0.96);
+  --v2-meta-text: rgba(78, 101, 135, 0.93);
 }
 
 :root[data-mode='dark'] {
@@ -131,7 +131,7 @@
 
   --fg0: #ECECFA;
   --fg1: #C8C8DE;
-  --fg2: #9A9AB8;
+  --fg2: #B3B4CD;
   --fg-inverse: #171A2B;
 
   --fg0-rgb: 236, 236, 250;
@@ -186,7 +186,7 @@
     rgba(47, 51, 78, 0.98) 100%
   );
   --hero-fg: #ECECFA;
-  --hero-fg-muted: rgba(200, 200, 222, 0.82);
+  --hero-fg-muted: rgba(214, 214, 234, 0.9);
   --page-header-surface: linear-gradient(
     108deg,
     rgba(33, 36, 57, 0.96) 0%,
@@ -195,8 +195,8 @@
   );
   --page-header-border-color: rgba(110, 106, 210, 0.34);
   --page-header-foreground: #ECECFA;
-  --page-header-kicker-foreground: rgba(200, 200, 222, 0.86);
-  --page-header-muted-foreground: rgba(200, 200, 222, 0.78);
+  --page-header-kicker-foreground: rgba(214, 214, 234, 0.9);
+  --page-header-muted-foreground: rgba(214, 214, 234, 0.84);
 
   --cta-primary-bg: linear-gradient(
     110deg,
@@ -286,6 +286,6 @@
   --v2-chip-height-sm: 1.35rem;
   --v2-chip-pad-x-sm: 0.5rem;
   --v2-chip-text-sm: 11px;
-  --v2-kicker-text: rgba(200, 200, 222, 0.84);
-  --v2-meta-text: rgba(200, 200, 222, 0.76);
+  --v2-kicker-text: rgba(214, 214, 234, 0.9);
+  --v2-meta-text: rgba(214, 214, 234, 0.84);
 }

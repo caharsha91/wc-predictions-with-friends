@@ -320,8 +320,8 @@
   --v2-glow-soft: color-mix(in srgb, var(--hl-published-border-soft) 72%, transparent);
   --v2-glow-medium: color-mix(in srgb, var(--hl-published-border) 76%, transparent);
   --v2-glow-strong: color-mix(in srgb, var(--hl-selection-border-soft) 82%, transparent);
-  --v2-text-strong: color-mix(in srgb, var(--foreground) 96%, transparent);
-  --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 92%, transparent);
+  --v2-text-strong: color-mix(in srgb, var(--foreground) 98%, transparent);
+  --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 96%, transparent);
   --v2-panel-primary-bg: var(--card);
   --v2-panel-side-bg: var(--card);
   --v2-panel-inset-bg: var(--muted);
@@ -384,10 +384,10 @@
   --surface-3: color-mix(in srgb, var(--muted) 97%, var(--card) 3%);
   --divider: color-mix(in srgb, var(--border) 70%, transparent);
   --border-subtle: color-mix(in srgb, var(--border) 78%, transparent);
-  --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 96%, transparent);
+  --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 98%, transparent);
 
-  --noise-color: rgba(36, 87, 245, 0.03);
-  --noise-opacity: 0.06;
+  --noise-color: rgba(36, 87, 245, 0.02);
+  --noise-opacity: 0.025;
   --input-bg: color-mix(in srgb, var(--surface-3) 94%, var(--card) 6%);
 }
 
@@ -412,8 +412,8 @@
   --pill-border-alpha: 0.24;
   --pill-bg-alpha: 0.1;
 
-  --noise-color: rgba(110, 106, 210, 0.05);
-  --noise-opacity: 0.5;
+  --noise-color: rgba(110, 106, 210, 0.03);
+  --noise-opacity: 0.16;
   --input-bg: var(--surface-3);
 }
 
@@ -430,7 +430,7 @@
 .v2-card-base {
   border-color: var(--v2-border-soft);
   background:
-    radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--v2-glow-soft) 34%, transparent), transparent 64%),
+    radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--v2-glow-soft) 20%, transparent), transparent 66%),
     linear-gradient(132deg, var(--v2-surface-blend-strong) 0%, var(--v2-surface-blend-soft) 100%);
 }
 
@@ -441,29 +441,29 @@
 .v2-card-tone-hero {
   border-color: var(--v2-border-medium);
   background:
-    radial-gradient(140% 140% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 42%, transparent), transparent 62%),
-    radial-gradient(130% 130% at 100% 100%, rgba(var(--secondary-rgb), 0.22), transparent 68%),
+    radial-gradient(140% 140% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 28%, transparent), transparent 64%),
+    radial-gradient(130% 130% at 100% 100%, rgba(var(--secondary-rgb), 0.12), transparent 70%),
     linear-gradient(126deg, var(--v2-surface-blend-strong) 0%, var(--v2-surface-blend-medium) 100%);
 }
 
 .v2-card-tone-tile {
   border-color: var(--v2-border-medium);
   background:
-    radial-gradient(130% 130% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 34%, transparent), transparent 66%),
+    radial-gradient(130% 130% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 22%, transparent), transparent 68%),
     linear-gradient(134deg, var(--v2-surface-blend-strong) 0%, var(--v2-surface-blend-soft) 100%);
 }
 
 .v2-card-tone-panel {
   border-color: var(--v2-border-soft);
   background:
-    radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 34%, transparent), transparent 64%),
+    radial-gradient(120% 130% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 20%, transparent), transparent 66%),
     linear-gradient(132deg, var(--v2-surface-blend-strong) 0%, var(--v2-surface-blend-soft) 100%);
 }
 
 .v2-card-tone-subtle {
   border-color: var(--v2-border-soft);
   background:
-    radial-gradient(110% 120% at 100% 100%, rgba(var(--secondary-rgb), 0.14), transparent 68%),
+    radial-gradient(110% 120% at 100% 100%, rgba(var(--secondary-rgb), 0.08), transparent 70%),
     linear-gradient(130deg, color-mix(in srgb, var(--card) 96%, transparent) 0%, var(--v2-surface-blend-soft) 100%);
 }
 
@@ -484,7 +484,7 @@
 
 .v2-card-glow {
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--hl-published-border-soft) 84%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--hl-published-border-soft) 68%, transparent),
     var(--shadow1);
 }
 
@@ -518,25 +518,25 @@
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--muted-foreground);
+  color: var(--v2-kicker-text);
 }
 
 .v2-type-caption {
   font-size: var(--text-xs);
   line-height: 1.45;
-  color: var(--muted-foreground);
+  color: var(--v2-meta-text);
 }
 
 .v2-type-meta {
-  font-size: var(--text-md);
-  line-height: 1.4;
-  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--v2-meta-text);
 }
 
 .v2-type-helper {
-  font-size: var(--text-md);
-  line-height: 1.4;
-  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--v2-meta-text);
 }
 
 .v2-type-body-sm {
@@ -1335,7 +1335,7 @@
   isolation: isolate;
   border-radius: 20px;
   --v2-text-strong: color-mix(in srgb, var(--foreground) 99%, transparent);
-  --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 80%, transparent);
+  --v2-text-muted: color-mix(in srgb, var(--muted-foreground) 92%, transparent);
 }
 
 .landing-v2-canvas::before {
@@ -1344,30 +1344,20 @@
   inset: -10px -8px -6px -8px;
   border-radius: 20px;
   background:
-    radial-gradient(130% 74% at 56% 0%, color-mix(in srgb, var(--v2-glow-medium) 44%, transparent), transparent 66%),
-    radial-gradient(95% 58% at 74% 100%, rgba(var(--secondary-rgb), 0.2), transparent 74%),
+    radial-gradient(130% 74% at 56% 0%, color-mix(in srgb, var(--v2-glow-medium) 22%, transparent), transparent 68%),
+    radial-gradient(95% 58% at 74% 100%, rgba(var(--secondary-rgb), 0.1), transparent 76%),
     linear-gradient(
       168deg,
-      color-mix(in srgb, var(--card) 34%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 54%, transparent) 100%
+      color-mix(in srgb, var(--card) 50%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 32%, transparent) 100%
     );
-  opacity: 0.72;
+  opacity: 0.44;
   pointer-events: none;
   z-index: -2;
 }
 
 .landing-v2-canvas::after {
-  content: '';
-  position: absolute;
-  inset: -6px -3px -3px -3px;
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at 18% 24%, rgba(var(--primary-rgb), 0.14) 0 1px, transparent 1.5px),
-    radial-gradient(circle at 58% 34%, rgba(var(--secondary-rgb), 0.14) 0 1px, transparent 1.5px),
-    radial-gradient(circle at 80% 64%, rgba(var(--primary-rgb), 0.1) 0 1px, transparent 1.5px);
-  opacity: 0.14;
-  pointer-events: none;
-  z-index: -1;
+  content: none;
 }
 
 .landing-v2-canvas > * {
@@ -1387,30 +1377,20 @@
   inset: -10px -8px -6px -8px;
   border-radius: 20px;
   background:
-    radial-gradient(130% 78% at 50% 0%, color-mix(in srgb, var(--v2-glow-medium) 40%, transparent), transparent 68%),
-    radial-gradient(96% 62% at 78% 100%, rgba(var(--secondary-rgb), 0.18), transparent 74%),
+    radial-gradient(130% 78% at 50% 0%, color-mix(in srgb, var(--v2-glow-medium) 20%, transparent), transparent 70%),
+    radial-gradient(96% 62% at 78% 100%, rgba(var(--secondary-rgb), 0.1), transparent 76%),
     linear-gradient(
       166deg,
-      color-mix(in srgb, var(--card) 34%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 52%, transparent) 100%
+      color-mix(in srgb, var(--card) 52%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 30%, transparent) 100%
     );
-  opacity: 0.7;
+  opacity: 0.42;
   pointer-events: none;
   z-index: -2;
 }
 
 .group-stage-v2-canvas::after {
-  content: '';
-  position: absolute;
-  inset: -6px -3px -3px -3px;
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at 20% 22%, rgba(var(--primary-rgb), 0.12) 0 1px, transparent 1.5px),
-    radial-gradient(circle at 72% 38%, rgba(var(--secondary-rgb), 0.12) 0 1px, transparent 1.5px),
-    radial-gradient(circle at 82% 72%, rgba(var(--primary-rgb), 0.1) 0 1px, transparent 1.5px);
-  opacity: 0.13;
-  pointer-events: none;
-  z-index: -1;
+  content: none;
 }
 
 .group-stage-v2-canvas > * {
@@ -1432,18 +1412,18 @@
     radial-gradient(120% 132% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 34%, transparent), transparent 64%),
     radial-gradient(116% 120% at 100% 100%, rgba(var(--secondary-rgb), 0.15), transparent 68%)
   );
-  opacity: 0.58;
+  opacity: 0.38;
   pointer-events: none;
 }
 
 .group-stage-v2-group-nav {
   border-color: color-mix(in srgb, var(--v2-border-soft) 72%, transparent);
   background:
-    radial-gradient(120% 130% at 0% 100%, rgba(var(--secondary-rgb), 0.16), transparent 70%),
+    radial-gradient(120% 130% at 0% 100%, rgba(var(--secondary-rgb), 0.08), transparent 74%),
     linear-gradient(
       132deg,
-      color-mix(in srgb, var(--card) 93%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 56%, transparent) 100%
+      color-mix(in srgb, var(--card) 94%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 36%, transparent) 100%
     );
 }
 
@@ -1451,11 +1431,11 @@
 .group-stage-v2-leaderboard {
   border-color: color-mix(in srgb, var(--v2-border-soft) 70%, transparent);
   background:
-    radial-gradient(118% 126% at 100% 100%, rgba(var(--secondary-rgb), 0.1), transparent 72%),
+    radial-gradient(118% 126% at 100% 100%, rgba(var(--secondary-rgb), 0.05), transparent 74%),
     linear-gradient(
       132deg,
       color-mix(in srgb, var(--card) 94%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 50%, transparent) 100%
+      color-mix(in srgb, var(--muted) 34%, transparent) 100%
     );
 }
 
@@ -1543,39 +1523,266 @@
 
 .landing-v2-hero.admin-v2-hero::before {
   background:
-    radial-gradient(132% 140% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 44%, transparent), transparent 62%),
-    radial-gradient(116% 118% at 100% 100%, rgba(var(--secondary-rgb), 0.18), transparent 68%);
-  opacity: 0.66;
+    radial-gradient(132% 140% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 24%, transparent), transparent 64%),
+    radial-gradient(116% 118% at 100% 100%, rgba(var(--secondary-rgb), 0.1), transparent 72%);
+  opacity: 0.48;
 }
 
 .admin-v2-surface {
   border-color: color-mix(in srgb, var(--v2-border-medium) 74%, transparent);
   background:
-    radial-gradient(130% 126% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 30%, transparent), transparent 68%),
-    radial-gradient(125% 120% at 0% 100%, rgba(var(--secondary-rgb), 0.12), transparent 72%),
+    radial-gradient(130% 126% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 16%, transparent), transparent 70%),
+    radial-gradient(125% 120% at 0% 100%, rgba(var(--secondary-rgb), 0.06), transparent 74%),
     linear-gradient(
       132deg,
       color-mix(in srgb, var(--card) 95%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 52%, transparent) 100%
+      color-mix(in srgb, var(--muted) 34%, transparent) 100%
     );
 }
 
 .admin-v2-surface-muted {
   border-color: color-mix(in srgb, var(--v2-border-soft) 86%, transparent);
   background:
-    radial-gradient(118% 116% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 24%, transparent), transparent 72%),
+    radial-gradient(118% 116% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 12%, transparent), transparent 74%),
     linear-gradient(
       132deg,
-      color-mix(in srgb, var(--card) 93%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 46%, transparent) 100%
+      color-mix(in srgb, var(--card) 94%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 30%, transparent) 100%
     );
 }
 
+@keyframes admin-v2-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-v2-redesign-stack > * {
+  animation: admin-v2-rise-in 260ms var(--motion-ease-emphasis) both;
+}
+
+.admin-v2-command-flow {
+  border-color: color-mix(in srgb, var(--v2-border-soft) 86%, transparent);
+  background:
+    radial-gradient(128% 120% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 8%, transparent), transparent 74%),
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--card) 95%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 28%, transparent) 100%
+    );
+}
+
+.admin-v2-command-stack {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.admin-v2-workbench {
+  position: relative;
+}
+
+.admin-v2-workbench-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-v2-workbench-title {
+  font-size: var(--text-lg);
+  line-height: 1.3;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.01em;
+  color: var(--v2-text-strong);
+}
+
+.admin-v2-workbench-subtitle {
+  max-width: 52ch;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--v2-meta-text);
+}
+
+.admin-v2-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-v2-status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 80%, transparent);
+  background: color-mix(in srgb, var(--background) 62%, transparent);
+  padding-inline: 0.6rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--v2-text-muted);
+}
+
+.admin-v2-status-chip[data-tone='success'] {
+  border-color: color-mix(in srgb, var(--hl-success-border) 72%, transparent);
+  background: color-mix(in srgb, var(--hl-success-bg) 78%, transparent);
+  color: color-mix(in srgb, var(--hl-success-fg) 86%, transparent);
+}
+
+.admin-v2-status-chip[data-tone='warning'] {
+  border-color: color-mix(in srgb, var(--hl-warning-border) 72%, transparent);
+  background: color-mix(in srgb, var(--hl-warning-bg) 76%, transparent);
+  color: color-mix(in srgb, var(--hl-warning-fg) 84%, transparent);
+}
+
+.admin-v2-status-chip[data-tone='info'] {
+  border-color: color-mix(in srgb, var(--hl-selection-border) 72%, transparent);
+  background: color-mix(in srgb, var(--hl-selection-bg) 78%, transparent);
+  color: color-mix(in srgb, var(--hl-selection-fg) 86%, transparent);
+}
+
+.admin-v2-control-field {
+  min-width: 0;
+}
+
+.admin-v2-control-field .v2-type-kicker {
+  margin-bottom: 0.2rem;
+}
+
+.admin-v2-primary-action {
+  display: flex;
+  align-items: flex-end;
+}
+
+.admin-v2-summary-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-v2-summary-stack .admin-v2-summary-list {
+  margin-top: 0;
+}
+
+.admin-v2-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.admin-v2-sheet-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 78%, transparent);
+  background: color-mix(in srgb, var(--background) 58%, transparent);
+  padding: 0.32rem 0.58rem;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--v2-text-strong);
+}
+
+.admin-v2-summary-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-v2-summary-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--v2-meta-text);
+}
+
+.admin-v2-summary-item strong {
+  max-width: 62%;
+  text-align: right;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
+  color: var(--v2-text-strong);
+  overflow-wrap: anywhere;
+}
+
+.admin-v2-session-panel {
+  position: relative;
+}
+
+.admin-v2-session-grid {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-v2-session-item {
+  border-radius: var(--v2-control-radius);
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+  background:
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--background) 70%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 24%, transparent) 100%
+    );
+  padding: 0.65rem 0.8rem;
+}
+
+.admin-v2-config-block {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-v2-action-row {
+  align-items: stretch;
+}
+
+.admin-v2-utility-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-v2-utility-row {
+  display: grid;
+  gap: 0.45rem;
+  border-radius: var(--v2-control-radius);
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
+  background:
+    linear-gradient(
+      132deg,
+      color-mix(in srgb, var(--background) 70%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 24%, transparent) 100%
+    );
+  padding: 0.5rem;
+}
+
+.admin-v2-utility-button {
+  min-height: var(--v2-control-height-sm);
+}
+
+.admin-v2-utility-note {
+  color: var(--v2-text-muted);
+}
+
+.admin-v2-progress-anchor {
+  margin-top: auto;
+}
+
 .admin-v2-section-label {
-  font-size: 13px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--muted-foreground);
+  font-weight: var(--font-weight-semibold);
+  color: var(--v2-kicker-text);
 }
 
 .admin-v2-divider {
@@ -1596,9 +1803,9 @@
 }
 
 .admin-v2-row-meta {
-  font-size: 13px;
-  line-height: 1.35;
-  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--v2-meta-text);
 }
 
 .admin-v2-action-inline {
@@ -1794,7 +2001,7 @@
   padding: 0.75rem;
   border: 1px solid color-mix(in srgb, var(--v2-border-soft) 64%, transparent);
   border-radius: calc(var(--v2-control-radius) - 0.08rem);
-  background: color-mix(in srgb, var(--background) 26%, transparent);
+  background: color-mix(in srgb, var(--background) 52%, transparent);
 }
 
 .players-v2-name-col {
@@ -1871,6 +2078,10 @@
   .players-v2-action-col {
     justify-content: flex-end;
   }
+
+  .admin-v2-session-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .league-peek-fab {
@@ -1929,7 +2140,7 @@
     radial-gradient(130% 140% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 38%, transparent), transparent 64%),
     radial-gradient(120% 120% at 100% 100%, rgba(var(--secondary-rgb), 0.16), transparent 68%)
   );
-  opacity: 0.62;
+  opacity: 0.42;
   pointer-events: none;
 }
 
@@ -1946,15 +2157,15 @@
   overflow: hidden;
   border-color: var(--v2-border-medium);
   background:
-    radial-gradient(130% 130% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 30%, transparent), transparent 64%),
+    radial-gradient(130% 130% at 0% 0%, color-mix(in srgb, var(--v2-glow-medium) 16%, transparent), transparent 68%),
     linear-gradient(
       134deg,
-      color-mix(in srgb, var(--card) 93%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 50%, transparent) 100%
+      color-mix(in srgb, var(--card) 94%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 34%, transparent) 100%
     );
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 84%, transparent),
-    0 12px 24px color-mix(in srgb, var(--v2-glow-medium) 24%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--v2-glow-soft) 56%, transparent),
+    0 8px 16px color-mix(in srgb, var(--v2-glow-medium) 14%, transparent),
     var(--shadow1);
 }
 
@@ -1967,15 +2178,7 @@
 }
 
 .landing-v2-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at 18% 20%, rgba(var(--primary-rgb), 0.14) 0 1px, transparent 1.5px),
-    radial-gradient(circle at 84% 74%, rgba(var(--secondary-rgb), 0.12) 0 1px, transparent 1.5px);
-  opacity: 0.2;
-  pointer-events: none;
+  content: none;
 }
 
 .landing-v2-card-pills {
@@ -2095,22 +2298,22 @@
 .v2-surface-soft {
   border-color: color-mix(in srgb, var(--v2-border-soft) 84%, transparent);
   background:
-    radial-gradient(120% 124% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 18%, transparent), transparent 72%),
+    radial-gradient(120% 124% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 10%, transparent), transparent 74%),
     linear-gradient(
       132deg,
-      color-mix(in srgb, var(--card) 94%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 44%, transparent) 100%
+      color-mix(in srgb, var(--card) 95%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 28%, transparent) 100%
     );
 }
 
 .landing-v2-standings-panel {
   border-color: var(--v2-border-medium);
   background:
-    radial-gradient(110% 120% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 38%, transparent), transparent 72%),
+    radial-gradient(110% 120% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 20%, transparent), transparent 74%),
     linear-gradient(
       130deg,
-      color-mix(in srgb, var(--card) 94%, transparent) 0%,
-      color-mix(in srgb, var(--muted) 48%, transparent) 100%
+      color-mix(in srgb, var(--card) 95%, transparent) 0%,
+      color-mix(in srgb, var(--muted) 32%, transparent) 100%
     );
 }
 

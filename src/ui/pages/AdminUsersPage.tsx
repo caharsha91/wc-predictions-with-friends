@@ -328,12 +328,12 @@ export default function AdminUsersPage() {
             </div>
 
             <div className="players-v2-list">
-              {state.status === 'loading' ? <div className="text-sm text-muted-foreground">Loading roster members...</div> : null}
+              {state.status === 'loading' ? <div className="v2-type-body-sm text-muted-foreground">Loading roster members...</div> : null}
               {state.status === 'ready' && entries.length === 0 ? (
-                <div className="text-sm text-muted-foreground">No roster members found.</div>
+                <div className="v2-type-body-sm text-muted-foreground">No roster members found.</div>
               ) : null}
               {state.status === 'ready' && entries.length > 0 && filteredEntries.length === 0 ? (
-                <div className="text-sm text-muted-foreground">No roster members match this search.</div>
+                <div className="v2-type-body-sm text-muted-foreground">No roster members match this search.</div>
               ) : null}
 
               {state.status === 'ready' && filteredEntries.length > 0 ? (

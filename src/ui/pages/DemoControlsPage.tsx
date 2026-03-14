@@ -289,10 +289,6 @@ export default function DemoControlsPage() {
       kicker="Admin Demo"
     >
       <div className="space-y-4">
-        <Alert tone="warning" title="Browser-only demo controls" className="admin-v2-inline-alert">
-          These controls affect demo state in this browser session only and never modify live league data.
-        </Alert>
-
         {state.status === 'loading' ? (
           <SectionCardV2 tone="panel" density="none" className="admin-v2-surface-muted p-4 md:p-5">
             Loading demo controls...
@@ -306,134 +302,139 @@ export default function DemoControlsPage() {
         ) : null}
 
         {state.status === 'ready' ? (
-          <div className="v2-section-flat">
-            <div className="space-y-4">
-              <SectionCardV2 tone="panel" density="none" className="admin-v2-surface p-3.5 md:p-4">
-                <div className="space-y-2">
-                  <div className="admin-v2-section-label">Current demo session</div>
-                  <div className="grid gap-2 md:grid-cols-3">
-                    <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
-                      <div className="v2-type-kicker">Scenario</div>
-                      <div className="mt-1 text-sm font-medium text-foreground">{getScenarioLabel(selectedScenario)}</div>
-                    </div>
-                    <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
-                      <div className="v2-type-kicker">Demo clock</div>
-                      <div className="mt-1 text-sm font-medium text-foreground">{toLabel(scenarioNow)}</div>
-                      <div className="text-xs text-muted-foreground">{toRelativeLabel(scenarioNow)}</div>
-                    </div>
-                    <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
-                      <div className="v2-type-kicker">Viewer</div>
-                      <div className="mt-1 text-sm font-medium text-foreground">{selectedViewerLabel}</div>
-                    </div>
+          <div className="v2-section-flat admin-v2-redesign-stack">
+            <SectionCardV2 tone="panel" density="none" className="admin-v2-surface admin-v2-session-panel p-3.5 md:p-4">
+              <div className="space-y-2.5">
+                <div className="admin-v2-section-label">Current demo session</div>
+                <div className="admin-v2-session-grid">
+                  <div className="admin-v2-session-item">
+                    <div className="v2-type-kicker">Demo clock</div>
+                    <div className="v2-type-body-sm mt-1 font-medium text-foreground">{toLabel(scenarioNow)}</div>
+                    <div className="v2-type-caption">{toRelativeLabel(scenarioNow)}</div>
+                  </div>
+                  <div className="admin-v2-session-item">
+                    <div className="v2-type-kicker">Viewer</div>
+                    <div className="v2-type-body-sm mt-1 font-medium text-foreground">{selectedViewerLabel}</div>
+                  </div>
+                  <div className="admin-v2-session-item">
+                    <div className="v2-type-kicker">Scope</div>
+                    <div className="v2-type-body-sm mt-1 font-medium text-foreground">Browser-only demo state</div>
+                    <div className="v2-type-caption">Live league data is untouched</div>
                   </div>
                 </div>
-              </SectionCardV2>
-
-              <div className="space-y-3">
-                <div className="admin-v2-section-label">Scenario</div>
-                <div className="admin-v2-controls">
-                  <SelectField
-                    label="Scenario"
-                    value={selectedScenario}
-                    onChange={(event) => setSelectedScenario(event.target.value as DemoScenarioId)}
-                    labelHidden
-                  >
-                    {DEMO_SCENARIO_OPTIONS.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </SelectField>
-                  <Button
-                    onClick={applyScenario}
-                    disabled={!scenarioNow}
-                    icon={<CalendarIcon size={15} />}
-                    className="admin-v2-action"
-                  >
-                    Apply scenario
-                  </Button>
-                </div>
-                <div className="admin-v2-row-meta">
-                  Sets this browser to a demo scenario and time. Live league data stays untouched.
-                </div>
               </div>
+            </SectionCardV2>
 
-              <div className="admin-v2-divider" />
-
-              <div className="space-y-3">
-                <div className="admin-v2-section-label">Viewer (optional)</div>
-                <div className="admin-v2-controls">
-                  <SelectField
-                    label="Viewer"
-                    value={selectedViewerId}
-                    onChange={(event) => setSelectedViewerId(event.target.value)}
-                    labelHidden
-                  >
-                    {state.members.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name} ({member.id})
-                      </option>
-                    ))}
-                  </SelectField>
-                  <Button
-                    variant="secondary"
-                    onClick={applyViewer}
-                    disabled={!selectedViewerId}
-                    icon={<UsersIcon size={15} />}
-                    className="admin-v2-action"
-                  >
-                    Switch viewer
-                  </Button>
+            <SectionCardV2 tone="panel" density="none" className="admin-v2-surface admin-v2-command-flow p-3.5 md:p-4">
+              <div className="space-y-3 admin-v2-command-stack">
+                <div className="admin-v2-config-block">
+                  <div className="admin-v2-section-label">Scenario</div>
+                  <div className="admin-v2-controls admin-v2-action-row">
+                    <SelectField
+                      label="Scenario"
+                      labelHidden
+                      value={selectedScenario}
+                      onChange={(event) => setSelectedScenario(event.target.value as DemoScenarioId)}
+                      className="admin-v2-control-field"
+                    >
+                      {DEMO_SCENARIO_OPTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </SelectField>
+                    <Button
+                      onClick={applyScenario}
+                      disabled={!scenarioNow}
+                      icon={<CalendarIcon size={15} />}
+                      className="admin-v2-action"
+                    >
+                      Apply scenario
+                    </Button>
+                  </div>
+                  <div className="admin-v2-row-meta">
+                    Sets this browser to a demo scenario and time. Live league data stays untouched.
+                  </div>
                 </div>
-                <div className="admin-v2-row-meta">Changes who appears as You across demo picks, bracket, and leaderboard views in this browser only.</div>
-              </div>
 
-              <div className="admin-v2-divider" />
+                <div className="admin-v2-divider" />
 
-              <div className="space-y-3">
-                <div className="admin-v2-section-label">Utilities</div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <div className="rounded-lg border border-border/70 bg-background/35 p-2.5">
+                <div className="admin-v2-config-block">
+                  <div className="admin-v2-section-label">Viewer (optional)</div>
+                  <div className="admin-v2-controls admin-v2-action-row">
+                    <SelectField
+                      label="Viewer"
+                      labelHidden
+                      value={selectedViewerId}
+                      onChange={(event) => setSelectedViewerId(event.target.value)}
+                      className="admin-v2-control-field"
+                    >
+                      {state.members.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name} ({member.id})
+                        </option>
+                      ))}
+                    </SelectField>
                     <Button
                       variant="secondary"
-                      onClick={() => setPendingAction('reload-snapshots')}
-                      icon={<SettingsIcon size={15} />}
-                      className="admin-v2-action w-full justify-start"
+                      onClick={applyViewer}
+                      disabled={!selectedViewerId}
+                      icon={<UsersIcon size={15} />}
+                      className="admin-v2-action"
                     >
-                      Reload snapshots
+                      Switch viewer
                     </Button>
-                    <div className="mt-2 v2-type-caption">
-                      Clears cached demo snapshot keys and reloads this tab. Scenario/viewer settings stay saved.
-                    </div>
                   </div>
-                  <div className="rounded-lg border border-border/70 bg-background/35 p-2.5">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setPendingAction('clear-session')}
-                      icon={<CloseIcon size={15} />}
-                      className="admin-v2-action admin-v2-danger w-full justify-start"
-                    >
-                      Clear session
-                    </Button>
-                    <div className="mt-2 v2-type-caption">
-                      Clears demo scenario, viewer, and cached session overrides from this browser only.
-                    </div>
-                  </div>
+                  <div className="admin-v2-row-meta">Changes who appears as You across demo picks, bracket, and leaderboard views in this browser only.</div>
                 </div>
-                <div className="admin-v2-row-meta">Both utilities affect demo testing state only.</div>
-                {sessionProgress > 0 ? (
-                  <div className="space-y-1">
-                    <div className="v2-type-meta">{sessionProgressLabel}</div>
-                    <Progress
-                      value={sessionProgress}
-                      intent={sessionProgressIntent}
-                      size="sm"
-                      aria-label="Demo session progress"
-                    />
+
+                <div className="admin-v2-divider" />
+
+                <div className="admin-v2-config-block">
+                  <div className="admin-v2-section-label">Utilities</div>
+                  <div className="admin-v2-utility-list">
+                    <div className="admin-v2-utility-row">
+                      <Button
+                        variant="secondary"
+                        onClick={() => setPendingAction('reload-snapshots')}
+                        icon={<SettingsIcon size={15} />}
+                        className="admin-v2-action admin-v2-utility-button justify-start"
+                      >
+                        Reload snapshots
+                      </Button>
+                      <div className="v2-type-caption admin-v2-utility-note">
+                        Clears cached demo snapshot keys and reloads this tab. Scenario/viewer settings stay saved.
+                      </div>
+                    </div>
+                    <div className="admin-v2-utility-row">
+                      <Button
+                        variant="secondary"
+                        onClick={() => setPendingAction('clear-session')}
+                        icon={<CloseIcon size={15} />}
+                        className="admin-v2-action admin-v2-danger admin-v2-utility-button justify-start"
+                      >
+                        Clear session
+                      </Button>
+                      <div className="v2-type-caption admin-v2-utility-note">
+                        Clears demo scenario, viewer, and cached session overrides from this browser only.
+                      </div>
+                    </div>
                   </div>
-                ) : null}
+                  <div className="admin-v2-row-meta">Both utilities affect demo testing state only.</div>
+                  {sessionProgress > 0 ? (
+                    <div className="space-y-1 admin-v2-progress-anchor">
+                      <div className="v2-type-meta">{sessionProgressLabel}</div>
+                      <Progress
+                        value={sessionProgress}
+                        intent={sessionProgressIntent}
+                        size="sm"
+                        aria-label="Demo session progress"
+                      />
+                    </div>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            </SectionCardV2>
           </div>
         ) : null}
 
