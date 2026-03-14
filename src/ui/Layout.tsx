@@ -1,6 +1,6 @@
 import { useEffect, useRef, type CSSProperties, type MouseEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
+import { signOut } from 'firebase/auth'
 
 import { fetchMatches, fetchMembers } from '../lib/data'
 import { isDemoPath } from '../lib/dataMode'
@@ -324,17 +324,6 @@ function LayoutFrameContent() {
   } = useEasterEggs()
   const favoriteTeamPreference = useFavoriteTeamPreference()
 
-  async function handleSignIn() {
-    if (!firebaseAuth) return
-    try {
-      const provider = new GoogleAuthProvider()
-      await signInWithPopup(firebaseAuth, provider)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to sign in.'
-      showToast({ title: 'Sign in failed', message, tone: 'danger' })
-    }
-  }
-
   async function handleSignOut() {
     if (!firebaseAuth) return
     try {
@@ -506,8 +495,8 @@ function LayoutFrameContent() {
             ) : null}
           </div>
 
-          <div className="mt-4 shrink-0 space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-3">
-            {authState.user ? (
+          {authState.user ? (
+            <div className="mt-4 shrink-0 space-y-3 border-t border-[var(--shell-sidebar-divider)] pt-3">
               <SidebarAccountMenu
                 name={user?.name || authState.user.displayName || authState.user.email || 'Signed in'}
                 favoriteTeamCode={favoriteTeamPreference.favoriteTeamCode}
@@ -520,20 +509,8 @@ function LayoutFrameContent() {
                 isDemoMode={isDemoRoute}
                 compact={sidebarCompact}
               />
-            ) : hasFirebase ? (
-              <button
-                className="v2-pop-target inline-flex h-9 w-full items-center justify-center rounded-full border border-[var(--primary-cta-border)] [background:var(--primary-cta-bg)] px-3 text-xs font-semibold text-primary-foreground shadow-[var(--primary-cta-shadow)] transition hover:[background:var(--primary-cta-hover-bg)] active:translate-y-[1px]"
-                type="button"
-                onClick={() => void handleSignIn()}
-              >
-                Sign in
-              </button>
-            ) : (
-              <div className="rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-nav-hover-bg)] px-3 py-2 text-sm text-[var(--sidebar-nav-foreground)]">
-                Guest
-              </div>
-            )}
-          </div>
+            </div>
+          ) : null}
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-col">

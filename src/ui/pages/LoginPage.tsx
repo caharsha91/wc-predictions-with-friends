@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 
 import { firebaseAuth, hasFirebase } from '../../lib/firebase'
-import { Button, ButtonLink } from '../components/ui/Button'
+import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuthState } from '../hooks/useAuthState'
 import { useToast } from '../hooks/useToast'
@@ -47,9 +47,6 @@ export default function LoginPage() {
                 Sign in with Google
               </Button>
             ) : null}
-            <ButtonLink to="/" variant="secondary">
-              Back to Play Center
-            </ButtonLink>
           </div>
         </div>
       </Card>
