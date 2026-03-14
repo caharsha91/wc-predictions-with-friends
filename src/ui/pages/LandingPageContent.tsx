@@ -43,7 +43,13 @@ import { buildViewerKeySet, resolveLeaderboardIdentityKeys } from '../lib/leader
 import { buildLeaderboardPresentation } from '../lib/leaderboardPresentation'
 import { rankRowsWithTiePriority } from '../lib/leaderboardTieRanking'
 import { validateLastRoute } from '../lib/lastRoute'
-import { lockedFinalLabel } from '../lib/pageStatusCopy'
+import {
+  lockedLabel,
+  noPicksOpenLabel,
+  openUntilLabel,
+  opensAfterLabel,
+  resultsFinalLabel
+} from '../lib/pageStatusCopy'
 import {
   fetchRivalDirectory,
   readUserProfile,
@@ -972,112 +978,112 @@ export default function LandingPage() {
 
     const groupStatus: TileStatusLine = groupLoading
       ? {
-          progressLabel: 'Updating group progress.',
+          progressLabel: 'Updating group progress',
           progressTone: 'neutral',
           availabilityLabel: 'Updating',
           availabilityTone: 'secondary',
-          timingLabel: `Lock condition: ${groupLockLabel}`,
+          timingLabel: openUntilLabel(groupLockLabel),
           actionLabel: 'Open Group Stage'
         }
       : !groupEditable
         ? {
-            progressLabel: `${groupCompletion.groupsDone}/${groupCompletion.groupsTotal} groups set • ${groupCompletion.bestThirdDone}/8 best-thirds selected`,
+            progressLabel: `${groupCompletion.groupsDone} of ${groupCompletion.groupsTotal} groups set · ${groupCompletion.bestThirdDone} of 8 best-thirds set`,
             progressTone: 'locked',
             availabilityLabel: 'Locked',
             availabilityTone: 'locked',
-            timingLabel: `Locked at ${groupLockLabel}`,
+            timingLabel: lockedLabel({ time: groupLockLabel }),
             actionLabel: 'Review Group Stage'
           }
         : {
-            progressLabel: `${groupCompletion.groupsDone}/${groupCompletion.groupsTotal} groups set • ${groupCompletion.bestThirdDone}/8 best-thirds selected`,
+            progressLabel: `${groupCompletion.groupsDone} of ${groupCompletion.groupsTotal} groups set · ${groupCompletion.bestThirdDone} of 8 best-thirds set`,
             progressTone: groupCompletion.pending === 0 ? 'success' : 'warning',
-            availabilityLabel: 'Editable',
+            availabilityLabel: 'Open',
             availabilityTone: 'info',
-            timingLabel: `Editable until: ${groupLockLabel}`,
-            actionLabel: groupCompletion.pending > 0 ? 'Finish Group Stage picks' : 'Review Group Stage'
+            timingLabel: openUntilLabel(groupLockLabel),
+            actionLabel: groupCompletion.pending > 0 ? 'Finish Group Stage' : 'Review Group Stage'
           }
 
     const matchStatus: TileStatusLine = picksLoading
       ? {
-          progressLabel: 'Updating match pick progress.',
+          progressLabel: 'Updating match picks',
           progressTone: 'neutral',
           availabilityLabel: 'Updating',
           availabilityTone: 'secondary',
-          timingLabel: 'Lock condition: Opens 72 hours before kickoff.',
+          timingLabel: 'Opens 72 hours before kickoff',
           actionLabel: 'Open Match Picks'
         }
       : !matchPicksEditable
         ? {
-            progressLabel: `${matchWindow72h.picked}/${matchWindow72h.total} picks set in the active 72-hour window`,
+            progressLabel: `${matchWindow72h.picked} of ${matchWindow72h.total} picks set`,
             progressTone: 'locked',
             availabilityLabel: 'Locked',
             availabilityTone: 'locked',
-            timingLabel: 'Final snapshot. Match picks are closed.',
+            timingLabel: resultsFinalLabel(),
             actionLabel: 'Review Match Picks'
           }
         : matchWindow72h.total > 0
         ? {
-            progressLabel: `${matchWindow72h.picked}/${matchWindow72h.total} picks set in the active 72-hour window`,
+            progressLabel: `${matchWindow72h.picked} of ${matchWindow72h.total} picks set`,
             progressTone: matchWindow72h.pending === 0 ? 'success' : 'info',
-            availabilityLabel: 'Editable',
+            availabilityLabel: 'Open',
             availabilityTone: 'info',
-            timingLabel: `Next lock: ${nextMatchLockLabel}`,
-            actionLabel: matchWindow72h.pending > 0 ? 'Make Match Picks' : 'Review Match Picks'
+            timingLabel: `Next lock ${nextMatchLockLabel}`,
+            actionLabel: matchWindow72h.pending > 0 ? 'Finish Match Picks' : 'Review Match Picks'
           }
         : nextMatchdayWindow
           ? {
-              progressLabel: `${nextMatchdayWindow.picked}/${nextMatchdayWindow.total} picks set for ${nextMatchdayWindow.dateLabel}`,
+              progressLabel: `${nextMatchdayWindow.picked} of ${nextMatchdayWindow.total} picks set for ${nextMatchdayWindow.dateLabel}`,
               progressTone: nextMatchdayWindow.pending === 0 ? 'success' : 'warning',
-              availabilityLabel: 'Not open yet',
+              availabilityLabel: 'Opens next window',
               availabilityTone: 'warning',
-              timingLabel: 'Opens 72 hours before kickoff.',
+              timingLabel: 'Opens 72 hours before kickoff',
               actionLabel: 'Review Match Picks'
             }
         : {
-            progressLabel: 'No open match picks right now',
+            progressLabel: noPicksOpenLabel(),
             progressTone: 'locked',
             availabilityLabel: 'Locked',
             availabilityTone: 'locked',
-            timingLabel: 'Kickoff passed for current fixtures.',
+            timingLabel: 'Check back when the next match window opens',
             actionLabel: 'Review Match Picks'
           }
 
     const knockoutStatus: TileStatusLine = knockoutLoading
       ? {
-          progressLabel: 'Updating knockout progress.',
+          progressLabel: 'Updating knockout progress',
           progressTone: 'neutral',
           availabilityLabel: 'Updating',
           availabilityTone: 'secondary',
-          timingLabel: `Lock condition: ${firstKnockoutKickoffLabel}`,
+          timingLabel: opensAfterLabel('the draw is confirmed'),
           actionLabel: 'Open Knockout Bracket'
         }
       : !knockoutAvailable
         ? {
-            progressLabel: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set`,
+            progressLabel: `${knockoutData.completeMatches} of ${knockoutData.totalMatches || 0} picks set`,
             progressTone: 'warning',
-            availabilityLabel: 'Not open yet',
+            availabilityLabel: 'Opens after draw',
             availabilityTone: 'warning',
-            timingLabel: 'Opens after group outcomes lock and draw confirmation.',
-            actionLabel: 'View Knockout Bracket'
+            timingLabel: 'Opens after group lock and draw confirmation',
+            actionLabel: 'Open Knockout Bracket'
           }
         : knockoutEditable
           ? {
-              progressLabel: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set`,
+              progressLabel: `${knockoutData.completeMatches} of ${knockoutData.totalMatches || 0} picks set`,
               progressTone: knockoutPendingActions === 0 ? 'success' : 'info',
-              availabilityLabel: 'Editable',
+              availabilityLabel: 'Open',
               availabilityTone: 'info',
-              timingLabel: `Editable until: ${firstKnockoutKickoffLabel}`,
-              actionLabel: knockoutPendingActions > 0 ? 'Set Knockout winners' : 'Review Knockout picks'
+              timingLabel: openUntilLabel(firstKnockoutKickoffLabel),
+              actionLabel: knockoutPendingActions > 0 ? 'Finish Knockout Bracket' : 'Review Knockout Bracket'
             }
           : {
-              progressLabel: `${knockoutData.completeMatches}/${knockoutData.totalMatches || 0} knockout picks set`,
+              progressLabel: `${knockoutData.completeMatches} of ${knockoutData.totalMatches || 0} picks set`,
               progressTone: 'locked',
               availabilityLabel: 'Locked',
               availabilityTone: 'locked',
               timingLabel:
                 phaseState.tournamentPhase === 'FINAL'
-                  ? 'Final snapshot. Knockout picks are closed.'
-                  : `Edits closed at first knockout kickoff (${firstKnockoutKickoffLabel}).`,
+                  ? resultsFinalLabel()
+                  : lockedLabel({ time: firstKnockoutKickoffLabel }),
               actionLabel: 'Review Knockout Bracket'
             }
 
@@ -1232,14 +1238,6 @@ export default function LandingPage() {
     return segments.join(' · ')
   }, [viewerStandingSummary])
 
-  const knockoutOpenLabel = knockoutEditable
-    ? 'Knockout picks are open now.'
-    : knockoutAvailable
-      ? phaseState.tournamentPhase === 'FINAL'
-        ? lockedFinalLabel(phaseState.tournamentPhase)
-        : 'Locked at first knockout kickoff.'
-      : 'Knockout picks open once group outcomes lock and matchups are confirmed.'
-
   function persistRivals(nextRivals: string[]) {
     const normalized = sanitizeRivalUserIdsByIdentity({
       nextRivals,
@@ -1393,7 +1391,7 @@ export default function LandingPage() {
           Rival watch
         </div>
         <div className="flex items-center gap-2 v2-type-meta">
-          <span>{`Tracking ${rivalUserIds.length}/3`}</span>
+          <span>{`Following ${rivalUserIds.length}/3`}</span>
           {profileSaving ? <span>Saving...</span> : null}
           {rivalUserIds.length > 0 ? (
             <Button variant="ghost" size="sm" className="h-8 rounded-md px-2" onClick={clearRivals}>
@@ -1406,8 +1404,8 @@ export default function LandingPage() {
       <div className="grid gap-3 md:grid-cols-2">
         <div className="landing-v2-rivals-pane space-y-2" data-pane="selected">
           <div className="space-y-1">
-            <div className="v2-type-kicker">You and rivals</div>
-            <div className="v2-type-caption">Drag rivals to set your comparison order.</div>
+            <div className="v2-type-kicker">Your table</div>
+            <div className="v2-type-caption">Drag rivals to set your watch order.</div>
           </div>
           <div className="space-y-2">
             {rivalsListRows.map((row, index) => {
@@ -1493,7 +1491,7 @@ export default function LandingPage() {
 
         <div className="landing-v2-rivals-pane space-y-2" data-pane="suggested">
           <div className="space-y-2">
-            <div className="v2-type-kicker">Add rivals</div>
+            <div className="v2-type-kicker">Find rivals</div>
             <Input
               ref={rivalSearchInputRef}
               value={rivalQuery}
@@ -1502,7 +1500,7 @@ export default function LandingPage() {
               className="h-9"
             />
           </div>
-          <div className="v2-type-kicker">Available players</div>
+          <div className="v2-type-kicker">League players</div>
           {rivalsState.status === 'loading' ? (
             <div className="space-y-2">
               <div className="h-9 animate-pulse rounded-md border border-border/70 bg-muted/35" />
@@ -1528,13 +1526,13 @@ export default function LandingPage() {
 
           {rivalsState.status === 'ready' && rivalsState.entries.length === 0 ? (
             <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 v2-type-meta">
-              No players are available for comparison yet.
+              No players available yet. Invite more friends to start rival watch.
             </div>
           ) : null}
 
           {rivalsState.status === 'ready' && rivalsState.entries.length > 0 && filteredRivalSuggestions.length === 0 ? (
               <div className="rounded-md border border-dashed border-border/70 bg-muted/35 px-2.5 py-2 v2-type-meta">
-                No players match that search.
+                No players match that search. Try another name.
               </div>
             ) : null}
 
@@ -1692,7 +1690,7 @@ export default function LandingPage() {
           </div>
           <div className="inline-flex items-center gap-1 v2-type-meta">
             <UsersIcon size={13} />
-            <span>{`Tracking ${rivalUserIds.length}/3`}</span>
+            <span>{`Following ${rivalUserIds.length}/3`}</span>
           </div>
         </div>
 
@@ -1744,26 +1742,22 @@ export default function LandingPage() {
       </div>
       <SectionCardV2 tone="subtle" className="landing-v2-rules">
         <div className="v2-type-body-md space-y-2 text-muted-foreground">
-          <h2 className="v2-heading-h2 text-foreground">Rules at a glance</h2>
+          <h2 className="v2-heading-h2 text-foreground">Rules that apply everywhere</h2>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Match picks stay editable inside the active 72-hour window.</span>
+            <span>Match picks open in rolling 72-hour windows and lock at kickoff.</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Next match lock: {nextMatchLockLabel}</span>
+            <span>Group rankings lock before knockout picks open.</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>{knockoutOpenLabel}</span>
+            <span>Knockout picks stay locked until the draw is confirmed.</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
             <span>Rival picks stay hidden until group lock ({groupLockLabel}).</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--secondary)] opacity-80" aria-hidden="true" />
-            <span>Leaderboard updates with each published snapshot.</span>
           </div>
         </div>
       </SectionCardV2>
