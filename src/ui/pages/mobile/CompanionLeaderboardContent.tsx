@@ -25,6 +25,7 @@ import {
   readUserProfile,
   type RivalDirectoryEntry
 } from '../../lib/profilePersistence'
+import { normalizeFavoriteTeamCode } from '../../lib/teamFlag'
 
 const RIVAL_LIMIT = 3
 const TOP_LEADERBOARD_LIMIT = 10
@@ -39,6 +40,7 @@ type RankSnapshot = {
 type ProfileState = {
   status: 'loading' | 'ready' | 'error'
   rivalUserIds: string[]
+  favoriteTeamCode: string | null
   rivalDirectory: RivalDirectoryEntry[]
   message: string | null
 }
@@ -176,20 +178,23 @@ function BreakdownChips({ entry }: { entry: LeaderboardEntry }) {
   const metrics = [
     { label: 'Exact', value: entry.exactPoints, icon: <ExactIcon /> },
     { label: 'Outcome', value: entry.resultPoints, icon: <OutcomeIcon /> },
-    { label: 'Knockout', value: entry.knockoutPoints, icon: <KnockoutIcon /> },
+    { label: 'KO', value: entry.knockoutPoints, icon: <KnockoutIcon /> },
     { label: 'Bracket', value: entry.bracketPoints, icon: <BracketPointsIcon /> }
   ]
 
   return (
-    <div className="companion-league-breakdown v2-type-caption grid grid-cols-4 gap-1">
+    <div className="companion-league-breakdown grid grid-cols-2 gap-1.5">
       {metrics.map((metric) => (
         <div
           key={metric.label}
-          className="companion-league-breakdown-chip rounded-full border border-border/70 bg-background/45 px-2 py-1 text-center tabular-nums"
+          className="companion-league-breakdown-chip rounded-lg border border-border/70 px-2 py-1.5 tabular-nums"
           aria-label={`${metric.label} ${metric.value}`}
         >
-          <div className="flex items-center justify-center gap-1">
-            {metric.icon}
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="flex items-center gap-1">
+              {metric.icon}
+              <span className="v2-type-kicker companion-league-breakdown-label">{metric.label}</span>
+            </span>
             <span className="companion-league-breakdown-value">{metric.value}</span>
           </div>
         </div>
@@ -212,21 +217,25 @@ function CompactStandingRow({ row, showBreakdown }: { row: RankedRow; showBreakd
     <RowShellV2
       depth={row.isViewer ? 'prominent' : 'embedded'}
       state={row.isViewer ? 'you' : row.rivalSlot ? 'rival' : 'default'}
-      className="companion-league-row px-2.5 py-2"
+      className="companion-league-row px-2 py-2"
     >
-      <div className="space-y-1.5">
-        <div className="grid grid-cols-[44px_1fr_auto] items-center gap-2">
-          <div className="text-sm font-semibold tabular-nums text-foreground">{rankLabel(row.rank, row.tieCount)}</div>
-          <div className="min-w-0 flex items-center gap-2">
+      <div className="companion-league-row-grid">
+        <div className="companion-league-score-rail">
+          <div className="companion-league-rank">{rankLabel(row.rank, row.tieCount)}</div>
+          <div className="companion-league-points">{row.points}</div>
+          <div className="companion-league-points-label">PTS</div>
+        </div>
+        <div className="min-w-0 space-y-2">
+          <div className="companion-league-identity">
             <MemberAvatarV2
               name={row.entry.member.name}
               favoriteTeamCode={row.entry.member.favoriteTeamCode ?? null}
-              size="sm"
-              className="h-8 w-12 rounded-md"
+              size="md"
+              className="companion-league-flag rounded-md"
             />
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <div className="truncate text-sm font-semibold text-foreground">{row.entry.member.name}</div>
+              <div className="companion-league-name">{row.entry.member.name}</div>
+              <div className="mt-1">
                 {row.isViewer ? (
                   <StatusTagV2 tone="you" className="companion-league-role-tag">
                     You
@@ -239,13 +248,9 @@ function CompactStandingRow({ row, showBreakdown }: { row: RankedRow; showBreakd
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-base font-semibold tabular-nums text-foreground">{row.points}</div>
-            <div className="v2-type-kicker">pts</div>
-          </div>
-        </div>
 
-        {showBreakdown ? <BreakdownChips entry={row.entry} /> : null}
+          {showBreakdown ? <BreakdownChips entry={row.entry} /> : null}
+        </div>
       </div>
     </RowShellV2>
   )
@@ -261,6 +266,7 @@ export default function CompanionLeaderboardContent() {
   const [profileState, setProfileState] = useState<ProfileState>({
     status: 'loading',
     rivalUserIds: [],
+    favoriteTeamCode: null,
     rivalDirectory: [],
     message: null
   })
@@ -275,6 +281,7 @@ export default function CompanionLeaderboardContent() {
         setProfileState({
           status: 'ready',
           rivalUserIds: [],
+          favoriteTeamCode: null,
           rivalDirectory: [],
           message: null
         })
@@ -295,6 +302,7 @@ export default function CompanionLeaderboardContent() {
         setProfileState({
           status: 'ready',
           rivalUserIds: persisted,
+          favoriteTeamCode: normalizeFavoriteTeamCode(profile.favoriteTeamCode),
           rivalDirectory: directory,
           message: null
         })
@@ -303,6 +311,7 @@ export default function CompanionLeaderboardContent() {
         setProfileState({
           status: 'error',
           rivalUserIds: [],
+          favoriteTeamCode: null,
           rivalDirectory: [],
           message: error instanceof Error ? error.message : 'Unable to load rivalry data.'
         })
@@ -346,6 +355,24 @@ export default function CompanionLeaderboardContent() {
     () => buildRivalSlotLookup(profileState.rivalUserIds, profileState.rivalDirectory),
     [profileState.rivalDirectory, profileState.rivalUserIds]
   )
+
+  const rivalDirectoryByIdentity = useMemo(() => {
+    const directory = new Map<string, RivalDirectoryEntry>()
+    for (const entry of profileState.rivalDirectory) {
+      const keys = buildViewerKeySet([entry.id, entry.email ?? null, entry.displayName])
+      for (const key of keys) {
+        if (!directory.has(key)) directory.set(key, entry)
+        if (key.startsWith('id:')) {
+          const stripped = key.slice(3)
+          if (stripped && !directory.has(stripped)) directory.set(stripped, entry)
+        } else {
+          const prefixed = `id:${key}`
+          if (!directory.has(prefixed)) directory.set(prefixed, entry)
+        }
+      }
+    }
+    return directory
+  }, [profileState.rivalDirectory])
 
   const tieRanked = useMemo(
     () =>
@@ -462,8 +489,50 @@ export default function CompanionLeaderboardContent() {
     return selected.sort((left, right) => left.rank - right.rank)
   }, [rankedRows, rivalRows, viewerRow])
 
+  function resolveFavoriteTeamCode(row: RankedRow): string | null {
+    if (row.isViewer) {
+      return normalizeFavoriteTeamCode(
+        profileState.favoriteTeamCode ?? currentUser?.favoriteTeamCode ?? row.entry.member.favoriteTeamCode
+      )
+    }
+
+    const memberFavoriteTeamCode = normalizeFavoriteTeamCode(row.entry.member.favoriteTeamCode)
+    const identityKeys = new Set<string>(resolveLeaderboardIdentityKeys(row.entry))
+    const memberId = normalizeKey(row.entry.member.id)
+    const memberEmail = normalizeKey(row.entry.member.email)
+    const memberName = normalizeKey(row.entry.member.name)
+
+    if (memberId) {
+      identityKeys.add(memberId)
+      identityKeys.add(`id:${memberId}`)
+    }
+    if (memberEmail) {
+      identityKeys.add(memberEmail)
+      identityKeys.add(`email:${memberEmail}`)
+    }
+    if (memberName) {
+      identityKeys.add(memberName)
+      identityKeys.add(`name:${memberName}`)
+    }
+
+    for (const key of identityKeys) {
+      const normalizedKey = normalizeKey(key)
+      const idLikeKey = normalizedKey.startsWith('id:') ? normalizedKey.slice(3) : normalizedKey
+      const rivalEntry =
+        rivalDirectoryByIdentity.get(key) ??
+        rivalDirectoryByIdentity.get(normalizedKey) ??
+        rivalDirectoryByIdentity.get(idLikeKey) ??
+        rivalDirectoryByIdentity.get(`id:${idLikeKey}`)
+      if (!rivalEntry) continue
+      const rivalFavoriteTeamCode = normalizeFavoriteTeamCode(rivalEntry.favoriteTeamCode)
+      if (rivalFavoriteTeamCode) return rivalFavoriteTeamCode
+    }
+
+    return memberFavoriteTeamCode
+  }
+
   return (
-    <SectionCardV2 tone="panel" density="none" withGlow={false} className="companion-league-panel space-y-3 p-3.5">
+    <SectionCardV2 tone="panel" density="none" withGlow={false} className="companion-league-panel space-y-3 p-3">
       <div className="companion-league-header flex items-start justify-between gap-2">
         <div className="space-y-1">
           <div className="v2-type-kicker">Updated</div>
@@ -481,22 +550,31 @@ export default function CompanionLeaderboardContent() {
       {profileState.message ? <CompactMessage>{profileState.message}</CompactMessage> : null}
       {snapshot.state.status === 'error' ? <CompactMessage>{snapshot.state.message}</CompactMessage> : null}
 
-      <SectionCardV2 tone="inset" density="none" withGlow={false} className="companion-league-inset space-y-2 p-2.5">
+      <div className="companion-league-feed space-y-2">
         <FeedHeading label="Leaderboard" right={`Top ${TOP_LEADERBOARD_LIMIT} + your row + rivals`} />
         {topWindowRows.length === 0 ? (
           <CompactMessage>No standings yet. They will appear after the next update.</CompactMessage>
         ) : (
-          <div className="space-y-1.5">
-            {topWindowRows.map((row) => (
-              <CompactStandingRow
-                key={`league-${entryIdentityKey(row.entry)}`}
-                row={row}
-                showBreakdown={row.isViewer || row.rivalSlot !== null}
-              />
-            ))}
+          <div className="space-y-2">
+              {topWindowRows.map((row) => (
+                <CompactStandingRow
+                  key={`league-${entryIdentityKey(row.entry)}`}
+                  row={{
+                    ...row,
+                    entry: {
+                      ...row.entry,
+                      member: {
+                        ...row.entry.member,
+                        favoriteTeamCode: resolveFavoriteTeamCode(row)
+                      }
+                    }
+                  }}
+                  showBreakdown={row.isViewer || row.rivalSlot !== null}
+                />
+              ))}
           </div>
         )}
-      </SectionCardV2>
+      </div>
     </SectionCardV2>
   )
 }

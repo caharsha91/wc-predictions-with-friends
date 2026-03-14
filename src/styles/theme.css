@@ -1175,12 +1175,13 @@
 .companion-league-panel {
   position: relative;
   overflow: hidden;
-  border-color: color-mix(in srgb, var(--v2-border-medium) 82%, transparent);
+  border-color: color-mix(in srgb, var(--v2-border-medium) 68%, transparent);
   background:
-    radial-gradient(134% 132% at 100% 0%, color-mix(in srgb, var(--v2-glow-medium) 22%, transparent), transparent 68%),
-    linear-gradient(146deg, color-mix(in srgb, var(--card) 92%, transparent) 0%, color-mix(in srgb, var(--muted) 54%, transparent) 100%);
+    radial-gradient(140% 150% at 8% -10%, color-mix(in srgb, var(--v2-glow-medium) 24%, transparent), transparent 58%),
+    radial-gradient(130% 140% at 94% 4%, color-mix(in srgb, var(--hl-rival-border-soft) 26%, transparent), transparent 64%),
+    linear-gradient(166deg, color-mix(in srgb, var(--card) 94%, transparent) 0%, color-mix(in srgb, var(--surface-2) 62%, transparent) 100%);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 52%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 46%, transparent),
     var(--shadow1);
 }
 
@@ -1188,8 +1189,15 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(86% 64% at 50% 100%, rgba(var(--secondary-rgb), 0.16), transparent 72%);
-  opacity: 0.55;
+  background:
+    linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--v2-glow-soft) 14%, transparent) 0%,
+      transparent 32%,
+      color-mix(in srgb, var(--hl-you-border-soft) 12%, transparent) 72%,
+      transparent 100%
+    );
+  opacity: 0.72;
   pointer-events: none;
 }
 
@@ -1199,54 +1207,59 @@
 }
 
 .companion-league-header {
-  border-bottom: 1px solid color-mix(in srgb, var(--v2-border-soft) 72%, transparent);
-  padding-bottom: 0.45rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--v2-border-soft) 58%, transparent);
+  padding-bottom: 0.58rem;
 }
 
 .companion-league-header-tags .v2-status-tag {
   border-color: color-mix(in srgb, var(--v2-border-medium) 78%, transparent);
-  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 90%, transparent);
 }
 
 .companion-league-message {
   border-color: color-mix(in srgb, var(--v2-border-soft) 74%, transparent);
-  background: color-mix(in srgb, var(--surface-2) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
 }
 
-.companion-league-inset {
-  border-color: color-mix(in srgb, var(--v2-border-soft) 78%, transparent);
-  background:
-    radial-gradient(112% 136% at 0% 100%, rgba(var(--secondary-rgb), 0.12), transparent 72%),
-    linear-gradient(138deg, color-mix(in srgb, var(--surface-2) 88%, transparent) 0%, color-mix(in srgb, var(--muted) 42%, transparent) 100%);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 48%, transparent),
-    var(--shadow0);
+.companion-league-feed {
+  position: relative;
+}
+
+.companion-league-feed::before {
+  content: '';
+  position: absolute;
+  inset: -0.05rem -0.1rem -0.1rem;
+  border-radius: calc(var(--v2-control-radius-lg) + 0.3rem);
+  border: 1px solid color-mix(in srgb, var(--v2-border-soft) 42%, transparent);
+  pointer-events: none;
+  opacity: 0.72;
 }
 
 .companion-league-row {
   position: relative;
   overflow: hidden;
-  border-radius: 0.9rem;
-  border-color: color-mix(in srgb, var(--v2-border-medium) 70%, transparent);
+  border-radius: var(--v2-control-radius-lg);
+  border-color: color-mix(in srgb, var(--v2-border-medium) 78%, transparent);
   background:
-    radial-gradient(120% 132% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 22%, transparent), transparent 72%),
-    linear-gradient(140deg, color-mix(in srgb, var(--surface-2) 90%, transparent) 0%, color-mix(in srgb, var(--muted) 38%, transparent) 100%);
+    radial-gradient(126% 130% at 100% 0%, color-mix(in srgb, var(--v2-glow-soft) 18%, transparent), transparent 74%),
+    linear-gradient(134deg, color-mix(in srgb, var(--surface-2) 90%, transparent) 0%, color-mix(in srgb, var(--muted) 34%, transparent) 100%);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 34%, transparent),
-    0 8px 20px color-mix(in srgb, var(--background) 66%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 38%, transparent),
+    0 10px 24px color-mix(in srgb, var(--background) 66%, transparent);
 }
 
 .companion-league-row::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--v2-glow-soft) 12%, transparent) 0%,
-    transparent 46%,
-    color-mix(in srgb, var(--v2-glow-soft) 10%, transparent) 100%
-  );
-  opacity: 0.55;
+  background:
+    linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--v2-glow-soft) 12%, transparent) 0%,
+      transparent 36%,
+      color-mix(in srgb, var(--v2-glow-soft) 8%, transparent) 100%
+    );
+  opacity: 0.72;
   pointer-events: none;
 }
 
@@ -1255,60 +1268,159 @@
   z-index: 1;
 }
 
+.companion-league-row-grid {
+  display: grid;
+  grid-template-columns: 3.35rem minmax(0, 1fr);
+  gap: 0.72rem;
+  align-items: stretch;
+}
+
+.companion-league-score-rail {
+  display: grid;
+  gap: 0.18rem;
+  align-content: center;
+  justify-items: center;
+  border-right: 1px solid color-mix(in srgb, var(--v2-border-soft) 72%, transparent);
+  padding-right: 0.62rem;
+}
+
+.companion-league-rank {
+  font-size: 0.8rem;
+  line-height: 1.2;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--foreground) 86%, transparent);
+}
+
+.companion-league-points {
+  font-family: var(--font-display);
+  font-size: 1.52rem;
+  line-height: 1.02;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--foreground) 94%, transparent);
+}
+
+.companion-league-points-label {
+  font-size: 0.56rem;
+  line-height: 1;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--v2-meta-text) 88%, transparent);
+}
+
+.companion-league-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.58rem;
+}
+
+.companion-league-flag {
+  height: 2.55rem;
+  width: 3.85rem;
+  border: 1px solid color-mix(in srgb, var(--v2-border-medium) 72%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 34%, transparent),
+    0 5px 14px color-mix(in srgb, var(--background) 52%, transparent);
+}
+
+.companion-league-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 0.97rem;
+  line-height: 1.2;
+  font-weight: var(--font-weight-semibold);
+  color: color-mix(in srgb, var(--foreground) 96%, transparent);
+}
+
 .companion-league-row[data-semantic-state='you'] {
   border-color: color-mix(in srgb, var(--hl-you-border) 86%, var(--v2-border-medium) 14%);
   background:
-    radial-gradient(122% 136% at 100% 0%, color-mix(in srgb, var(--hl-you-border-soft) 40%, transparent), transparent 70%),
-    linear-gradient(140deg, color-mix(in srgb, var(--hl-you-bg) 90%, var(--surface-2) 10%) 0%, color-mix(in srgb, var(--hl-you-bg) 68%, transparent) 100%);
+    radial-gradient(132% 136% at 98% 0%, color-mix(in srgb, var(--hl-you-border-soft) 44%, transparent), transparent 72%),
+    linear-gradient(140deg, color-mix(in srgb, var(--hl-you-bg) 90%, var(--surface-2) 10%) 0%, color-mix(in srgb, var(--hl-you-bg) 66%, transparent) 100%);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--hl-you-border-soft) 78%, transparent),
-    0 10px 22px color-mix(in srgb, var(--hl-you-border-soft) 20%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--hl-you-border-soft) 82%, transparent),
+    0 12px 24px color-mix(in srgb, var(--hl-you-border-soft) 24%, transparent);
 }
 
 .companion-league-row[data-semantic-state='rival'] {
   border-color: color-mix(in srgb, var(--hl-rival-border) 84%, var(--v2-border-medium) 16%);
   background:
-    radial-gradient(118% 132% at 100% 0%, color-mix(in srgb, var(--hl-rival-border-soft) 36%, transparent), transparent 70%),
-    linear-gradient(142deg, color-mix(in srgb, var(--hl-rival-bg) 88%, var(--surface-2) 12%) 0%, color-mix(in srgb, var(--hl-rival-bg) 64%, transparent) 100%);
+    radial-gradient(126% 132% at 100% 0%, color-mix(in srgb, var(--hl-rival-border-soft) 40%, transparent), transparent 72%),
+    linear-gradient(142deg, color-mix(in srgb, var(--hl-rival-bg) 88%, var(--surface-2) 12%) 0%, color-mix(in srgb, var(--hl-rival-bg) 62%, transparent) 100%);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--hl-rival-border-soft) 74%, transparent),
-    0 8px 18px color-mix(in srgb, var(--hl-rival-border-soft) 16%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--hl-rival-border-soft) 78%, transparent),
+    0 10px 20px color-mix(in srgb, var(--hl-rival-border-soft) 18%, transparent);
 }
 
 .companion-league-row .v2-status-tag {
-  min-width: 3.7rem;
+  min-width: 3.95rem;
   justify-content: center;
+  letter-spacing: 0.01em;
 }
 
 .companion-league-role-tag {
-  min-width: 4rem;
+  min-width: 4.1rem;
   border-color: color-mix(in srgb, var(--v2-border-medium) 82%, transparent);
-  background: color-mix(in srgb, var(--surface-1) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 90%, transparent);
 }
 
 .companion-league-breakdown {
-  gap: 0.36rem;
+  gap: 0.35rem;
 }
 
 .companion-league-breakdown-chip {
-  border-color: color-mix(in srgb, var(--v2-border-medium) 82%, transparent);
-  background: color-mix(in srgb, var(--surface-1) 84%, transparent);
+  border-color: color-mix(in srgb, var(--v2-border-medium) 76%, transparent);
+  background: linear-gradient(
+    132deg,
+    color-mix(in srgb, var(--surface-1) 92%, transparent) 0%,
+    color-mix(in srgb, var(--surface-2) 82%, transparent) 100%
+  );
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-border-soft) 34%, transparent);
 }
 
+.companion-league-breakdown-label {
+  font-size: 0.56rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--v2-meta-text) 86%, transparent);
+}
+
 .companion-league-breakdown-icon {
-  color: color-mix(in srgb, var(--foreground) 84%, transparent);
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
 }
 
 .companion-league-breakdown-icon svg {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 0.76rem;
+  height: 0.76rem;
 }
 
 .companion-league-breakdown-value {
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  color: color-mix(in srgb, var(--foreground) 92%, transparent);
+  font-family: var(--font-display);
+  font-size: 0.94rem;
+  line-height: 1;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--foreground) 94%, transparent);
+}
+
+.companion-league-breakdown-chip:nth-child(1) {
+  border-color: color-mix(in srgb, var(--hl-selection-border) 56%, var(--v2-border-medium) 44%);
+}
+
+.companion-league-breakdown-chip:nth-child(2) {
+  border-color: color-mix(in srgb, var(--hl-success-border) 52%, var(--v2-border-medium) 48%);
+}
+
+.companion-league-breakdown-chip:nth-child(3) {
+  border-color: color-mix(in srgb, var(--hl-rival-border) 52%, var(--v2-border-medium) 48%);
+}
+
+.companion-league-breakdown-chip:nth-child(4) {
+  border-color: color-mix(in srgb, var(--hl-you-border) 54%, var(--v2-border-medium) 46%);
 }
 
 .companion-auth-shell {
@@ -2387,6 +2499,10 @@
     grid-column: auto;
   }
 
+  .admin-v2-export-controls[data-audit='false'] .admin-v2-export-action .admin-v2-action {
+    margin-top: calc(var(--text-xs) * 1.4 + 0.45rem);
+  }
+
   .admin-v2-export-controls[data-audit='true'] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2444,6 +2560,10 @@
 
   .admin-v2-export-controls[data-audit='true'] .admin-v2-export-action {
     grid-column: auto;
+  }
+
+  .admin-v2-export-controls[data-audit='true'] .admin-v2-export-action .admin-v2-action {
+    margin-top: calc(var(--text-xs) * 1.4 + 0.45rem);
   }
 }
 
